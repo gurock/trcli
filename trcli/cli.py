@@ -1,32 +1,112 @@
 import os
 import sys
-
 import click
+
+from click.core import ParameterSource
+from trcli.constants import FAULT_MAPPING, TOOL_VERSION_AND_USAGE
+from trcli.utilities import get_params_from_config_file
+
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
+trcli_folder = os.path.dirname(__file__)
+cmd_folder = os.path.abspath(os.path.join(trcli_folder, "commands"))
+default_config_file_path = os.path.join(os.path.join(trcli_folder, "config.yaml"))
+
+
 class Environment:
     def __init__(self):
-        self.verbose = False
         self.home = os.getcwd()
+        self.default_config_file = True
+        self.file = None
+        self.host = None
+        self.project = None
+        self.title = None
+        self.username = None
+        self.password = None
+        self.key = None
+        self.verbose = None
+        self.verify = None
+        self.config = None
+        self.batch_size = None
+        self.timeout = None
+        self.suite_id = None
+        self.run_id = None
+        self.case_id = None
+        self.prompt_auto_creation = None
+        self.silent = None
 
-    def log(self, msg, *args):
+    def log(self, msg: str, *args):
         """Logs a message to stderr."""
-        if args:
-            msg %= args
-        click.echo(msg, file=sys.stderr)
+        if not self.silent:
+            if args:
+                msg %= args
+            click.echo(msg, file=sys.stderr)
 
-    def vlog(self, msg, *args):
+    def vlog(self, msg: str, *args):
         """Logs a message to stderr only if the verbose option is enabled"""
         if self.verbose:
             self.log(msg, *args)
 
+    def get_prompt_response_for_auto_creation(self, msg: str, *args):
+        """Prompts for confirmation (yes/no) if prompt_auto_creation (--no/--yes parameters) is not set"""
+        if not self.prompt_auto_creation:
+            return click.confirm(msg)
+        else:
+            return True if self.prompt_auto_creation == "True" else False
+
+    def set_parameters(self, ctx: click.core.Context):
+        """Sets parameters based on ctx. The function will override parameters with config file values
+        depending on the parameter source and config file source (default or custom)"""
+        if self.default_config_file:
+            param_sources_types = [ParameterSource.DEFAULT]
+        else:
+            param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
+
+        params_from_config = get_params_from_config_file(self.config)
+        for param, value in ctx.params.items():
+            # Don't set config again
+            if param == "config":
+                continue
+            param_config_value = params_from_config.get(param, None)
+            param_source = ctx.get_parameter_source(param)
+            if param_source in param_sources_types and param_config_value:
+                setattr(self, param, param_config_value)
+            else:
+                setattr(self, param, value)
+
+    def check_for_required_parameters(self):
+        """Checks that all required parameters were set. If not error message would be printed and
+        program will exit with exit code 1"""
+        for param, value in vars(self).items():
+            if "missing_" + param in FAULT_MAPPING and not value:
+                self.log(FAULT_MAPPING["missing_" + param])
+                exit(1)
+        # special case for password and key (both needs to be missing for the error message to show up)
+        if not self.password and not self.key:
+            self.log(FAULT_MAPPING["missing_password_and_key"])
+            exit(1)
+
+    def set_config_file(self, ctx: click.Context):
+        """Sets config file path from ctx and information if default or custom config file should be used."""
+        self.config = ctx.params["config"]
+        self.default_config_file = (
+            False
+            if ctx.get_parameter_source("config") == ParameterSource.COMMANDLINE
+            else True
+        )
+
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
-cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "commands"))
+
 
 class TRCLI(click.MultiCommand):
-    def list_commands(self, ctx):
+    def __init__(self, *args, **kwargs):
+        # Use invoke_without_command=True to be able to print
+        # short tool description when starting without parameters
+        click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
+
+    def list_commands(self, ctx: click.Context):
         rv = []
         for filename in os.listdir(cmd_folder):
             if filename.endswith(".py") and filename.startswith("cmd_"):
@@ -34,24 +114,92 @@ class TRCLI(click.MultiCommand):
         rv.sort()
         return rv
 
-    def get_command(self, ctx, name):
+    def get_command(self, ctx: click.Context, name: str):
         try:
             mod = __import__(f"trcli.commands.cmd_{name}", None, None, ["cli"])
         except ImportError:
-            print('trcli failed to load')
+            print("trcli failed to load")
             return
         return mod.cli
 
 
 @click.command(cls=TRCLI, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-    help="Enables verbose logging."
-)
+@click.pass_context
 @pass_environment
-
-def cli(ctx, verbose):
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(),
+    default=default_config_file_path,
+    help="Optional path definition for testrail-credentials file or CF file.",
+)
+@click.option("-h", "--host", help="Hostname of instance.")
+@click.option("--project", help="Name of project the Test Run should be created under.")
+@click.option("--title", help="Title of Test Run to be created in TestRail.")
+@click.option("-u", "--username", type=click.STRING, help="Username.")
+@click.option("-p", "--password", type=click.STRING, help="Password.")
+@click.option("-k", "--key", help="API key.")
+@click.option("-v", "--verbose", is_flag=True, help="Enables verbose logging.")
+@click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
+@click.option(
+    "-b",
+    "--batch-size",
+    type=click.IntRange(min=2),
+    default=50,
+    show_default="50",
+    help="Configurable batch size.",
+)
+@click.option(
+    "-t",
+    "--timeout",
+    type=click.IntRange(min=0),
+    default=30,
+    show_default="30",
+    help="Batch timeout duration.",
+)
+@click.option(
+    "--suite-id",
+    type=click.IntRange(min=1),
+    help="Suite ID for the results they are reporting.",
+)
+@click.option(
+    "--run-id",
+    type=click.IntRange(min=1),
+    help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
+)
+@click.option(
+    "--case-id",
+    type=click.IntRange(min=1),
+    help=" (otherwise the tool will attempt to create a new run).",
+)
+@click.option(
+    "-y",
+    "--yes",
+    "prompt_auto_creation",
+    flag_value="True",
+    help="answer 'yes' to all prompts around auto-creation",
+)
+@click.option(
+    "-n",
+    "--no",
+    "prompt_auto_creation",
+    flag_value="False",
+    help="answer 'no' to all prompts around auto-creation",
+)
+@click.option("-s", "--silent", flag_value="yes", help="Silence stdout")
+def cli(env: Environment, ctx: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
-    ctx.verbose = verbose
+    if not sys.argv[1:]:
+        click.echo(TOOL_VERSION_AND_USAGE)
+        exit(0)
+
+    # This check is due to usage of invoke_without_command=True in TRCLI class.
+    if not ctx.invoked_subcommand:
+        print(
+            """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
+        \nError: Missing command."""
+        )
+        exit(2)
+
+    env.set_config_file(ctx)
+    env.set_parameters(ctx)
