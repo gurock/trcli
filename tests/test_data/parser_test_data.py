@@ -7,6 +7,7 @@ XML_NO_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 XML_ROOT = """<?xml version="1.0" encoding="UTF-8"?>
 <testsuites name="test suites root" id="123">
 <testsuite id="321" failures="0" errors="0" skipped="1" tests="1" time="0.05" name="Skipped test">
+<properties><property name="setting1" value="True"/></properties>
 <testcase id="666" classname="tests.test_junit_to_dataclass" name="test_testrail_test_suite" time="159">
 <skipped type="pytest.skip" message="Please skip">skipped by user</skipped></testcase>
 </testsuite></testsuites>"""
@@ -16,6 +17,7 @@ XML_EMPTY = """<?xml version="1.0" encoding="UTF-8"?>
 <testcase></testcase>
 <testcase ><failure></failure></testcase>
 </testsuite></testsuites>"""
+XML_INVALID = """<b>SOME TXT INVALID FILE</b>"""
 
 EXPECTED_NO_ROOT = {
     "id": None,
@@ -59,7 +61,9 @@ EXPECTED_ROOT = {
     "testsuites": [
         {
             "name": "Skipped test",
-            "properties": [],
+            "properties": [
+                {"description": "setting1: True", "name": "setting1", "value": "True"}
+            ],
             "suite_id": "321",
             "time": 0.05,
             "testcases": [
