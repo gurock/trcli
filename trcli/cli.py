@@ -1,6 +1,7 @@
 import os
 import sys
 import click
+import yaml
 from pathlib import Path
 
 from click.core import ParameterSource
@@ -9,7 +10,6 @@ from trcli.constants import (
     TOOL_VERSION_AND_USAGE,
     MISSING_COMMAND_SLOGAN,
 )
-from trcli.utilities import get_params_from_config_file
 
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
@@ -38,7 +38,7 @@ class Environment:
         self.suite_id = None
         self.run_id = None
         self.case_id = None
-        self.prompt_auto_creation = None
+        self.auto_creation_response = None
         self.silent = None
 
     def log(self, msg: str, *args):
@@ -54,11 +54,11 @@ class Environment:
             self.log(msg, *args)
 
     def get_prompt_response_for_auto_creation(self, msg: str, *args):
-        """Prompts for confirmation (yes/no) if prompt_auto_creation (--no/--yes parameters) is not set"""
-        if not self.prompt_auto_creation:
+        """Prompts for confirmation (yes/no) if auto_creation_response (--no/--yes parameters) is not set"""
+        if not self.auto_creation_response:
             return click.confirm(msg)
         else:
-            return True if self.prompt_auto_creation == "True" else False
+            return True if self.auto_creation_response == "Yes" else False
 
     def set_parameters(self, context: click.core.Context):
         """Sets parameters based on context. The function will override parameters with config file values
@@ -68,7 +68,7 @@ class Environment:
         else:
             param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
 
-        params_from_config = get_params_from_config_file(self.config)
+        params_from_config = self.get_params_from_config_file(self.config)
         for param, value in context.params.items():
             # Don't set config again
             if param == "config":
@@ -100,6 +100,21 @@ class Environment:
             if context.get_parameter_source("config") == ParameterSource.COMMANDLINE
             else True
         )
+
+    def get_params_from_config_file(self, file_path: str) -> dict:
+        try:
+            with open(file_path, "r") as f:
+                loaded_config = yaml.safe_load(f)
+        except yaml.YAMLError:
+            self.vlog(
+                FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
+            )
+            loaded_config = {}
+        except IOError:
+            self.vlog(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
+            loaded_config = {}
+
+        return loaded_config
 
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
@@ -180,15 +195,15 @@ class TRCLI(click.MultiCommand):
 @click.option(
     "-y",
     "--yes",
-    "prompt_auto_creation",
-    flag_value="True",
+    "auto_creation_response",
+    flag_value="Yes",
     help="answer 'yes' to all prompts around auto-creation",
 )
 @click.option(
     "-n",
     "--no",
-    "prompt_auto_creation",
-    flag_value="False",
+    "auto_creation_response",
+    flag_value="No",
     help="answer 'no' to all prompts around auto-creation",
 )
 @click.option("-s", "--silent", flag_value="yes", help="Silence stdout")

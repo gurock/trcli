@@ -8,6 +8,8 @@ FAULT_MAPPING = dict(
     missing_username="Please provide a valid TestRail username using the -u argument.",
     missing_password_and_key="Please provide either a password using the -p"
     " argument or an API key using the -k argument.",
+    yaml_file_parse_issue="Error occurred while parsing yaml file ({file_path}).\nMake sure that structure of a file is correct.",
+    file_open_issue="Error occurred while opening the file ({file_path}).\nMake sure that the file exists or the path is correct.",
 )
 
 TOOL_VERSION_AND_USAGE = f"""TestRail Connect v{trcli.__version__}
