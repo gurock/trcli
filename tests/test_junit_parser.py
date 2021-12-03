@@ -1,7 +1,7 @@
 import pytest
 from dataclasses import asdict
 from junitparser import TestCase, TestSuite, JUnitXml, Attr, JUnitXmlError
-from trcli.readers import junit_xml
+from trcli.readers.junit_xml import JunitParser
 from tests.test_data.parser_test_data import *
 
 TestCase.id = Attr("id")
@@ -28,7 +28,8 @@ class TestDataClasses:
         d.mkdir()
         p = d / "xml_test.xml"
         p.write_text(input_xml)
-        read_junit = junit_xml.parse_junit(p)
+        file_reader = JunitParser(p)
+        read_junit = file_reader.parse_file()
         result = asdict(read_junit)
 
         assert result == expected
@@ -38,5 +39,11 @@ class TestDataClasses:
         d.mkdir()
         p = d / "xml_test.xml"
         p.write_text(XML_INVALID)
+        file_reader = JunitParser(p)
         with pytest.raises(JUnitXmlError):
-            junit_xml.parse_junit(p)
+            file_reader.parse_file()
+
+    def test_junit_xml_parser_file_not_found(self, tmp_path):
+        d = tmp_path / "not_found.xml"
+        with pytest.raises(FileNotFoundError):
+            JunitParser(d)
