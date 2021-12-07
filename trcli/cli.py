@@ -5,6 +5,7 @@ import click
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
+
 class Environment:
     def __init__(self):
         self.verbose = False
@@ -25,6 +26,7 @@ class Environment:
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
 cmd_folder = os.path.abspath(os.path.join(os.path.dirname(__file__), "commands"))
 
+
 class TRCLI(click.MultiCommand):
     def list_commands(self, ctx):
         rv = []
@@ -38,20 +40,14 @@ class TRCLI(click.MultiCommand):
         try:
             mod = __import__(f"trcli.commands.cmd_{name}", None, None, ["cli"])
         except ImportError:
-            print('trcli failed to load')
+            print("trcli failed to load")
             return
         return mod.cli
 
 
 @click.command(cls=TRCLI, context_settings=CONTEXT_SETTINGS)
-@click.option(
-    "-v",
-    "--verbose",
-    is_flag=True,
-    help="Enables verbose logging."
-)
+@click.option("-v", "--verbose", is_flag=True, help="Enables verbose logging.")
 @pass_environment
-
 def cli(ctx, verbose):
     """TestRail CLI"""
     ctx.verbose = verbose
