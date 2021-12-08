@@ -31,6 +31,8 @@ class TestDataClasses:
             "case_id": "12345",
             "name": "testing",
             "time": 10.0,
+            "section_id": None,
+            "status_id": 4,
             "results": [
                 {
                     "message": "This test is skipped",
@@ -101,6 +103,8 @@ class TestDataClasses:
                     "case_id": "12345",
                     "name": "testing",
                     "time": 10.0,
+                    "section_id": "1",
+                    "status_id": 5,
                     "results": [
                         {
                             "message": "This test is failed",

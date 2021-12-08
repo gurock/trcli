@@ -35,11 +35,15 @@ EXPECTED_NO_ROOT = {
                     "name": "Passing",
                     "time": 0.05,
                     "results": [],
+                    "section_id": None,
+                    "status_id": 1,
                 },
                 {
                     "case_id": None,
                     "name": "Failing",
                     "time": 0.05,
+                    "section_id": None,
+                    "status_id": 5,
                     "results": [
                         {
                             "message": "failed Failing",
@@ -71,6 +75,8 @@ EXPECTED_ROOT = {
                     "case_id": "666",
                     "name": "test_testrail_test_suite",
                     "time": 159,
+                    "section_id": "321",
+                    "status_id": 4,
                     "results": [
                         {
                             "message": "Please skip",
@@ -100,12 +106,16 @@ EXPECTED_EMPTY = {
                     "case_id": None,
                     "name": None,
                     "time": None,
+                    "section_id": None,
+                    "status_id": 1,
                     "results": [],
                 },
                 {
                     "case_id": None,
                     "name": None,
                     "time": None,
+                    "section_id": None,
+                    "status_id": 5,
                     "results": [
                         {
                             "message": None,
