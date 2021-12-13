@@ -112,12 +112,12 @@ class TRCLI(click.MultiCommand):
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
     def list_commands(self, context: click.Context):
-        rv = []
+        commands = []
         for filename in cmd_folder.iterdir():
             if filename.name.endswith(".py") and filename.name.startswith("cmd_"):
-                rv.append(filename.name[4:-3])
-        rv.sort()
-        return rv
+                commands.append(filename.name[4:-3])
+        commands.sort()
+        return commands
 
     def get_command(self, context: click.Context, name: str):
         try:
