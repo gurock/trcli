@@ -1,17 +1,22 @@
 import os
 import sys
 import click
+from pathlib import Path
 
 from click.core import ParameterSource
-from trcli.constants import FAULT_MAPPING, TOOL_VERSION_AND_USAGE
+from trcli.constants import (
+    FAULT_MAPPING,
+    TOOL_VERSION_AND_USAGE,
+    MISSING_COMMAND_SLOGAN,
+)
 from trcli.utilities import get_params_from_config_file
 
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
-trcli_folder = os.path.dirname(__file__)
-cmd_folder = os.path.abspath(os.path.join(trcli_folder, "commands"))
-default_config_file_path = os.path.join(os.path.join(trcli_folder, "config.yaml"))
+trcli_folder = Path(__file__).parent
+cmd_folder = trcli_folder / "commands/"
+default_config_file_path = trcli_folder / "config.yaml"
 
 
 class Environment:
@@ -55,8 +60,8 @@ class Environment:
         else:
             return True if self.prompt_auto_creation == "True" else False
 
-    def set_parameters(self, ctx: click.core.Context):
-        """Sets parameters based on ctx. The function will override parameters with config file values
+    def set_parameters(self, context: click.core.Context):
+        """Sets parameters based on context. The function will override parameters with config file values
         depending on the parameter source and config file source (default or custom)"""
         if self.default_config_file:
             param_sources_types = [ParameterSource.DEFAULT]
@@ -64,12 +69,12 @@ class Environment:
             param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
 
         params_from_config = get_params_from_config_file(self.config)
-        for param, value in ctx.params.items():
+        for param, value in context.params.items():
             # Don't set config again
             if param == "config":
                 continue
             param_config_value = params_from_config.get(param, None)
-            param_source = ctx.get_parameter_source(param)
+            param_source = context.get_parameter_source(param)
             if param_source in param_sources_types and param_config_value:
                 setattr(self, param, param_config_value)
             else:
@@ -87,12 +92,12 @@ class Environment:
             self.log(FAULT_MAPPING["missing_password_and_key"])
             exit(1)
 
-    def set_config_file(self, ctx: click.Context):
-        """Sets config file path from ctx and information if default or custom config file should be used."""
-        self.config = ctx.params["config"]
+    def set_config_file(self, context: click.Context):
+        """Sets config file path from context and information if default or custom config file should be used."""
+        self.config = context.params["config"]
         self.default_config_file = (
             False
-            if ctx.get_parameter_source("config") == ParameterSource.COMMANDLINE
+            if context.get_parameter_source("config") == ParameterSource.COMMANDLINE
             else True
         )
 
@@ -106,15 +111,15 @@ class TRCLI(click.MultiCommand):
         # short tool description when starting without parameters
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
-    def list_commands(self, ctx: click.Context):
+    def list_commands(self, context: click.Context):
         rv = []
-        for filename in os.listdir(cmd_folder):
-            if filename.endswith(".py") and filename.startswith("cmd_"):
-                rv.append(filename[4:-3])
+        for filename in cmd_folder.iterdir():
+            if filename.name.endswith(".py") and filename.name.startswith("cmd_"):
+                rv.append(filename.name[4:-3])
         rv.sort()
         return rv
 
-    def get_command(self, ctx: click.Context, name: str):
+    def get_command(self, context: click.Context, name: str):
         try:
             mod = __import__(f"trcli.commands.cmd_{name}", None, None, ["cli"])
         except ImportError:
@@ -187,19 +192,16 @@ class TRCLI(click.MultiCommand):
     help="answer 'no' to all prompts around auto-creation",
 )
 @click.option("-s", "--silent", flag_value="yes", help="Silence stdout")
-def cli(env: Environment, ctx: click.core.Context, *args, **kwargs):
+def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
     if not sys.argv[1:]:
         click.echo(TOOL_VERSION_AND_USAGE)
         exit(0)
 
     # This check is due to usage of invoke_without_command=True in TRCLI class.
-    if not ctx.invoked_subcommand:
-        print(
-            """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
-        \nError: Missing command."""
-        )
+    if not context.invoked_subcommand:
+        print(MISSING_COMMAND_SLOGAN)
         exit(2)
 
-    env.set_config_file(ctx)
-    env.set_parameters(ctx)
+    environment.set_config_file(context)
+    environment.set_parameters(context)

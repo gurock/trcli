@@ -41,7 +41,9 @@ class CLIParametersHelper:
         required_args = self.get_all_required_parameters()
         return args_to_add + required_args
 
-    def get_required_parameters_without_command_no_dashes(self) -> List[Tuple[str, str]]:
+    def get_required_parameters_without_command_no_dashes(
+        self,
+    ) -> List[Tuple[str, str]]:
         return [
             (key, value[-1])
             for key, value in self.required_arguments.items()
