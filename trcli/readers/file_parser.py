@@ -1,6 +1,6 @@
 from pathlib import Path
-import os
 from abc import abstractmethod
+from typing import Union
 
 
 class FileParser:
@@ -8,13 +8,13 @@ class FileParser:
     Each new parser should inherit from this class, to make file reading modular.
     """
 
-    def __init__(self, filepath: Path):
+    def __init__(self, filepath: Union[str, Path]):
         self.filepath = filepath
         self.check_file(filepath)
 
     @staticmethod
-    def check_file(filepath: Path):
-        if not os.path.isfile(filepath):
+    def check_file(filepath: Union[str, Path]):
+        if not Path(filepath).is_file():
             raise FileNotFoundError("File not found.")
 
     @abstractmethod

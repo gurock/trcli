@@ -1,21 +1,28 @@
+from pathlib import Path
 import pytest
-from dataclasses import asdict
-from junitparser import TestCase, TestSuite, JUnitXml, Attr, JUnitXmlError
+import json
+from junitparser import JUnitXmlError
+from serde.json import to_json
 from trcli.readers.junit_xml import JunitParser
-from tests.test_data.parser_test_data import *
-
-TestCase.id = Attr("id")
-TestSuite.id = Attr("id")
-JUnitXml.id = Attr("id")
+from typing import Union
 
 
-class TestDataClasses:
+class TestJunitParser:
     @pytest.mark.parametrize(
-        "input_xml, expected",
+        "input_xml_path, expected_path",
         [
-            (XML_NO_ROOT, EXPECTED_NO_ROOT),
-            (XML_ROOT, EXPECTED_ROOT),
-            (XML_EMPTY, EXPECTED_EMPTY),
+            (
+                Path(__file__).parent / "test_data/XML/no_root.xml",
+                Path(__file__).parent / "test_data/json/no_root.json",
+            ),
+            (
+                Path(__file__).parent / "test_data/XML/root.xml",
+                Path(__file__).parent / "test_data/json/root.json",
+            ),
+            (
+                Path(__file__).parent / "test_data/XML/empty.xml",
+                Path(__file__).parent / "test_data/json/empty.json",
+            ),
         ],
         ids=[
             "XML without testsuites root",
@@ -23,27 +30,23 @@ class TestDataClasses:
             "XML with no data",
         ],
     )
-    def test_junit_xml_parser(self, tmp_path, input_xml, expected):
-        d = tmp_path / "xml_tmp"
-        d.mkdir()
-        p = d / "xml_test.xml"
-        p.write_text(input_xml)
-        file_reader = JunitParser(p)
+    def test_junit_xml_parser_valid_files(
+        self, input_xml_path: Union[str, Path], expected_path: str
+    ):
+        file_reader = JunitParser(input_xml_path)
         read_junit = file_reader.parse_file()
-        result = asdict(read_junit)
+        parsing_result_json = json.loads(to_json(read_junit))
+        file_json = open(expected_path)
+        expected_json = json.load(file_json)
+        assert (
+            parsing_result_json == expected_json
+        ), "Result of parsing Junit XML is different than expected"
 
-        assert result == expected
-
-    def test_junit_xml_parser_invalid_file(self, tmp_path):
-        d = tmp_path / "xml_tmp"
-        d.mkdir()
-        p = d / "xml_test.xml"
-        p.write_text(XML_INVALID)
-        file_reader = JunitParser(p)
+    def test_junit_xml_parser_invalid_file(self):
+        file_reader = JunitParser("test_data/XML/invalid.xml")
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 
-    def test_junit_xml_parser_file_not_found(self, tmp_path):
-        d = tmp_path / "not_found.xml"
+    def test_junit_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
-            JunitParser(d)
+            JunitParser("not_found.xml")

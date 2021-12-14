@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite failures="1" errors="0" skipped="0" tests="2" time="0.05" name="One passing scenario, one failing scenario">
+<testcase classname="One passing scenario, one failing scenario" name="Passing" time="0.05"></testcase>
+<testcase classname="One passing scenario, one failing scenario" name="Failing" time="0.05">
+  <failure message="failed Failing" type="failed">FAILURE - No connection</failure></testcase>
+</testsuite>
