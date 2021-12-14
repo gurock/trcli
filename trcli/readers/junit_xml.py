@@ -1,11 +1,14 @@
+from pathlib import Path
+from typing import Union
 from junitparser import TestCase, TestSuite, JUnitXml, Attr, JUnitXmlError
 from xml.etree import ElementTree as etree
 from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
-    PropertiesDataclass,
-    SuitesDataclass,
-    TestSuiteDataclass,
-    TestCaseDataclass,
+    TestRailCase,
+    TestRailSuite,
+    TestRailSection,
+    TestRailProperty,
+    TestRailResult,
 )
 
 TestCase.id = Attr("id")
@@ -15,7 +18,7 @@ JUnitXml.id = Attr("id")
 
 class JunitParser(FileParser):
     @classmethod
-    def _add_root_element_to_tree(cls, filepath) -> etree:
+    def _add_root_element_to_tree(cls, filepath: Union[str, Path]) -> etree:
         """
         Because some of junits have XML root as testsuites and some not.
         This way make sure that we always have testsuites root.
@@ -31,25 +34,42 @@ class JunitParser(FileParser):
         else:
             raise JUnitXmlError("Invalid format.")
 
-    def parse_file(self) -> SuitesDataclass:
-        xml = JUnitXml.fromfile(
+    def parse_file(self) -> TestRailSuite:
+        suite = JUnitXml.fromfile(
             self.filepath, parse_func=self._add_root_element_to_tree
         )
-        test_suites = []
-        for suite in xml:
+
+        test_sections = []
+        for section in suite:
             test_cases = []
             properties = []
-            for property in suite.properties():
-                properties.append(PropertiesDataclass(property.name, property.value))
-            for case in suite:
+            for prop in section.properties():
+                properties.append(TestRailProperty(prop.name, prop.value))
+            for case in section:
+
                 test_cases.append(
-                    TestCaseDataclass(case.name, case.id, case.time, case.result)
+                    TestRailCase(
+                        section.id,
+                        case.name,
+                        case.id,
+                        case.time,
+                        result=(
+                            TestRailResult(case.id, junit_result_unparsed=case.result)
+                        ),
+                    )
                 )
-            test_suites.append(
-                TestSuiteDataclass(
-                    suite.name, suite.id, suite.time, test_cases, properties
+            test_sections.append(
+                TestRailSection(
+                    section.name,
+                    suite.id,
+                    time=section.time,
+                    section_id=section.id,
+                    testcases=test_cases,
+                    properties=properties,
                 )
             )
 
-        xml_dataclass = SuitesDataclass(xml.name, xml.id, xml.time, test_suites)
-        return xml_dataclass
+        suite = TestRailSuite(
+            suite.name, suite_id=suite.id, time=suite.time, testsections=test_sections
+        )
+        return suite
