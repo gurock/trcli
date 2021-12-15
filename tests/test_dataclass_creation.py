@@ -24,7 +24,7 @@ class TestDataClassCreation:
             "Test result passed",
         ],
     )
-    def test_create_test_result(
+    def test_create_test_result_from_junit_element(
         self, junit_test_result: Element, expected_result: dict
     ):
         result_dataclass = TestRailResult(1, junit_result_unparsed=junit_test_result)

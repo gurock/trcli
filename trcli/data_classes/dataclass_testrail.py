@@ -16,9 +16,7 @@ class TestRailResult:
     elapsed: str = None
     defects: str = None
     assignedto_id: int = None
-    junit_result_unparsed: list = field(
-        default_factory=list, metadata={"serde_skip": True}
-    )
+    junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
         if self.junit_result_unparsed is not None:
