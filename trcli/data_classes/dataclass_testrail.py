@@ -1,90 +1,118 @@
 from dataclasses import dataclass, field
 from typing import List
+from serde import serialize, deserialize
 
 
+@serialize
+@deserialize
 @dataclass
-class TestCaseDataclass:
-    """Class for creating Test Rail test case"""
+class TestRailResult:
+    """Class for creating Test Rail result for cases"""
 
-    name: str
     case_id: int
-    time: str
-    results: List
-    section_id: str = None
     status_id: int = None
-
-    def __index__(self):
-        try:
-            return int(self.case_id)
-        except TypeError:
-            return 0
+    comment: str = None
+    version: str = None
+    elapsed: str = None
+    defects: str = None
+    assignedto_id: int = None
+    junit_result_unparsed: list = field(
+        default_factory=list, metadata={"serde_skip": True}
+    )
 
     def __post_init__(self):
-        results_parsed = []
-        for i in self.results:
-            results_parsed.append(
-                {"tag": i._tag, "message": i.message, "type": i.type, "text": i.text}
+        if self.junit_result_unparsed is not None:
+            self.status_id = self.calculate_status_id_from_junit_element(
+                self.junit_result_unparsed
             )
-        self.results = results_parsed
-        self.calculate_status_id()
+            self.comment = self.get_comment_from_junit_element(
+                self.junit_result_unparsed
+            )
 
-    def update_section_id(self, section_id):
-        self.section_id = section_id
-
-    def calculate_status_id(self):
+    @staticmethod
+    def calculate_status_id_from_junit_element(junit_result: list) -> int:
         """
-         Calculate id for first result
+         Calculate id for first result. In junit no result mean pass
         1 - Passed
         3 - Untested
         4 - Retest
         5 - Failed
         """
-        if len(self.results) > 0:
-            test_result_tag = self.results[0]["tag"].lower()
-            if test_result_tag == "skipped":
-                self.status_id = 4
-            elif test_result_tag == "error" or "failure":
-                self.status_id = 5
-            else:
-                self.status_id = 3
+        if len(junit_result) == 0:
+            return 1
+        test_result_tag = junit_result[0]._tag.lower()
+        if test_result_tag == "skipped":
+            return 4
+        elif test_result_tag == "error" or "failure":
+            return 5
+
+    @staticmethod
+    def get_comment_from_junit_element(junit_result: list) -> str:
+        if len(junit_result) == 0:
+            return ""
+        elif not any(
+            [junit_result[0].type, junit_result[0].message, junit_result[0].text]
+        ):
+            return ""
         else:
-            self.status_id = 1
+            return f"Type: {junit_result[0].type or ''}\nMessage: {junit_result[0].message or ''}\nText: {junit_result[0].text or ''}"
 
 
+@serialize
+@deserialize
 @dataclass
-class PropertiesDataclass:
-    """Class for creating Test Rail properties"""
+class TestRailCase:
+    """Class for creating Test Rail test case"""
+
+    section_id: int
+    title: str
+    case_id: str = None
+    estimate: str = None
+    template_id: int = None
+    type_id: int = None
+    milestone_id: int = None
+    refs: str = None
+    result: TestRailResult = None
+
+
+@serialize
+@deserialize
+@dataclass
+class TestRailProperty:
+    """Class for creating Test Rail property - run description"""
 
     name: str
     value: str
     description: str = field(init=False)
 
-    def __repr__(self) -> str:
-        return self.description
-
     def __post_init__(self):
         self.description = f"{self.name}: {self.value}"
 
 
+@serialize
+@deserialize
 @dataclass
-class TestSuiteDataclass:
-    """Class for creating Test Rail test suite"""
+class TestRailSection:
+    """Class for creating Test Rail test section"""
 
     name: str
     suite_id: str
-    time: str
-    testcases: List[TestCaseDataclass] = field(default_factory=list)
-    properties: List[PropertiesDataclass] = field(default_factory=list)
+    time: str = None
+    parent_id: int = None
+    description: str = None
+    section_id: int = None
+    testcases: List[TestRailCase] = field(default_factory=list)
+    properties: List[TestRailProperty] = field(default_factory=list)
 
-    def __post_init__(self):
-        [i.update_section_id(self.suite_id) for i in self.testcases]
 
-
+@serialize
+@deserialize
 @dataclass
-class SuitesDataclass:
-    """Class for creating XML fields"""
+class TestRailSuite:
+    """Class for creating Test Rail Suite fields"""
 
     name: str
-    id: str
-    time: str
-    testsuites: List[TestSuiteDataclass] = field(default_factory=list)
+    suite_id: str = None
+    time: str = None
+    description: str = None
+    testsections: List[TestRailSection] = field(default_factory=list)
