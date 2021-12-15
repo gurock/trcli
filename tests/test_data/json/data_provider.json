@@ -1,0 +1,42 @@
+{
+    "description": null,
+    "name": "Suite1",
+    "suite_id": "123",
+    "testsections": [
+        {
+            "name": "Skipped test",
+            "suite_id": "123",
+            "section_id": "1234",
+
+            "testcases": [
+                {
+                    "section_id": "1234",
+                    "title": "testCase1",
+                    "case_id": "666",
+                    "result": {
+                        "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                        "status_id": 4,
+                        "case_id": "666"
+                    }
+                }
+            ],
+                      "properties": [
+                {"description": "logging: True", "name": "logging", "value": "True"},
+                        {"description": "debug: False", "name": "debug", "value": "False"}
+            ]
+        },
+        {
+            "name": "Passed test",
+            "suite_id": "123",
+            "section_id": "12345",
+            "testcases": [
+                {
+                    "section_id": "12345",
+                    "title": "testCase2",
+                    "case_id": "777",
+                    "result": {"comment": "", "status_id": 1, "case_id": "777"}
+                }
+            ]
+        }
+    ]
+}

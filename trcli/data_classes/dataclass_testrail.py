@@ -2,6 +2,10 @@ from dataclasses import dataclass, field
 from typing import List
 from serde import serialize, deserialize
 
+set_default_and_skip = field(
+    default=None, metadata={"serde_skip_if": lambda v: v is None}
+)
+
 
 @serialize
 @deserialize
@@ -72,6 +76,9 @@ class TestRailCase:
     refs: str = None
     result: TestRailResult = None
 
+    def __int__(self):
+        return int(self.case_id) if not None else -1
+
 
 @serialize
 @deserialize
@@ -79,9 +86,12 @@ class TestRailCase:
 class TestRailProperty:
     """Class for creating Test Rail property - run description"""
 
-    name: str
-    value: str
-    description: str = field(init=False)
+    name: str = None
+    value: str = None
+    description: str = None
+
+    def __repr__(self) -> str:
+        return self.description
 
     def __post_init__(self):
         self.description = f"{self.name}: {self.value}"

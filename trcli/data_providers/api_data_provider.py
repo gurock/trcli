@@ -1,10 +1,9 @@
-from dataclasses import asdict
-
-from trcli.data_classes.dataclass_testrail import SuitesDataclass
+from serde.json import from_json, to_json
+from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
 class ApiPostProvider:
-    def __init__(self, env, suites_input: SuitesDataclass):
+    def __init__(self, env, suites_input: TestRailSuite):
         self.env_input = env
         self.suites_input = suites_input
         self.filename = env.file
@@ -17,12 +16,7 @@ class ApiPostProvider:
     def add_suites_data(self):
         """Return ID of project and list of bodies for adding suites"""
         return {
-            "bodies": [
-                {
-                    "name": f"{self.suites_input.name}",
-                    "description": f"{self.suites_input.name} imported from {self.filename}",
-                }
-            ],
+            "bodies": [{"name": f"{self.suites_input.name}"}],
         }
 
     def add_sections_data(self):
@@ -34,10 +28,10 @@ class ApiPostProvider:
         return {
             "bodies": [
                 {
-                    "suite_id": f"{self.suites_input.id}",
+                    "suite_id": f"{section.suite_id}",
                     "name": f"{section.name}",
                 }
-                for section in self.suites_input.testsuites
+                for section in self.suites_input.testsections
             ],
         }
 
@@ -46,15 +40,15 @@ class ApiPostProvider:
         section_id - The ID of the section the test case should be added to
         title - string The title of the test case
         """
-        sections = [sections.testcases for sections in self.suites_input.testsuites]
+        testcases = [sections.testcases for sections in self.suites_input.testsections]
         return {
             "bodies": [
                 {
-                    "section_id": f"{item.section_id}",
-                    "title": f"{item.name}",
+                    "section_id": f"{case.section_id}",
+                    "title": f"{case.title}",
                 }
-                for sublist in sections
-                for item in sublist
+                for sublist in testcases
+                for case in sublist
             ],
         }
 
@@ -67,11 +61,11 @@ class ApiPostProvider:
         return {
             "bodies": [
                 {
-                    "suite_id": f"{self.suites_input.id}",
+                    "suite_id": f"{section.suite_id}",
                     "description": f"{str(section.properties)}",
                     "case_ids": [*map(int, section.testcases)],
                 }
-                for section in self.suites_input.testsuites
+                for section in self.suites_input.testsections
             ],
         }
 
@@ -79,18 +73,18 @@ class ApiPostProvider:
         """
         run_id - The ID of the test run the results should be added to
         """
-        sections = [sections.testcases for sections in self.suites_input.testsuites]
+        testcases = [sections.testcases for sections in self.suites_input.testsections]
         return {
             "run_id": self.env_input.run_id,
             "bodies": {
                 "results": [
                     {
-                        "case_id": item.case_id,
-                        "status_id": item.status_id,
+                        "case_id": case.result.case_id,
+                        "status_id": case.result.status_id,
                         "comment": "",
                     }
-                    for sublist in sections
-                    for item in sublist
+                    for sublist in testcases
+                    for case in sublist
                 ],
             },
         }

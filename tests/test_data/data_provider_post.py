@@ -1,10 +1,7 @@
-from trcli.data_classes.dataclass_testrail import (
-    SuitesDataclass,
-    TestSuiteDataclass,
-    TestCaseDataclass,
-    PropertiesDataclass,
-)
-from junitparser import Skipped, Failure, Error
+import json
+from pathlib import Path
+from trcli.data_classes.dataclass_testrail import TestRailSuite
+from serde.json import from_json
 
 
 class Environment:
@@ -19,105 +16,46 @@ class Environment:
 
 
 env = Environment()
-failed_result = Failure("This test is failed")
-failed_result.text = "Error reading file on line 0"
 
-skipped_result = Skipped("This test is skipped")
-skipped_result.text = "skipped by user"
+file_json = open(Path(__file__).parent / "json/data_provider.json")
+json_string = json.dumps(json.load(file_json))
+test_input = from_json(TestRailSuite, json_string)
 
-error_result = Error("Unbable to run test - error")
-error_result.text = "Error in test setup line 10"
 
-test_input = SuitesDataclass(
-    name="Suites1",
-    id=1,
-    time="10",
-    testsuites=[
-        TestSuiteDataclass(
-            name="TestSuite1",
-            suite_id=2,
-            time="5",
-            testcases=[
-                TestCaseDataclass(
-                    name="testcase1",
-                    case_id=3,
-                    time="5",
-                    results=[],
-                ),
-            ],
-            properties=[
-                PropertiesDataclass("logging", "true"),
-                PropertiesDataclass("debug", "false"),
-            ],
-        ),
-        TestSuiteDataclass(
-            name="TestSuite2",
-            suite_id=4,
-            time="5",
-            testcases=[
-                TestCaseDataclass(
-                    name="testcase21_skipped",
-                    case_id=5,
-                    time="5",
-                    results=[skipped_result],
-                ),
-                TestCaseDataclass(
-                    name="testcase22_failed",
-                    case_id=6,
-                    time="5",
-                    results=[failed_result],
-                ),
-                TestCaseDataclass(
-                    name="testcase23_error",
-                    case_id=7,
-                    time="5",
-                    results=[error_result],
-                ),
-            ],
-        ),
-    ],
-)
-
-post_suite_bodies = {
-    "bodies": [{"name": "Suites1", "description": "Suites1 imported from File.xml"}]
-}
+post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
 
 post_section_bodies = {
     "bodies": [
-        {"suite_id": "1", "name": "TestSuite1"},
-        {"suite_id": "1", "name": "TestSuite2"},
+        {"name": "Skipped test", "suite_id": "123"},
+        {"name": "Passed test", "suite_id": "123"},
     ]
 }
 
 post_cases_bodies = {
     "bodies": [
-        {"section_id": "2", "title": "testcase1"},
-        {"section_id": "4", "title": "testcase21_skipped"},
-        {"section_id": "4", "title": "testcase22_failed"},
-        {"section_id": "4", "title": "testcase23_error"},
+        {"section_id": "1234", "title": "testCase1"},
+        {"section_id": "12345", "title": "testCase2"},
     ]
 }
 
 post_run_bodies = {
     "bodies": [
         {
-            "suite_id": "1",
-            "description": "[logging: true, debug: false]",
-            "case_ids": [3],
+            "case_ids": [666],
+            "description": "[logging: True, debug: False]",
+            "suite_id": "123",
         },
-        {"suite_id": "1", "description": "[]", "case_ids": [5, 6, 7]},
+        {"case_ids": [777], "description": "[]", "suite_id": "123"},
     ]
 }
 
 
 post_results_for_cases_bodies = {
-    "run_id": "run id 1",
     "bodies": {
         "results": [
-            {"case_id": 3, "status_id": 1, "comment": ""},
-            {"case_id": 5, "status_id": 4, "comment": ""},
-            {"case_id": 6, "status_id": 5, "comment": ""},
-            {"case_id": 7, "status_id": 5, "comment": ""},
+            {"case_id": "666", "comment": "", "status_id": 4},
+            {"case_id": "777", "comment": "", "status_id": 1},
         ]
     },
+    "run_id": "run id 1",
 }
