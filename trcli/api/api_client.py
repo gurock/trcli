@@ -65,18 +65,18 @@ class APIClient:
         url = self.__url + uri
         password = self.__get_password()
         auth = HTTPBasicAuth(username=self.username, password=password)
-        headers = {"Content - Type": "application/json"}
+        headers = {"Content-Type": "application/json"}
 
         for i in range(self.retries + 1):
             error_message = ""
             try:
                 if method == "POST":
                     response = requests.post(
-                        url=url, auth=auth, data=payload, timeout=self.timeout, headers=headers
+                        url=url, auth=auth, json=payload, timeout=self.timeout, headers=headers
                     )
                 else:
                     response = requests.get(
-                        url=url, auth=auth, data=payload, timeout=self.timeout
+                        url=url, auth=auth, json=payload, timeout=self.timeout
                     )
             except Timeout:
                 error_message = FAULT_MAPPING["no_response_from_host"]
