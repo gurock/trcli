@@ -112,3 +112,4 @@ Available parsers:
 
 * XML Junit files compatibile with Jenkins and pytest reporting schemas
 * ...
+

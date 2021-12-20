@@ -1,4 +1,5 @@
 from setuptools import setup
+from trcli import __version__
 
 setup(
     name="trcli",
