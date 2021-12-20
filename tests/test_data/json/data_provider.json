@@ -1,22 +1,22 @@
 {
     "description": null,
     "name": "Suite1",
-    "suite_id": "123",
+    "suite_id": null,
     "testsections": [
         {
             "name": "Skipped test",
-            "suite_id": "123",
-            "section_id": "1234",
+            "suite_id": null,
+            "section_id": null,
 
             "testcases": [
                 {
-                    "section_id": "1234",
+                    "section_id": null,
                     "title": "testCase1",
-                    "case_id": "666",
+                    "case_id": 60,
                     "result": {
                         "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
                         "status_id": 4,
-                        "case_id": "666"
+                        "case_id": 60
                     }
                 }
             ],
@@ -27,14 +27,14 @@
         },
         {
             "name": "Passed test",
-            "suite_id": "123",
-            "section_id": "12345",
+            "suite_id": null,
+            "section_id": null,
             "testcases": [
                 {
-                    "section_id": "12345",
+                    "section_id": null,
                     "title": "testCase2",
-                    "case_id": "777",
-                    "result": {"comment": "", "status_id": 1, "case_id": "777"}
+                    "case_id": null,
+                    "result": {"comment": "", "status_id": 1, "case_id": null}
                 }
             ]
         }

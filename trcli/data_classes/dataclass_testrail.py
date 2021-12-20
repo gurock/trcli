@@ -77,7 +77,10 @@ class TestRailCase:
     result: TestRailResult = None
 
     def __int__(self):
-        return int(self.case_id) if not None else -1
+        return int(self.case_id) if self.case_id is not None else -1
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 @serialize
@@ -104,13 +107,16 @@ class TestRailSection:
     """Class for creating Test Rail test section"""
 
     name: str
-    suite_id: str
+    suite_id: int
     time: str = None
     parent_id: int = None
     description: str = None
     section_id: int = None
     testcases: List[TestRailCase] = field(default_factory=list)
     properties: List[TestRailProperty] = field(default_factory=list)
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 @serialize
@@ -120,7 +126,7 @@ class TestRailSuite:
     """Class for creating Test Rail Suite fields"""
 
     name: str
-    suite_id: str = None
+    suite_id: int = None
     time: str = None
     description: str = None
     testsections: List[TestRailSection] = field(default_factory=list)

@@ -31,21 +31,16 @@ post_section_bodies = {
     ]
 }
 
-post_cases_bodies = {
-    "bodies": [
-        {"section_id": "1234", "title": "testCase1"},
-        {"section_id": "12345", "title": "testCase2"},
-    ]
-}
+post_cases_bodies = {"bodies": [{"section_id": "12345", "title": "testCase2"}]}
 
 post_run_bodies = {
     "bodies": [
         {
-            "case_ids": [666],
+            "case_ids": [60],
             "description": "[logging: True, debug: False]",
             "suite_id": "123",
         },
-        {"case_ids": [777], "description": "[]", "suite_id": "123"},
+        {"case_ids": [1234567], "description": "[]", "suite_id": "123"},
     ]
 }
 
@@ -53,8 +48,8 @@ post_run_bodies = {
 post_results_for_cases_bodies = {
     "bodies": {
         "results": [
-            {"case_id": "666", "comment": "", "status_id": 4},
-            {"case_id": "777", "comment": "", "status_id": 1},
+            {"case_id": 60, "comment": "", "status_id": 4},
+            {"case_id": 1234567, "comment": "", "status_id": 1},
         ]
     },
     "run_id": "run id 1",
