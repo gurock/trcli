@@ -6,10 +6,11 @@ from click.testing import CliRunner
 from requests_mock import Mocker
 from serde.json import from_json
 from tests.helpers.api_client_helpers import TEST_RAIL_URL, create_url
-from trcli.api.api_request_handler import ApiRequestHandler
+from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.constants import ProjectErrors
 
 
 @pytest.fixture(scope="function")
@@ -31,20 +32,24 @@ class TestAPIHandler:
     ):
         mocked_response = {
             "projects": [
-                {"id": 1, "name": "DataHub"},
-                {"id": 2, "name": "Test Project"},
-                {"id": 3, "name": "DataHub"},
+                {"id": 1, "name": "DataHub", "suite_mode": 1},
+                {"id": 2, "name": "Test Project", "suite_mode": 1},
+                {"id": 3, "name": "DataHub", "suite_mode": 1},
             ]
         }
         requests_mock.get(create_url("get_projects"), json=mocked_response)
-        assert api_request_handler.get_project_id("Test Project") == (2, "")
-        assert api_request_handler.get_project_id("DataHub") == (
-            -1,
-            "Given project name matches more than one result.",
+        assert api_request_handler.get_project_id("Test Project") == ProjectData(project_id=2,
+                                                                                 suite_mode=1,
+                                                                                 error_message="")
+        assert api_request_handler.get_project_id("DataHub") == ProjectData(
+            project_id=ProjectErrors.multiple_project_same_name,
+            suite_mode=-1,
+            error_message="Given project name matches more than one result.",
         )
-        assert api_request_handler.get_project_id("Some project") == (
-            -2,
-            "Some project project doesn't exists.",
+        assert api_request_handler.get_project_id("Some project") == ProjectData(
+            project_id=ProjectErrors.not_existing_project,
+            suite_mode=-1,
+            error_message="Some project project doesn't exists.",
         )
 
     def test_check_suite_exists(
@@ -88,22 +93,22 @@ class TestAPIHandler:
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
         project_id = 3
-        mocked_response = [
-            {
+        mocked_response = {"sections":
+            [{
                 "id": 0,
                 "suite_id": 4,
                 "name": "Skipped test",
-            },
-        ]
+            }]}
 
         requests_mock.get(
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
+
         assert (
             len(api_request_handler.check_missing_section_id(project_id)[0]) == 2
         ), "There should be one missing section"
 
-        mocked_response[0]["id"] = 1234
+        mocked_response["sections"][0]["id"] = 1234
         requests_mock.get(
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
@@ -161,6 +166,7 @@ class TestAPIHandler:
 
     def test_add_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
+        run_name = "Test run name"
 
         mocked_response = {
             "description": None,
@@ -170,7 +176,7 @@ class TestAPIHandler:
         }
 
         requests_mock.post(create_url(f"add_run/{project_id}"), json=mocked_response)
-        resources_added, error = api_request_handler.add_run(project_id)
+        resources_added, error = api_request_handler.add_run(project_id, run_name)
         assert True  # TODO Fix tests after fixing add_run
 
     def test_add_results(self, api_request_handler: ApiRequestHandler, requests_mock):

@@ -4,7 +4,16 @@ from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiPostProvider
+from trcli.constants import ProjectErrors
 from typing import List
+from dataclasses import dataclass
+
+
+@dataclass
+class ProjectData:
+    project_id: int
+    suite_mode: int
+    error_message: str
 
 
 class ApiRequestHandler:
@@ -19,28 +28,37 @@ class ApiRequestHandler:
         self.data_provider = ApiPostProvider(env, suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
 
-    def get_project_id(self, project_name: str) -> (int, str):
+    def get_project_id(self, project_name: str) -> ProjectData:
         """
         Send get_projects with project name
         :project_name: Project name
-        :returns: Tuple with project id and error string. Project id will be set to -1 if fail.
+        :returns: ProjectData
         """
-
         response = self.client.send_get("get_projects")
         if not response.error_message:
             available_projects = [
-                project["id"]
+                project
                 for project in response.response_text["projects"]
                 if project["name"] == project_name
             ]
             if len(available_projects) == 1:
-                return available_projects[0], response.error_message
+                return (
+                    ProjectData(project_id=int(available_projects[0]["id"]),
+                                suite_mode=int(available_projects[0]["suite_mode"]),
+                                error_message=response.error_message)
+                )
             elif len(available_projects) > 1:
-                return -1, "Given project name matches more than one result."
+                return ProjectData(project_id=ProjectErrors.multiple_project_same_name,
+                                   suite_mode=-1,
+                                   error_message="Given project name matches more than one result.")
             else:
-                return -2, f"{project_name} project doesn't exists."
+                return ProjectData(project_id=ProjectErrors.not_existing_project,
+                                   suite_mode=-1,
+                                   error_message=f"{project_name} project doesn't exists.")
         else:
-            return -3, response.error_message
+            return ProjectData(project_id=ProjectErrors.other_error,
+                               suite_mode=-1,
+                               error_message=response.error_message)
 
     def check_suite_id(self, project_id: int) -> (bool, ""):
         """
@@ -102,7 +120,7 @@ class ApiRequestHandler:
             return (
                 list(
                     set(sections)
-                    - set([section.get("id") for section in response.response_text])
+                    - set([section.get("id") for section in response.response_text["sections"]])
                 ),
                 response.error_message,
             )
@@ -137,6 +155,31 @@ class ApiRequestHandler:
         self.data_provider.update_data(section_data=returned_resources)
         return returned_resources, error
 
+    def check_missing_test_cases_ids(self, project_id):
+        """
+        Check what test cases id's are missing in DataProvider.
+        :project_id: project_id
+        :returns: Tuple with list of dict created resources and error string.
+        """
+        suite_id = self.suites_data_from_provider.suite_id
+        test_cases = [
+            test_case["case_id"]
+            for sections in self.suites_data_from_provider.testsections
+            for test_case in sections.testcases
+        ]
+
+        response = self.client.send_get(f"get_cases/{project_id}&suite_id={suite_id}")
+        if not response.error_message:
+            return (
+                list(
+                    set(test_cases)
+                    - set([test_case.get("id") for test_case in response.response_text["cases"]])
+                ),
+                response.error_message,
+            )
+        else:
+            return [], response.error_message
+
     def add_case(self) -> (List[dict], str):
         """
         Add cases that doesn't have ID in DataProvider.
@@ -166,12 +209,13 @@ class ApiRequestHandler:
         self.data_provider.update_data(case_data=returned_resources)
         return returned_resources, error
 
-    def add_run(self, project_id: int) -> (List[dict], str):
+    def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
         suite_id = self.suites_data_from_provider.suite_id
         # TODO proper body should be already returned by add_run in DataProvider - To fix in DataProvider
         # TODO DataProvider will set case_id to -1 if not found in test suite. In full flow this shouldn't happen but dataclass or dataprovider should handle this
         add_run_data = self.data_provider.add_run()
         body = {
+            "name": run_name,
             "suite_id": suite_id,
             "description": " ".join(
                 [single_run["description"] for single_run in add_run_data["bodies"]]
