@@ -242,6 +242,3 @@ class ApiRequestHandler:
         body = {"run_id": run_id}  # TODO handle by dataprovider?
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
-
-
-# TODO add check mising test cases ids
