@@ -1,12 +1,11 @@
-from trcli.api.api_client import APIClientResult
+from trcli.api.api_client import APIClientResult, APIClient
 
-TEST_RAIL_URL = "https://FakeTestRail.io"
-SUFFIX_API_VERSION = "/index.php?/api/v2/"
+TEST_RAIL_URL = "https://FakeTestRail.io/"
 
 
 def create_url(resource: str):
     """Create url based on given resource and predefined host and API version suffix"""
-    return TEST_RAIL_URL + SUFFIX_API_VERSION + resource
+    return TEST_RAIL_URL + APIClient.SUFFIX_API_V2_VERSION + resource
 
 
 def check_response(

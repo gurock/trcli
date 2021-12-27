@@ -25,7 +25,7 @@ class APIClient:
     Class to be used for basic communication over API.
     """
 
-    SUFFIX_API_VERSION = "index.php?/api/v2/"
+    SUFFIX_API_V2_VERSION = "index.php?/api/v2/"
     RETRY_ON = [429, 500]
 
     def __init__(self, host_name: str, retries: int = 3, timeout: int = 30):
@@ -36,7 +36,7 @@ class APIClient:
         self.timeout = timeout
         if not host_name.endswith("/"):
             host_name = host_name + "/"
-        self.__url = host_name + self.SUFFIX_API_VERSION
+        self.__url = host_name + self.SUFFIX_API_V2_VERSION
 
     def send_get(self, uri: str) -> APIClientResult:
         """
@@ -72,7 +72,11 @@ class APIClient:
             try:
                 if method == "POST":
                     response = requests.post(
-                        url=url, auth=auth, json=payload, timeout=self.timeout, headers=headers
+                        url=url,
+                        auth=auth,
+                        json=payload,
+                        timeout=self.timeout,
+                        headers=headers,
                     )
                 else:
                     response = requests.get(
