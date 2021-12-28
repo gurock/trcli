@@ -12,10 +12,7 @@ class Environment:
         self.title = "Test run title"
         self.suite_id = "Suite id 1"
         self.run_id = "run id 1"
-        self.case_id = [66, 77, 88]
 
-
-env = Environment()
 
 file_json = open(Path(__file__).parent / "json/data_provider.json")
 json_string = json.dumps(json.load(file_json))
@@ -34,23 +31,18 @@ post_section_bodies = {
 post_cases_bodies = {"bodies": [{"section_id": "12345", "title": "testCase2"}]}
 
 post_run_bodies = {
-    "bodies": [
-        {
-            "case_ids": [60],
-            "description": "[logging: True, debug: False]",
-            "suite_id": "123",
-        },
-        {"case_ids": [1234567], "description": "[]", "suite_id": "123"},
-    ]
+    "description": "logging: True debug: False",
+    "name": "test run",
+    "suite_id": "123",
 }
 
-
-post_results_for_cases_bodies = {
-    "bodies": {
-        "results": [
-            {"case_id": 60, "comment": "", "status_id": 4},
-            {"case_id": 1234567, "comment": "", "status_id": 1},
-        ]
-    },
-    "run_id": "run id 1",
+post_results_for_cases_body = {
+    "results": [
+        {
+            "case_id": 60,
+            "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+            "status_id": 4,
+        },
+        {"case_id": 1234567, "comment": "", "status_id": 1},
+    ]
 }

@@ -2,10 +2,6 @@ from dataclasses import dataclass, field
 from typing import List
 from serde import serialize, deserialize
 
-set_default_and_skip = field(
-    default=None, metadata={"serde_skip_if": lambda v: v is None}
-)
-
 
 @serialize
 @deserialize
