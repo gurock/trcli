@@ -1,9 +1,7 @@
-import itertools
-
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.data_providers.api_data_provider import ApiPostProvider
+from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import ProjectErrors
 from typing import List
 from dataclasses import dataclass
@@ -17,6 +15,8 @@ class ProjectData:
 
 
 class ApiRequestHandler:
+    """Sends requests based on DataProvider bodies"""
+
     def __init__(
         self,
         env: Environment,
@@ -25,7 +25,7 @@ class ApiRequestHandler:
     ):
         self.env = env
         self.client = api_client
-        self.data_provider = ApiPostProvider(env, suites_data)
+        self.data_provider = ApiDataProvider(env, suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
 
     def get_project_id(self, project_name: str) -> ProjectData:
@@ -42,25 +42,31 @@ class ApiRequestHandler:
                 if project["name"] == project_name
             ]
             if len(available_projects) == 1:
-                return (
-                    ProjectData(project_id=int(available_projects[0]["id"]),
-                                suite_mode=int(available_projects[0]["suite_mode"]),
-                                error_message=response.error_message)
+                return ProjectData(
+                    project_id=int(available_projects[0]["id"]),
+                    suite_mode=int(available_projects[0]["suite_mode"]),
+                    error_message=response.error_message,
                 )
             elif len(available_projects) > 1:
-                return ProjectData(project_id=ProjectErrors.multiple_project_same_name,
-                                   suite_mode=-1,
-                                   error_message="Given project name matches more than one result.")
+                return ProjectData(
+                    project_id=ProjectErrors.multiple_project_same_name,
+                    suite_mode=-1,
+                    error_message="Given project name matches more than one result.",
+                )
             else:
-                return ProjectData(project_id=ProjectErrors.not_existing_project,
-                                   suite_mode=-1,
-                                   error_message=f"{project_name} project doesn't exists.")
+                return ProjectData(
+                    project_id=ProjectErrors.not_existing_project,
+                    suite_mode=-1,
+                    error_message=f"{project_name} project doesn't exists.",
+                )
         else:
-            return ProjectData(project_id=ProjectErrors.other_error,
-                               suite_mode=-1,
-                               error_message=response.error_message)
+            return ProjectData(
+                project_id=ProjectErrors.other_error,
+                suite_mode=-1,
+                error_message=response.error_message,
+            )
 
-    def check_suite_id(self, project_id: int) -> (bool, ""):
+    def check_suite_id(self, project_id: int) -> (bool, str):
         """
         Check if suite from DataProvider exist using get_suites endpoint
         :project_id: project id
@@ -73,6 +79,29 @@ class ApiRequestHandler:
             return (True, "") if suite_id in available_suites else (False, "")
         else:
             return None, response.error_message
+
+    def get_suite_ids(self, project_id: int) -> (List[int], str):
+        """Get suite IDs for requested project_id.
+        : project_id: project id
+        : returns: tuple with list of suite ids and error string"""
+        available_suites = []
+        returned_resources = []
+        error_message = ""
+        response = self.client.send_get(f"get_suites/{project_id}")
+        if not response.error_message:
+            for suite in response.response_text:
+                available_suites.append(suite["id"])
+                returned_resources.append(
+                    {
+                        "suite_id": suite["id"],
+                        "name": suite["name"],
+                    }
+                )
+        else:
+            error_message = response.error_message
+
+        self.data_provider.update_data(suite_data=returned_resources)
+        return available_suites, error_message
 
     def add_suite(self, project_id: int) -> (List[dict], str):
         """
@@ -102,11 +131,11 @@ class ApiRequestHandler:
         self.data_provider.update_data(suite_data=returned_resources)
         return returned_resources, error
 
-    def check_missing_section_id(self, project_id: int) -> (List[dict], str):
+    def check_missing_section_id(self, project_id: int) -> (List[int], str):
         """
         Check what section id's are missing in DataProvider.
         :project_id: project_id
-        :returns: Tuple with list of dict created resources and error string.
+        :returns: Tuple with list missing section ID and error string.
         """
         suite_id = self.suites_data_from_provider.suite_id
         sections = [
@@ -120,7 +149,12 @@ class ApiRequestHandler:
             return (
                 list(
                     set(sections)
-                    - set([section.get("id") for section in response.response_text["sections"]])
+                    - set(
+                        [
+                            section.get("id")
+                            for section in response.response_text["sections"]
+                        ]
+                    )
                 ),
                 response.error_message,
             )
@@ -155,17 +189,18 @@ class ApiRequestHandler:
         self.data_provider.update_data(section_data=returned_resources)
         return returned_resources, error
 
-    def check_missing_test_cases_ids(self, project_id):
+    def check_missing_test_cases_ids(self, project_id: int) -> (List[int], str):
         """
         Check what test cases id's are missing in DataProvider.
         :project_id: project_id
-        :returns: Tuple with list of dict created resources and error string.
+        :returns: Tuple with list test case ID missing and error string.
         """
         suite_id = self.suites_data_from_provider.suite_id
         test_cases = [
             test_case["case_id"]
             for sections in self.suites_data_from_provider.testsections
             for test_case in sections.testcases
+            if test_case.case_id is not None
         ]
 
         response = self.client.send_get(f"get_cases/{project_id}&suite_id={suite_id}")
@@ -173,7 +208,12 @@ class ApiRequestHandler:
             return (
                 list(
                     set(test_cases)
-                    - set([test_case.get("id") for test_case in response.response_text["cases"]])
+                    - set(
+                        [
+                            test_case.get("id")
+                            for test_case in response.response_text["cases"]
+                        ]
+                    )
                 ),
                 response.error_message,
             )
@@ -184,7 +224,6 @@ class ApiRequestHandler:
         """
         Add cases that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
-        :project_id: project_id
         :returns: Tuple with list of dict created resources and error string.
         """
         add_case_data = self.data_provider.add_cases()
@@ -210,35 +249,34 @@ class ApiRequestHandler:
         return returned_resources, error
 
     def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
-        suite_id = self.suites_data_from_provider.suite_id
-        # TODO proper body should be already returned by add_run in DataProvider - To fix in DataProvider
-        # TODO DataProvider will set case_id to -1 if not found in test suite. In full flow this shouldn't happen but dataclass or dataprovider should handle this
-        add_run_data = self.data_provider.add_run()
-        body = {
-            "name": run_name,
-            "suite_id": suite_id,
-            "description": " ".join(
-                [single_run["description"] for single_run in add_run_data["bodies"]]
-            ),
-            "case_ids": list(
-                itertools.chain(
-                    *[single_run["case_ids"] for single_run in add_run_data["bodies"]]
-                )
-            ),
-        }
-        response = self.client.send_post(f"add_run/{project_id}", body)
+        """
+        Creates a new test run.
+        :project_id: project_id
+        :run_name: run name
+        :returns: Tuple with run id and error string.
+        """
+        add_run_data = self.data_provider.add_run(run_name)
+        response = self.client.send_post(f"add_run/{project_id}", add_run_data)
         return response.response_text.get("id"), response.error_message
 
-    def add_results(self, run_id: int) -> (List[dict], str):
-        # TODO proper body should be already returned by add_run in DataProvider - To fix in DataProvider
-        # TODO DataProvider will set case_id to NONE if not found in test suite. In full flow this shouldn't happen but dataclass or dataprovider should handle this
+    def add_results(self, run_id: int) -> (dict, str):
+        """
+        Adds one or more new test results.
+        :run_id: run id
+        :returns: Tuple with dict created resources and error string.
+        """
         add_results_data = self.data_provider.add_results_for_cases()
-        body = {"results": add_results_data["bodies"]["results"]}
-
-        response = self.client.send_post(f"add_results_for_cases/{run_id}", body)
+        response = self.client.send_post(
+            f"add_results_for_cases/{run_id}", add_results_data
+        )
         return response.response_text, response.error_message
 
-    def close_run(self, run_id: int):
-        body = {"run_id": run_id}  # TODO handle by dataprovider?
+    def close_run(self, run_id: int) -> (dict, str):
+        """
+        Closes an existing test run and archives its tests & results.
+        :run_id: run id
+        :returns: Tuple with dict created resources and error string.
+        """
+        body = {"run_id": run_id}
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
