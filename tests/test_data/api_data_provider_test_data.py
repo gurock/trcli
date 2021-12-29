@@ -3,21 +3,9 @@ from pathlib import Path
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from serde.json import from_json
 
-
-class Environment:
-    def __init__(self):
-        self.file = "File.xml"
-        self.project = "Project 1"
-        self.project_id = "3"
-        self.title = "Test run title"
-        self.suite_id = "Suite id 1"
-        self.run_id = "run id 1"
-
-
 file_json = open(Path(__file__).parent / "json/data_provider.json")
 json_string = json.dumps(json.load(file_json))
 test_input = from_json(TestRailSuite, json_string)
-
 
 post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
 
@@ -44,5 +32,6 @@ post_results_for_cases_body = {
             "status_id": 4,
         },
         {"case_id": 1234567, "comment": "", "status_id": 1},
+        {"case_id": 4, "comment": "", "status_id": 1},
     ]
 }

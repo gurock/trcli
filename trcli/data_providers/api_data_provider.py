@@ -8,10 +8,8 @@ class ApiDataProvider:
     ApiPostProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
     """
 
-    def __init__(self, env: Environment, suites_input: TestRailSuite):
-        self.env_input = env
+    def __init__(self, suites_input: TestRailSuite):
         self.suites_input = suites_input
-        self.filename = env.file
 
     def add_suites_data(self):
         """Return list of bodies for adding suites"""

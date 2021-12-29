@@ -5,8 +5,7 @@ import pytest
 
 @pytest.fixture(scope="function")
 def post_data_provider():
-    env = Environment()
-    yield ApiDataProvider(env, test_input)
+    yield ApiDataProvider(test_input)
 
 
 class TestApiDataProvider:
@@ -15,21 +14,17 @@ class TestApiDataProvider:
             post_data_provider.add_suites_data() == post_suite_bodies
         ), "Adding suite data doesn't match expected"
 
-    def test_check_if_returns_items_witout_id(self, post_data_provider):
+    def test_check_if_returns_items_without_id(self, post_data_provider):
         """Check if data providers returns data only for items with missing IDs. Numbers correspond to data in
         test_data"""
         missing_sections = 2
         missing_cases = 1
-        all_cases = 2
         assert (
             len(post_data_provider.add_sections_data()["bodies"]) == missing_sections
         ), f"Adding suite data doesn't match expected {missing_sections}"
         assert (
             len(post_data_provider.add_cases()["bodies"]) == 1
         ), f"Adding cases data doesn't match expected {missing_cases}"
-        assert (
-            len(post_data_provider.add_cases(return_all_items=True)["bodies"]) == 2
-        ), f"Adding cases with return_all_items flag should match {all_cases}"
 
     def test_post_section(self, post_data_provider):
         """Check body for adding sections"""
@@ -80,3 +75,15 @@ class TestApiDataProvider:
         assert (
             post_data_provider.add_results_for_cases() == post_results_for_cases_body
         ), "Adding results data doesn't match expected body"
+
+    def test_return_all_items_flag(self, post_data_provider):
+        all_sections = 3
+        all_cases = 3
+        assert (
+            len(post_data_provider.add_sections_data(return_all_items=True)["bodies"])
+            == all_sections
+        ), f"Adding cases with return_all_items flag should match {all_sections}"
+        assert (
+            len(post_data_provider.add_cases(return_all_items=True)["bodies"])
+            == all_cases
+        ), f"Adding cases with return_all_items flag should match {all_cases}"

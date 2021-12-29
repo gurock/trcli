@@ -37,6 +37,19 @@
                     "result": {"comment": "", "status_id": 1, "case_id": null}
                 }
             ]
+        },
+        {
+            "name": "Filled test",
+            "suite_id": 1,
+            "section_id": 2,
+            "testcases": [
+                {
+                    "section_id": 2,
+                    "title": "testCase2",
+                    "case_id": 4,
+                    "result": {"comment": "", "status_id": 1, "case_id": 4}
+                }
+            ]
         }
     ]
 }
