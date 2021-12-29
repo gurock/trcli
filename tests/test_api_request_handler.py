@@ -1,12 +1,11 @@
 import json
-from pathlib import Path
-
+import requests
 import pytest
+from pathlib import Path
 from serde.json import from_json
 from tests.helpers.api_client_helpers import TEST_RAIL_URL, create_url
 from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
-from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.constants import ProjectErrors
 
@@ -14,17 +13,14 @@ from trcli.constants import ProjectErrors
 @pytest.fixture(scope="function")
 def api_request_handler():
     api_client = APIClient(host_name=TEST_RAIL_URL)
-    env = Environment()
-    env.project = "Test Project"
     file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
     json_string = json.dumps(json.load(file_json))
     test_input = from_json(TestRailSuite, json_string)
-    api_request = ApiRequestHandler(env, api_client, test_input)
+    api_request = ApiRequestHandler(api_client, test_input)
     yield api_request
 
 
 class TestApiRequestHandler:
-    @pytest.mark.api_client
     def test_return_project(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -62,12 +58,12 @@ class TestApiRequestHandler:
         assert api_request_handler.check_suite_id(project_id) == (
             True,
             "",
-        ), "Invalid response from check_suite_id"
+        ), "Suite id in test data should exist in mocked response."
         api_request_handler.suites_data_from_provider.suite_id = 6
         assert api_request_handler.check_suite_id(project_id) == (
             False,
             "",
-        ), "Invalid response from check_suite_id"
+        ), "Given suite id should NOT exist in mocked response."
 
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
@@ -81,21 +77,20 @@ class TestApiRequestHandler:
         api_request_handler.suites_data_from_provider.suite_id = None
         api_request_handler.suites_data_from_provider.name = None
         requests_mock.post(create_url(f"add_suite/{project_id}"), json=mocked_response)
-        resources_added, error = api_request_handler.add_suite(project_id)
+        resources_added, error = api_request_handler.add_suites(project_id)
 
         assert (
             resources_added[0]["name"] == mocked_response["name"]
-        ), "Invalid response from add_suite"
+        ), "Added suite name doesn't match mocked response name."
         assert (
             resources_added[0]["suite_id"] == mocked_response["id"]
-        ), "Invalid response from add_suite"
+        ), "Added suite id doesn't match mocked response id."
         assert error == "", "Error occurred in add_suite"
 
         assert (
             api_request_handler.suites_data_from_provider.suite_id
-            == mocked_response["id"],
-            "Invalid response from add_suite",
-        )
+            == mocked_response["id"]
+        ), "Added suite id in DataProvider doesn't match mocked response id."
 
     def test_check_missing_sections(
         self, api_request_handler: ApiRequestHandler, requests_mock
@@ -116,8 +111,8 @@ class TestApiRequestHandler:
         )
 
         assert (
-            len(api_request_handler.check_missing_section_id(project_id)[0]) == 2
-        ), "There should be one missing section"
+            len(api_request_handler.check_missing_section_ids(project_id)[0]) == 2
+        ), "There should be two missing section"
 
         mocked_response["sections"][0]["id"] = 1234
         requests_mock.get(
@@ -125,8 +120,8 @@ class TestApiRequestHandler:
         )
 
         assert (
-            len(api_request_handler.check_missing_section_id(project_id)[0]) == 1
-        ), "There should be no missing sections"
+            len(api_request_handler.check_missing_section_ids(project_id)[0]) == 1
+        ), "There should be one missing section"
 
     def test_add_sections(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
@@ -139,17 +134,22 @@ class TestApiRequestHandler:
         requests_mock.post(
             create_url(f"add_section/{project_id}"), json=mocked_response
         )
-        resources_added, error = api_request_handler.add_section(project_id)
+        resources_added, error = api_request_handler.add_sections(project_id)
 
         assert (
             resources_added[0]["name"] == mocked_response["name"]
-        ), "Invalid response from add_section"
+        ), "Added section name doesn't match mocked response name."
         assert (
             resources_added[0]["section_id"] == mocked_response["id"]
-        ), "Invalid response from add_section"
+        ), "Added section id doesn't match mocked response id."
         assert error == "", "Error occurred in add_section"
 
-    def test_add_section_and_case(
+        assert (
+            api_request_handler.suites_data_from_provider.testsections[1].section_id
+            == mocked_response["id"]
+        ), "Added section id in DataProvider doesn't match mocked response id."
+
+    def test_add_section_and_cases(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
         project_id = 3
@@ -158,29 +158,48 @@ class TestApiRequestHandler:
             "suite_id": 4,
             "name": "Passed test",
         }
-        mocked_response_for_case = {
+
+        mocked_response_for_case_1 = {
+            "id": 4,
+            "suite_id": 4,
+            "section_id": 1234,
+            "title": "testCase2",
+        }
+
+        mocked_response_for_case_2 = {
             "id": 3,
             "suite_id": 4,
             "section_id": 12345,
-            "title": "testCase2",
+            "title": "testCase3",
         }
 
         requests_mock.post(
             create_url(f"add_section/{project_id}"), json=mocked_response_for_section
         )
         requests_mock.post(
-            create_url(f"add_case/{mocked_response_for_case['section_id']}"),
-            json=mocked_response_for_case,
+            create_url(f"add_case/{mocked_response_for_case_1['section_id']}"),
+            json=mocked_response_for_case_1,
         )
-        api_request_handler.add_section(project_id)
-        resources_added, error = api_request_handler.add_case()
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case_2['section_id']}"),
+            json=mocked_response_for_case_2,
+        )
 
-        assert (
-            resources_added[0]["title"] == mocked_response_for_case["title"]
-        ), "Invalid response from add_case"
-        assert (
-            resources_added[0]["case_id"] == mocked_response_for_case["id"]
-        ), "Invalid response from add_case"
+        api_request_handler.add_sections(project_id)
+        resources_added, error = api_request_handler.add_cases()
+
+        assert sorted([case["title"] for case in resources_added]) == sorted(
+            [
+                mocked_response_for_case_1["title"],
+                mocked_response_for_case_2["title"],
+            ]
+        ), "Added case title doesn't match mocked response title"
+        assert sorted([case["case_id"] for case in resources_added]) == sorted(
+            [
+                mocked_response_for_case_1["id"],
+                mocked_response_for_case_2["id"],
+            ]
+        ), "Added case id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
     def test_add_run(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -196,7 +215,9 @@ class TestApiRequestHandler:
 
         requests_mock.post(create_url(f"add_run/{project_id}"), json=mocked_response)
         resources_added, error = api_request_handler.add_run(project_id, run_name)
-        assert mocked_response["id"] == resources_added, "Invalid response from add_run"
+        assert (
+            mocked_response["id"] == resources_added
+        ), "Added run id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
     def test_add_results(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -256,8 +277,8 @@ class TestApiRequestHandler:
             create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
             json=mocked_response,
         )
-        resources_added, error = api_request_handler.check_missing_test_cases_ids(3)
-        assert resources_added == [1], "There should be one case missing"
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(3)
+        assert missing_ids == [1], "There should be one case missing"
         assert error == "", "Error occurred in close_run"
 
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -270,5 +291,112 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler.get_suite_ids(project_id)
         assert (
             resources_added[0] == mocked_response[0]["id"]
-        ), "Invalid response from get_suite_ids"
+        ), "ID in response doesn't match mocked response"
         assert error == "", "Error occurred in get_suite_ids"
+
+    def test_return_project_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+
+        requests_mock.get(
+            create_url("get_projects"), exc=requests.exceptions.ConnectTimeout
+        )
+        assert api_request_handler.get_project_id("Test Project") == ProjectData(
+            project_id=-3,
+            suite_mode=-1,
+            error_message="Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again.",
+        ), "Get project should return proper project data object with error"
+
+    def test_add_suite_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+
+        project_id = 3
+        api_request_handler.suites_data_from_provider.suite_id = None
+        api_request_handler.suites_data_from_provider.name = None
+        requests_mock.post(
+            create_url(f"add_suite/{project_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        resources_added, error = api_request_handler.add_suites(project_id)
+        assert resources_added == [], "No resources should be added"
+
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"
+
+    def test_add_sections_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        requests_mock.post(
+            create_url(f"add_section/{project_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        resources_added, error = api_request_handler.add_sections(project_id)
+
+        assert resources_added == [], "No resources should be added"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"
+
+        assert (
+            api_request_handler.suites_data_from_provider.testsections[1].section_id
+            is None
+        ), "No resources should be added to DataProvider"
+
+    def test_add_section_and_cases_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        mocked_response_for_section = {
+            "id": 12345,
+            "suite_id": 4,
+            "name": "Passed test",
+        }
+
+        mocked_response_for_case_1 = {
+            "id": 4,
+            "suite_id": 4,
+            "section_id": 1234,
+            "title": "testCase2",
+        }
+
+        mocked_response_for_case_2 = {
+            "id": 3,
+            "suite_id": 4,
+            "section_id": 12345,
+            "title": "testCase3",
+        }
+
+        requests_mock.post(
+            create_url(f"add_section/{project_id}"), json=mocked_response_for_section
+        )
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case_1['section_id']}"),
+            json=mocked_response_for_case_1,
+        )
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case_2['section_id']}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+
+        api_request_handler.add_sections(project_id)
+        resources_added, error = api_request_handler.add_cases()
+
+        assert [case["title"] for case in resources_added] == [
+            mocked_response_for_case_1["title"]
+        ], "Added case title doesn't match mocked response title"
+        assert [case["case_id"] for case in resources_added] == [
+            mocked_response_for_case_1["id"],
+        ], "Added case id doesn't match mocked response id"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"

@@ -1,8 +1,7 @@
 from trcli.api.api_client import APIClient, APIClientResult
-from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
-from trcli.constants import ProjectErrors
+from trcli.constants import ProjectErrors, FAULT_MAPPING
 from typing import List
 from dataclasses import dataclass
 
@@ -19,13 +18,11 @@ class ApiRequestHandler:
 
     def __init__(
         self,
-        env: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
     ):
-        self.env = env
         self.client = api_client
-        self.data_provider = ApiDataProvider(env, suites_data)
+        self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
 
     def get_project_id(self, project_name: str) -> ProjectData:
@@ -51,13 +48,13 @@ class ApiRequestHandler:
                 return ProjectData(
                     project_id=ProjectErrors.multiple_project_same_name,
                     suite_mode=-1,
-                    error_message="Given project name matches more than one result.",
+                    error_message=FAULT_MAPPING["more_than_one_project"],
                 )
             else:
                 return ProjectData(
                     project_id=ProjectErrors.not_existing_project,
                     suite_mode=-1,
-                    error_message=f"{project_name} project doesn't exists.",
+                    error_message=f"{project_name} {FAULT_MAPPING['project_doesnt_exists']}",
                 )
         else:
             return ProjectData(
@@ -100,10 +97,12 @@ class ApiRequestHandler:
         else:
             error_message = response.error_message
 
-        self.data_provider.update_data(suite_data=returned_resources)
+        self.data_provider.update_data(suite_data=returned_resources) if len(
+            returned_resources
+        ) > 0 else "Update skipped"
         return available_suites, error_message
 
-    def add_suite(self, project_id: int) -> (List[dict], str):
+    def add_suites(self, project_id: int) -> (List[dict], str):
         """
         Adds suites that doesn't have ID's in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -112,13 +111,13 @@ class ApiRequestHandler:
         """
         add_suite_data = self.data_provider.add_suites_data()
         responses = []
-        error = ""
+        error_message = ""
         for body in add_suite_data["bodies"]:
             response = self.client.send_post(f"add_suite/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
             else:
-                error = response.error_message
+                error_message = response.error_message
                 break
 
         returned_resources = [
@@ -128,10 +127,12 @@ class ApiRequestHandler:
             }
             for response in responses
         ]
-        self.data_provider.update_data(suite_data=returned_resources)
-        return returned_resources, error
+        self.data_provider.update_data(suite_data=returned_resources) if len(
+            returned_resources
+        ) > 0 else "Update skipped"
+        return returned_resources, error_message
 
-    def check_missing_section_id(self, project_id: int) -> (List[int], str):
+    def check_missing_section_ids(self, project_id: int) -> (List[int], str):
         """
         Check what section id's are missing in DataProvider.
         :project_id: project_id
@@ -161,7 +162,7 @@ class ApiRequestHandler:
         else:
             return [], response.error_message
 
-    def add_section(self, project_id: int) -> (List[dict], str):
+    def add_sections(self, project_id: int) -> (List[dict], str):
         """
         Add sections that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -170,13 +171,13 @@ class ApiRequestHandler:
         """
         add_sections_data = self.data_provider.add_sections_data()
         responses = []
-        error = ""
+        error_message = ""
         for body in add_sections_data["bodies"]:
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
             else:
-                error = response.error_message
+                error_message = response.error_message
                 break
         returned_resources = [
             {
@@ -186,8 +187,10 @@ class ApiRequestHandler:
             }
             for response in responses
         ]
-        self.data_provider.update_data(section_data=returned_resources)
-        return returned_resources, error
+        self.data_provider.update_data(section_data=returned_resources) if len(
+            returned_resources
+        ) > 0 else "Update skipped"
+        return returned_resources, error_message
 
     def check_missing_test_cases_ids(self, project_id: int) -> (List[int], str):
         """
@@ -220,7 +223,7 @@ class ApiRequestHandler:
         else:
             return [], response.error_message
 
-    def add_case(self) -> (List[dict], str):
+    def add_cases(self) -> (List[dict], str):
         """
         Add cases that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -228,13 +231,13 @@ class ApiRequestHandler:
         """
         add_case_data = self.data_provider.add_cases()
         responses = []
-        error = ""
+        error_message = ""
         for body in add_case_data["bodies"]:
             response = self.client.send_post(f"add_case/{body.pop('section_id')}", body)
             if not response.error_message:
                 responses.append(response)
             else:
-                error = response.error_message
+                error_message = response.error_message
                 break
 
         returned_resources = [
@@ -245,8 +248,10 @@ class ApiRequestHandler:
             }
             for response in responses
         ]
-        self.data_provider.update_data(case_data=returned_resources)
-        return returned_resources, error
+        self.data_provider.update_data(case_data=returned_resources) if len(
+            returned_resources
+        ) > 0 else "Update skipped"
+        return returned_resources, error_message
 
     def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
         """

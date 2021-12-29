@@ -18,6 +18,12 @@
                         "status_id": 4,
                         "case_id": 1
                     }
+                },
+                {
+                    "section_id": 1234,
+                    "title": "testCase2",
+                    "case_id": null,
+                    "result": {"comment": "", "status_id": 1, "case_id": null}
                 }
             ],
                       "properties": [
@@ -32,7 +38,7 @@
             "testcases": [
                 {
                     "section_id": 2,
-                    "title": "testCase2",
+                    "title": "testCase3",
                     "case_id": null,
                     "result": {"comment": "", "status_id": 1, "case_id": null}
                 }
