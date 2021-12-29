@@ -1,4 +1,5 @@
 from trcli.api.api_client import APIClient, APIClientResult
+from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import ProjectErrors, FAULT_MAPPING
@@ -18,9 +19,11 @@ class ApiRequestHandler:
 
     def __init__(
         self,
+        environment: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
     ):
+        self.environment = environment
         self.client = api_client
         self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
@@ -270,11 +273,29 @@ class ApiRequestHandler:
         :run_id: run id
         :returns: Tuple with dict created resources and error string.
         """
-        add_results_data = self.data_provider.add_results_for_cases()
-        response = self.client.send_post(
-            f"add_results_for_cases/{run_id}", add_results_data
+        responses = []
+        error_message = ""
+        add_results_data_chunks = self.data_provider.add_results_for_cases(
+            self.environment.batch_size
         )
-        return response.response_text, response.error_message
+        results_amount = sum(
+            [len(results["results"]) for results in add_results_data_chunks]
+        )
+
+        with self.environment.get_progress_bar(results_amount) as progress_bar:
+            for add_results_data in add_results_data_chunks:
+                response = self.client.send_post(
+                    f"add_results_for_cases/{run_id}", add_results_data
+                )
+                if not response.error_message:
+                    responses.append(response.response_text)
+                    progress_bar.update(len(add_results_data["results"]))
+                else:
+                    error_message = response.error_message
+                    break
+            else:
+                progress_bar.set_postfix_str(s="Done.")
+        return responses, error_message
 
     def close_run(self, run_id: int) -> (dict, str):
         """
