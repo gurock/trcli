@@ -26,6 +26,7 @@ FAULT_MAPPING = dict(
     "with baseline project). Please provide suite ID by "
     "specifying --suite-id.",
     unknown_suite_mode="Suite mode: '{suite_mode}' not recognised.",
+    error_checking_missing_item="Error occurred while checking for '{missing_item}': '{error_message}'",
 )
 
 PROMPT_MESSAGES = dict(

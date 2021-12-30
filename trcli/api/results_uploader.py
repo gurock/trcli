@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Callable
 
 from trcli.api.api_client import APIClient
 from trcli.cli import Environment
@@ -47,22 +47,21 @@ class ResultsUploader:
             )
             exit(1)
         else:
-            suite_id = self.__get_suite_id_log_errors(
+            suite_id, result_code = self.__get_suite_id(
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
             )
-            if suite_id == -1:
+            if result_code == -1:
                 exit(1)
 
-            added_sections, result_code = self.__check_for_missing_sections_and_add(
+            added_sections, result_code = self.__add_missing_sections(
                 project_data.project_id
             )
             if result_code == -1:
                 exit(1)
 
-            (
-                added_test_cases,
-                result_code,
-            ) = self.__check_for_missing_test_cases_and_add(project_data.project_id)
+            added_test_cases, result_code = self.__add_missing_test_cases(
+                project_data.project_id
+            )
             if result_code == -1:
                 exit(1)
 
@@ -91,7 +90,7 @@ class ResultsUploader:
                 exit(1)
             self.environment.log("Done.")
 
-    def __get_suite_id_log_errors(self, project_id: int, suite_mode: int) -> int:
+    def __get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
         """
         Gets and checks suite ID for specified project_id.
         Depending on the entry conditions (suite ID provided or not, suite mode, project ID)
@@ -103,16 +102,34 @@ class ResultsUploader:
         on failure.
         """
         suite_id = -1
+        result_code = -1
         if not self.api_request_handler.suites_data_from_provider.suite_id:
             if suite_mode == SuiteModes.multiple_suites:
-                suite_id = self.__add_suite(project_id)
+                prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
+                    suite_name=self.api_request_handler.suites_data_from_provider.name,
+                    project_name=self.environment.project,
+                )
+                adding_message = (
+                    f"Adding missing suites to project {self.environment.project}."
+                )
+                fault_message = FAULT_MAPPING["no_user_agreement"].format(type="suite")
+                added_suites, result_code = self.__prompt_user_and_add_items(
+                    prompt_message=prompt_message,
+                    adding_message=adding_message,
+                    fault_message=fault_message,
+                    add_function=self.api_request_handler.add_suite,
+                    project_id=project_id,
+                )
+                if added_suites:
+                    suite_id = added_suites[0]["suite_id"]
+                else:
+                    suite_id = -1
             elif suite_mode == SuiteModes.single_suite_baselines:
                 suite_ids, error_message = self.api_request_handler.get_suite_ids(
                     project_id=project_id
                 )
                 if error_message:
                     self.environment.log(error_message)
-                    suite_id = -1
                 else:
                     if len(suite_ids) > 1:
                         self.environment.log(
@@ -122,110 +139,78 @@ class ResultsUploader:
                         )
                     else:
                         suite_id = suite_ids[0]
+                        result_code = 1
             elif suite_mode == SuiteModes.single_suite:
                 suite_ids, error_message = self.api_request_handler.get_suite_ids(
                     project_id=project_id
                 )
                 if error_message:
                     self.environment.log(error_message)
-                    suite_id = -1
                 else:
                     suite_id = suite_ids[0]
+                    result_code = 1
             else:
                 self.environment.log(
                     FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
                 )
-                suite_id = -1
         else:
-            suite_id = self.__check_suite_id_log_errors(
+            suite_id, result_code = self.__check_suite_id(
                 self.api_request_handler.suites_data_from_provider.suite_id, project_id
             )
-        return suite_id
+        return suite_id, result_code
 
-    def __add_suite(self, project_id: int) -> int:
-        """
-        Adds missing suite to project.
-        User will be prompted before adding test suite unless prompting is disabled.
-        Returns added suite ID if succeeds or -1 in case of failure. Proper information
-        will be printed on failure.
-        """
-        suite_id = -1
-        if self.environment.get_prompt_response_for_auto_creation(
-            PROMPT_MESSAGES["create_new_suite"].format(
-                suite_name=self.api_request_handler.suites_data_from_provider.name,
-                project_name=self.environment.project,
-            )
-        ):
-            self.environment.log(
-                f"Adding missing suites to project {self.environment.project}."
-            )
-            # TODO: Why list is returned here?
-            added_suite, error_message = self.api_request_handler.add_suite(project_id)
-            if error_message:
-                self.environment.log(
-                    FAULT_MAPPING["error_while_adding_suite"].format(
-                        error_message=error_message
-                    )
-                )
-                suite_id = -1
-            else:
-                suite_id = added_suite[0]["suite_id"]
-        else:
-            self.environment.log(
-                FAULT_MAPPING["no_user_agreement"].format(type="suite")
-            )
-        return suite_id
-
-    def __check_suite_id_log_errors(self, suite_id: int, project_id: int) -> int:
+    def __check_suite_id(self, suite_id: int, project_id: int) -> Tuple[int, int]:
         """
         Checks that suite ID is correct.
         Returns suite ID is succeeds or -1 on failure. Proper information will be printed
         on failure.
         """
+        result_code = -1
         if self.api_request_handler.check_suite_id(project_id):
-            return suite_id
+            result_code = 1
         else:
             self.environment.log(
                 FAULT_MAPPING["missing_suite"].format(suite_id=suite_id)
             )
-            return -1
+        return suite_id, result_code
 
-    def __check_for_missing_sections_and_add(self, project_id: int) -> Tuple[list, int]:
+    def __add_missing_sections(self, project_id: int) -> Tuple[list, int]:
         """
         Checks for missing sections in specified project. Add missing sections if user agrees to
         do so. Returns list of added section IDs if succeeds or empty list with result_code set to
         -1.
         """
-        added_sections = []
         result_code = -1
-        missing_sections, _ = self.api_request_handler.check_missing_section_id(
-            project_id
-        )
+        added_sections = []
+        (
+            missing_sections,
+            error_message,
+        ) = self.api_request_handler.check_missing_section_id(project_id)
         if missing_sections:
-            if self.environment.get_prompt_response_for_auto_creation(
-                PROMPT_MESSAGES["create_missing_sections"].format(
-                    project_name=self.environment.project
-                )
-            ):
-                self.environment.log("Adding missing sections to the suite.")
-                added_sections, error_message = self.api_request_handler.add_section(
-                    project_id=project_id
-                )
-                if error_message:
-                    self.environment.log(error_message)
-                else:
-                    result_code = 1
-            else:
-                self.environment.log(
-                    FAULT_MAPPING["no_user_agreement"].format(type="sections")
-                )
+            prompt_message = PROMPT_MESSAGES["create_missing_sections"].format(
+                project_name=self.environment.project
+            )
+            adding_message = "Adding missing sections to the suite."
+            fault_message = FAULT_MAPPING["no_user_agreement"].format(type="sections")
+            added_sections, result_code = self.__prompt_user_and_add_items(
+                prompt_message=prompt_message,
+                adding_message=adding_message,
+                fault_message=fault_message,
+                add_function=self.api_request_handler.add_section,
+                project_id=project_id,
+            )
         else:
-            result_code = 1
+            if error_message:
+                self.environment.log(
+                    FAULT_MAPPING["error_checking_missing_item"].format(
+                        missing_item="missing sections", error_message=error_message
+                    )
+                )
+            else:
+                result_code = 1
         return added_sections, result_code
 
-    def __check_for_missing_test_cases_and_add(
-        self, project_id: int
-    ) -> Tuple[list, int]:
+    def __add_missing_test_cases(self, project_id: int) -> Tuple[list, int]:
         """
         Checks for missing test cases in specified project. Add missing test cases if user agrees to
         do so. Returns list of added test case IDs if succeeds or empty list with result_code set to
@@ -233,28 +218,56 @@ class ResultsUploader:
         """
         added_cases = []
         result_code = -1
-        missing_test_cases, _ = self.api_request_handler.check_missing_test_cases_ids(
-            project_id
-        )
+        (
+            missing_test_cases,
+            error_message,
+        ) = self.api_request_handler.check_missing_test_cases_ids(project_id)
         if missing_test_cases:
-            if self.environment.get_prompt_response_for_auto_creation(
-                PROMPT_MESSAGES["create_missing_test_cases"].format(
-                    project_name=self.environment.project
-                )
-            ):
-                self.environment.log("Adding missing test cases to the suite.")
-                added_cases, error_message = self.api_request_handler.add_case()
-                if error_message:
-                    self.environment.log(error_message)
-                else:
-                    result_code = 1
-            else:
-                self.environment.log(
-                    FAULT_MAPPING["no_user_agreement"].format(type="test cases")
-                )
+            prompt_message = PROMPT_MESSAGES["create_missing_test_cases"].format(
+                project_name=self.environment.project
+            )
+            adding_message = "Adding missing test cases to the suite."
+            fault_message = FAULT_MAPPING["no_user_agreement"].format(type="test cases")
+            added_cases, result_code = self.__prompt_user_and_add_items(
+                prompt_message=prompt_message,
+                adding_message=adding_message,
+                fault_message=fault_message,
+                add_function=self.api_request_handler.add_case,
+            )
         else:
-            result_code = 1
+            if error_message:
+                self.environment.log(
+                    FAULT_MAPPING["error_checking_missing_item"].format(
+                        missing_item="missing test cases", error_message=error_message
+                    )
+                )
+            else:
+                result_code = 1
         return added_cases, result_code
+
+    def __prompt_user_and_add_items(
+        self,
+        prompt_message,
+        adding_message,
+        fault_message,
+        add_function: Callable,
+        project_id: int = None,
+    ):
+        added_items = []
+        result_code = -1
+        if self.environment.get_prompt_response_for_auto_creation(prompt_message):
+            self.environment.log(adding_message)
+            if project_id:
+                added_items, error_message = add_function(project_id=project_id)
+            else:
+                added_items, error_message = add_function()
+            if error_message:
+                self.environment.log(error_message)
+            else:
+                result_code = 1
+        else:
+            self.environment.log(fault_message)
+        return added_items, result_code
 
     def __instantiate_api_client(self) -> APIClient:
         """

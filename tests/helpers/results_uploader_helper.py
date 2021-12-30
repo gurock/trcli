@@ -7,7 +7,7 @@ def upload_results_inner_functions_mocker(
     results_uploader: ResultsUploader, mocker, failing_functions: List[str]
 ):
     mocker_functions = [
-        get_suite_id_log_errors_mocker,
+        get_suite_id_mocker,
         check_for_missing_sections_and_add_mocker,
         check_for_missing_test_cases_and_add_mocker,
         add_run_mocker,
@@ -37,29 +37,26 @@ def get_project_id_mocker(
         )
 
 
-def get_suite_id_log_errors_mocker(
-    results_uploader: ResultsUploader, mocker, failing=False
-):
-    results_uploader._ResultsUploader__get_suite_id_log_errors = mocker.Mock()
+def get_suite_id_mocker(results_uploader: ResultsUploader, mocker, failing=False):
+    suite_id = 10
+    results_uploader._ResultsUploader__get_suite_id = mocker.Mock()
     if failing:
-        results_uploader._ResultsUploader__get_suite_id_log_errors.return_value = -1
+        results_uploader._ResultsUploader__get_suite_id.return_value = (suite_id, -1)
     else:
-        results_uploader._ResultsUploader__get_suite_id_log_errors.return_value = 5
+        results_uploader._ResultsUploader__get_suite_id.return_value = (suite_id, 1)
 
 
 def check_for_missing_sections_and_add_mocker(
     results_uploader: ResultsUploader, mocker, failing=False
 ):
-    results_uploader._ResultsUploader__check_for_missing_sections_and_add = (
-        mocker.Mock()
-    )
+    results_uploader._ResultsUploader__add_missing_sections = mocker.Mock()
     if failing:
-        results_uploader._ResultsUploader__check_for_missing_sections_and_add.return_value = (
+        results_uploader._ResultsUploader__add_missing_sections.return_value = (
             [10],
             -1,
         )
     else:
-        results_uploader._ResultsUploader__check_for_missing_sections_and_add.return_value = (
+        results_uploader._ResultsUploader__add_missing_sections.return_value = (
             [10],
             1,
         )
@@ -68,16 +65,14 @@ def check_for_missing_sections_and_add_mocker(
 def check_for_missing_test_cases_and_add_mocker(
     results_uploader: ResultsUploader, mocker, failing=False
 ):
-    results_uploader._ResultsUploader__check_for_missing_test_cases_and_add = (
-        mocker.Mock()
-    )
+    results_uploader._ResultsUploader__add_missing_test_cases = mocker.Mock()
     if failing:
-        results_uploader._ResultsUploader__check_for_missing_test_cases_and_add.return_value = (
+        results_uploader._ResultsUploader__add_missing_test_cases.return_value = (
             [20, 30],
             -1,
         )
     else:
-        results_uploader._ResultsUploader__check_for_missing_test_cases_and_add.return_value = (
+        results_uploader._ResultsUploader__add_missing_test_cases.return_value = (
             [20, 30],
             1,
         )
