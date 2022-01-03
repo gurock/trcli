@@ -1,6 +1,6 @@
 from typing import List
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.cli import Environment
+from serde.json import to_dict
 
 
 class ApiDataProvider:
@@ -14,7 +14,7 @@ class ApiDataProvider:
     def add_suites_data(self):
         """Return list of bodies for adding suites"""
         return {
-            "bodies": [{"name": f"{self.suites_input.name}"}],
+            "bodies": [to_dict(self.suites_input)],
         }
 
     def add_sections_data(self, return_all_items=False):
@@ -23,10 +23,7 @@ class ApiDataProvider:
         """
         return {
             "bodies": [
-                {
-                    "suite_id": f"{section.suite_id}",
-                    "name": f"{section.name}",
-                }
+                to_dict(section)
                 for section in self.suites_input.testsections
                 if section.section_id is None or return_all_items
             ],
@@ -37,10 +34,7 @@ class ApiDataProvider:
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         return {
             "bodies": [
-                {
-                    "section_id": f"{case.section_id}",
-                    "title": f"{case.title}",
-                }
+                to_dict(case)
                 for sublist in testcases
                 for case in sublist
                 if case.case_id is None or return_all_items
@@ -56,7 +50,7 @@ class ApiDataProvider:
         ]
         return {
             "name": run_name,
-            "suite_id": f"{self.suites_input.suite_id}",
+            "suite_id": self.suites_input.suite_id,
             "description": f"{' '.join(properties)}",
         }
 
@@ -65,14 +59,9 @@ class ApiDataProvider:
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         return {
             "results": [
-                {
-                    "case_id": case.case_id,
-                    "status_id": case.result.status_id,
-                    "comment": f"{case.result.comment}",
-                }
+                to_dict(case.result)
                 for sublist in testcases
                 for case in sublist
-                if case.case_id is not None
             ],
         }
 
@@ -142,4 +131,5 @@ class ApiDataProvider:
                 if case["title"] == case_updater["title"]
             )
             matched_case.case_id = case_updater["case_id"]
+            matched_case.result.case_id = case_updater["case_id"]
             matched_case.section_id = case_updater["section_id"]

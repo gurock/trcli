@@ -11,17 +11,17 @@ post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
 
 post_section_bodies = {
     "bodies": [
-        {"name": "Skipped test", "suite_id": "123"},
-        {"name": "Passed test", "suite_id": "123"},
+        {"name": "Skipped test", "suite_id": 123},
+        {"name": "Passed test", "suite_id": 123},
     ]
 }
 
-post_cases_bodies = {"bodies": [{"section_id": "12345", "title": "testCase2"}]}
+post_cases_bodies = {"bodies": [{"section_id": 12345, "title": "testCase2"}]}
 
 post_run_bodies = {
     "description": "logging: True debug: False",
     "name": "test run",
-    "suite_id": "123",
+    "suite_id": 123,
 }
 
 post_results_for_cases_body = {

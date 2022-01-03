@@ -14,7 +14,7 @@ class TestApiDataProvider:
             post_data_provider.add_suites_data() == post_suite_bodies
         ), "Adding suite data doesn't match expected"
 
-    def test_check_if_returns_items_without_id(self, post_data_provider):
+    def test_data_provider_returns_items_without_id(self, post_data_provider):
         """Check if data providers returns data only for items with missing IDs. Numbers correspond to data in
         test_data"""
         missing_sections = 2
@@ -23,7 +23,7 @@ class TestApiDataProvider:
             len(post_data_provider.add_sections_data()["bodies"]) == missing_sections
         ), f"Adding suite data doesn't match expected {missing_sections}"
         assert (
-            len(post_data_provider.add_cases()["bodies"]) == 1
+            len(post_data_provider.add_cases()["bodies"]) == missing_cases
         ), f"Adding cases data doesn't match expected {missing_cases}"
 
     def test_post_section(self, post_data_provider):
