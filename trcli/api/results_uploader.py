@@ -14,6 +14,7 @@ class ResultsUploader:
     Class to be used to upload the results to TestRail.
     Initialized with environment object and result file parser object (any parser derived from FileParser).
     """
+
     def __init__(self, environment: Environment, result_file_parser: FileParser):
         self.environment = environment
         self.result_file_parser = result_file_parser
@@ -26,7 +27,9 @@ class ResultsUploader:
             suites_data=self.parsed_data,
         )
         if self.environment.suite_id:
-            self.api_request_handler.data_provider.update_data([{"suite_id": self.environment.suite_id}])
+            self.api_request_handler.data_provider.update_data(
+                [{"suite_id": self.environment.suite_id}]
+            )
 
     def upload_results(self):
         """
@@ -117,7 +120,7 @@ class ResultsUploader:
                     prompt_message=prompt_message,
                     adding_message=adding_message,
                     fault_message=fault_message,
-                    add_function=self.api_request_handler.add_suite,
+                    add_function=self.api_request_handler.add_suites,
                     project_id=project_id,
                 )
                 if added_suites:
@@ -185,7 +188,7 @@ class ResultsUploader:
         (
             missing_sections,
             error_message,
-        ) = self.api_request_handler.check_missing_section_id(project_id)
+        ) = self.api_request_handler.check_missing_section_ids(project_id)
         if missing_sections:
             prompt_message = PROMPT_MESSAGES["create_missing_sections"].format(
                 project_name=self.environment.project
@@ -196,7 +199,7 @@ class ResultsUploader:
                 prompt_message=prompt_message,
                 adding_message=adding_message,
                 fault_message=fault_message,
-                add_function=self.api_request_handler.add_section,
+                add_function=self.api_request_handler.add_sections,
                 project_id=project_id,
             )
         else:
@@ -232,7 +235,7 @@ class ResultsUploader:
                 prompt_message=prompt_message,
                 adding_message=adding_message,
                 fault_message=fault_message,
-                add_function=self.api_request_handler.add_case,
+                add_function=self.api_request_handler.add_cases,
             )
         else:
             if error_message:

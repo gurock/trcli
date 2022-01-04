@@ -248,7 +248,7 @@ class TestResultsUploader:
         suite_name = "Fake suite name"
         suite_mode = SuiteModes.multiple_suites
         if not suite_add_error:
-            results_uploader.api_request_handler.add_suite.return_value = (
+            results_uploader.api_request_handler.add_suites.return_value = (
                 [
                     {
                         "suite_id": expected_suite_id,
@@ -258,7 +258,7 @@ class TestResultsUploader:
                 "",
             )
         else:
-            results_uploader.api_request_handler.add_suite.return_value = (
+            results_uploader.api_request_handler.add_suites.return_value = (
                 [{"suite_id": expected_suite_id, "name": suite_name}],
                 FAULT_MAPPING["error_while_adding_suite"].format(
                     error_message="Failed to add suite."
@@ -293,7 +293,7 @@ class TestResultsUploader:
             )
         )
         if user_response:
-            results_uploader.api_request_handler.add_suite.assert_called_with(
+            results_uploader.api_request_handler.add_suites.assert_called_with(
                 project_id=project_id
             )
         environment.log.assert_has_calls(expected_log_calls)
@@ -495,7 +495,7 @@ class TestResultsUploader:
         project_id = 1
         return_code = 1
         missing_sections = []
-        results_uploader.api_request_handler.check_missing_section_id.return_value = (
+        results_uploader.api_request_handler.check_missing_section_ids.return_value = (
             missing_sections,
             "",
         )
@@ -532,14 +532,14 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
         project_id = 1
-        results_uploader.api_request_handler.check_missing_section_id.return_value = (
+        results_uploader.api_request_handler.check_missing_section_ids.return_value = (
             missing_sections,
             "",
         )
         results_uploader.environment.get_prompt_response_for_auto_creation.return_value = (
             user_response
         )
-        results_uploader.api_request_handler.add_section.return_value = (
+        results_uploader.api_request_handler.add_sections.return_value = (
             expected_added_sections,
             expected_add_sections_error,
         )
@@ -570,7 +570,7 @@ class TestResultsUploader:
         self, result_uploader_data_provider, mocker
     ):
         """The purpose of this test is to check that __add_missing_sections will return empty list
-        and -1 as a result code when check_missing_section_id will fail. Proper message will be printed."""
+        and -1 as a result code when check_missing_section_ids will fail. Proper message will be printed."""
         (
             environment,
             api_request_handler,
@@ -580,7 +580,7 @@ class TestResultsUploader:
         return_code = -1
         missing_sections = []
         error_message = "Connection Error."
-        results_uploader.api_request_handler.check_missing_section_id.return_value = (
+        results_uploader.api_request_handler.check_missing_section_ids.return_value = (
             [],
             error_message,
         )
@@ -657,7 +657,7 @@ class TestResultsUploader:
         results_uploader.environment.get_prompt_response_for_auto_creation.return_value = (
             user_response
         )
-        results_uploader.api_request_handler.add_case.return_value = (
+        results_uploader.api_request_handler.add_cases.return_value = (
             expected_added_test_cases,
             expected_add_test_cases_error,
         )
