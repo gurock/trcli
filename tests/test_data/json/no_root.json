@@ -15,6 +15,7 @@
                                              "comment": "",
                                              "defects": null,
                                              "elapsed": null,
+                                             "junit_result_unparsed": [],
                                              "status_id": 1,
                                              "case_id": null,
                                              "version": null},
@@ -30,6 +31,7 @@
                                              "comment": "Type: failed\nMessage: failed Failing\nText: FAILURE - No connection",
                                              "defects": null,
                                              "elapsed": null,
+                                             "junit_result_unparsed": [],
                                              "status_id": 5,
                                              "case_id": null,
                                              "version": null},
@@ -37,5 +39,5 @@
                                   "template_id": null,
                                   "title": "Failing",
                                   "type_id": null}],
-                   "time": 0.05}],
+                   "time": 0.1}],
  "time": 0.1}

@@ -1,6 +1,6 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import List
-from serde import serialize, deserialize
+from serde import field, serialize, deserialize
 
 
 @serialize
@@ -10,12 +10,12 @@ class TestRailResult:
     """Class for creating Test Rail result for cases"""
 
     case_id: int
-    status_id: int = None
-    comment: str = None
-    version: str = None
-    elapsed: str = None
-    defects: str = None
-    assignedto_id: int = None
+    status_id: int = field(default=None, skip_if_default=True)
+    comment: str = field(default=None, skip_if_default=True)
+    version: str = field(default=None, skip_if_default=True)
+    elapsed: str = field(default=None, skip_if_default=True)
+    defects: str = field(default=None, skip_if_default=True)
+    assignedto_id: int = field(default=None, skip_if_default=True)
     junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
@@ -64,13 +64,19 @@ class TestRailCase:
 
     section_id: int
     title: str
-    case_id: str = None
-    estimate: str = None
-    template_id: int = None
-    type_id: int = None
-    milestone_id: int = None
-    refs: str = None
-    result: TestRailResult = None
+    case_id: str = field(default=None, skip_if_default=True)
+    estimate: str = field(default=None, skip_if_default=True)
+    template_id: int = field(default=None, skip_if_default=True)
+    type_id: int = field(default=None, skip_if_default=True)
+    milestone_id: int = field(default=None, skip_if_default=True)
+    refs: str = field(default=None, skip_if_default=True)
+    result: TestRailResult = field(default=None, metadata={'serde_skip': True})
+
+    def __int__(self):
+        return int(self.case_id) if self.case_id is not None else -1
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 @serialize
@@ -79,9 +85,12 @@ class TestRailCase:
 class TestRailProperty:
     """Class for creating Test Rail property - run description"""
 
-    name: str
-    value: str
-    description: str = field(init=False)
+    name: str = field(default=None, skip_if_default=True)
+    value: str = field(default=None, skip_if_default=True)
+    description: str = field(default=None, skip_if_default=True)
+
+    def __repr__(self) -> str:
+        return self.description
 
     def __post_init__(self):
         self.description = f"{self.name}: {self.value}"
@@ -94,13 +103,16 @@ class TestRailSection:
     """Class for creating Test Rail test section"""
 
     name: str
-    suite_id: str
-    time: str = None
-    parent_id: int = None
-    description: str = None
-    section_id: int = None
-    testcases: List[TestRailCase] = field(default_factory=list)
-    properties: List[TestRailProperty] = field(default_factory=list)
+    suite_id: int
+    time: str = field(default=None, metadata={'serde_skip': True})
+    parent_id: int = field(default=None, skip_if_default=True)
+    description: str = field(default=None, skip_if_default=True)
+    section_id: int = field(default=None, metadata={'serde_skip': True})
+    testcases: List[TestRailCase] = field(default_factory=list, metadata={'serde_skip': True})
+    properties: List[TestRailProperty] = field(default_factory=list, metadata={'serde_skip': True})
+
+    def __getitem__(self, item):
+        return getattr(self, item)
 
 
 @serialize
@@ -110,7 +122,8 @@ class TestRailSuite:
     """Class for creating Test Rail Suite fields"""
 
     name: str
-    suite_id: str = None
-    time: str = None
-    description: str = None
-    testsections: List[TestRailSection] = field(default_factory=list)
+    suite_id: int = field(default=None, skip_if_default=True)
+    time: str = field(default=None, skip_if_default=True)
+    description: str = field(default=None, skip_if_default=True)
+    testsections: List[TestRailSection] = field(default_factory=list, metadata={'serde_skip': True})
+
