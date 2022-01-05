@@ -192,7 +192,7 @@ class TestResultsUploader:
 
     @pytest.mark.results_uploader
     def test_get_suite_id_returns_valid_id(self, result_uploader_data_provider):
-        """The purpose of this test is to check that __get_suite_id function will
+        """The purpose of this test is to check that get_suite_id function will
         return suite_id if it exists in TestRail"""
         (
             environment,
@@ -206,10 +206,7 @@ class TestResultsUploader:
             suite_id
         )
         results_uploader.api_request_handler.check_suite_id.return_value = True
-        (
-            result_suite_id,
-            result_return_code,
-        ) = results_uploader._ResultsUploader__get_suite_id(
+        (result_suite_id, result_return_code,) = results_uploader.get_suite_id(
             project_id=project_id, suite_mode=SuiteModes.single_suite
         )
 
@@ -267,7 +264,7 @@ class TestResultsUploader:
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
         results_uploader.api_request_handler.suites_data_from_provider.name = suite_name
         environment.get_prompt_response_for_auto_creation.return_value = user_response
-        result_suite_id, result_code = results_uploader._ResultsUploader__get_suite_id(
+        result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
         expected_log_calls = [mocker.call(expected_message)]
@@ -329,7 +326,7 @@ class TestResultsUploader:
         )
         if error_message:
             expected_log_calls = [mocker.call(error_message)]
-        result_suite_id, result_code = results_uploader._ResultsUploader__get_suite_id(
+        result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
@@ -373,7 +370,7 @@ class TestResultsUploader:
         expected_log_calls = []
         if expected_error_message:
             expected_log_calls = [mocker.call(expected_error_message)]
-        result_suite_id, result_code = results_uploader._ResultsUploader__get_suite_id(
+        result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
@@ -407,7 +404,7 @@ class TestResultsUploader:
                 FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
             )
         ]
-        result_suite_id, result_code = results_uploader._ResultsUploader__get_suite_id(
+        result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
@@ -421,7 +418,7 @@ class TestResultsUploader:
 
     @pytest.mark.results_uploader
     def test_check_suite_id_returns_id(self, result_uploader_data_provider):
-        """The purpose of this test is to check that __check_suite_id function will return suite ID,
+        """The purpose of this test is to check that check_suite_id function will return suite ID,
         when suite ID exists under specified project."""
         (
             environment,
@@ -436,9 +433,7 @@ class TestResultsUploader:
         (
             result_suite_id,
             result_code,
-        ) = results_uploader._ResultsUploader__check_suite_id(
-            suite_id=suite_id, project_id=project_id
-        )
+        ) = results_uploader.check_suite_id(suite_id=suite_id, project_id=project_id)
 
         assert (
             result_suite_id == suite_id
@@ -466,9 +461,7 @@ class TestResultsUploader:
         (
             result_suite_id,
             result_code,
-        ) = results_uploader._ResultsUploader__check_suite_id(
-            suite_id=suite_id, project_id=project_id
-        )
+        ) = results_uploader.check_suite_id(suite_id=suite_id, project_id=project_id)
         expected_log_calls = [
             mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
         ]
@@ -485,7 +478,7 @@ class TestResultsUploader:
     def test_add_missing_sections_no_missing_sections(
         self, result_uploader_data_provider
     ):
-        """The purpose of this test is to check that __add_missing_sections will return empty list
+        """The purpose of this test is to check that add_missing_sections will return empty list
         and proper return code when there are no missing sections."""
         (
             environment,
@@ -499,7 +492,7 @@ class TestResultsUploader:
             missing_sections,
             "",
         )
-        result = results_uploader._ResultsUploader__add_missing_sections(project_id)
+        result = results_uploader.add_missing_sections(project_id)
 
         assert result == (
             missing_sections,
@@ -524,7 +517,7 @@ class TestResultsUploader:
         result_uploader_data_provider,
         mocker,
     ):
-        """The purpose of this test is to check that __add_missing_sections prompts user
+        """The purpose of this test is to check that add_missing_sections prompts user
         for adding missing sections."""
         (
             environment,
@@ -547,7 +540,7 @@ class TestResultsUploader:
         (
             result_added_sections,
             result_code,
-        ) = results_uploader._ResultsUploader__add_missing_sections(project_id)
+        ) = results_uploader.add_missing_sections(project_id)
         expected_log_calls = [mocker.call(expected_message)]
         if expected_add_sections_error:
             expected_log_calls.append(mocker.call(expected_add_sections_error))
@@ -569,7 +562,7 @@ class TestResultsUploader:
     def test_add_missing_sections_error_checking(
         self, result_uploader_data_provider, mocker
     ):
-        """The purpose of this test is to check that __add_missing_sections will return empty list
+        """The purpose of this test is to check that add_missing_sections will return empty list
         and -1 as a result code when check_missing_section_ids will fail. Proper message will be printed."""
         (
             environment,
@@ -584,7 +577,7 @@ class TestResultsUploader:
             [],
             error_message,
         )
-        result = results_uploader._ResultsUploader__add_missing_sections(project_id)
+        result = results_uploader.add_missing_sections(project_id)
         expected_log_calls = [
             mocker.call(
                 FAULT_MAPPING["error_checking_missing_item"].format(
@@ -603,7 +596,7 @@ class TestResultsUploader:
     def test_add_missing_test_cases_no_missing_test_cases(
         self, result_uploader_data_provider
     ):
-        """The purpose of this test is to check that __add_missing_test_cases will
+        """The purpose of this test is to check that add_missing_test_cases will
         return empty list and proper return code when there are no missing tests cases."""
         (
             environment,
@@ -617,7 +610,7 @@ class TestResultsUploader:
             missing_test_cases,
             "",
         )
-        result = results_uploader._ResultsUploader__add_missing_test_cases(project_id)
+        result = results_uploader.add_missing_test_cases(project_id)
 
         assert result == (
             missing_test_cases,
@@ -642,7 +635,7 @@ class TestResultsUploader:
         result_uploader_data_provider,
         mocker,
     ):
-        """The purpose of this test is to check that __add_missing_test_cases function will
+        """The purpose of this test is to check that add_missing_test_cases function will
         prompt the user for adding missing test cases."""
         (
             environment,
@@ -665,7 +658,7 @@ class TestResultsUploader:
         (
             result_added_test_cases,
             result_code,
-        ) = results_uploader._ResultsUploader__add_missing_test_cases(project_id)
+        ) = results_uploader.add_missing_test_cases(project_id)
         expected_log_calls = [mocker.call(expected_message)]
         if expected_add_test_cases_error:
             expected_log_calls.append(mocker.call(expected_add_test_cases_error))
@@ -687,7 +680,7 @@ class TestResultsUploader:
     def test_add_missing_test_cases_error_checking(
         self, result_uploader_data_provider, mocker
     ):
-        """The purpose of this test is to check that __add_missing_test_cases will return empty list
+        """The purpose of this test is to check that add_missing_test_cases will return empty list
         and -1 as result code when check_missing_test_cases_ids will fail. Proper message will be printed."""
         (
             environment,
@@ -702,7 +695,7 @@ class TestResultsUploader:
             [],
             error_message,
         )
-        result = results_uploader._ResultsUploader__add_missing_test_cases(project_id)
+        result = results_uploader.add_missing_test_cases(project_id)
         expected_log_calls = [
             mocker.call(
                 FAULT_MAPPING["error_checking_missing_item"].format(
@@ -740,7 +733,7 @@ class TestResultsUploader:
             environment=environment, result_file_parser=junit_file_parser
         )
 
-        api_client = result_uploader._ResultsUploader__instantiate_api_client()
+        api_client = result_uploader.instantiate_api_client()
 
         assert (
             api_client.username == environment.username

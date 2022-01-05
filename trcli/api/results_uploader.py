@@ -23,7 +23,7 @@ class ResultsUploader:
             self.parsed_data.suite_id = self.environment.suite_id
         self.api_request_handler = ApiRequestHandler(
             env=self.environment,
-            api_client=self.__instantiate_api_client(),
+            api_client=self.instantiate_api_client(),
             suites_data=self.parsed_data,
         )
         if self.environment.suite_id:
@@ -50,19 +50,19 @@ class ResultsUploader:
             )
             exit(1)
         else:
-            suite_id, result_code = self.__get_suite_id(
+            suite_id, result_code = self.get_suite_id(
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
             )
             if result_code == -1:
                 exit(1)
 
-            added_sections, result_code = self.__add_missing_sections(
+            added_sections, result_code = self.add_missing_sections(
                 project_data.project_id
             )
             if result_code == -1:
                 exit(1)
 
-            added_test_cases, result_code = self.__add_missing_test_cases(
+            added_test_cases, result_code = self.add_missing_test_cases(
                 project_data.project_id
             )
             if result_code == -1:
@@ -93,7 +93,7 @@ class ResultsUploader:
                 exit(1)
             self.environment.log("Done.")
 
-    def __get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
+    def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
         """
         Gets and checks suite ID for specified project_id.
         Depending on the entry conditions (suite ID provided or not, suite mode, project ID)
@@ -116,7 +116,7 @@ class ResultsUploader:
                     f"Adding missing suites to project {self.environment.project}."
                 )
                 fault_message = FAULT_MAPPING["no_user_agreement"].format(type="suite")
-                added_suites, result_code = self.__prompt_user_and_add_items(
+                added_suites, result_code = self.prompt_user_and_add_items(
                     prompt_message=prompt_message,
                     adding_message=adding_message,
                     fault_message=fault_message,
@@ -157,12 +157,12 @@ class ResultsUploader:
                     FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
                 )
         else:
-            suite_id, result_code = self.__check_suite_id(
+            suite_id, result_code = self.check_suite_id(
                 self.api_request_handler.suites_data_from_provider.suite_id, project_id
             )
         return suite_id, result_code
 
-    def __check_suite_id(self, suite_id: int, project_id: int) -> Tuple[int, int]:
+    def check_suite_id(self, suite_id: int, project_id: int) -> Tuple[int, int]:
         """
         Checks that suite ID is correct.
         Returns suite ID is succeeds or -1 on failure. Proper information will be printed
@@ -177,7 +177,7 @@ class ResultsUploader:
             )
         return suite_id, result_code
 
-    def __add_missing_sections(self, project_id: int) -> Tuple[list, int]:
+    def add_missing_sections(self, project_id: int) -> Tuple[list, int]:
         """
         Checks for missing sections in specified project. Add missing sections if user agrees to
         do so. Returns list of added section IDs if succeeds or empty list with result_code set to
@@ -195,7 +195,7 @@ class ResultsUploader:
             )
             adding_message = "Adding missing sections to the suite."
             fault_message = FAULT_MAPPING["no_user_agreement"].format(type="sections")
-            added_sections, result_code = self.__prompt_user_and_add_items(
+            added_sections, result_code = self.prompt_user_and_add_items(
                 prompt_message=prompt_message,
                 adding_message=adding_message,
                 fault_message=fault_message,
@@ -213,7 +213,7 @@ class ResultsUploader:
                 result_code = 1
         return added_sections, result_code
 
-    def __add_missing_test_cases(self, project_id: int) -> Tuple[list, int]:
+    def add_missing_test_cases(self, project_id: int) -> Tuple[list, int]:
         """
         Checks for missing test cases in specified project. Add missing test cases if user agrees to
         do so. Returns list of added test case IDs if succeeds or empty list with result_code set to
@@ -231,7 +231,7 @@ class ResultsUploader:
             )
             adding_message = "Adding missing test cases to the suite."
             fault_message = FAULT_MAPPING["no_user_agreement"].format(type="test cases")
-            added_cases, result_code = self.__prompt_user_and_add_items(
+            added_cases, result_code = self.prompt_user_and_add_items(
                 prompt_message=prompt_message,
                 adding_message=adding_message,
                 fault_message=fault_message,
@@ -248,7 +248,7 @@ class ResultsUploader:
                 result_code = 1
         return added_cases, result_code
 
-    def __prompt_user_and_add_items(
+    def prompt_user_and_add_items(
         self,
         prompt_message,
         adding_message,
@@ -272,7 +272,7 @@ class ResultsUploader:
             self.environment.log(fault_message)
         return added_items, result_code
 
-    def __instantiate_api_client(self) -> APIClient:
+    def instantiate_api_client(self) -> APIClient:
         """
         Instantiate api client with needed attributes taken from environment.
         """
