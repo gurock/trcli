@@ -159,7 +159,9 @@ class TRCLI(click.MultiCommand):
 @click.option("-u", "--username", type=click.STRING, help="Username.")
 @click.option("-p", "--password", type=click.STRING, help="Password.")
 @click.option("-k", "--key", help="API key.")
-@click.option("-v", "--verbose", is_flag=True, help="Enables verbose logging.")
+@click.option(
+    "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
+)
 @click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
 @click.option(
     "-b",

@@ -64,7 +64,7 @@ Options:
   -u, --username TEXT             Username.
   -p, --password TEXT             Password.
   -k, --key TEXT                  API key.
-  -v, --verbose                   Enables verbose logging.
+  -v, --verbose                   Output all API calls and their results.
   --verify                        Verify the data was added correctly.
   -b, --batch-size INTEGER RANGE  Configurable batch size.  [default: (50);
                                   x>=2]
