@@ -55,35 +55,27 @@ Usage: trcli [OPTIONS] COMMAND [ARGS]...
   TestRail CLI
 
 Options:
-  -c, --config PATH               Optional path definition for testrail-
-                                  credentials file or CF file.
-  -h, --host TEXT                 Hostname of instance.
-  --project TEXT                  Name of project the Test Run should be
-                                  created under.
-  --title TEXT                    Title of Test Run to be created in TestRail.
-  -u, --username TEXT             Username.
-  -p, --password TEXT             Password.
-  -k, --key TEXT                  API key.
-  -v, --verbose                   Output all API calls and their results.
-  --verify                        Verify the data was added correctly.
-  -b, --batch-size INTEGER RANGE  Configurable batch size.  [default: (50);
-                                  x>=2]
-  -t, --timeout INTEGER RANGE     Batch timeout duration.  [default: (30);
-                                  x>=0]
-  --suite-id INTEGER RANGE        Suite ID for the results they are reporting.
-                                  [x>=1]
-  --run-id INTEGER RANGE          Run ID for the results they are reporting
-                                  (otherwise the tool will attempt to create a
-                                  new run).  [x>=1]
-  --case-id INTEGER RANGE         Case ID for the results they are reporting
-                                  (otherwise the tool will attempt to create a
-                                  new run).  [x>=1]
-  -y, --yes                       answer 'yes' to all prompts around auto-
-                                  creation
-  -n, --no                        answer 'no' to all prompts around auto-
-                                  creation
-  -s, --silent                    Silence stdout
-  --help                          Show this message and exit.
+  -c, --config       Optional path definition for testrail-credentials file or
+                     CF file.
+  -h, --host         Hostname of instance.
+  --project          Name of project the Test Run should be created under.
+  --title            Title of Test Run to be created in TestRail.
+  -u, --username     Username.
+  -p, --password     Password.
+  -k, --key          API key.
+  -v, --verbose      Output all API calls and their results.
+  --verify           Verify the data was added correctly.
+  -b, --batch-size   Configurable batch size.  [default: (50); x>=2]
+  -t, --timeout      Batch timeout duration.  [default: (30); x>=0]
+  --suite-id         Suite ID for the results they are reporting.  [x>=1]
+  --run-id           Run ID for the results they are reporting (otherwise the
+                     tool will attempt to create a new run).  [x>=1]
+  --case-id          Case ID for the results they are reporting (otherwise the
+                     tool will attempt to create a new run).  [x>=1]
+  -y, --yes          answer 'yes' to all prompts around auto-creation
+  -n, --no           answer 'no' to all prompts around auto-creation
+  -s, --silent       Silence stdout
+  --help             Show this message and exit.
 
 Commands:
   parse_junit
@@ -94,8 +86,8 @@ $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
 
 Options:
-  -f, --file PATH  Filename and path.
-  --help           Show this message and exit.
+  -f, --file   Filename and path.
+  --help       Show this message and exit.
 ```
 
 Installation

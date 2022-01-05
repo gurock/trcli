@@ -5,7 +5,7 @@ from trcli.api.results_uploader import ResultsUploader
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@click.option("-f", "--file", type=click.Path(), help="Filename and path.")
+@click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, file):
