@@ -2,7 +2,7 @@ import pytest
 
 from click.testing import CliRunner
 from trcli.cli import cli
-from helpers.cli_helpers import CLIParametersHelper
+from tests.helpers.cli_helpers import CLIParametersHelper
 
 from tests.test_data.cli_test_data import (
     CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_DATA,

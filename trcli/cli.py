@@ -41,12 +41,12 @@ class Environment:
         self.auto_creation_response = None
         self.silent = None
 
-    def log(self, msg: str, *args):
+    def log(self, msg: str, new_line=True, *args):
         """Logs a message to stderr."""
         if not self.silent:
             if args:
                 msg %= args
-            click.echo(msg, file=sys.stderr)
+            click.echo(msg, file=sys.stderr, nl=new_line)
 
     def vlog(self, msg: str, *args):
         """Logs a message to stderr only if the verbose option is enabled"""

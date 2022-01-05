@@ -113,3 +113,30 @@ Available parsers:
 * XML Junit files compatibile with Jenkins and pytest reporting schemas
 * ...
 
+Uploading test results from Junit file
+======================================
+
+TR CLI tool expects suite, sections and test cases IDs to be present in result file.<br>
+In case any of IDs are missing the tool will try to add new item to TestRail. This<br>
+might result in multiple suites/sections/test cases with same name being created in TestRail.<br>
+Adding those resources to TestRail will not be done automatically and each time some of<br>
+them are missing in TestRail user will be prompted if such should be added.<br>
+Example content of result_file.xml:
+```
+<testsuites name="test suites root">
+  <testsuite id="47" failures="0" errors="0" skipped="1" tests="1" time="0.05" name="Skipped test">
+    <properties><property name="setting1" value="True"/></properties>
+    <testcase id="72" classname="tests.test_junit_to_dataclass" name="test_case_1" time="159">
+      <skipped type="pytest.skip" message="Please skip">skipped by user</skipped>
+    </testcase>
+    <testcase id="73" classname="tests.test_junit_to_dataclass" name="test_case_2" time="650">
+    </testcase>
+    <testcase id="74" classname="tests.test_junit_to_dataclass" name="test_case_3" time="159">
+      <failure type="pytest.failure" message="Fail due to...">failed due to...</failure>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+Note: id was not added to the testsuite. It can be provided either in result file<br>
+or by providing parameter --suite-id to the command.
