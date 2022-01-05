@@ -22,7 +22,6 @@ class ResultsUploader:
         if self.environment.suite_id:
             self.parsed_data.suite_id = self.environment.suite_id
         self.api_request_handler = ApiRequestHandler(
-            env=self.environment,
             api_client=self.instantiate_api_client(),
             suites_data=self.parsed_data,
         )
