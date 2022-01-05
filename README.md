@@ -75,7 +75,8 @@ Options:
   --run-id INTEGER RANGE          Run ID for the results they are reporting
                                   (otherwise the tool will attempt to create a
                                   new run).  [x>=1]
-  --case-id INTEGER RANGE         (otherwise the tool will attempt to create a
+  --case-id INTEGER RANGE         Case ID for the results they are reporting
+                                  (otherwise the tool will attempt to create a
                                   new run).  [x>=1]
   -y, --yes                       answer 'yes' to all prompts around auto-
                                   creation

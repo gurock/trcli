@@ -192,7 +192,7 @@ class TRCLI(click.MultiCommand):
 @click.option(
     "--case-id",
     type=click.IntRange(min=1),
-    help=" (otherwise the tool will attempt to create a new run).",
+    help="Case ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
 @click.option(
     "-y",
