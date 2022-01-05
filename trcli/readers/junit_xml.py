@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Union
-from junitparser import TestCase, TestSuite, JUnitXml, Attr, JUnitXmlError
+from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError
 from xml.etree import ElementTree as etree
 from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
@@ -11,9 +11,9 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailResult,
 )
 
-TestCase.id = Attr("id")
-TestSuite.id = Attr("id")
-JUnitXml.id = Attr("id")
+TestCase.id = IntAttr("id")
+TestSuite.id = IntAttr("id")
+JUnitXml.id = IntAttr("id")
 
 
 class JunitParser(FileParser):

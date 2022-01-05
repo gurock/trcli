@@ -17,7 +17,7 @@ silence - enables silence mode when true (false by default)<br>
 config - specifies the filename and/or path of the configuration file to be used<br>
 batch_size - specifies the batch size of results to pass to TestRail ((50 by default, maximum to be determined by Dev Partner stress testing)<br>
 timeout - specifies how many seconds to wait for more results before termination (30 by default)<br>
-assume_yes - - assumes “yes” for all interactive prompts about resource creation (false by default)<br>
+auto_creation_response - Sets the response for auto creation prompts (Yes/No). If not set user will be prompted whether to create resources (suite, test case etc.) or not.<br>
 suite_id - specifies the Suite ID for the Test Run to be created under<br>
 run_id - specifies the Run ID for the Test Run to be created under<br>
 

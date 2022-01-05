@@ -116,7 +116,7 @@ class TestCli:
         )
         mocker.patch("sys.argv", ["trcli", *args])
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value={argument_name: argument_value},
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -142,7 +142,7 @@ class TestCli:
 
         mocker.patch("sys.argv", ["trcli", *args])
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value=RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE,
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -176,7 +176,7 @@ class TestCli:
 
         mocker.patch("sys.argv", ["trcli", *args])
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value=RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE,
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -213,7 +213,7 @@ class TestCli:
         mocker.patch("sys.argv", ["trcli", *args])
 
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value={argument_name: argument_value},
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -240,7 +240,7 @@ class TestCli:
 
         mocker.patch("sys.argv", ["trcli", *args])
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value=RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE,
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -273,7 +273,7 @@ class TestCli:
         tool_args = cli_agrs_helper.get_all_required_parameters()
         mocker.patch("sys.argv", ["trcli", *tool_args])
         get_params_mock = mocker.patch(
-            "trcli.cli.get_params_from_config_file",
+            "trcli.cli.Environment.get_params_from_config_file",
             return_value=RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE,
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
