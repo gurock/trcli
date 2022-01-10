@@ -2,7 +2,12 @@ import json
 import pytest
 from junitparser import Element
 from tests.test_data.dataclass_creation import *
-from trcli.data_classes.dataclass_testrail import TestRailResult, TestRailProperty
+from trcli.data_classes.dataclass_testrail import (
+    TestRailResult,
+    TestRailProperty,
+    TestRailSuite,
+    TestRailCase,
+)
 from serde.json import to_json
 
 
@@ -42,3 +47,31 @@ class TestDataClassCreation:
         assert (
             result_json["description"] == "Some property: True"
         ), "Property description doesn't mach expected values"
+
+    def test_generate_suite_name(self, freezer):
+        freezer.move_to("2020-01-10")
+        suite = TestRailSuite(name=None, source="file.xml")
+        assert suite.name == "file.xml 10-01-20 01:00:00", "Name not generated properly"
+
+    @pytest.mark.parametrize(
+        "input_time, output_time",
+        [
+            ("1m 40s", "1m 40s"),
+            ("40s", "40s"),
+            ("119.99", "2m 0s"),
+            (0, "0m 0s"),
+            (50.4, "0m 50s"),
+            (-100, None),
+            ("181.0", "3m 1s"),
+        ],
+    )
+    def test_estimated_time_calc_in_testcase(self, input_time, output_time):
+        test_case = TestRailCase(section_id=1, title="Some Title", estimate=input_time)
+        assert test_case.estimate == output_time, "Estimate not parsed properly"
+
+    def test_estimated_time_calc_in_testcase_none(self):
+        test_case = TestRailCase(section_id=1, title="Some Title", estimate=None)
+        assert test_case.estimate == None, "Estimate is not None"
+        assert "estimate" not in to_json(
+            test_case
+        ), "Estimate should be skipped by serde"

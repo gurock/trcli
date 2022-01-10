@@ -70,6 +70,10 @@ class JunitParser(FileParser):
             )
 
         suite = TestRailSuite(
-            suite.name, suite_id=suite.id, time=suite.time, testsections=test_sections
+            suite.name,
+            suite_id=suite.id,
+            time=suite.time,
+            testsections=test_sections,
+            source=self.filename,
         )
         return suite

@@ -1,6 +1,8 @@
+import re
 from dataclasses import dataclass
 from typing import List
 from serde import field, serialize, deserialize
+from time import localtime, strftime
 
 
 @serialize
@@ -70,13 +72,33 @@ class TestRailCase:
     type_id: int = field(default=None, skip_if_default=True)
     milestone_id: int = field(default=None, skip_if_default=True)
     refs: str = field(default=None, skip_if_default=True)
-    result: TestRailResult = field(default=None, metadata={'serde_skip': True})
+    result: TestRailResult = field(default=None, metadata={"serde_skip": True})
 
     def __int__(self):
         return int(self.case_id) if self.case_id is not None else -1
 
     def __getitem__(self, item):
         return getattr(self, item)
+
+    def __post_init__(self):
+        if self.estimate is not None:
+            self.estimate = self.proper_format_for_estimate(self.estimate)
+
+    @staticmethod
+    def proper_format_for_estimate(estimate):
+        if len(re.findall(r"\d*[m].\d*[s]|\d*[s]", str(estimate))) == 1:
+            return estimate
+        else:
+            try:
+                rounded_secs = round(float(estimate))
+                return (
+                    f"{int(rounded_secs/60)}m {rounded_secs%60}s"
+                    if rounded_secs >= 0
+                    else None
+                )
+            except ValueError:
+                # unable to parse time format
+                return None
 
 
 @serialize
@@ -104,12 +126,16 @@ class TestRailSection:
 
     name: str
     suite_id: int
-    time: str = field(default=None, metadata={'serde_skip': True})
+    time: str = field(default=None, metadata={"serde_skip": True})
     parent_id: int = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
-    section_id: int = field(default=None, metadata={'serde_skip': True})
-    testcases: List[TestRailCase] = field(default_factory=list, metadata={'serde_skip': True})
-    properties: List[TestRailProperty] = field(default_factory=list, metadata={'serde_skip': True})
+    section_id: int = field(default=None, metadata={"serde_skip": True})
+    testcases: List[TestRailCase] = field(
+        default_factory=list, metadata={"serde_skip": True}
+    )
+    properties: List[TestRailProperty] = field(
+        default_factory=list, metadata={"serde_skip": True}
+    )
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -125,5 +151,11 @@ class TestRailSuite:
     suite_id: int = field(default=None, skip_if_default=True)
     time: str = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
-    testsections: List[TestRailSection] = field(default_factory=list, metadata={'serde_skip': True})
+    testsections: List[TestRailSection] = field(
+        default_factory=list, metadata={"serde_skip": True}
+    )
+    source: str = field(default=None, metadata={"serde_skip": True})
 
+    def __post_init__(self):
+        current_time = strftime("%d-%m-%y %H:%M:%S", localtime())
+        self.name = f"{self.source} {current_time}" if self.name is None else self.name
