@@ -24,6 +24,7 @@ class ResultsUploader:
         self.api_request_handler = ApiRequestHandler(
             api_client=self.instantiate_api_client(),
             suites_data=self.parsed_data,
+            verify=self.environment.verify,
         )
         if self.environment.suite_id:
             self.api_request_handler.data_provider.update_data(

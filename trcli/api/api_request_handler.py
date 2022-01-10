@@ -1,4 +1,5 @@
 from trcli.api.api_client import APIClient, APIClientResult
+from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import ProjectErrors, FAULT_MAPPING
@@ -17,13 +18,12 @@ class ApiRequestHandler:
     """Sends requests based on DataProvider bodies"""
 
     def __init__(
-        self,
-        api_client: APIClient,
-        suites_data: TestRailSuite,
+        self, api_client: APIClient, suites_data: TestRailSuite, verify: bool = False
     ):
         self.client = api_client
         self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
+        self.response_verifier = ApiResponseVerify(verify)
 
     def get_project_id(self, project_name: str) -> ProjectData:
         """
@@ -116,6 +116,11 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_suite/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
+                if not self.response_verifier.verify_returned_data(
+                    body, response.response_text
+                ):
+                    responses.append(response)
+                    error_message = FAULT_MAPPING["data_verification_error"]
             else:
                 error_message = response.error_message
                 break
@@ -176,6 +181,11 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
+                if not self.response_verifier.verify_returned_data(
+                    body, response.response_text
+                ):
+                    responses.append(response)
+                    error_message = FAULT_MAPPING["data_verification_error"]
             else:
                 error_message = response.error_message
                 break
@@ -236,6 +246,11 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_case/{body.pop('section_id')}", body)
             if not response.error_message:
                 responses.append(response)
+                if not self.response_verifier.verify_returned_data(
+                    body, response.response_text
+                ):
+                    responses.append(response)
+                    error_message = FAULT_MAPPING["data_verification_error"]
             else:
                 error_message = response.error_message
                 break
@@ -262,6 +277,10 @@ class ApiRequestHandler:
         """
         add_run_data = self.data_provider.add_run(run_name)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
+        if not self.response_verifier.verify_returned_data(
+            add_run_data, response.response_text
+        ):
+            response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text.get("id"), response.error_message
 
     def add_results(self, run_id: int) -> (dict, str):
@@ -274,6 +293,13 @@ class ApiRequestHandler:
         response = self.client.send_post(
             f"add_results_for_cases/{run_id}", add_results_data
         )
+        try:
+            if not self.response_verifier.verify_returned_data_for_list(
+                add_results_data["results"], response.response_text["results"]
+            ):
+                response.error_message = FAULT_MAPPING["data_verification_error"]
+        except KeyError:
+            response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text, response.error_message
 
     def close_run(self, run_id: int) -> (dict, str):

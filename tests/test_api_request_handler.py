@@ -11,13 +11,28 @@ from trcli.constants import ProjectErrors
 
 
 @pytest.fixture(scope="function")
-def api_request_handler():
-    api_client = APIClient(host_name=TEST_RAIL_URL)
-    file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
-    json_string = json.dumps(json.load(file_json))
-    test_input = from_json(TestRailSuite, json_string)
-    api_request = ApiRequestHandler(api_client, test_input)
-    yield api_request
+def handler_maker():
+    def _make_handler(verify=False):
+        api_client = APIClient(host_name=TEST_RAIL_URL)
+        file_json = open(
+            Path(__file__).parent / "test_data/json/api_request_handler.json"
+        )
+        json_string = json.dumps(json.load(file_json))
+        test_input = from_json(TestRailSuite, json_string)
+        api_request = ApiRequestHandler(api_client, test_input, verify)
+        return api_request
+
+    return _make_handler
+
+
+@pytest.fixture(scope="function")
+def api_request_handler(handler_maker):
+    yield handler_maker()
+
+
+@pytest.fixture(scope="function")
+def api_request_handler_verify(handler_maker):
+    yield handler_maker(verify=True)
 
 
 class TestApiRequestHandler:
@@ -400,3 +415,105 @@ class TestApiRequestHandler:
             == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
             " Please check your settings and try again."
         ), "Connection error is expected"
+
+    def test_add_suite_with_verify(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        mocked_response = {
+            "description": "..",
+            "id": 1,
+            "name": "Suite1",
+            "project_id": 1,
+            "url": "http:///testrail/index.php?/suites/view/1",
+        }
+
+        api_request_handler_verify.suites_data_from_provider.suite_id = None
+        requests_mock.post(create_url(f"add_suite/{project_id}"), json=mocked_response)
+        resources_added, error = api_request_handler_verify.add_suites(project_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_add_section_with_verify(self, handler_maker, requests_mock):
+        project_id = 3
+        mocked_response = {
+            "id": 1235,
+            "suite_id": 4,
+            "name": "Passed test",
+            "description": "Some description",
+        }
+
+        requests_mock.post(
+            create_url(f"add_section/{project_id}"), json=mocked_response
+        )
+        api_request_handler_verify = handler_maker(verify=True)
+        resources_added, error = api_request_handler_verify.add_sections(project_id)
+        assert error == "", "There should be no error in verification."
+        mocked_response["suite_id"] = 0
+        api_request_handler_verify = handler_maker(verify=True)
+        resources_added, error = api_request_handler_verify.add_sections(project_id)
+        assert (
+            error
+            == "Data verification failed. Server added different resource than expected."
+        ), "There should be error in verification."
+
+    def test_add_case_with_verify(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        mocked_response_for_case = {
+            "id": 3,
+            "suite_id": 4,
+            "section_id": 1234,
+            "title": "testCase2",
+            "estimate": "30s",
+        }
+
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case['section_id']}"),
+            json=mocked_response_for_case,
+        )
+        del api_request_handler_verify.suites_data_from_provider.testsections[
+            1
+        ].testcases[0]
+        resources_added, error = api_request_handler_verify.add_cases()
+        assert error == "", "There should be no error in verification."
+        mocked_response_for_case["estimate"] = "60s"
+        api_request_handler_verify.suites_data_from_provider.testsections[0].testcases[
+            1
+        ].case_id = None
+        resources_added, error = api_request_handler_verify.add_cases()
+        assert (
+            error
+            == "Data verification failed. Server added different resource than expected."
+        ), "There should be in verification."
+
+    def test_add_results_with_verify(self, handler_maker, requests_mock):
+        run_id = 2
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 250,
+            "results": [
+                {
+                    "case_id": 1,
+                    "status_id": 4,
+                    "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                },
+                {"case_id": None, "status_id": 1, "comment": "Comment testCase2"},
+                {"case_id": None, "status_id": 1, "comment": "Comment testCase3"},
+            ],
+        }
+
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"), json=mocked_response
+        )
+        api_request_handler_verify = handler_maker(True)
+        resources_added, error = api_request_handler_verify.add_results(run_id)
+        assert error == "", "Error occurred in add_results"
+        api_handler_for_error = handler_maker(True)
+        mocked_response["results"][0]["comment"] = "Some wrong comment returned by API"
+        resources_added, error = api_handler_for_error.add_results(run_id)
+
+        assert (
+            error
+            == "Data verification failed. Server added different resource than expected."
+        ), "Error should occur for wrong API response"

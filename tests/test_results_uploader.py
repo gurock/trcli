@@ -747,3 +747,24 @@ class TestResultsUploader:
         assert (
             api_client.timeout == timeout_expected_result
         ), f"Expected timeout to be set to: {timeout_expected_result}, but got: {api_client.timeout} instead."
+
+    def test_upload_results_with_verify(self, result_uploader_data_provider, mocker):
+        """The purpose of this test is to check if verification works correctly"""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        project_id = 10
+        environment.run_id = 10
+        environment.verify = True
+        get_project_id_mocker(
+            results_uploader=results_uploader,
+            project_id=project_id,
+            error_message="",
+            failing=True,
+        )
+        upload_results_inner_functions_mocker(
+            results_uploader=results_uploader, mocker=mocker, failing_functions=[]
+        )
+        results_uploader.upload_results()

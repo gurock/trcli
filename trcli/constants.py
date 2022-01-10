@@ -37,6 +37,7 @@ FAULT_MAPPING = dict(
     "specifying --suite-id.",
     unknown_suite_mode="Suite mode: '{suite_mode}' not recognised.",
     error_checking_missing_item="Error occurred while checking for '{missing_item}': '{error_message}'",
+    data_verification_error="Data verification failed. Server added different resource than expected.",
 )
 
 PROMPT_MESSAGES = dict(
