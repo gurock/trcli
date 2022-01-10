@@ -1,5 +1,8 @@
 import pytest
+
+import trcli.cli
 from trcli.constants import FAULT_MAPPING
+from trcli.cli import Environment
 from trcli.api.api_client import APIClient
 from requests.exceptions import RequestException, Timeout, ConnectionError
 from tests.helpers.api_client_helpers import (
@@ -18,7 +21,9 @@ from tests.test_data.api_client_test_data import (
 
 @pytest.fixture(scope="class")
 def api_resources():
-    api_client = APIClient(host_name=TEST_RAIL_URL)
+    environment = Environment()
+    environment.verbose = False
+    api_client = APIClient(host_name=TEST_RAIL_URL, logging_function=environment.vlog)
     yield api_client
 
 
@@ -100,7 +105,11 @@ class TestAPIClient:
             json=API_RATE_LIMIT_REACHED_ERROR,
         )
         sleep_mock = mocker.patch("trcli.api.api_client.sleep")
-        api_client = APIClient(TEST_RAIL_URL, retries=retries)
+        environment = Environment()
+        environment.verbose = False
+        api_client = APIClient(
+            TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
+        )
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock, retries + 1)
@@ -127,7 +136,11 @@ class TestAPIClient:
         """The purpose of this test is to check that retry mechanism will work as expected when
         facing Timeout and ConnectionError during sending get request."""
         requests_mock.get(create_url("get_projects"), exc=exception)
-        api_client = APIClient(TEST_RAIL_URL, retries=retries)
+        environment = Environment()
+        environment.verbose = False
+        api_client = APIClient(
+            TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
+        )
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock, retries + 1)
@@ -184,3 +197,25 @@ class TestAPIClient:
 
         check_calls_count(requests_mock)
         check_response(200, ["test", "list"], "", response)
+
+    @pytest.mark.api_client
+    def test_api_calls_are_logged(self, requests_mock, mocker):
+        """The purpose of this test is to check if APIClient will log API request and responses."""
+        environment = mocker.patch("trcli.cli.Environment")
+        requests_mock.get(create_url("get_projects"), json=["test", "list"])
+        expected_log_calls = [
+            mocker.call(
+                f"\n**** API Call\n"
+                f"method: GET\n"
+                f"url: https://FakeTestRail.io/index.php?/api/v2/get_projects\n"
+            ),
+            mocker.call(
+                f"response status code: 200\n"
+                + f"response body: ['test', 'list']\n"
+                + "****"
+            ),
+        ]
+        api_client = APIClient(TEST_RAIL_URL, logging_function=environment.vlog)
+        _ = api_client.send_get("get_projects")
+
+        environment.vlog.assert_has_calls(expected_log_calls)
