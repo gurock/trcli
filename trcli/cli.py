@@ -151,15 +151,24 @@ class TRCLI(click.MultiCommand):
     "--config",
     type=click.Path(),
     default=default_config_file_path,
+    metavar="",
     help="Optional path definition for testrail-credentials file or CF file.",
 )
-@click.option("-h", "--host", help="Hostname of instance.")
-@click.option("--project", help="Name of project the Test Run should be created under.")
-@click.option("--title", help="Title of Test Run to be created in TestRail.")
-@click.option("-u", "--username", type=click.STRING, help="Username.")
-@click.option("-p", "--password", type=click.STRING, help="Password.")
-@click.option("-k", "--key", help="API key.")
-@click.option("-v", "--verbose", is_flag=True, help="Enables verbose logging.")
+@click.option("-h", "--host", metavar="", help="Hostname of instance.")
+@click.option(
+    "--project",
+    metavar="",
+    help="Name of project the Test Run should be created under.",
+)
+@click.option(
+    "--title", metavar="", help="Title of Test Run to be created in TestRail."
+)
+@click.option("-u", "--username", type=click.STRING, metavar="", help="Username.")
+@click.option("-p", "--password", type=click.STRING, metavar="", help="Password.")
+@click.option("-k", "--key", metavar="", help="API key.")
+@click.option(
+    "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
+)
 @click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
 @click.option(
     "-b",
@@ -167,6 +176,7 @@ class TRCLI(click.MultiCommand):
     type=click.IntRange(min=2),
     default=50,
     show_default="50",
+    metavar="",
     help="Configurable batch size.",
 )
 @click.option(
@@ -175,22 +185,26 @@ class TRCLI(click.MultiCommand):
     type=click.IntRange(min=0),
     default=30,
     show_default="30",
+    metavar="",
     help="Batch timeout duration.",
 )
 @click.option(
     "--suite-id",
     type=click.IntRange(min=1),
+    metavar="",
     help="Suite ID for the results they are reporting.",
 )
 @click.option(
     "--run-id",
     type=click.IntRange(min=1),
+    metavar="",
     help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
 @click.option(
     "--case-id",
     type=click.IntRange(min=1),
-    help=" (otherwise the tool will attempt to create a new run).",
+    metavar="",
+    help="Case ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
 @click.option(
     "-y",
