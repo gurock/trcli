@@ -121,6 +121,7 @@ class ApiRequestHandler:
                 ):
                     responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
+                    break
             else:
                 error_message = response.error_message
                 break
@@ -186,6 +187,7 @@ class ApiRequestHandler:
                 ):
                     responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
+                    break
             else:
                 error_message = response.error_message
                 break
@@ -213,7 +215,6 @@ class ApiRequestHandler:
             test_case["case_id"]
             for sections in self.suites_data_from_provider.testsections
             for test_case in sections.testcases
-            if test_case.case_id is not None
         ]
 
         response = self.client.send_get(f"get_cases/{project_id}&suite_id={suite_id}")
@@ -251,6 +252,7 @@ class ApiRequestHandler:
                 ):
                     responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
+                    break
             else:
                 error_message = response.error_message
                 break
@@ -277,10 +279,11 @@ class ApiRequestHandler:
         """
         add_run_data = self.data_provider.add_run(run_name)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
-        if not self.response_verifier.verify_returned_data(
-            add_run_data, response.response_text
-        ):
-            response.error_message = FAULT_MAPPING["data_verification_error"]
+        if not response.error_message:
+            if not self.response_verifier.verify_returned_data(
+                add_run_data, response.response_text
+            ):
+                response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text.get("id"), response.error_message
 
     def add_results(self, run_id: int) -> (dict, str):
@@ -293,13 +296,6 @@ class ApiRequestHandler:
         response = self.client.send_post(
             f"add_results_for_cases/{run_id}", add_results_data
         )
-        try:
-            if not self.response_verifier.verify_returned_data_for_list(
-                add_results_data["results"], response.response_text["results"]
-            ):
-                response.error_message = FAULT_MAPPING["data_verification_error"]
-        except KeyError:
-            response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text, response.error_message
 
     def close_run(self, run_id: int) -> (dict, str):

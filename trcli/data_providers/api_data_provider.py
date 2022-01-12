@@ -47,6 +47,7 @@ class ApiDataProvider:
             str(prop)
             for section in self.suites_input.testsections
             for prop in section.properties
+            if prop.description is not None
         ]
         return {
             "name": run_name,
@@ -62,6 +63,7 @@ class ApiDataProvider:
                 to_dict(case.result)
                 for sublist in testcases
                 for case in sublist
+                if case.case_id is not None
             ],
         }
 

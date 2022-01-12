@@ -55,3 +55,44 @@ class TestResponseVerify:
         assert not api_response_verify.verify_returned_data_for_list(
             added_data, response_data
         ), "Missing item in response data. Verification should fail."
+
+    @pytest.mark.parametrize(
+        "input_data_estimate, response_data_estimate",
+        [
+            ({"estimate": "1m 40s"}, {"estimate": "1m 40s"}),
+            ({"estimate": "1m 60s"}, {"estimate": "2m"}),
+            ({"estimate": "120s"}, {"estimate": "2m"}),
+            ({"estimate": "36000s"}, {"estimate": "10h"}),
+            ({"time": "2m"}, {"time": "2m"}),
+        ],
+    )
+    def test_verify_estimate(
+        self,
+        api_response_verify: ApiResponseVerify,
+        input_data_estimate: dict,
+        response_data_estimate: dict,
+    ):
+
+        assert api_response_verify.verify_returned_data(
+            input_data_estimate, response_data_estimate
+        ), "Added data and returned data should match"
+
+    @pytest.mark.parametrize(
+        "input_data_estimate, response_data_estimate",
+        [
+            ({"description": ""}, {"description": None}),
+            ({"description": None}, {"description": ""}),
+            ({"comment": ""}, {"comment": None}),
+            ({"comment": None}, {"comment": ""}),
+        ],
+    )
+    def test_verify_strings(
+        self,
+        api_response_verify: ApiResponseVerify,
+        input_data_estimate: dict,
+        response_data_estimate: dict,
+    ):
+
+        assert api_response_verify.verify_returned_data(
+            input_data_estimate, response_data_estimate
+        ), "Added data and returned data should match"

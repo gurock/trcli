@@ -86,19 +86,12 @@ class TestRailCase:
 
     @staticmethod
     def proper_format_for_estimate(estimate):
-        if len(re.findall(r"\d*[m].\d*[s]|\d*[s]", str(estimate))) == 1:
-            return estimate
-        else:
-            try:
-                rounded_secs = round(float(estimate))
-                return (
-                    f"{int(rounded_secs/60)}m {rounded_secs%60}s"
-                    if rounded_secs >= 0
-                    else None
-                )
-            except ValueError:
-                # unable to parse time format
-                return None
+        try:
+            rounded_secs = round(float(estimate))
+            return f"{rounded_secs}s" if rounded_secs > 0 else None
+        except ValueError:
+            # unable to parse time format
+            return None
 
 
 @serialize
@@ -149,7 +142,7 @@ class TestRailSuite:
 
     name: str
     suite_id: int = field(default=None, skip_if_default=True)
-    time: str = field(default=None, skip_if_default=True)
+    time: str = field(default=None, metadata={"serde_skip": True})
     description: str = field(default=None, skip_if_default=True)
     testsections: List[TestRailSection] = field(
         default_factory=list, metadata={"serde_skip": True}
