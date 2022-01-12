@@ -5,6 +5,8 @@ import yaml
 from pathlib import Path
 
 from click.core import ParameterSource
+from tqdm import tqdm
+
 from trcli.constants import (
     FAULT_MAPPING,
     TOOL_VERSION_AND_USAGE,
@@ -52,6 +54,14 @@ class Environment:
         """Logs a message to stderr only if the verbose option is enabled"""
         if self.verbose:
             self.log(msg, *args)
+
+    def get_progress_bar(self, results_amount: int):
+        disabled = True if self.silent else False
+        return tqdm(
+            total=results_amount,
+            bar_format="Adding result: {n_fmt}/{total_fmt}{postfix}",
+            disable=disabled,
+        )
 
     def get_prompt_response_for_auto_creation(self, msg: str, *args):
         """Prompts for confirmation (yes/no) if auto_creation_response (--no/--yes parameters) is not set"""

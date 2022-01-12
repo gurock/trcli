@@ -54,16 +54,20 @@ class ApiDataProvider:
             "description": f"{' '.join(properties)}",
         }
 
-    def add_results_for_cases(self):
+    def add_results_for_cases(self, bulk_size):
         """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
-        return {
-            "results": [
+
+        result_bulks = ApiDataProvider.divide_list_into_bulks(
+            [
                 to_dict(case.result)
                 for sublist in testcases
                 for case in sublist
+                if case.case_id is not None
             ],
-        }
+            bulk_size=bulk_size,
+        )
+        return [{"results": result_bulk} for result_bulk in result_bulks]
 
     def update_data(
         self,
@@ -133,3 +137,9 @@ class ApiDataProvider:
             matched_case.case_id = case_updater["case_id"]
             matched_case.result.case_id = case_updater["case_id"]
             matched_case.section_id = case_updater["section_id"]
+
+    @staticmethod
+    def divide_list_into_bulks(input_list: List, bulk_size: int) -> List:
+        return [
+            input_list[i : i + bulk_size] for i in range(0, len(input_list), bulk_size)
+        ]
