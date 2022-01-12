@@ -194,12 +194,12 @@ class TestAPIClient:
     def test_not_json_response(self, api_resources, requests_mock, mocker):
         """The purpose of this test is to check if APIClient will handle properly situation
         where request response was not in json format."""
-        requests_mock.get(create_url("get_projects"), json=["test", "list"])
+        content = b"Test"
+        requests_mock.get(create_url("get_projects"), content=content)
         api_client = api_resources
         response = api_client.send_get("get_projects")
-
         check_calls_count(requests_mock)
-        check_response(200, ["test", "list"], "", response)
+        check_response(200, str(content), str(content), response)
 
     @pytest.mark.api_client
     def test_api_calls_are_logged(self, api_resources_maker, requests_mock, mocker):

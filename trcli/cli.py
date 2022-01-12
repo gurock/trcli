@@ -55,11 +55,11 @@ class Environment:
         if self.verbose:
             self.log(msg, *args)
 
-    def get_progress_bar(self, results_amount: int):
+    def get_progress_bar(self, results_amount: int, prefix: str):
         disabled = True if self.silent else False
         return tqdm(
             total=results_amount,
-            bar_format="Adding result: {n_fmt}/{total_fmt}{postfix}",
+            bar_format=prefix + ": {n_fmt}/{total_fmt}{postfix}",
             disable=disabled,
         )
 

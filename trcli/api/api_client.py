@@ -26,7 +26,7 @@ class APIClient:
     """
 
     SUFFIX_API_V2_VERSION = "index.php?/api/v2/"
-    RETRY_ON = [429, 500]
+    RETRY_ON = [429, 500, 502]
 
     def __init__(
         self,
@@ -109,6 +109,7 @@ class APIClient:
                     error_message = response_text.get("error", "")
                 except (JSONDecodeError, ValueError):
                     response_text = str(response.content)
+                    error_message = str(response.content)
                 except AttributeError:
                     error_message = ""
                 self.__log_response(response.status_code, response_text)

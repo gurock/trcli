@@ -404,3 +404,33 @@ class TestApiRequestHandler:
             == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
             " Please check your settings and try again."
         ), "Connection error is expected"
+
+    def test_add_results_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        resources_added, error = api_request_handler.add_results(run_id)
+        assert resources_added == [], "Expected empty list of added resources"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"
+
+    def test_add_results_keyboard_interrupt(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        mocker.patch(
+            "trcli.api.api_request_handler.as_completed", side_effect=KeyboardInterrupt
+        )
+        with pytest.raises(KeyboardInterrupt) as exception:
+            api_request_handler.add_results(run_id)

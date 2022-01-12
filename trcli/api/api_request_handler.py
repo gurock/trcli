@@ -2,9 +2,15 @@ from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
-from trcli.constants import ProjectErrors, FAULT_MAPPING
+from trcli.constants import (
+    ProjectErrors,
+    MAX_WORKERS_ADD_RESULTS,
+    MAX_WORKERS_ADD_CASE,
+    FAULT_MAPPING,
+)
 from typing import List
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 @dataclass
@@ -235,14 +241,26 @@ class ApiRequestHandler:
         add_case_data = self.data_provider.add_cases()
         responses = []
         error_message = ""
-        for body in add_case_data["bodies"]:
-            response = self.client.send_post(f"add_case/{body.pop('section_id')}", body)
-            if not response.error_message:
-                responses.append(response)
-            else:
-                error_message = response.error_message
-                break
 
+        with self.environment.get_progress_bar(
+            results_amount=len(add_case_data["bodies"]), prefix="Adding test cases"
+        ) as progress_bar:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_CASE) as executor:
+                futures = {
+                    executor.submit(
+                        self.client.send_post,
+                        f"add_case/{body.pop('section_id')}",
+                        body,
+                    ): body
+                    for body in add_case_data["bodies"]
+                }
+                responses, error_message = self.handle_futures(
+                    futures=futures, action_string="add_case", progress_bar=progress_bar
+                )
+            if error_message:
+                # When error_message is present we cannot be sure that responses contains all added items.
+                # Iterate through futures to get all responses from done tasks (not cancelled)
+                responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         returned_resources = [
             {
                 "case_id": response.response_text["id"],
@@ -282,19 +300,26 @@ class ApiRequestHandler:
             [len(results["results"]) for results in add_results_data_chunks]
         )
 
-        with self.environment.get_progress_bar(results_amount) as progress_bar:
-            for add_results_data in add_results_data_chunks:
-                response = self.client.send_post(
-                    f"add_results_for_cases/{run_id}", add_results_data
+        with self.environment.get_progress_bar(
+            results_amount=results_amount, prefix="Adding results"
+        ) as progress_bar:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_RESULTS) as executor:
+                futures = {
+                    executor.submit(
+                        self.client.send_post, f"add_results_for_cases/{run_id}", body
+                    ): body
+                    for body in add_results_data_chunks
+                }
+                responses, error_message = self.handle_futures(
+                    futures=futures,
+                    action_string="add_results",
+                    progress_bar=progress_bar,
                 )
-                if not response.error_message:
-                    responses.append(response.response_text)
-                    progress_bar.update(len(add_results_data["results"]))
-                else:
-                    error_message = response.error_message
-                    break
-            else:
-                progress_bar.set_postfix_str(s="Done.")
+            if error_message:
+                # When error_message is present we cannot be sure that responses contains all added items.
+                # Iterate through futures to get all responses from done tasks (not cancelled)
+                responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
+        responses = [response.response_text for response in responses]
         return responses, error_message
 
     def close_run(self, run_id: int) -> (dict, str):
@@ -306,3 +331,47 @@ class ApiRequestHandler:
         body = {"run_id": run_id}
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
+
+    def handle_futures(self, futures, action_string, progress_bar):
+        responses = []
+        error_message = ""
+        try:
+            for future in as_completed(futures):
+                arguments = futures[future]
+                response = future.result()
+                if not response.error_message:
+                    responses.append(response)
+                    if action_string == "add_results":
+                        progress_bar.update(len(arguments["results"]))
+                    else:
+                        progress_bar.update(1)
+                else:
+                    error_message = response.error_message
+                    self.environment.log(
+                        f"\nError during {action_string}. Trying to cancel scheduled tasks."
+                    )
+                    self.__cancel_running_futures(futures, action_string)
+                    break
+            else:
+                progress_bar.set_postfix_str(s="Done.")
+        except KeyboardInterrupt:
+            self.__cancel_running_futures(futures, action_string)
+            raise KeyboardInterrupt
+        return responses, error_message
+
+    @staticmethod
+    def retrieve_results_after_cancelling(futures):
+        responses = []
+        for future in as_completed(futures):
+            if not future.cancelled():
+                response = future.result()
+                if not response.error_message:
+                    responses.append(response)
+        return responses
+
+    def __cancel_running_futures(self, futures, action_string):
+        self.environment.log(
+            f"\nAborting: {action_string}. Trying to cancel scheduled tasks."
+        )
+        for future in futures:
+            future.cancel()
