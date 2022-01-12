@@ -1,5 +1,5 @@
 import requests
-from typing import Union
+from typing import Union, Callable
 from time import sleep
 from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
@@ -28,12 +28,19 @@ class APIClient:
     SUFFIX_API_V2_VERSION = "index.php?/api/v2/"
     RETRY_ON = [429, 500]
 
-    def __init__(self, host_name: str, retries: int = 3, timeout: int = 30):
+    def __init__(
+        self,
+        host_name: str,
+        logging_function: Callable = print,
+        retries: int = 3,
+        timeout: int = 30,
+    ):
         self.username = ""
         self.password = ""
         self.api_key = ""
         self.retries = retries
         self.timeout = timeout
+        self.logging_function = logging_function
         if not host_name.endswith("/"):
             host_name = host_name + "/"
         self.__url = host_name + self.SUFFIX_API_V2_VERSION
@@ -70,6 +77,7 @@ class APIClient:
         for i in range(self.retries + 1):
             error_message = ""
             try:
+                self.__log_request(method=method, url=url, payload=payload)
                 if method == "POST":
                     response = requests.post(
                         url=url,
@@ -103,7 +111,7 @@ class APIClient:
                     response_text = str(response.content)
                 except AttributeError:
                     error_message = ""
-
+                self.__log_response(response.status_code, response_text)
             if status_code not in self.RETRY_ON:
                 break
 
@@ -116,3 +124,17 @@ class APIClient:
         else:
             password = self.password
         return password
+
+    def __log_request(self, method: str, url: str, payload: dict):
+        self.logging_function(
+            f"\n**** API Call\n"
+            f"method: {method}\n"
+            f"url: {url}\n" + (f"payload: {payload}" if payload else "")
+        )
+
+    def __log_response(self, status_code, body):
+        self.logging_function(
+            f"response status code: {status_code}\n"
+            + f"response body: {body}\n"
+            + "****"
+        )
