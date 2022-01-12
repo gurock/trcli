@@ -59,7 +59,12 @@ class ApiDataProvider:
         testcases = [sections.testcases for sections in self.suites_input.testsections]
 
         result_bulks = ApiDataProvider.divide_list_into_bulks(
-            [to_dict(case.result) for sublist in testcases for case in sublist],
+            [
+                to_dict(case.result)
+                for sublist in testcases
+                for case in sublist
+                if case.case_id is not None
+            ],
             bulk_size=bulk_size,
         )
         return [{"results": result_bulk} for result_bulk in result_bulks]
