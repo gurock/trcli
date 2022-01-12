@@ -1,5 +1,5 @@
 import requests
-from typing import Union
+from typing import Union, Callable
 from time import sleep
 from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
@@ -31,7 +31,7 @@ class APIClient:
     def __init__(
         self,
         host_name: str,
-        logging_function=print,
+        logging_function: Callable = print,
         retries: int = 3,
         timeout: int = 30,
     ):

@@ -1,6 +1,4 @@
 import pytest
-
-import trcli.cli
 from trcli.constants import FAULT_MAPPING
 from trcli.cli import Environment
 from trcli.api.api_client import APIClient
@@ -20,11 +18,20 @@ from tests.test_data.api_client_test_data import (
 
 
 @pytest.fixture(scope="class")
-def api_resources():
-    environment = Environment()
-    environment.verbose = False
-    api_client = APIClient(host_name=TEST_RAIL_URL, logging_function=environment.vlog)
-    yield api_client
+def api_resources_maker():
+    def _make_api_resources(retries=3, environment=Environment()):
+        environment.verbose = False
+        api_client = APIClient(
+            host_name=TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
+        )
+        return api_client
+
+    return _make_api_resources
+
+
+@pytest.fixture(scope="class")
+def api_resources(api_resources_maker):
+    yield api_resources_maker()
 
 
 class TestAPIClient:
@@ -94,7 +101,7 @@ class TestAPIClient:
     @pytest.mark.api_client
     @pytest.mark.parametrize("retries, retry_after", [(4, "30"), (10, "60")])
     def test_retry_mechanism_too_many_requests(
-        self, retries, retry_after, requests_mock, mocker
+        self, retries, retry_after, api_resources_maker, requests_mock, mocker
     ):
         """The purpose of this test is to check that retry mechanism will work as expected when
         429 - too many requests will be received as an answer on get request."""
@@ -107,9 +114,7 @@ class TestAPIClient:
         sleep_mock = mocker.patch("trcli.api.api_client.sleep")
         environment = Environment()
         environment.verbose = False
-        api_client = APIClient(
-            TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
-        )
+        api_client = api_resources_maker(retries=retries)
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock, retries + 1)
@@ -131,16 +136,14 @@ class TestAPIClient:
         ids=["retry_on_timeout", "retry_on_connection_error"],
     )
     def test_retry_mechanism_exceptions(
-        self, retries, exception, expected_error_msg, requests_mock
+        self, retries, exception, expected_error_msg, api_resources_maker, requests_mock
     ):
         """The purpose of this test is to check that retry mechanism will work as expected when
         facing Timeout and ConnectionError during sending get request."""
         requests_mock.get(create_url("get_projects"), exc=exception)
         environment = Environment()
         environment.verbose = False
-        api_client = APIClient(
-            TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
-        )
+        api_client = api_resources_maker(retries=retries)
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock, retries + 1)
@@ -199,7 +202,7 @@ class TestAPIClient:
         check_response(200, ["test", "list"], "", response)
 
     @pytest.mark.api_client
-    def test_api_calls_are_logged(self, requests_mock, mocker):
+    def test_api_calls_are_logged(self, api_resources_maker, requests_mock, mocker):
         """The purpose of this test is to check if APIClient will log API request and responses."""
         environment = mocker.patch("trcli.cli.Environment")
         requests_mock.get(create_url("get_projects"), json=["test", "list"])
@@ -215,7 +218,7 @@ class TestAPIClient:
                 + "****"
             ),
         ]
-        api_client = APIClient(TEST_RAIL_URL, logging_function=environment.vlog)
+        api_client = api_resources_maker(environment=environment)
         _ = api_client.send_get("get_projects")
 
         environment.vlog.assert_has_calls(expected_log_calls)
