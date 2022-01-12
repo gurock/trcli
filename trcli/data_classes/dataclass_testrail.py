@@ -28,6 +28,8 @@ class TestRailResult:
             self.comment = self.get_comment_from_junit_element(
                 self.junit_result_unparsed
             )
+        if self.elapsed is not None:
+            self.elapsed = self.proper_format_for_elapsed(self.elapsed)
 
     @staticmethod
     def calculate_status_id_from_junit_element(junit_result: list) -> int:
@@ -57,6 +59,15 @@ class TestRailResult:
         else:
             return f"Type: {junit_result[0].type or ''}\nMessage: {junit_result[0].message or ''}\nText: {junit_result[0].text or ''}"
 
+    @staticmethod
+    def proper_format_for_elapsed(elapsed):
+        try:
+            rounded_secs = round(float(elapsed))
+            return f"{rounded_secs}s" if rounded_secs > 0 else None
+        except ValueError:
+            # unable to parse time format
+            return None
+
 
 @serialize
 @deserialize
@@ -79,19 +90,6 @@ class TestRailCase:
 
     def __getitem__(self, item):
         return getattr(self, item)
-
-    def __post_init__(self):
-        if self.estimate is not None:
-            self.estimate = self.proper_format_for_estimate(self.estimate)
-
-    @staticmethod
-    def proper_format_for_estimate(estimate):
-        try:
-            rounded_secs = round(float(estimate))
-            return f"{rounded_secs}s" if rounded_secs > 0 else None
-        except ValueError:
-            # unable to parse time format
-            return None
 
 
 @serialize

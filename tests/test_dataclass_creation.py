@@ -56,22 +56,20 @@ class TestDataClassCreation:
     @pytest.mark.parametrize(
         "input_time, output_time",
         [
-            ("1m 40s", "1m 40s"),
-            ("40s", "40s"),
-            ("119.99", "2m 0s"),
-            (0, "0m 0s"),
-            (50.4, "0m 50s"),
+            ("40", "40s"),
+            ("119.99", "120s"),
+            (0, None),
+            (50.4, "50s"),
             (-100, None),
-            ("181.0", "3m 1s"),
         ],
     )
-    def test_estimated_time_calc_in_testcase(self, input_time, output_time):
-        test_case = TestRailCase(section_id=1, title="Some Title", estimate=input_time)
-        assert test_case.estimate == output_time, "Estimate not parsed properly"
+    def test_elapsed_time_calc_in_testresult(self, input_time, output_time):
+        test_result = TestRailResult(case_id=1, elapsed=input_time)
+        assert test_result.elapsed == output_time, "Elapsed not parsed properly"
 
-    def test_estimated_time_calc_in_testcase_none(self):
-        test_case = TestRailCase(section_id=1, title="Some Title", estimate=None)
-        assert test_case.estimate == None, "Estimate is not None"
-        assert "estimate" not in to_json(
-            test_case
-        ), "Estimate should be skipped by serde"
+    def test_elapsed_time_calc_in_testresult_none(self):
+        test_result = TestRailResult(case_id=1, elapsed=None)
+        assert test_result.elapsed is None, "Elapsed is not None"
+        assert "elapsed" not in to_json(
+            test_result
+        ), "Elapsed should be skipped by serde"
