@@ -3,12 +3,6 @@ import trcli
 import enum
 
 
-class ProjectErrors(enum.IntEnum):
-    multiple_project_same_name = -1
-    not_existing_project = -2
-    other_error = -3
-
-
 FAULT_MAPPING = dict(
     missing_file="Please provide a valid path to your results file with the -f argument.",
     missing_host="Please provide a TestRail server address with the -h argument.",
@@ -38,6 +32,7 @@ FAULT_MAPPING = dict(
     unknown_suite_mode="Suite mode: '{suite_mode}' not recognised.",
     error_checking_missing_item="Error occurred while checking for '{missing_item}': '{error_message}'",
     data_verification_error="Data verification failed. Server added different resource than expected.",
+    unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail",
 )
 
 PROMPT_MESSAGES = dict(
