@@ -21,7 +21,7 @@ class ApiRequestHandler:
         self, api_client: APIClient, suites_data: TestRailSuite, verify: bool = False
     ):
         self.client = api_client
-        self.suffix = api_client.SUFFIX_API_V2_VERSION
+        self.suffix = api_client.VERSION
         self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
@@ -224,10 +224,10 @@ class ApiRequestHandler:
                 set(test_cases)
                 - set([test_case.get("id") for test_case in returned_cases])
             )
-            if len(missing_cases) == 1:
-                return True, error_message
-            elif len(missing_cases) > 1:
+            if any(missing_cases):
                 return False, FAULT_MAPPING["unknown_test_case_id"]
+            elif len(missing_cases) == 1:
+                return True, error_message
             else:
                 return False, error_message
         else:

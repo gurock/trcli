@@ -283,9 +283,6 @@ class TestApiRequestHandler:
         project_id = 3
         suite_id = api_request_handler.suites_data_from_provider.suite_id
         mocked_response_page_1 = {
-            "offset": 0,
-            "limit": 250,
-            "size": 250,
             "_links": {
                 "next": f"/api/v2/get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1",
                 "prev": None,
@@ -301,19 +298,45 @@ class TestApiRequestHandler:
             json=mocked_response_page_1,
         )
         requests_mock.get(
-            create_url(
-                f"/api/v2/get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1"
-            ),
+            create_url(f"get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1"),
             json=mocked_response_page_2,
         )
-        missing_ids, error = api_request_handler.check_missing_test_cases_ids(3)
-        assert missing_ids, "There should be one case missing"
-        assert error == "", "Error occurred in close_run"
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+        assert missing_ids, "There should be one, None type case missing"
+        assert error == "", "Error occurred in check"
         mocked_response_page_2["cases"] = [{"id": 10, "title": ".."}]
-        missing_ids, error = api_request_handler.check_missing_test_cases_ids(3)
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
         assert (
             error == FAULT_MAPPING["unknown_test_case_id"]
-        ), "Error occurred in close_run"
+        ), "There should be an error because of invalid test case id"
+
+    def test_check_missing_test_case_id_not_found(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        suite_id = api_request_handler.suites_data_from_provider.suite_id
+        section_1 = api_request_handler.suites_data_from_provider.testsections[0]
+        section_2 = api_request_handler.suites_data_from_provider.testsections[1]
+        mocked_response_page = {
+            "_links": {"next": None, "prev": None},
+            "cases": [{"id": 1, "title": ".."}, {"id": 2, "title": ".."}],
+        }
+        requests_mock.get(
+            create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
+            json=mocked_response_page,
+        )
+        section_1.testcases[1].case_id = 1
+        section_2.testcases[0].case_id = 123
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+        assert (
+            error == FAULT_MAPPING["unknown_test_case_id"]
+        ), "There should be an error because of invalid test case id"
 
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
