@@ -11,6 +11,7 @@ class FileParser:
     def __init__(self, filepath: Union[str, Path]):
         self.filepath = filepath
         self.check_file(filepath)
+        self.filename = Path(filepath).name
 
     @staticmethod
     def check_file(filepath: Union[str, Path]):

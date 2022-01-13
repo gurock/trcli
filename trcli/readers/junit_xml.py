@@ -52,9 +52,12 @@ class JunitParser(FileParser):
                         section.id,
                         case.name,
                         case.id,
-                        case.time,
                         result=(
-                            TestRailResult(case.id, junit_result_unparsed=case.result)
+                            TestRailResult(
+                                case.id,
+                                elapsed=case.time,
+                                junit_result_unparsed=case.result,
+                            )
                         ),
                     )
                 )
@@ -70,6 +73,10 @@ class JunitParser(FileParser):
             )
 
         suite = TestRailSuite(
-            suite.name, suite_id=suite.id, time=suite.time, testsections=test_sections
+            suite.name,
+            suite_id=suite.id,
+            time=suite.time,
+            testsections=test_sections,
+            source=self.filename,
         )
         return suite

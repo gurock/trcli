@@ -2,7 +2,12 @@ import json
 import pytest
 from junitparser import Element
 from tests.test_data.dataclass_creation import *
-from trcli.data_classes.dataclass_testrail import TestRailResult, TestRailProperty
+from trcli.data_classes.dataclass_testrail import (
+    TestRailResult,
+    TestRailProperty,
+    TestRailSuite,
+    TestRailCase,
+)
 from serde.json import to_json
 
 
@@ -42,3 +47,29 @@ class TestDataClassCreation:
         assert (
             result_json["description"] == "Some property: True"
         ), "Property description doesn't mach expected values"
+
+    def test_generate_suite_name(self, freezer):
+        freezer.move_to("2020-01-10")
+        suite = TestRailSuite(name=None, source="file.xml")
+        assert suite.name == "file.xml 10-01-20 01:00:00", "Name not generated properly"
+
+    @pytest.mark.parametrize(
+        "input_time, output_time",
+        [
+            ("40", "40s"),
+            ("119.99", "120s"),
+            (0, None),
+            (50.4, "50s"),
+            (-100, None),
+        ],
+    )
+    def test_elapsed_time_calc_in_testresult(self, input_time, output_time):
+        test_result = TestRailResult(case_id=1, elapsed=input_time)
+        assert test_result.elapsed == output_time, "Elapsed not parsed properly"
+
+    def test_elapsed_time_calc_in_testresult_none(self):
+        test_result = TestRailResult(case_id=1, elapsed=None)
+        assert test_result.elapsed is None, "Elapsed is not None"
+        assert "elapsed" not in to_json(
+            test_result
+        ), "Elapsed should be skipped by serde"

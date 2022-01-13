@@ -24,8 +24,9 @@ class APIClient:
     """
     Class to be used for basic communication over API.
     """
-
-    SUFFIX_API_V2_VERSION = "index.php?/api/v2/"
+    PREFIX = "index.php?"
+    VERSION = "/api/v2/"
+    SUFFIX_API_V2_VERSION = f"{PREFIX}{VERSION}"
     RETRY_ON = [429, 500]
 
     def __init__(

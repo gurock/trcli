@@ -8,21 +8,31 @@ from trcli.cli import Environment
 from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.constants import ProjectErrors
+from trcli.constants import ProjectErrors, FAULT_MAPPING
 
 
 @pytest.fixture(scope="function")
-def api_request_handler():
-    api_client = APIClient(host_name=TEST_RAIL_URL)
-    environment = Environment()
-    environment.project = "Test Project"
-    environment.batch_size = 10
-    file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
-    json_string = json.dumps(json.load(file_json))
-    test_input = from_json(TestRailSuite, json_string)
-    api_request = ApiRequestHandler(environment, api_client, test_input)
-    yield api_request
+def handler_maker():
+    def _make_handler(verify=False):
+        api_client = APIClient(host_name=TEST_RAIL_URL)
+        environment = Environment()
+        environment.project = "Test Project"
+        environment.batch_size = 10
+        file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
+        json_string = json.dumps(json.load(file_json))
+        test_input = from_json(TestRailSuite, json_string)
+        api_request = ApiRequestHandler(environment, api_client, test_input, verify)
+        return api_request
+    return _make_handler
 
+@pytest.fixture(scope="function")
+def api_request_handler(handler_maker):
+    yield handler_maker()
+
+
+@pytest.fixture(scope="function")
+def api_request_handler_verify(handler_maker):
+    yield handler_maker(verify=True)
 
 class TestApiRequestHandler:
     def test_return_project(
@@ -271,19 +281,61 @@ class TestApiRequestHandler:
     ):
         project_id = 3
         suite_id = api_request_handler.suites_data_from_provider.suite_id
-        mocked_response = {
-            "offset": 0,
-            "limit": 250,
-            "size": 250,
-            "cases": [{"id": 10, "title": ".."}, {"id": 20, "title": ".."}],
+        mocked_response_page_1 = {
+            "_links": {
+                "next": f"/api/v2/get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1",
+                "prev": None,
+            },
+            "cases": [{"id": 2, "title": ".."}],
+        }
+        mocked_response_page_2 = {
+            "_links": {"next": None, "prev": None},
+            "cases": [{"id": 1, "title": ".."}],
         }
         requests_mock.get(
             create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
-            json=mocked_response,
+            json=mocked_response_page_1,
         )
-        missing_ids, error = api_request_handler.check_missing_test_cases_ids(3)
-        assert missing_ids == [1], "There should be one case missing"
-        assert error == "", "Error occurred in close_run"
+        requests_mock.get(
+            create_url(f"get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1"),
+            json=mocked_response_page_2,
+        )
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+        assert missing_ids, "There should be one, None type case missing"
+        assert error == "", "Error occurred in check"
+        mocked_response_page_2["cases"] = [{"id": 10, "title": ".."}]
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+        assert (
+            error == FAULT_MAPPING["unknown_test_case_id"]
+        ), "There should be an error because of invalid test case id"
+
+    def test_check_missing_test_case_id_not_found(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        suite_id = api_request_handler.suites_data_from_provider.suite_id
+        section_1 = api_request_handler.suites_data_from_provider.testsections[0]
+        section_2 = api_request_handler.suites_data_from_provider.testsections[1]
+        mocked_response_page = {
+            "_links": {"next": None, "prev": None},
+            "cases": [{"id": 1, "title": ".."}, {"id": 2, "title": ".."}],
+        }
+        requests_mock.get(
+            create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
+            json=mocked_response_page,
+        )
+        section_1.testcases[1].case_id = 1
+        section_2.testcases[0].case_id = 123
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+        assert (
+            error == FAULT_MAPPING["unknown_test_case_id"]
+        ), "There should be an error because of invalid test case id"
 
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
@@ -404,3 +456,72 @@ class TestApiRequestHandler:
             == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
             " Please check your settings and try again."
         ), "Connection error is expected"
+
+    def test_add_suite_with_verify(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        mocked_response = {
+            "description": "..",
+            "id": 1,
+            "name": "Suite1",
+            "project_id": 1,
+            "url": "http:///testrail/index.php?/suites/view/1",
+        }
+
+        api_request_handler_verify.suites_data_from_provider.suite_id = None
+        requests_mock.post(create_url(f"add_suite/{project_id}"), json=mocked_response)
+        resources_added, error = api_request_handler_verify.add_suites(project_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_add_section_with_verify(self, handler_maker, requests_mock):
+        project_id = 3
+        mocked_response = {
+            "id": 1235,
+            "suite_id": 4,
+            "name": "Passed test",
+            "description": "Some description",
+        }
+
+        requests_mock.post(
+            create_url(f"add_section/{project_id}"), json=mocked_response
+        )
+        api_request_handler_verify = handler_maker(verify=True)
+        resources_added, error = api_request_handler_verify.add_sections(project_id)
+        assert error == "", "There should be no error in verification."
+        mocked_response["suite_id"] = 0
+        api_request_handler_verify = handler_maker(verify=True)
+        resources_added, error = api_request_handler_verify.add_sections(project_id)
+        assert (
+            error
+            == "Data verification failed. Server added different resource than expected."
+        ), "There should be error in verification."
+
+    def test_add_case_with_verify(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        mocked_response_for_case = {
+            "id": 3,
+            "suite_id": 4,
+            "section_id": 1234,
+            "title": "testCase2",
+            "estimate": "30s",
+        }
+
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case['section_id']}"),
+            json=mocked_response_for_case,
+        )
+        del api_request_handler_verify.suites_data_from_provider.testsections[
+            1
+        ].testcases[0]
+        resources_added, error = api_request_handler_verify.add_cases()
+        assert error == "", "There should be no error in verification."
+        mocked_response_for_case["estimate"] = "60s"
+        api_request_handler_verify.suites_data_from_provider.testsections[0].testcases[
+            1
+        ].case_id = None
+        resources_added, error = api_request_handler_verify.add_cases()
+        assert (
+            error == FAULT_MAPPING["data_verification_error"]
+        ), "There should be error in verification."
