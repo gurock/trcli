@@ -320,7 +320,7 @@ class ApiRequestHandler:
                 # Iterate through futures to get all responses from done tasks (not cancelled)
                 responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
-        return responses, error_message
+        return responses, error_message, progress_bar.n
 
     def close_run(self, run_id: int) -> (dict, str):
         """
