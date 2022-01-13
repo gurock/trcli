@@ -24,14 +24,16 @@ post_run_bodies = {
     "suite_id": 123,
 }
 
-post_results_for_cases_body = {
-    "results": [
-        {
-            "case_id": 60,
-            "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
-            "status_id": 4,
-        },
-        {"case_id": 1234567, "comment": "", "status_id": 1},
-        {"case_id": 4, "comment": "", "status_id": 1},
-    ]
-}
+post_results_for_cases_body = [
+    {
+        "results": [
+            {
+                "case_id": 60,
+                "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                "status_id": 4,
+            },
+            {"case_id": 1234567, "comment": "", "status_id": 1},
+            {"case_id": 4, "comment": "", "status_id": 1},
+        ]
+    }
+]
