@@ -18,12 +18,16 @@ def handler_maker():
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
+        file_json = open(
+            Path(__file__).parent / "test_data/json/api_request_handler.json"
+        )
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
         return api_request
+
     return _make_handler
+
 
 @pytest.fixture(scope="function")
 def api_request_handler(handler_maker):
@@ -33,6 +37,7 @@ def api_request_handler(handler_maker):
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
+
 
 class TestApiRequestHandler:
     def test_return_project(
@@ -52,7 +57,7 @@ class TestApiRequestHandler:
         assert api_request_handler.get_project_id("DataHub") == ProjectData(
             project_id=ProjectErrors.multiple_project_same_name,
             suite_mode=-1,
-            error_message="Given project name matches more than one result.",
+            error_message="Given project name matches more than one result. Please specify which should be used using the --project-id argument",
         ), "Get project should return proper project data object"
         assert api_request_handler.get_project_id("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,

@@ -50,6 +50,13 @@ class ResultsUploader:
                 )
             )
             exit(1)
+        elif project_data.project_id == ProjectErrors.multiple_project_same_name:
+            self.environment.log(
+                FAULT_MAPPING["error_checking_project"].format(
+                    error_message=project_data.error_message
+                )
+            )
+            exit(1)
         else:
             suite_id, result_code = self.get_suite_id(
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
