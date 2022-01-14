@@ -9,7 +9,8 @@ FAULT_MAPPING = dict(
     missing_project="Please specify the project name using the --project argument.",
     missing_title="Please give your Test Run a title using the --title argument.",
     missing_username="Please provide a valid TestRail username using the -u argument.",
-    more_than_one_project="Given project name matches more than one result. Please specify which should be used using the --project-id argument",
+    more_than_one_project="Given project name matches more than one result."
+    "Please specify which should be used using the --project-id argument",
     project_doesnt_exists="project doesn't exists.",
     missing_password_and_key="Please provide either a password using the -p "
     "argument or an API key using the -k argument.",

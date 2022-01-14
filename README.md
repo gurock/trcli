@@ -59,6 +59,8 @@ Options:
                      CF file.
   -h, --host         Hostname of instance.
   --project          Name of project the Test Run should be created under.
+  --project-id       Project id. Will be only used in case project name will
+                     be duplicated in TestRail  [x>=1]
   --title            Title of Test Run to be created in TestRail.
   -u, --username     Username.
   -p, --password     Password.

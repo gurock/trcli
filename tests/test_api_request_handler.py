@@ -57,8 +57,25 @@ class TestApiRequestHandler:
         assert api_request_handler.get_project_id("DataHub") == ProjectData(
             project_id=ProjectErrors.multiple_project_same_name,
             suite_mode=-1,
-            error_message="Given project name matches more than one result. Please specify which should be used using the --project-id argument",
+            error_message="Given project name matches more than one result."
+            "Please specify which should be used using the --project-id argument",
         ), "Get project should return proper project data object"
+        assert api_request_handler.get_project_id("DataHub", 2) == ProjectData(
+            project_id=ProjectErrors.multiple_project_same_name,
+            suite_mode=-1,
+            error_message="Given project name matches more than one result."
+            "Please specify which should be used using the --project-id argument",
+        ), (
+            "Get project should return proper project data object when passing"
+            "project_id and project_id doesn't match the response"
+        )
+        assert api_request_handler.get_project_id("DataHub", 3) == ProjectData(
+            project_id=3, suite_mode=1, error_message=""
+        ), (
+            "Get project should return proper project data object when passing"
+            "project_id and project_id matches response"
+        )
+
         assert api_request_handler.get_project_id("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,
             suite_mode=-1,
