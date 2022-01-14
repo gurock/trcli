@@ -23,7 +23,7 @@ class ApiRequestHandler:
         environment: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
-        verify: bool = False
+        verify: bool = False,
     ):
         self.environment = environment
         self.client = api_client
@@ -80,7 +80,11 @@ class ApiRequestHandler:
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
             available_suites = [suite["id"] for suite in response.response_text]
-            return (True, "") if suite_id in available_suites else (False, "")
+            return (
+                (True, "")
+                if suite_id in available_suites
+                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+            )
         else:
             return None, response.error_message
 

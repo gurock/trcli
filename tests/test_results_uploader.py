@@ -205,7 +205,7 @@ class TestResultsUploader:
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
             suite_id
         )
-        results_uploader.api_request_handler.check_suite_id.return_value = True
+        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
         (result_suite_id, result_return_code,) = results_uploader.get_suite_id(
             project_id=project_id, suite_mode=SuiteModes.single_suite
         )
@@ -428,7 +428,7 @@ class TestResultsUploader:
         expected_result_code = 1
         suite_id = 1
         project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = True
+        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
 
         (
             result_suite_id,
@@ -456,7 +456,10 @@ class TestResultsUploader:
         suite_id = 1
         expected_result_code = -1
         project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = False
+        results_uploader.api_request_handler.check_suite_id.return_value = (
+            False,
+            FAULT_MAPPING["missing_suite"].format(suite_id=suite_id),
+        )
 
         (
             result_suite_id,
