@@ -34,6 +34,7 @@
                     "section_id": null,
                     "title": "testCase2",
                     "case_id": null,
+                    "time": 400,
                     "result": {"comment": "", "status_id": 1, "case_id": null}
                 }
             ]

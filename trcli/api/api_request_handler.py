@@ -1,5 +1,6 @@
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
+from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import (
@@ -28,11 +29,14 @@ class ApiRequestHandler:
         environment: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
+        verify: bool = False,
     ):
         self.environment = environment
         self.client = api_client
+        self.suffix = api_client.VERSION
         self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
+        self.response_verifier = ApiResponseVerify(verify)
 
     def get_project_id(self, project_name: str) -> ProjectData:
         """
@@ -125,6 +129,12 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_suite/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
+                if not self.response_verifier.verify_returned_data(
+                    body, response.response_text
+                ):
+                    responses.append(response)
+                    error_message = FAULT_MAPPING["data_verification_error"]
+                    break
             else:
                 error_message = response.error_message
                 break
@@ -185,6 +195,12 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
+                if not self.response_verifier.verify_returned_data(
+                    body, response.response_text
+                ):
+                    responses.append(response)
+                    error_message = FAULT_MAPPING["data_verification_error"]
+                    break
             else:
                 error_message = response.error_message
                 break
@@ -201,7 +217,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def check_missing_test_cases_ids(self, project_id: int) -> (List[int], str):
+    def check_missing_test_cases_ids(self, project_id: int) -> (bool, str):
         """
         Check what test cases id's are missing in DataProvider.
         :project_id: project_id
@@ -212,25 +228,22 @@ class ApiRequestHandler:
             test_case["case_id"]
             for sections in self.suites_data_from_provider.testsections
             for test_case in sections.testcases
-            if test_case.case_id is not None
         ]
 
-        response = self.client.send_get(f"get_cases/{project_id}&suite_id={suite_id}")
-        if not response.error_message:
-            return (
-                list(
-                    set(test_cases)
-                    - set(
-                        [
-                            test_case.get("id")
-                            for test_case in response.response_text["cases"]
-                        ]
-                    )
-                ),
-                response.error_message,
+        returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
+        if not error_message:
+            missing_cases = list(
+                set(test_cases)
+                - set([test_case.get("id") for test_case in returned_cases])
             )
+            if any(missing_cases):
+                return False, FAULT_MAPPING["unknown_test_case_id"]
+            elif len(missing_cases) == 1:
+                return True, error_message
+            else:
+                return False, error_message
         else:
-            return [], response.error_message
+            return False, error_message
 
     def add_cases(self) -> (List[dict], str):
         """
@@ -241,7 +254,6 @@ class ApiRequestHandler:
         add_case_data = self.data_provider.add_cases()
         responses = []
         error_message = ""
-
         with self.environment.get_progress_bar(
             results_amount=len(add_case_data["bodies"]), prefix="Adding test cases"
         ) as progress_bar:
@@ -283,6 +295,11 @@ class ApiRequestHandler:
         """
         add_run_data = self.data_provider.add_run(run_name)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
+        if not response.error_message:
+            if not self.response_verifier.verify_returned_data(
+                add_run_data, response.response_text
+            ):
+                response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text.get("id"), response.error_message
 
     def add_results(self, run_id: int) -> (dict, str):
@@ -344,6 +361,13 @@ class ApiRequestHandler:
                     if action_string == "add_results":
                         progress_bar.update(len(arguments["results"]))
                     else:
+                        if not self.response_verifier.verify_returned_data(
+                            arguments, response.response_text
+                        ):
+                            responses.append(response)
+                            error_message = FAULT_MAPPING["data_verification_error"]
+                            self.__cancel_running_futures(futures, action_string)
+                            break
                         progress_bar.update(1)
                 else:
                     error_message = response.error_message
@@ -375,3 +399,27 @@ class ApiRequestHandler:
         )
         for future in futures:
             future.cancel()
+
+    def __get_all_cases(
+        self, project_id=None, suite_id=None, link=None, cases=[]
+    ) -> (List[dict], str):
+        """
+        Get all cases from all pages if number of cases is too big to return in single response.
+        Function using next page field in API response.
+        """
+        if link is None:
+            response = self.client.send_get(
+                f"get_cases/{project_id}&suite_id={suite_id}"
+            )
+        else:
+            response = self.client.send_get(link.replace(self.suffix, ""))
+        if not response.error_message:
+            cases = cases + response.response_text["cases"]
+            if response.response_text["_links"]["next"] is not None:
+                return self.__get_all_cases(
+                    link=response.response_text["_links"]["next"], cases=cases
+                )
+            else:
+                return cases, response.error_message
+        else:
+            return [], response.error_message

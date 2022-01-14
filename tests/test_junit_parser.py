@@ -32,8 +32,9 @@ class TestJunitParser:
         ],
     )
     def test_junit_xml_parser_valid_files(
-        self, input_xml_path: Union[str, Path], expected_path: str
+        self, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
+        freezer.move_to("2020-05-20")
         file_reader = JunitParser(input_xml_path)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
         parsing_result_json = asdict(read_junit)
@@ -44,7 +45,7 @@ class TestJunitParser:
         ), "Result of parsing Junit XML is different than expected"
 
     def test_junit_xml_parser_invalid_file(self):
-        file_reader = JunitParser("test_data/XML/invalid.xml")
+        file_reader = JunitParser(Path(__file__).parent / "test_data/XML/invalid.xml")
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 
@@ -56,7 +57,7 @@ class TestJunitParser:
         self, test_rail_suite: TestRailSuite
     ) -> TestRailSuite:
         """helper method to delete junit_result_unparsed field,
-         which asdict() method of dataclass can't handle"""
+        which asdict() method of dataclass can't handle"""
         for section in test_rail_suite.testsections:
             for case in section.testcases:
                 case.result.junit_result_unparsed = []
