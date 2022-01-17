@@ -23,7 +23,9 @@ class ResultsUploader:
             self.parsed_data.suite_id = self.environment.suite_id
         self.api_request_handler = ApiRequestHandler(
             api_client=self.instantiate_api_client(),
+            environment=self.environment,
             suites_data=self.parsed_data,
+            verify=self.environment.verify,
         )
         if self.environment.suite_id:
             self.api_request_handler.data_provider.update_data(
@@ -275,12 +277,17 @@ class ResultsUploader:
         """
         Instantiate api client with needed attributes taken from environment.
         """
+        logging_function = self.environment.vlog
         if self.environment.timeout:
             api_client = APIClient(
-                self.environment.host, timeout=self.environment.timeout
+                self.environment.host,
+                logging_function=logging_function,
+                timeout=self.environment.timeout,
             )
         else:
-            api_client = APIClient(self.environment.host)
+            api_client = APIClient(
+                self.environment.host, logging_function=logging_function
+            )
         api_client.username = self.environment.username
         api_client.password = self.environment.password
         api_client.api_key = self.environment.key
