@@ -3,6 +3,7 @@ import pytest
 from tests.helpers.results_uploader_helper import (
     get_project_id_mocker,
     upload_results_inner_functions_mocker,
+    api_request_handler_delete_mocker,
 )
 from tests.test_data.results_provider_test_data import (
     TEST_UPLOAD_RESULTS_FLOW_TEST_DATA,
@@ -15,6 +16,8 @@ from tests.test_data.results_provider_test_data import (
     TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS,
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_TEST_DATA,
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
+    TEST_REVERT_FUNCTIONS_AND_EXPECTED,
+    TEST_REVERT_FUNCTIONS_IDS,
 )
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import Environment
@@ -140,6 +143,12 @@ class TestResultsUploader:
             failing_functions=[failing_function],
         )
 
+        api_request_handler_delete_mocker(
+            results_uploader=results_uploader,
+            mocker=mocker,
+            failing_functions=[],
+        )
+
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
@@ -199,7 +208,7 @@ class TestResultsUploader:
             api_request_handler,
             results_uploader,
         ) = result_uploader_data_provider
-        suite_id = 10
+        suite_id = -1
         result_code = 1
         project_id = 1
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
@@ -298,7 +307,7 @@ class TestResultsUploader:
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
         "suite_ids, error_message, expected_suite_id, expected_result_code",
-        [([10], "", 10, 1), ([], "Could not get suites", -1, -1)],
+        [([10], "", -1, 1), ([], "Could not get suites", -1, -1)],
         ids=["get_suite_ids succeeds", "get_suite_ids fails"],
     )
     def test_get_suite_id_single_suite_mode(
@@ -418,7 +427,7 @@ class TestResultsUploader:
 
     @pytest.mark.results_uploader
     def test_check_suite_id_returns_id(self, result_uploader_data_provider):
-        """The purpose of this test is to check that check_suite_id function will return suite ID,
+        """The purpose of this test is to check that check_suite_id function will success,
         when suite ID exists under specified project."""
         (
             environment,
@@ -430,14 +439,10 @@ class TestResultsUploader:
         project_id = 2
         results_uploader.api_request_handler.check_suite_id.return_value = True
 
-        (
-            result_suite_id,
-            result_code,
-        ) = results_uploader.check_suite_id(suite_id=suite_id, project_id=project_id)
+        result_code = results_uploader.check_suite_id(
+            suite_id=suite_id, project_id=project_id
+        )
 
-        assert (
-            result_suite_id == suite_id
-        ), f"Expected to get {suite_id} as suite ID, but got {result_suite_id} instead."
         assert (
             result_code == expected_result_code
         ), f"Expected to get {result_code} as result code, but got {expected_result_code} instead."
@@ -458,10 +463,9 @@ class TestResultsUploader:
         project_id = 2
         results_uploader.api_request_handler.check_suite_id.return_value = False
 
-        (
-            result_suite_id,
-            result_code,
-        ) = results_uploader.check_suite_id(suite_id=suite_id, project_id=project_id)
+        result_code = results_uploader.check_suite_id(
+            suite_id=suite_id, project_id=project_id
+        )
         expected_log_calls = [
             mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
         ]
@@ -470,9 +474,6 @@ class TestResultsUploader:
         assert (
             result_code == expected_result_code
         ), f"Expected to get {expected_result_code} as result code, but got {result_code} instead."
-        assert (
-            result_suite_id == suite_id
-        ), f"Expected to get {suite_id} as suite id, but got {result_suite_id} instead."
 
     @pytest.mark.results_uploader
     def test_add_missing_sections_no_missing_sections(
@@ -747,3 +748,43 @@ class TestResultsUploader:
         assert (
             api_client.timeout == timeout_expected_result
         ), f"Expected timeout to be set to: {timeout_expected_result}, but got: {api_client.timeout} instead."
+
+    def test_rollback_changes_empty_changelist(self, result_uploader_data_provider):
+        """The purpose of this test is to check that rollback
+        will not give unexpected results on empty changelist"""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+
+        assert (
+            results_uploader.rollback_changes() == []
+        ), "No revert function invoked inside so revert_changes output should be empty"
+
+    @pytest.mark.results_uploader
+    @pytest.mark.parametrize(
+        "failing_function, expected_result",
+        TEST_REVERT_FUNCTIONS_AND_EXPECTED,
+        ids=TEST_REVERT_FUNCTIONS_IDS,
+    )
+    def test_rollback_changes_after_error(
+        self, result_uploader_data_provider, failing_function, expected_result, mocker
+    ):
+        """The purpose of this test is to check that if rollback behave properly
+        when no perrmisions on deleting resources on every stage"""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+
+        api_request_handler_delete_mocker(
+            results_uploader=results_uploader,
+            mocker=mocker,
+            failing_functions=[failing_function],
+        )
+
+        assert (
+            results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
+        ), "Revert process not completed as expected in test."

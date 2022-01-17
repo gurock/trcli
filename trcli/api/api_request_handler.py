@@ -23,7 +23,7 @@ class ApiRequestHandler:
         environment: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
-        verify: bool = False
+        verify: bool = False,
     ):
         self.environment = environment
         self.client = api_client
@@ -329,6 +329,53 @@ class ApiRequestHandler:
         """
         body = {"run_id": run_id}
         response = self.client.send_post(f"close_run/{run_id}", body)
+        return response.response_text, response.error_message
+
+    def delete_suite(self, suite_id: int) -> (dict, str):
+        """
+        Delete suite given suite id
+        :suite_id: suite id
+        :returns: Tuple with dict created resources and error string.
+        """
+        response = self.client.send_post(f"delete_suite/{suite_id}", payload={})
+        return response.response_text, response.error_message
+
+    def delete_sections(self, added_sections: List[dict]) -> (dict, str):
+        """
+        Delete section given add_sections response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        responses = []
+        error_message = ""
+        for section in added_sections:
+            response = self.client.send_post(
+                f"delete_section/{section['section_id']}", payload={}
+            )
+            if not response.error_message:
+                responses.append(response.response_text)
+            else:
+                error_message = response.error_message
+                break
+        return responses, error_message
+
+    def delete_cases(self, suite_id: int, added_cases: List[dict]) -> (dict, str):
+        """
+        Delete cases given add_cases response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        body = {"case_ids": [case["case_id"] for case in added_cases]}
+        response = self.client.send_post(f"delete_cases/{suite_id}", payload=body)
+        return response.response_text, response.error_message
+
+    def delete_run(self, run_id) -> (dict, str):
+        """
+        Delete run given add_run response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        response = self.client.send_post(f"delete_run/{run_id}", payload={})
         return response.response_text, response.error_message
 
     def __get_all_cases(

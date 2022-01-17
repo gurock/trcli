@@ -1,4 +1,3 @@
-import enum
 import trcli
 import enum
 
@@ -66,3 +65,15 @@ class SuiteModes(enum.IntEnum):
     single_suite = 1
     single_suite_baselines = 2
     multiple_suites = 3
+
+
+class RevertMessages:
+    suite_deleted = "Deleted created suite"
+    suite_not_deleted = "Unable to delete created suite"
+    section_deleted = "Deleted created section"
+    section_not_deleted = "Unable to delete created section"
+    test_cases_deleted = "Deleted created test cases"
+    test_cases_not_deleted = "Unable to delete created test cases"
+    run_deleted = "Deleted created run"
+    run_not_deleted = "Unable to delete created run"
+

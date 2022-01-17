@@ -18,12 +18,16 @@ def handler_maker():
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
+        file_json = open(
+            Path(__file__).parent / "test_data/json/api_request_handler.json"
+        )
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
         return api_request
+
     return _make_handler
+
 
 @pytest.fixture(scope="function")
 def api_request_handler(handler_maker):
@@ -33,6 +37,7 @@ def api_request_handler(handler_maker):
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
+
 
 class TestApiRequestHandler:
     def test_return_project(
@@ -525,3 +530,62 @@ class TestApiRequestHandler:
         assert (
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."
+
+    def test_delete_section(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        sections_id = [{"section_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_section/{sections_id[0]['section_id']}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_sections(sections_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_suite(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_suite/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_suite(suite_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_cases(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        cases = [{"case_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_cases/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_cases(
+            suite_id, cases
+        )
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_run(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        run_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_run/{run_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_run(run_id)
+        assert error == "", "There should be no error in verification."
