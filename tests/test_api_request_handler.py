@@ -581,3 +581,62 @@ class TestApiRequestHandler:
         assert (
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."
+
+    def test_delete_section(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        sections_id = [{"section_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_section/{sections_id[0]['section_id']}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_sections(sections_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_suite(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_suite/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_suite(suite_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_cases(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        cases = [{"case_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_cases/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_cases(
+            suite_id, cases
+        )
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_run(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        run_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_run/{run_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_run(run_id)
+        assert error == "", "There should be no error in verification."

@@ -1,4 +1,4 @@
-from trcli.constants import FAULT_MAPPING
+from trcli.constants import FAULT_MAPPING, RevertMessages
 
 TEST_UPLOAD_RESULTS_FLOW_TEST_DATA = [
     "get_suite_id",
@@ -90,7 +90,7 @@ TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS = [
 ]
 TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_TEST_DATA = [
     (([], "Could not get suites"), -1, -1, "Could not get suites"),
-    (([10], ""), 10, 1, ""),
+    (([10], ""), -1, 1, ""),
     (
         ([10, 11, 12], ""),
         -1,
@@ -105,4 +105,50 @@ TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS = [
     "get_suite_ids fails",
     "get_suite_ids returns one ID",
     "get_suite_ids returns more than one ID",
+]
+
+TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
+    (
+        "delete_suite",
+        [
+            RevertMessages.run_deleted,
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_deleted,
+            RevertMessages.suite_not_deleted,
+        ],
+    ),
+    (
+        "delete_sections",
+        [
+            RevertMessages.run_deleted,
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_not_deleted,
+            RevertMessages.suite_deleted,
+        ],
+    ),
+    (
+        "delete_cases",
+        [
+            RevertMessages.run_deleted,
+            RevertMessages.test_cases_not_deleted,
+            RevertMessages.section_deleted,
+            RevertMessages.suite_deleted,
+        ],
+    ),
+    (
+        "delete_run",
+        [
+            RevertMessages.run_not_deleted,
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_deleted,
+            RevertMessages.suite_deleted,
+        ],
+    ),
+]
+
+TEST_REVERT_FUNCTIONS_IDS = [
+    "unable_to_delete_suite",
+    "unable_to_delete_sections",
+    "unable_to_delete_cases",
+    "unable_to_delete_run",
 ]
