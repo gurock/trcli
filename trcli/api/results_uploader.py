@@ -42,11 +42,20 @@ class ResultsUploader:
         """
         start = time.time()
         results_amount = None
-        project_data = self.api_request_handler.get_project_id(self.environment.project)
+        project_data = self.api_request_handler.get_project_id(
+            self.environment.project, self.environment.project_id
+        )
         if project_data.project_id == ProjectErrors.not_existing_project:
             self.environment.log(project_data.error_message)
             exit(1)
         elif project_data.project_id == ProjectErrors.other_error:
+            self.environment.log(
+                FAULT_MAPPING["error_checking_project"].format(
+                    error_message=project_data.error_message
+                )
+            )
+            exit(1)
+        elif project_data.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.log(
                 FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
@@ -181,12 +190,13 @@ class ResultsUploader:
         on failure.
         """
         result_code = -1
-        if self.api_request_handler.check_suite_id(project_id):
+        suite_exists, error_message = self.api_request_handler.check_suite_id(
+            project_id
+        )
+        if suite_exists:
             result_code = 1
         else:
-            self.environment.log(
-                FAULT_MAPPING["missing_suite"].format(suite_id=suite_id)
-            )
+            self.environment.log(error_message)
         return suite_id, result_code
 
     def add_missing_sections(self, project_id: int) -> Tuple[list, int]:

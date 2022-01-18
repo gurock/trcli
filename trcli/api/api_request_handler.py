@@ -37,7 +37,7 @@ class ApiRequestHandler:
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
 
-    def get_project_id(self, project_name: str) -> ProjectData:
+    def get_project_id(self, project_name: str, project_id: int = None) -> ProjectData:
         """
         Send get_projects with project name
         :project_name: Project name
@@ -57,11 +57,23 @@ class ApiRequestHandler:
                     error_message=response.error_message,
                 )
             elif len(available_projects) > 1:
-                return ProjectData(
-                    project_id=ProjectErrors.multiple_project_same_name,
-                    suite_mode=-1,
-                    error_message=FAULT_MAPPING["more_than_one_project"],
-                )
+                if project_id in [project["id"] for project in available_projects]:
+                    project_index = [
+                        index
+                        for index, project in enumerate(available_projects)
+                        if project["id"] == project_id
+                    ][0]
+                    return ProjectData(
+                        project_id=int(available_projects[project_index]["id"]),
+                        suite_mode=int(available_projects[project_index]["suite_mode"]),
+                        error_message=response.error_message,
+                    )
+                else:
+                    return ProjectData(
+                        project_id=ProjectErrors.multiple_project_same_name,
+                        suite_mode=-1,
+                        error_message=FAULT_MAPPING["more_than_one_project"],
+                    )
             else:
                 return ProjectData(
                     project_id=ProjectErrors.not_existing_project,
@@ -85,7 +97,11 @@ class ApiRequestHandler:
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
             available_suites = [suite["id"] for suite in response.response_text]
-            return (True, "") if suite_id in available_suites else (False, "")
+            return (
+                (True, "")
+                if suite_id in available_suites
+                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+            )
         else:
             return None, response.error_message
 

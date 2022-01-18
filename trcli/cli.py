@@ -28,6 +28,7 @@ class Environment:
         self.file = None
         self.host = None
         self.project = None
+        self.project_id = None
         self.title = None
         self.username = None
         self.password = None
@@ -169,6 +170,12 @@ class TRCLI(click.MultiCommand):
     "--project",
     metavar="",
     help="Name of project the Test Run should be created under.",
+)
+@click.option(
+    "--project-id",
+    type=click.IntRange(min=1),
+    metavar="",
+    help="Project id. Will be only used in case project name will be duplicated in TestRail",
 )
 @click.option(
     "--title", metavar="", help="Title of Test Run to be created in TestRail."
