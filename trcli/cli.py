@@ -12,7 +12,7 @@ from trcli.constants import (
     TOOL_VERSION_AND_USAGE,
     MISSING_COMMAND_SLOGAN,
 )
-
+from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
@@ -184,8 +184,8 @@ class TRCLI(click.MultiCommand):
     "-b",
     "--batch-size",
     type=click.IntRange(min=2),
-    default=50,
-    show_default="50",
+    default=DEFAULT_BATCH_SIZE,
+    show_default=str(DEFAULT_BATCH_SIZE),
     metavar="",
     help="Configurable batch size.",
 )
@@ -193,8 +193,8 @@ class TRCLI(click.MultiCommand):
     "-t",
     "--timeout",
     type=click.IntRange(min=0),
-    default=30,
-    show_default="30",
+    default=DEFAULT_API_CALL_TIMEOUT,
+    show_default=str(DEFAULT_API_CALL_TIMEOUT),
     metavar="",
     help="Batch timeout duration.",
 )

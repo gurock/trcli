@@ -55,9 +55,6 @@ Supported and loaded modules:
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
 
-MAX_WORKERS_ADD_CASE = 10
-MAX_WORKERS_ADD_RESULTS = 10
-
 
 class ProjectErrors(enum.IntEnum):
     multiple_project_same_name = -1

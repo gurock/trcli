@@ -5,6 +5,7 @@ from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
 from requests.exceptions import RequestException, Timeout, ConnectionError
 from trcli.constants import FAULT_MAPPING
+from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_API_CALL_RETRIES
 from dataclasses import dataclass
 
 
@@ -34,8 +35,8 @@ class APIClient:
         self,
         host_name: str,
         logging_function: Callable = print,
-        retries: int = 3,
-        timeout: int = 30,
+        retries: int = DEFAULT_API_CALL_RETRIES,
+        timeout: int = DEFAULT_API_CALL_TIMEOUT,
     ):
         self.username = ""
         self.password = ""

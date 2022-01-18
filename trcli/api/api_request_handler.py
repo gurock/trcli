@@ -5,10 +5,9 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import (
     ProjectErrors,
-    MAX_WORKERS_ADD_RESULTS,
-    MAX_WORKERS_ADD_CASE,
     FAULT_MAPPING,
 )
+from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
 from typing import List
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
