@@ -7,6 +7,7 @@ from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuiteModes
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.readers.file_parser import FileParser
 from trcli.constants import ProjectErrors
+import time
 
 
 class ResultsUploader:
@@ -39,6 +40,8 @@ class ResultsUploader:
         Exits with result code 1 printing proper message to the user in case of a failure
         or with result code 0 if succeeds.
         """
+        start = time.time()
+        results_amount = None
         project_data = self.api_request_handler.get_project_id(
             self.environment.project, self.environment.project_id
         )
@@ -77,7 +80,6 @@ class ResultsUploader:
             )
             if result_code == -1:
                 exit(1)
-
             if not self.environment.run_id:
                 self.environment.log(f"Creating test run. ", new_line=False)
                 added_run, error_message = self.api_request_handler.add_run(
@@ -90,18 +92,27 @@ class ResultsUploader:
                 run_id = added_run
             else:
                 run_id = self.environment.run_id
-
-            added_results, error_message = self.api_request_handler.add_results(run_id)
+            (
+                added_results,
+                error_message,
+                results_amount,
+            ) = self.api_request_handler.add_results(run_id)
             if error_message:
                 self.environment.log(error_message)
                 exit(1)
 
             self.environment.log("Closing test run. ", new_line=False)
+
             response, error_message = self.api_request_handler.close_run(run_id)
             if error_message:
                 self.environment.log(error_message)
                 exit(1)
             self.environment.log("Done.")
+        stop = time.time()
+        if results_amount:
+            self.environment.log(
+                f"Submitted {results_amount} test results in {stop - start:.1f}secs."
+            )
 
     def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
         """

@@ -281,9 +281,12 @@ class TestApiRequestHandler:
         requests_mock.post(
             create_url(f"add_results_for_cases/{run_id}"), json=mocked_response
         )
-        resources_added, error = api_request_handler.add_results(run_id)
+        resources_added, error, results_added = api_request_handler.add_results(run_id)
         assert [mocked_response] == resources_added, "Invalid response from add_results"
         assert error == "", "Error occurred in add_results"
+        assert results_added == len(
+            mocked_response["results"]
+        ), f"Expected {len(mocked_response['results'])} results to be added but got {results_added} instead."
 
     def test_close_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
@@ -478,6 +481,37 @@ class TestApiRequestHandler:
             == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
             " Please check your settings and try again."
         ), "Connection error is expected"
+
+    def test_add_results_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        resources_added, error, results_added = api_request_handler.add_results(run_id)
+        assert resources_added == [], "Expected empty list of added resources"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"
+        assert results_added == 0, "Expected 0 resources to be added."
+
+    def test_add_results_keyboard_interrupt(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        mocker.patch(
+            "trcli.api.api_request_handler.as_completed", side_effect=KeyboardInterrupt
+        )
+        with pytest.raises(KeyboardInterrupt) as exception:
+            api_request_handler.add_results(run_id)
 
     def test_add_suite_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
