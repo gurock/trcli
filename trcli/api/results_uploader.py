@@ -39,11 +39,20 @@ class ResultsUploader:
         Exits with result code 1 printing proper message to the user in case of a failure
         or with result code 0 if succeeds.
         """
-        project_data = self.api_request_handler.get_project_id(self.environment.project)
+        project_data = self.api_request_handler.get_project_id(
+            self.environment.project, self.environment.project_id
+        )
         if project_data.project_id == ProjectErrors.not_existing_project:
             self.environment.log(project_data.error_message)
             exit(1)
         elif project_data.project_id == ProjectErrors.other_error:
+            self.environment.log(
+                FAULT_MAPPING["error_checking_project"].format(
+                    error_message=project_data.error_message
+                )
+            )
+            exit(1)
+        elif project_data.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.log(
                 FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
