@@ -45,7 +45,7 @@ class TestJunitParser:
         ), "Result of parsing Junit XML is different than expected"
 
     def test_junit_xml_parser_invalid_file(self):
-        file_reader = JunitParser("test_data/XML/invalid.xml")
+        file_reader = JunitParser(Path(__file__).parent / "test_data/XML/invalid.xml")
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 

@@ -5,6 +5,7 @@ from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
 from requests.exceptions import RequestException, Timeout, ConnectionError
 from trcli.constants import FAULT_MAPPING
+from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_API_CALL_RETRIES
 from dataclasses import dataclass
 
 
@@ -24,17 +25,18 @@ class APIClient:
     """
     Class to be used for basic communication over API.
     """
+
     PREFIX = "index.php?"
     VERSION = "/api/v2/"
     SUFFIX_API_V2_VERSION = f"{PREFIX}{VERSION}"
-    RETRY_ON = [429, 500]
+    RETRY_ON = [429, 500, 502]
 
     def __init__(
         self,
         host_name: str,
         logging_function: Callable = print,
-        retries: int = 3,
-        timeout: int = 30,
+        retries: int = DEFAULT_API_CALL_RETRIES,
+        timeout: int = DEFAULT_API_CALL_TIMEOUT,
     ):
         self.username = ""
         self.password = ""
@@ -74,11 +76,13 @@ class APIClient:
         password = self.__get_password()
         auth = HTTPBasicAuth(username=self.username, password=password)
         headers = {"Content-Type": "application/json"}
-
+        verbose_log_message = ""
         for i in range(self.retries + 1):
             error_message = ""
             try:
-                self.__log_request(method=method, url=url, payload=payload)
+                verbose_log_message = APIClient.format_request_for_vlog(
+                    method=method, url=url, payload=payload
+                )
                 if method == "POST":
                     response = requests.post(
                         url=url,
@@ -110,12 +114,20 @@ class APIClient:
                     error_message = response_text.get("error", "")
                 except (JSONDecodeError, ValueError):
                     response_text = str(response.content)
+                    error_message = str(response.content)
                 except AttributeError:
                     error_message = ""
-                self.__log_response(response.status_code, response_text)
+                verbose_log_message = (
+                    verbose_log_message
+                    + APIClient.format_response_for_vlog(
+                        response.status_code, response_text
+                    )
+                )
             if status_code not in self.RETRY_ON:
                 break
 
+        if verbose_log_message:
+            self.logging_function(verbose_log_message)
         return APIClientResult(status_code, response_text, error_message)
 
     def __get_password(self) -> str:
@@ -126,16 +138,14 @@ class APIClient:
             password = self.password
         return password
 
-    def __log_request(self, method: str, url: str, payload: dict):
-        self.logging_function(
+    @staticmethod
+    def format_request_for_vlog(method: str, url: str, payload: dict):
+        return (
             f"\n**** API Call\n"
             f"method: {method}\n"
             f"url: {url}\n" + (f"payload: {payload}" if payload else "")
         )
 
-    def __log_response(self, status_code, body):
-        self.logging_function(
-            f"response status code: {status_code}\n"
-            + f"response body: {body}\n"
-            + "****"
-        )
+    @staticmethod
+    def format_response_for_vlog(status_code, body):
+        return f"response status code: {status_code}\nresponse body: {body}\n****"

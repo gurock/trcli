@@ -7,6 +7,7 @@ from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuiteModes
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.readers.file_parser import FileParser
 from trcli.constants import ProjectErrors, RevertMessages
+import time
 
 
 class ResultsUploader:
@@ -39,11 +40,22 @@ class ResultsUploader:
         Exits with result code 1 printing proper message to the user in case of a failure
         or with result code 0 if succeeds.
         """
-        project_data = self.api_request_handler.get_project_id(self.environment.project)
+        start = time.time()
+        results_amount = None
+        project_data = self.api_request_handler.get_project_id(
+            self.environment.project, self.environment.project_id
+        )
         if project_data.project_id == ProjectErrors.not_existing_project:
             self.environment.log(project_data.error_message)
             exit(1)
         elif project_data.project_id == ProjectErrors.other_error:
+            self.environment.log(
+                FAULT_MAPPING["error_checking_project"].format(
+                    error_message=project_data.error_message
+                )
+            )
+            exit(1)
+        elif project_data.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.log(
                 FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
@@ -78,7 +90,6 @@ class ResultsUploader:
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
-
             if not self.environment.run_id:
                 self.environment.log(f"Creating test run. ", new_line=False)
                 added_run, error_message = self.api_request_handler.add_run(
@@ -97,8 +108,11 @@ class ResultsUploader:
                 run_id = added_run
             else:
                 run_id = self.environment.run_id
-
-            added_results, error_message = self.api_request_handler.add_results(run_id)
+            (
+                added_results,
+                error_message,
+                results_amount,
+            ) = self.api_request_handler.add_results(run_id)
             if error_message:
                 self.environment.log(error_message)
                 revert_logs = self.rollback_changes(
@@ -111,11 +125,17 @@ class ResultsUploader:
                 exit(1)
 
             self.environment.log("Closing test run. ", new_line=False)
+
             response, error_message = self.api_request_handler.close_run(run_id)
             if error_message:
                 self.environment.log(error_message)
                 exit(1)
             self.environment.log("Done.")
+        stop = time.time()
+        if results_amount:
+            self.environment.log(
+                f"Submitted {results_amount} test results in {stop - start:.1f}secs."
+            )
 
     def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
         """
@@ -189,12 +209,13 @@ class ResultsUploader:
         on failure.
         """
         result_code = -1
-        if self.api_request_handler.check_suite_id(project_id):
+        suite_exists, error_message = self.api_request_handler.check_suite_id(
+            project_id
+        )
+        if suite_exists:
             result_code = 1
         else:
-            self.environment.log(
-                FAULT_MAPPING["missing_suite"].format(suite_id=suite_id)
-            )
+            self.environment.log(error_message)
         return result_code
 
     def add_missing_sections(self, project_id: int) -> Tuple[list, int]:

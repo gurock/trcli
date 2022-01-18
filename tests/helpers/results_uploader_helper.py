@@ -112,9 +112,14 @@ def add_results_mocker(results_uploader: ResultsUploader, mocker=None, failing=F
         results_uploader.api_request_handler.add_results.return_value = (
             [],
             "Failed to add results.",
+            0,
         )
     else:
-        results_uploader.api_request_handler.add_results.return_value = ([1, 2, 3], "")
+        results_uploader.api_request_handler.add_results.return_value = (
+            [1, 2, 3],
+            "",
+            3,
+        )
 
 
 def close_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):

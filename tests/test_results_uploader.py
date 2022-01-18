@@ -77,8 +77,19 @@ class TestResultsUploader:
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
 
     @pytest.mark.results_uploader
+    @pytest.mark.parametrize(
+        "error_type, error_message",
+        [
+            (ProjectErrors.other_error, "Unable to connect"),
+            (
+                ProjectErrors.multiple_project_same_name,
+                FAULT_MAPPING["more_than_one_project"],
+            ),
+        ],
+        ids=["Unknown error", "project name matches more than one result"],
+    )
     def test_error_during_checking_of_project(
-        self, result_uploader_data_provider, mocker
+        self, error_type, error_message, result_uploader_data_provider, mocker
     ):
         """The purpose of this test is to check that proper message would be printed and trcli tool will
         terminate with proper code when errors occurs during project name check."""
@@ -90,14 +101,14 @@ class TestResultsUploader:
         exit_code = 1
         get_project_id_mocker(
             results_uploader=results_uploader,
-            project_id=ProjectErrors.other_error,
-            error_message="Unable to connect",
+            project_id=error_type,
+            error_message=error_message,
             failing=True,
         )
         expected_log_calls = [
             mocker.call(
                 FAULT_MAPPING["error_checking_project"].format(
-                    error_message="Unable to connect"
+                    error_message=error_message
                 )
             )
         ]
@@ -214,7 +225,7 @@ class TestResultsUploader:
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
             suite_id
         )
-        results_uploader.api_request_handler.check_suite_id.return_value = True
+        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
         (result_suite_id, result_return_code,) = results_uploader.get_suite_id(
             project_id=project_id, suite_mode=SuiteModes.single_suite
         )
@@ -437,7 +448,7 @@ class TestResultsUploader:
         expected_result_code = 1
         suite_id = 1
         project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = True
+        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
 
         result_code = results_uploader.check_suite_id(
             suite_id=suite_id, project_id=project_id
@@ -461,7 +472,10 @@ class TestResultsUploader:
         suite_id = 1
         expected_result_code = -1
         project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = False
+        results_uploader.api_request_handler.check_suite_id.return_value = (
+            False,
+            FAULT_MAPPING["missing_suite"].format(suite_id=suite_id),
+        )
 
         result_code = results_uploader.check_suite_id(
             suite_id=suite_id, project_id=project_id
