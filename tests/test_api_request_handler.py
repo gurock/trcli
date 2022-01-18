@@ -18,12 +18,16 @@ def handler_maker():
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
+        file_json = open(
+            Path(__file__).parent / "test_data/json/api_request_handler.json"
+        )
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
         return api_request
+
     return _make_handler
+
 
 @pytest.fixture(scope="function")
 def api_request_handler(handler_maker):
@@ -33,6 +37,7 @@ def api_request_handler(handler_maker):
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
+
 
 class TestApiRequestHandler:
     def test_return_project(
@@ -76,7 +81,7 @@ class TestApiRequestHandler:
         api_request_handler.suites_data_from_provider.suite_id = 6
         assert api_request_handler.check_suite_id(project_id) == (
             False,
-            "",
+            FAULT_MAPPING["missing_suite"].format(suite_id=6),
         ), "Given suite id should NOT exist in mocked response."
 
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):

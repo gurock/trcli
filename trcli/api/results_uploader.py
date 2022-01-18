@@ -170,12 +170,13 @@ class ResultsUploader:
         on failure.
         """
         result_code = -1
-        if self.api_request_handler.check_suite_id(project_id):
+        suite_exists, error_message = self.api_request_handler.check_suite_id(
+            project_id
+        )
+        if suite_exists:
             result_code = 1
         else:
-            self.environment.log(
-                FAULT_MAPPING["missing_suite"].format(suite_id=suite_id)
-            )
+            self.environment.log(error_message)
         return suite_id, result_code
 
     def add_missing_sections(self, project_id: int) -> Tuple[list, int]:
