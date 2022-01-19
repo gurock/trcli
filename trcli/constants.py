@@ -4,6 +4,7 @@ import enum
 
 FAULT_MAPPING = dict(
     missing_file="Please provide a valid path to your results file with the -f argument.",
+    invalid_file="Provided file is not a valid XML file.",
     missing_host="Please provide a TestRail server address with the -h argument.",
     missing_project="Please specify the project name using the --project argument.",
     missing_title="Please give your Test Run a title using the --title argument.",
@@ -77,4 +78,3 @@ class RevertMessages:
     test_cases_not_deleted = "Unable to delete created test cases"
     run_deleted = "Deleted created run"
     run_not_deleted = "Unable to delete created run"
-
