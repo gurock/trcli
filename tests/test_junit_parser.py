@@ -1,6 +1,7 @@
-from pathlib import Path
 import pytest
 import json
+from pathlib import Path
+from xml.etree.ElementTree import ParseError
 from junitparser import JUnitXmlError
 from trcli.readers.junit_xml import JunitParser
 from typing import Union
@@ -47,6 +48,13 @@ class TestJunitParser:
     def test_junit_xml_parser_invalid_file(self):
         file_reader = JunitParser(Path(__file__).parent / "test_data/XML/invalid.xml")
         with pytest.raises(JUnitXmlError):
+            file_reader.parse_file()
+
+    def test_junit_xml_parser_invalid_empty_file(self):
+        file_reader = JunitParser(
+            Path(__file__).parent / "test_data/XML/invalid_empty.xml"
+        )
+        with pytest.raises(ParseError):
             file_reader.parse_file()
 
     def test_junit_xml_parser_file_not_found(self):

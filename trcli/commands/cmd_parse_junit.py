@@ -1,4 +1,7 @@
+from xml.etree.ElementTree import ParseError
+
 import click
+from junitparser import JUnitXmlError
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
 from trcli.constants import FAULT_MAPPING
 from trcli.readers.junit_xml import JunitParser
@@ -19,4 +22,7 @@ def cli(environment: Environment, context: click.Context, file):
         result_uploader.upload_results()
     except FileNotFoundError:
         environment.log(FAULT_MAPPING["missing_file"])
+        exit(1)
+    except (JUnitXmlError, ParseError):
+        environment.log(FAULT_MAPPING["invalid_file"])
         exit(1)
