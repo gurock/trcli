@@ -6,9 +6,10 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailResult,
     TestRailProperty,
     TestRailSuite,
-    TestRailCase,
+    TestRailCase, TestRailSection,
 )
 from serde.json import to_json
+from trcli.data_classes.validation_exception import ValidationException
 
 
 class TestDataClassCreation:
@@ -73,3 +74,11 @@ class TestDataClassCreation:
         assert "elapsed" not in to_json(
             test_result
         ), "Elapsed should be skipped by serde"
+
+    def test_validation_error_for_case(self):
+        with pytest.raises(ValidationException):
+            TestRailCase(section_id=1, title="")
+
+    def test_validation_error_for_section(self):
+        with pytest.raises(ValidationException):
+            TestRailSection(suite_id=1, name="")
