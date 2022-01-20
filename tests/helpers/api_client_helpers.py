@@ -17,11 +17,11 @@ def check_response(
     assert (
         response.status_code == expected_status_code
     ), f"Status code {expected_status_code} expected. Got {response.status_code} instead."
-    assert (
-        response.response_text == expected_response_text
+    assert str(response.response_text) == str(
+        expected_response_text
     ), f"response_text not equal to expected: {expected_response_text}. Got: {response.response_text}"
-    assert (
-        response.error_message == expected_error_message
+    assert str(response.error_message) == str(
+        expected_error_message
     ), f"error_message not equal to expected: {expected_error_message}. Got: {response.error_message}"
 
 
