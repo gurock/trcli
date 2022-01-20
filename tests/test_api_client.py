@@ -150,15 +150,25 @@ class TestAPIClient:
         check_response(-1, "", expected_error_msg, response)
 
     @pytest.mark.api_client
-    def test_request_exception(self, api_resources, requests_mock):
+    def test_request_exception(self, api_resources_maker, requests_mock, mocker):
         """The purpose of this test is to check that request exception during request sending would be caught and handled
         in a proper way (status code returned will be -1, proper error message would be returned)."""
+        environment = mocker.patch("trcli.cli.Environment")
         requests_mock.get(create_url("get_projects"), exc=RequestException)
-        api_client = api_resources
+        api_client = api_resources_maker(environment=environment)
+
+        expected_log_calls = [
+            mocker.call(
+                f"\n**** API Call\n"
+                f"method: GET\n"
+                f"url: https://FakeTestRail.io/index.php?/api/v2/get_projects\n"
+            )
+        ]
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock)
         check_response(-1, "", FAULT_MAPPING["host_issues"], response)
+        environment.vlog.assert_has_calls(expected_log_calls)
 
     @pytest.mark.api_client
     def test_authentication_password(self, api_resources, requests_mock, mocker):
@@ -194,12 +204,12 @@ class TestAPIClient:
     def test_not_json_response(self, api_resources, requests_mock, mocker):
         """The purpose of this test is to check if APIClient will handle properly situation
         where request response was not in json format."""
-        requests_mock.get(create_url("get_projects"), json=["test", "list"])
+        content = b"Test"
+        requests_mock.get(create_url("get_projects"), content=content)
         api_client = api_resources
         response = api_client.send_get("get_projects")
-
         check_calls_count(requests_mock)
-        check_response(200, ["test", "list"], "", response)
+        check_response(200, str(content), str(content), response)
 
     @pytest.mark.api_client
     def test_api_calls_are_logged(self, api_resources_maker, requests_mock, mocker):
@@ -211,12 +221,10 @@ class TestAPIClient:
                 f"\n**** API Call\n"
                 f"method: GET\n"
                 f"url: https://FakeTestRail.io/index.php?/api/v2/get_projects\n"
-            ),
-            mocker.call(
                 f"response status code: 200\n"
-                + f"response body: ['test', 'list']\n"
-                + "****"
-            ),
+                f"response body: ['test', 'list']\n"
+                "****"
+            )
         ]
         api_client = api_resources_maker(environment=environment)
         _ = api_client.send_get("get_projects")

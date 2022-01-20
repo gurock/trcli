@@ -24,6 +24,25 @@ def upload_results_inner_functions_mocker(
         mocker_function(results_uploader, mocker, failing=failing)
 
 
+def api_request_handler_delete_mocker(
+    results_uploader: ResultsUploader, mocker, failing_functions: List[str]
+):
+    mocker_functions = [
+        delete_suite_mocker,
+        delete_sections_mocker,
+        delete_cases_mocker,
+        delete_run_mocker,
+    ]
+
+    for mocker_function in mocker_functions:
+        failing = (
+            True
+            if mocker_function.__name__.replace("_mocker", "") in failing_functions
+            else False
+        )
+        mocker_function(results_uploader, mocker, failing=failing)
+
+
 def get_project_id_mocker(
     results_uploader: ResultsUploader, project_id, error_message: str, failing=False
 ):
@@ -93,9 +112,14 @@ def add_results_mocker(results_uploader: ResultsUploader, mocker=None, failing=F
         results_uploader.api_request_handler.add_results.return_value = (
             [],
             "Failed to add results.",
+            0,
         )
     else:
-        results_uploader.api_request_handler.add_results.return_value = ([1, 2, 3], "")
+        results_uploader.api_request_handler.add_results.return_value = (
+            [1, 2, 3],
+            "",
+            3,
+        )
 
 
 def close_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
@@ -106,3 +130,45 @@ def close_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=Fal
         )
     else:
         results_uploader.api_request_handler.close_run.return_value = ([100], "")
+
+
+def delete_suite_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
+    if failing:
+        results_uploader.api_request_handler.delete_suite.return_value = (
+            [],
+            "No permissions to delete suite.",
+        )
+    else:
+        results_uploader.api_request_handler.delete_suite.return_value = ([100], "")
+
+
+def delete_sections_mocker(
+    results_uploader: ResultsUploader, mocker=None, failing=False
+):
+    if failing:
+        results_uploader.api_request_handler.delete_sections.return_value = (
+            [],
+            "No permissions to delete sections.",
+        )
+    else:
+        results_uploader.api_request_handler.delete_sections.return_value = ([100], "")
+
+
+def delete_cases_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
+    if failing:
+        results_uploader.api_request_handler.delete_cases.return_value = (
+            [],
+            "No permissions to delete cases.",
+        )
+    else:
+        results_uploader.api_request_handler.delete_cases.return_value = ([100], "")
+
+
+def delete_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
+    if failing:
+        results_uploader.api_request_handler.delete_run.return_value = (
+            [],
+            "No permissions to delete run.",
+        )
+    else:
+        results_uploader.api_request_handler.delete_run.return_value = ([100], "")

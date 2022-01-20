@@ -1,4 +1,3 @@
-import enum
 import trcli
 import enum
 
@@ -9,7 +8,8 @@ FAULT_MAPPING = dict(
     missing_project="Please specify the project name using the --project argument.",
     missing_title="Please give your Test Run a title using the --title argument.",
     missing_username="Please provide a valid TestRail username using the -u argument.",
-    more_than_one_project="Given project name matches more than one result.",
+    more_than_one_project="Given project name matches more than one result."
+    "Please specify which should be used using the --project-id argument",
     project_doesnt_exists="project doesn't exists.",
     missing_password_and_key="Please provide either a password using the -p "
     "argument or an API key using the -k argument.",
@@ -66,3 +66,15 @@ class SuiteModes(enum.IntEnum):
     single_suite = 1
     single_suite_baselines = 2
     multiple_suites = 3
+
+
+class RevertMessages:
+    suite_deleted = "Deleted created suite"
+    suite_not_deleted = "Unable to delete created suite"
+    section_deleted = "Deleted created section"
+    section_not_deleted = "Unable to delete created section"
+    test_cases_deleted = "Deleted created test cases"
+    test_cases_not_deleted = "Unable to delete created test cases"
+    run_deleted = "Deleted created run"
+    run_not_deleted = "Unable to delete created run"
+

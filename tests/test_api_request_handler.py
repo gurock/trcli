@@ -18,12 +18,16 @@ def handler_maker():
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(Path(__file__).parent / "test_data/json/api_request_handler.json")
+        file_json = open(
+            Path(__file__).parent / "test_data/json/api_request_handler.json"
+        )
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
         return api_request
+
     return _make_handler
+
 
 @pytest.fixture(scope="function")
 def api_request_handler(handler_maker):
@@ -33,6 +37,7 @@ def api_request_handler(handler_maker):
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
+
 
 class TestApiRequestHandler:
     def test_return_project(
@@ -52,8 +57,25 @@ class TestApiRequestHandler:
         assert api_request_handler.get_project_id("DataHub") == ProjectData(
             project_id=ProjectErrors.multiple_project_same_name,
             suite_mode=-1,
-            error_message="Given project name matches more than one result.",
+            error_message="Given project name matches more than one result."
+            "Please specify which should be used using the --project-id argument",
         ), "Get project should return proper project data object"
+        assert api_request_handler.get_project_id("DataHub", 2) == ProjectData(
+            project_id=ProjectErrors.multiple_project_same_name,
+            suite_mode=-1,
+            error_message="Given project name matches more than one result."
+            "Please specify which should be used using the --project-id argument",
+        ), (
+            "Get project should return proper project data object when passing"
+            "project_id and project_id doesn't match the response"
+        )
+        assert api_request_handler.get_project_id("DataHub", 3) == ProjectData(
+            project_id=3, suite_mode=1, error_message=""
+        ), (
+            "Get project should return proper project data object when passing"
+            "project_id and project_id matches response"
+        )
+
         assert api_request_handler.get_project_id("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,
             suite_mode=-1,
@@ -76,7 +98,7 @@ class TestApiRequestHandler:
         api_request_handler.suites_data_from_provider.suite_id = 6
         assert api_request_handler.check_suite_id(project_id) == (
             False,
-            "",
+            FAULT_MAPPING["missing_suite"].format(suite_id=6),
         ), "Given suite id should NOT exist in mocked response."
 
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -259,9 +281,12 @@ class TestApiRequestHandler:
         requests_mock.post(
             create_url(f"add_results_for_cases/{run_id}"), json=mocked_response
         )
-        resources_added, error = api_request_handler.add_results(run_id)
+        resources_added, error, results_added = api_request_handler.add_results(run_id)
         assert [mocked_response] == resources_added, "Invalid response from add_results"
         assert error == "", "Error occurred in add_results"
+        assert results_added == len(
+            mocked_response["results"]
+        ), f"Expected {len(mocked_response['results'])} results to be added but got {results_added} instead."
 
     def test_close_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
@@ -457,6 +482,37 @@ class TestApiRequestHandler:
             " Please check your settings and try again."
         ), "Connection error is expected"
 
+    def test_add_results_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        resources_added, error, results_added = api_request_handler.add_results(run_id)
+        assert resources_added == [], "Expected empty list of added resources"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected"
+        assert results_added == 0, "Expected 0 resources to be added."
+
+    def test_add_results_keyboard_interrupt(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        run_id = 3
+        requests_mock.post(
+            create_url(f"add_results_for_cases/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        mocker.patch(
+            "trcli.api.api_request_handler.as_completed", side_effect=KeyboardInterrupt
+        )
+        with pytest.raises(KeyboardInterrupt) as exception:
+            api_request_handler.add_results(run_id)
+
     def test_add_suite_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -525,3 +581,62 @@ class TestApiRequestHandler:
         assert (
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."
+
+    def test_delete_section(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        sections_id = [{"section_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_section/{sections_id[0]['section_id']}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_sections(sections_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_suite(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_suite/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_suite(suite_id)
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_cases(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        suite_id = 1
+        cases = [{"case_id": 1}]
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_cases/{suite_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_cases(
+            suite_id, cases
+        )
+        assert error == "", "There should be no error in verification."
+
+    def test_delete_run(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        run_id = 1
+        mocked_response_for_case = {"success": 200}
+
+        requests_mock.post(
+            create_url(f"delete_run/{run_id}"),
+            json=mocked_response_for_case,
+        )
+
+        resources_added, error = api_request_handler_verify.delete_run(run_id)
+        assert error == "", "There should be no error in verification."

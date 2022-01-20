@@ -3,9 +3,14 @@ from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider import ApiDataProvider
-from trcli.constants import ProjectErrors, FAULT_MAPPING
+from trcli.constants import (
+    ProjectErrors,
+    FAULT_MAPPING,
+)
+from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
 from typing import List
 from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 
 @dataclass
@@ -23,7 +28,7 @@ class ApiRequestHandler:
         environment: Environment,
         api_client: APIClient,
         suites_data: TestRailSuite,
-        verify: bool = False
+        verify: bool = False,
     ):
         self.environment = environment
         self.client = api_client
@@ -32,7 +37,7 @@ class ApiRequestHandler:
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
 
-    def get_project_id(self, project_name: str) -> ProjectData:
+    def get_project_id(self, project_name: str, project_id: int = None) -> ProjectData:
         """
         Send get_projects with project name
         :project_name: Project name
@@ -52,11 +57,23 @@ class ApiRequestHandler:
                     error_message=response.error_message,
                 )
             elif len(available_projects) > 1:
-                return ProjectData(
-                    project_id=ProjectErrors.multiple_project_same_name,
-                    suite_mode=-1,
-                    error_message=FAULT_MAPPING["more_than_one_project"],
-                )
+                if project_id in [project["id"] for project in available_projects]:
+                    project_index = [
+                        index
+                        for index, project in enumerate(available_projects)
+                        if project["id"] == project_id
+                    ][0]
+                    return ProjectData(
+                        project_id=int(available_projects[project_index]["id"]),
+                        suite_mode=int(available_projects[project_index]["suite_mode"]),
+                        error_message=response.error_message,
+                    )
+                else:
+                    return ProjectData(
+                        project_id=ProjectErrors.multiple_project_same_name,
+                        suite_mode=-1,
+                        error_message=FAULT_MAPPING["more_than_one_project"],
+                    )
             else:
                 return ProjectData(
                     project_id=ProjectErrors.not_existing_project,
@@ -80,7 +97,11 @@ class ApiRequestHandler:
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
             available_suites = [suite["id"] for suite in response.response_text]
-            return (True, "") if suite_id in available_suites else (False, "")
+            return (
+                (True, "")
+                if suite_id in available_suites
+                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+            )
         else:
             return None, response.error_message
 
@@ -248,20 +269,25 @@ class ApiRequestHandler:
         add_case_data = self.data_provider.add_cases()
         responses = []
         error_message = ""
-        for body in add_case_data["bodies"]:
-            response = self.client.send_post(f"add_case/{body.pop('section_id')}", body)
-            if not response.error_message:
-                responses.append(response)
-                if not self.response_verifier.verify_returned_data(
-                    body, response.response_text
-                ):
-                    responses.append(response)
-                    error_message = FAULT_MAPPING["data_verification_error"]
-                    break
-            else:
-                error_message = response.error_message
-                break
-
+        with self.environment.get_progress_bar(
+            results_amount=len(add_case_data["bodies"]), prefix="Adding test cases"
+        ) as progress_bar:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_CASE) as executor:
+                futures = {
+                    executor.submit(
+                        self.client.send_post,
+                        f"add_case/{body.pop('section_id')}",
+                        body,
+                    ): body
+                    for body in add_case_data["bodies"]
+                }
+                responses, error_message = self.handle_futures(
+                    futures=futures, action_string="add_case", progress_bar=progress_bar
+                )
+            if error_message:
+                # When error_message is present we cannot be sure that responses contains all added items.
+                # Iterate through futures to get all responses from done tasks (not cancelled)
+                responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         returned_resources = [
             {
                 "case_id": response.response_text["id"],
@@ -306,19 +332,60 @@ class ApiRequestHandler:
             [len(results["results"]) for results in add_results_data_chunks]
         )
 
-        with self.environment.get_progress_bar(results_amount) as progress_bar:
-            for add_results_data in add_results_data_chunks:
-                response = self.client.send_post(
-                    f"add_results_for_cases/{run_id}", add_results_data
+        with self.environment.get_progress_bar(
+            results_amount=results_amount, prefix="Adding results"
+        ) as progress_bar:
+            with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_RESULTS) as executor:
+                futures = {
+                    executor.submit(
+                        self.client.send_post, f"add_results_for_cases/{run_id}", body
+                    ): body
+                    for body in add_results_data_chunks
+                }
+                responses, error_message = self.handle_futures(
+                    futures=futures,
+                    action_string="add_results",
+                    progress_bar=progress_bar,
                 )
+            if error_message:
+                # When error_message is present we cannot be sure that responses contains all added items.
+                # Iterate through futures to get all responses from done tasks (not cancelled)
+                responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
+        responses = [response.response_text for response in responses]
+        return responses, error_message, progress_bar.n
+
+    def handle_futures(self, futures, action_string, progress_bar):
+        responses = []
+        error_message = ""
+        try:
+            for future in as_completed(futures):
+                arguments = futures[future]
+                response = future.result()
                 if not response.error_message:
-                    responses.append(response.response_text)
-                    progress_bar.update(len(add_results_data["results"]))
+                    responses.append(response)
+                    if action_string == "add_results":
+                        progress_bar.update(len(arguments["results"]))
+                    else:
+                        if not self.response_verifier.verify_returned_data(
+                            arguments, response.response_text
+                        ):
+                            responses.append(response)
+                            error_message = FAULT_MAPPING["data_verification_error"]
+                            self.__cancel_running_futures(futures, action_string)
+                            break
+                        progress_bar.update(1)
                 else:
                     error_message = response.error_message
+                    self.environment.log(
+                        f"\nError during {action_string}. Trying to cancel scheduled tasks."
+                    )
+                    self.__cancel_running_futures(futures, action_string)
                     break
             else:
                 progress_bar.set_postfix_str(s="Done.")
+        except KeyboardInterrupt:
+            self.__cancel_running_futures(futures, action_string)
+            raise KeyboardInterrupt
         return responses, error_message
 
     def close_run(self, run_id: int) -> (dict, str):
@@ -330,6 +397,70 @@ class ApiRequestHandler:
         body = {"run_id": run_id}
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
+
+    def delete_suite(self, suite_id: int) -> (dict, str):
+        """
+        Delete suite given suite id
+        :suite_id: suite id
+        :returns: Tuple with dict created resources and error string.
+        """
+        response = self.client.send_post(f"delete_suite/{suite_id}", payload={})
+        return response.response_text, response.error_message
+
+    def delete_sections(self, added_sections: List[dict]) -> (dict, str):
+        """
+        Delete section given add_sections response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        responses = []
+        error_message = ""
+        for section in added_sections:
+            response = self.client.send_post(
+                f"delete_section/{section['section_id']}", payload={}
+            )
+            if not response.error_message:
+                responses.append(response.response_text)
+            else:
+                error_message = response.error_message
+                break
+        return responses, error_message
+
+    def delete_cases(self, suite_id: int, added_cases: List[dict]) -> (dict, str):
+        """
+        Delete cases given add_cases response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        body = {"case_ids": [case["case_id"] for case in added_cases]}
+        response = self.client.send_post(f"delete_cases/{suite_id}", payload=body)
+        return response.response_text, response.error_message
+
+    def delete_run(self, run_id) -> (dict, str):
+        """
+        Delete run given add_run response
+        :suite_id: section id
+        :returns: Tuple with dict created resources and error string.
+        """
+        response = self.client.send_post(f"delete_run/{run_id}", payload={})
+        return response.response_text, response.error_message
+    @staticmethod
+    def retrieve_results_after_cancelling(futures):
+        responses = []
+        for future in as_completed(futures):
+            if not future.cancelled():
+                response = future.result()
+                if not response.error_message:
+                    responses.append(response)
+        return responses
+
+    def __cancel_running_futures(self, futures, action_string):
+        self.environment.log(
+            f"\nAborting: {action_string}. Trying to cancel scheduled tasks."
+        )
+        for future in futures:
+            future.cancel()
+
 
     def __get_all_cases(
         self, project_id=None, suite_id=None, link=None, cases=[]
