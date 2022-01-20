@@ -8,6 +8,7 @@ silent: False
 ---
 batch_size: 20
 timeout: 50
+config: custom_config.yaml
 auto_creation_response: True
 ---
 suite_id: 50

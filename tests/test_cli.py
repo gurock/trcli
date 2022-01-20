@@ -1,6 +1,11 @@
+from pathlib import Path
+
 import pytest
 
 from click.testing import CliRunner
+
+import trcli.cli
+from shutil import copyfile
 from trcli.cli import cli
 from tests.helpers.cli_helpers import CLIParametersHelper
 
@@ -8,7 +13,6 @@ from tests.test_data.cli_test_data import (
     CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_DATA,
     CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_IDS,
     ENVIRONMENT_VARIABLES,
-    RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE,
     RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE,
     trcli_description,
     trcli_help_description,
@@ -105,6 +109,7 @@ class TestCli:
         [("batch_size", 1000), ("timeout", 160)],
         ids=["batch_size", "timeout"],
     )
+    @pytest.mark.test123
     def test_check_custom_config_overrides_defaults(
         self, argument_name, argument_value, mocker, cli_resources
     ):
@@ -115,22 +120,14 @@ class TestCli:
             ["--config", "fake_config_file.yaml"]
         )
         mocker.patch("sys.argv", ["trcli", *args])
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value={argument_name: argument_value},
-        )
-        setattr_mock = mocker.patch("trcli.cli.setattr")
 
-        _ = cli_runner.invoke(cli, args)
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "fake_config_file.yaml" in call_item.args[0], (
-                f"Function get_params_from_config_file expected to be called with 'fake_config_file.yaml'"
-                f"\nbut was called with: {call_item.args[0]}"
-            )
+        with cli_runner.isolated_filesystem():
+            with open("fake_config_file.yaml", "w+") as f:
+                f.write(f"{argument_name}: {argument_value}")
+            trcli.cli.trcli_folder = Path("fake_config_file.yaml").parent
+            setattr_mock = mocker.patch("trcli.cli.setattr")
+            _ = cli_runner.invoke(cli, args)
+
         setattr_mock.assert_any_call(mocker.ANY, argument_name, argument_value)
 
     @pytest.mark.cli
@@ -138,13 +135,12 @@ class TestCli:
         """the purpose of this test is to check that custom config overrides parameter values taken from
         environment"""
         cli_agrs_helper, cli_runner = cli_resources
-        args = ["--config", "fake_config_file.yaml", "parse_junit"]
+        custom_config_file = (
+            Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
+        )
+        args = ["--config", custom_config_file, "parse_junit"]
 
         mocker.patch("sys.argv", ["trcli", *args])
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value=RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE,
-        )
         setattr_mock = mocker.patch("trcli.cli.setattr")
 
         _ = cli_runner.invoke(
@@ -153,15 +149,6 @@ class TestCli:
             env=ENVIRONMENT_VARIABLES,
         )
 
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "fake_config_file.yaml" in call_item.args[0], (
-                f"Function get_params_from_config_file expected to be called with 'fake_config_file.yaml'"
-                f"\nbut was called with: {call_item.args[0]}"
-            )
         for arg_name, arg_value in RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE.items():
             setattr_mock.assert_any_call(mocker.ANY, arg_name, arg_value)
 
@@ -170,27 +157,16 @@ class TestCli:
         """The purpose of this test is to check that custom config will not override parameters (when specified in
         command line)"""
         cli_agrs_helper, cli_runner = cli_resources
+        custom_config_file = (
+            Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
+        )
         args = cli_agrs_helper.get_all_required_parameters_plus_optional(
-            ["--config", "fake_config_file.yaml"]
+            ["--config", custom_config_file]
         )
 
         mocker.patch("sys.argv", ["trcli", *args])
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value=RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE,
-        )
         setattr_mock = mocker.patch("trcli.cli.setattr")
         _ = cli_runner.invoke(cli, args)
-
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "fake_config_file.yaml" in call_item.args[0], (
-                f"Function get_params_from_config_file expected to be called with 'fake_config_file.yaml'"
-                f"\nbut was called with: {call_item.args[0]}"
-            )
 
         expected = cli_agrs_helper.get_required_parameters_without_command_no_dashes()
         for arg_name, arg_value in expected:
@@ -212,23 +188,13 @@ class TestCli:
 
         mocker.patch("sys.argv", ["trcli", *args])
 
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value={argument_name: argument_value},
-        )
-        setattr_mock = mocker.patch("trcli.cli.setattr")
+        with cli_runner.isolated_filesystem():
+            with open("config.yaml", "w+") as f:
+                f.write(f"{argument_name}: {argument_value}")
+            trcli.cli.trcli_folder = Path("config.yaml").parent
+            setattr_mock = mocker.patch("trcli.cli.setattr")
+            _ = cli_runner.invoke(cli, args)
 
-        _ = cli_runner.invoke(cli, args)
-
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "config.yaml" in call_item.args[0].name, (
-                f"Function get_params_from_config_file expected to be called with 'config.yaml'"
-                f"\nbut was called with: {call_item.args[0].name}"
-            )
         setattr_mock.assert_any_call(mocker.ANY, argument_name, argument_value)
 
     @pytest.mark.cli
@@ -237,29 +203,22 @@ class TestCli:
         from environment variables"""
         cli_agrs_helper, cli_runner = cli_resources
         args = ["parse_junit"]
+        default_config_file = (
+            Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
+        )
 
         mocker.patch("sys.argv", ["trcli", *args])
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value=RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE,
-        )
         setattr_mock = mocker.patch("trcli.cli.setattr")
 
-        _ = cli_runner.invoke(
-            cli,
-            args,
-            env=ENVIRONMENT_VARIABLES,
-        )
-
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "config.yaml" in call_item.args[0].name, (
-                f"Function get_params_from_config_file expected to be called with 'config.yaml'"
-                f"\nbut was called with: {call_item.args[0].name}"
+        with cli_runner.isolated_filesystem():
+            copyfile(default_config_file, "config.yaml")
+            trcli.cli.trcli_folder = Path("config.yaml").parent
+            _ = cli_runner.invoke(
+                cli,
+                args,
+                env=ENVIRONMENT_VARIABLES,
             )
+
         for arg_name, arg_value in ENVIRONMENT_VARIABLES.items():
             setattr_mock.assert_any_call(
                 mocker.ANY, arg_name.split("_")[-1].lower(), arg_value
@@ -272,23 +231,14 @@ class TestCli:
         cli_agrs_helper, cli_runner = cli_resources
         tool_args = cli_agrs_helper.get_all_required_parameters()
         mocker.patch("sys.argv", ["trcli", *tool_args])
-        get_params_mock = mocker.patch(
-            "trcli.cli.Environment.get_params_from_config_file",
-            return_value=RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE,
+        default_config_file = (
+            Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
         )
         setattr_mock = mocker.patch("trcli.cli.setattr")
-
-        _ = cli_runner.invoke(cli, tool_args)
-
-        assert get_params_mock.call_count == 2, (
-            f"Function get_params_from_config_file expected to be called 2 times but was called:"
-            f"{get_params_mock.call_count}"
-        )
-        for call_item in get_params_mock.call_args_list:
-            assert "config.yaml" in call_item.args[0].name, (
-                f"Function get_params_from_config_file expected to be called with 'config.yaml'"
-                f"\nbut was called with: {call_item.args[0].name}"
-            )
+        with cli_runner.isolated_filesystem():
+            copyfile(default_config_file, "config.yaml")
+            trcli.cli.trcli_folder = Path("config.yaml").parent
+            _ = cli_runner.invoke(cli, tool_args)
 
         expected = cli_agrs_helper.get_required_parameters_without_command_no_dashes()
         for arg_name, arg_value in expected:
