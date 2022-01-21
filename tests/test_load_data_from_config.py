@@ -10,6 +10,8 @@ from tests.test_data.load_data_from_config_test_data import (
     correct_yaml_expected_result,
     correct_config_file_path,
     incorrect_config_file_path,
+    correct_config_file_multiple_documents_path,
+    incorrect_config_file_multiple_documents_path,
 )
 from trcli.constants import FAULT_MAPPING
 
@@ -24,28 +26,36 @@ def load_config_resources(mocker):
 
 class TestLoadDataFromConfig:
     @pytest.mark.load_config
-    def test_check_loading_data_correct_file(self, load_config_resources):
+    @pytest.mark.parametrize(
+        "config_file",
+        [correct_config_file_path, correct_config_file_multiple_documents_path],
+        ids=["single_document", "multiple_documents"],
+    )
+    def test_check_loading_data_correct_file(self, config_file, load_config_resources):
         """The purpose of this test is to check that yaml file will be parsed correctly
         when it contains correct data and proper path is provided"""
         environment, stdout_mock = load_config_resources
-        params_from_config = environment.get_params_from_config_file(
-            correct_config_file_path
-        )
+        params_from_config = environment.get_params_from_config_file(config_file)
         expected_verbose_message = ""
 
         check_parsed_data(correct_yaml_expected_result, params_from_config)
         check_verbose_message(expected_verbose_message, stdout_mock.getvalue())
 
     @pytest.mark.load_config
-    def test_check_loading_data_from_corrupted_file(self, load_config_resources):
+    @pytest.mark.parametrize(
+        "config_file",
+        [incorrect_config_file_path, incorrect_config_file_multiple_documents_path],
+        ids=["single_document", "multiple_documents"],
+    )
+    def test_check_loading_data_from_corrupted_file(
+        self, config_file, load_config_resources
+    ):
         """The purpose of this test is to check that empty dictionary will be returned and
         proper verbose message would be printed when trying to parse corrupted yaml file"""
         environment, stdout_mock = load_config_resources
-        params_from_config = environment.get_params_from_config_file(
-            incorrect_config_file_path
-        )
+        params_from_config = environment.get_params_from_config_file(config_file)
         expected_verbose_message = FAULT_MAPPING["yaml_file_parse_issue"].format(
-            file_path=incorrect_config_file_path
+            file_path=config_file
         )
 
         check_parsed_data({}, params_from_config)

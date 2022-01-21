@@ -25,6 +25,7 @@ class Environment:
     def __init__(self):
         self.home = os.getcwd()
         self.default_config_file = True
+        self.duplicate_config_file_issue = False
         self.file = None
         self.host = None
         self.project = None
@@ -113,19 +114,30 @@ class Environment:
         )
 
     def get_params_from_config_file(self, file_path: str) -> dict:
+        result_dict = dict()
         try:
             with open(file_path, "r") as f:
-                loaded_config = yaml.safe_load(f)
-        except yaml.YAMLError:
-            self.vlog(
-                FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
-            )
-            loaded_config = {}
+                file_content = yaml.safe_load_all(f)
+                for page_content in file_content:
+                    result_dict.update(page_content)
+        except yaml.YAMLError as e:
+            if not self.duplicate_config_file_issue:
+                self.log(
+                    FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
+                )
+                self.log(f"Error details:\n{e}")
+            if not self.default_config_file:
+                exit(1)
+            self.duplicate_config_file_issue = True
+            result_dict = {}
         except IOError:
-            self.vlog(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
-            loaded_config = {}
-
-        return loaded_config
+            if not self.duplicate_config_file_issue:
+                self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
+            if not self.default_config_file:
+                exit(1)
+            self.duplicate_config_file_issue = True
+            result_dict = {}
+        return result_dict
 
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
