@@ -34,6 +34,7 @@ FAULT_MAPPING = dict(
     error_checking_missing_item="Error occurred while checking for '{missing_item}': '{error_message}'",
     data_verification_error="Data verification failed. Server added different resource than expected.",
     unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail",
+    unknown_section_id="There are some sections that have IDs and not exist in Test Rail.",
 )
 
 PROMPT_MESSAGES = dict(
