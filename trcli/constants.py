@@ -33,8 +33,10 @@ FAULT_MAPPING = dict(
     unknown_suite_mode="Suite mode: '{suite_mode}' not recognised.",
     error_checking_missing_item="Error occurred while checking for '{missing_item}': '{error_message}'",
     data_verification_error="Data verification failed. Server added different resource than expected.",
-    unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail",
+    unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail.",
+    dataclass_validation_error="Unable to parse field {field} in {class_name} tag. {reason}",
     unknown_section_id="There are some sections that have IDs and not exist in Test Rail.",
+
 )
 
 PROMPT_MESSAGES = dict(

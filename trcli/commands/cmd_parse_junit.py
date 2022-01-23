@@ -1,11 +1,11 @@
-from xml.etree.ElementTree import ParseError
-
 import click
 from junitparser import JUnitXmlError
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
 from trcli.constants import FAULT_MAPPING
 from trcli.readers.junit_xml import JunitParser
 from trcli.api.results_uploader import ResultsUploader
+from trcli.data_classes.validation_exception import ValidationException
+from xml.etree.ElementTree import ParseError
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -25,4 +25,13 @@ def cli(environment: Environment, context: click.Context, file):
         exit(1)
     except (JUnitXmlError, ParseError):
         environment.log(FAULT_MAPPING["invalid_file"])
+        exit(1)
+    except ValidationException as exception:
+        environment.log(
+            FAULT_MAPPING["dataclass_validation_error"].format(
+                field=exception.field_name,
+                class_name=exception.class_name,
+                reason=exception.reason,
+            )
+        )
         exit(1)
