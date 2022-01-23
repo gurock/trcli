@@ -146,18 +146,25 @@ class TestApiRequestHandler:
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
 
+        _, error = api_request_handler.check_missing_section_ids(project_id)
         assert (
-            len(api_request_handler.check_missing_section_ids(project_id)[0]) == 2
-        ), "There should be two missing section"
+            error == FAULT_MAPPING["unknown_section_id"]
+        ), " Extra section ID that is not in testrail should be detected."
 
         mocked_response["sections"][0]["id"] = 1234
         requests_mock.get(
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
+        missing, _ = api_request_handler.check_missing_section_ids(project_id)
+        assert missing, "There should be missing section"
 
-        assert (
-            len(api_request_handler.check_missing_section_ids(project_id)[0]) == 1
-        ), "There should be one missing section"
+        mocked_response["sections"].append({"id": 1})
+        api_request_handler.suites_data_from_provider.testsections[1].section_id = 1
+        requests_mock.get(
+            create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
+        )
+        missing, _ = api_request_handler.check_missing_section_ids(project_id)
+        assert not missing, "There should be no missing section"
 
     def test_add_sections(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
