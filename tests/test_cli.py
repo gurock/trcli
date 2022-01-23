@@ -96,7 +96,7 @@ class TestCli:
             result.exit_code == expected_exit_code
         ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."
         assert (
-            result.output == expected_output
+            expected_output in result.output
         ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
 
     @pytest.mark.cli

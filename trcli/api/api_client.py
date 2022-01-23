@@ -114,7 +114,7 @@ class APIClient:
                     error_message = response_text.get("error", "")
                 except (JSONDecodeError, ValueError):
                     response_text = str(response.content)
-                    error_message = str(response.content)
+                    error_message = response.content
                 except AttributeError:
                     error_message = ""
                 verbose_log_message = (
