@@ -66,10 +66,10 @@ class Environment:
 
     def get_prompt_response_for_auto_creation(self, msg: str, *args):
         """Prompts for confirmation (yes/no) if auto_creation_response (--no/--yes parameters) is not set"""
-        if not self.auto_creation_response:
+        if self.auto_creation_response is None:
             return click.confirm(msg)
         else:
-            return True if self.auto_creation_response == "Yes" else False
+            return self.auto_creation_response
 
     def set_parameters(self, context: click.core.Context):
         """Sets parameters based on context. The function will override parameters with config file values
@@ -227,15 +227,17 @@ class TRCLI(click.MultiCommand):
     "-y",
     "--yes",
     "auto_creation_response",
-    flag_value="Yes",
+    flag_value=True,
     help="answer 'yes' to all prompts around auto-creation",
+    default=None,
 )
 @click.option(
     "-n",
     "--no",
     "auto_creation_response",
-    flag_value="No",
+    flag_value=False,
     help="answer 'no' to all prompts around auto-creation",
+    default=None,
 )
 @click.option("-s", "--silent", flag_value="yes", help="Silence stdout")
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
