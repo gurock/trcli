@@ -86,7 +86,7 @@ class Environment:
                 continue
             param_config_value = params_from_config.get(param, None)
             param_source = context.get_parameter_source(param)
-            if param_source in param_sources_types and param_config_value:
+            if param_source in param_sources_types and (param_config_value is not None):
                 setattr(self, param, param_config_value)
             else:
                 setattr(self, param, value)
@@ -239,7 +239,14 @@ class TRCLI(click.MultiCommand):
     help="answer 'no' to all prompts around auto-creation",
     default=None,
 )
-@click.option("-s", "--silent", flag_value="yes", help="Silence stdout")
+@click.option(
+    "-s",
+    "--silent",
+    flag_value=True,
+    is_flag=True,
+    help="Silence stdout",
+    default=False,
+)
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
     if not sys.argv[1:]:
