@@ -56,16 +56,6 @@ ENVIRONMENT_VARIABLES = {
     "TR_CLI_KEY": "key_from_env",
 }
 
-RETURN_VALUE_FROM_DEFAULT_CONFIG_FILE = {
-    "host": "host_from_default_config",
-    "file": "file_from_default_config.xml",
-    "project": "project_from_default_config",
-    "title": "title_from_default_config",
-    "username": "username_from_default_config",
-    "password": "password_from_default_config",
-    "key": "key_from_default_config",
-}
-
 RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
     "host": "host_from_custom_config",
     "file": "file_from_custom_config",

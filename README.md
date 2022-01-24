@@ -23,7 +23,7 @@ run_id - specifies the Run ID for the Test Run to be created under<br>
 
 Default configuration file
 --------------------------
-Default configuration file should be named config.yaml and be stored in the same directory
+Default configuration file should be named config.yaml or config.yml and be stored in the same directory
 as the trcli executable file.
 
 Custom configuration file

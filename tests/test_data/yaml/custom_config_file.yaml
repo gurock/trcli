@@ -1,0 +1,7 @@
+host: "host_from_custom_config"
+file: "file_from_custom_config"
+project: "project_from_custom_config"
+title: "title_from_custom_config"
+username: "username_from_custom_config"
+password: "password_from_custom_config"
+key: "key_from_custom_config"

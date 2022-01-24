@@ -18,14 +18,13 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
 trcli_folder = Path(__file__).parent
 cmd_folder = trcli_folder / "commands/"
-default_config_file_path = trcli_folder / "config.yaml"
 
 
 class Environment:
     def __init__(self):
         self.home = os.getcwd()
         self.default_config_file = True
-        self.duplicate_config_file_issue = False
+        self.params_from_config = dict()
         self.file = None
         self.host = None
         self.project = None
@@ -79,13 +78,11 @@ class Environment:
             param_sources_types = [ParameterSource.DEFAULT]
         else:
             param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
-
-        params_from_config = self.get_params_from_config_file(self.config)
         for param, value in context.params.items():
             # Don't set config again
             if param == "config":
                 continue
-            param_config_value = params_from_config.get(param, None)
+            param_config_value = self.params_from_config.get(param, None)
             param_source = context.get_parameter_source(param)
             if param_source in param_sources_types and param_config_value:
                 setattr(self, param, param_config_value)
@@ -104,40 +101,44 @@ class Environment:
             self.log(FAULT_MAPPING["missing_password_and_key"])
             exit(1)
 
-    def set_config_file(self, context: click.Context):
+    def parse_config_file(self, context: click.Context):
         """Sets config file path from context and information if default or custom config file should be used."""
-        self.config = context.params["config"]
-        self.default_config_file = (
-            False
-            if context.get_parameter_source("config") == ParameterSource.COMMANDLINE
-            else True
-        )
+        if context.params["config"]:
+            self.config = context.params["config"]
+            self.default_config_file = False
+        else:
+            if Path(trcli_folder / "config.yml").is_file():
+                self.config = trcli_folder / "config.yml"
+            elif Path(trcli_folder / "config.yaml").is_file():
+                self.config = trcli_folder / "config.yaml"
+            else:
+                self.config = None
+        if self.config:
+            self.parse_params_from_config_file(self.config)
 
-    def get_params_from_config_file(self, file_path: str) -> dict:
-        result_dict = dict()
+    def parse_params_from_config_file(self, file_path: Path):
+        self.params_from_config = {}
         try:
             with open(file_path, "r") as f:
                 file_content = yaml.safe_load_all(f)
                 for page_content in file_content:
-                    result_dict.update(page_content)
+                    self.params_from_config.update(page_content)
+                    if "config" in self.params_from_config and self.default_config_file:
+                        self.default_config_file = False
+                        self.parse_params_from_config_file(
+                            self.params_from_config["config"]
+                        )
         except yaml.YAMLError as e:
-            if not self.duplicate_config_file_issue:
-                self.log(
-                    FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
-                )
-                self.log(f"Error details:\n{e}")
+            self.log(FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path))
+            self.log(f"Error details:\n{e}")
             if not self.default_config_file:
                 exit(1)
-            self.duplicate_config_file_issue = True
-            result_dict = {}
+            self.params_from_config = {}
         except IOError:
-            if not self.duplicate_config_file_issue:
-                self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
+            self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
             if not self.default_config_file:
                 exit(1)
-            self.duplicate_config_file_issue = True
-            result_dict = {}
-        return result_dict
+            self.params_from_config = {}
 
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
@@ -173,7 +174,6 @@ class TRCLI(click.MultiCommand):
     "-c",
     "--config",
     type=click.Path(),
-    default=default_config_file_path,
     metavar="",
     help="Optional path definition for testrail-credentials file or CF file.",
 )
@@ -261,5 +261,5 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
         print(MISSING_COMMAND_SLOGAN)
         exit(2)
 
-    environment.set_config_file(context)
+    environment.parse_config_file(context)
     environment.set_parameters(context)
