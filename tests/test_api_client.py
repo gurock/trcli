@@ -136,18 +136,31 @@ class TestAPIClient:
         ids=["retry_on_timeout", "retry_on_connection_error"],
     )
     def test_retry_mechanism_exceptions(
-        self, retries, exception, expected_error_msg, api_resources_maker, requests_mock
+        self,
+        retries,
+        exception,
+        expected_error_msg,
+        api_resources_maker,
+        requests_mock,
+        mocker,
     ):
         """The purpose of this test is to check that retry mechanism will work as expected when
         facing Timeout and ConnectionError during sending get request."""
         requests_mock.get(create_url("get_projects"), exc=exception)
-        environment = Environment()
-        environment.verbose = False
-        api_client = api_resources_maker(retries=retries)
+        environment = mocker.patch("trcli.cli.Environment")
+        api_client = api_resources_maker(retries=retries, environment=environment)
         response = api_client.send_get("get_projects")
+        expected_log_calls = retries * [
+            mocker.call(
+                f"\n**** API Call\n"
+                f"method: GET\n"
+                f"url: https://FakeTestRail.io/index.php?/api/v2/get_projects\n"
+            ),
+        ]
 
         check_calls_count(requests_mock, retries + 1)
         check_response(-1, "", expected_error_msg, response)
+        environment.vlog.assert_has_calls(expected_log_calls)
 
     @pytest.mark.api_client
     def test_request_exception(self, api_resources_maker, requests_mock, mocker):
