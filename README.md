@@ -13,7 +13,7 @@ project - specifies the name of the Project the Test Run should be created under
 file - specifies the filename and/or path of the result file to be used<br>
 title -  Specifies the title of the Test Run to be created in TestRail<br>
 verbose - enables verbose mode when true (false by default)<br>
-silence - enables silence mode when true (false by default)<br>
+silent - enables silence mode when true (false by default)<br>
 config - specifies the filename and/or path of the configuration file to be used<br>
 batch_size - specifies the batch size of results to pass to TestRail ((50 by default, maximum to be determined by Dev Partner stress testing)<br>
 timeout - specifies how many seconds to wait for more results before termination (30 by default)<br>
@@ -23,8 +23,10 @@ run_id - specifies the Run ID for the Test Run to be created under<br>
 
 Default configuration file
 --------------------------
-Default configuration file should be named config.yaml or config.yml and be stored in the same directory
-as the trcli executable file.
+Default configuration file should be named `config.yaml` or `config.yml` and be stored in the same directory
+as the trcli executable file. The default path for pip installation of executable depends on your system and python settings (venv).
+
+Please check where TRCLI was installed by using `which trcli` command.
 
 Custom configuration file
 -------------------------
@@ -83,14 +85,6 @@ Commands:
   parse_junit
 ```
 
-```
-$ trcli parse_junit --help
-Usage: trcli parse_junit [OPTIONS]
-
-Options:
-  -f, --file   Filename and path.
-  --help       Show this message and exit.
-```
 
 Installation
 ============
@@ -103,10 +97,30 @@ Parsers
 
 Parsers are located in `/trcli/readers/`. To add new parser please read desired file and fill required dataclasses with the data (located in `/trcli/data_classes/`).
 
-Available parsers:
+Available commands/parsers:
 
-* XML Junit files compatibile with Jenkins and pytest reporting schemas
-* ...
+`parse_junit` - XML Junit files compatibile with Jenkins and pytest reporting schemas
+```
+$ trcli parse_junit --help
+Usage: trcli parse_junit [OPTIONS]
+
+Options:
+  -f, --file   Filename and path.
+  --help       Show this message and exit.
+```
+
+
+XML junit file tag|Test Rail mapped to
+ ---|---
+\<testsuites>|suite
+\<suite>|section
+\<testcase>|case
+\<testcase ***time=1***> | run - elapsed time of test case execution
+\<testcase>***\<skipped or error>***\</testcase>|run - result of case
+\<error>***"message"***\</error> | run - comment result of case
+\<properties>***\<property>\</property>***\</properties> | All properties joined and sent as run description
+name or title attributes on every level|name 
+
 
 Uploading test results from Junit file
 ======================================
