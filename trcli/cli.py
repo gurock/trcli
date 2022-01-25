@@ -211,7 +211,7 @@ class TRCLI(click.MultiCommand):
 @click.option(
     "-t",
     "--timeout",
-    type=click.IntRange(min=0),
+    type=click.FloatRange(min=0),
     default=DEFAULT_API_CALL_TIMEOUT,
     show_default=str(DEFAULT_API_CALL_TIMEOUT),
     metavar="",
