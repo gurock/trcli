@@ -42,6 +42,21 @@ class ResultsUploader:
         """
         start = time.time()
         results_amount = None
+        if self.environment.case_id:
+            self.environment.log(
+                f"Updating test case with id: {self.environment.case_id}.",
+                new_line=False,
+            )
+            response_text, error_message = self.api_request_handler.update_case_result(
+                self.environment.run_id, self.environment.case_id
+            )
+            if error_message:
+                self.environment.log("\n" + error_message)
+                exit(1)
+            else:
+                self.environment.log(" Done.")
+                exit(0)
+
         project_data = self.api_request_handler.get_project_id(
             self.environment.project, self.environment.project_id
         )

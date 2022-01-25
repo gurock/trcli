@@ -304,6 +304,26 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
+    def update_case_result(self, run_id, case_id):
+        """
+        Updates result for case.
+        :run_id: run id
+        :case_id: case id
+        :returns: Tuple with dict (updated resource) and error string.
+        """
+        update_case_data = self.data_provider.add_result_for_case(case_id=case_id)
+        response_text = ""
+        if update_case_data:
+            response = self.client.send_post(
+                f"add_result_for_case/{run_id}/{update_case_data.pop('case_id')}",
+                update_case_data,
+            )
+            response_text = response.response_text
+            error_message = response.error_message
+        else:
+            error_message = FAULT_MAPPING["mismatch_between_case_id_and_result_file"]
+        return response_text, error_message
+
     def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
         """
         Creates a new test run.

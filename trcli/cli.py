@@ -93,7 +93,14 @@ class Environment:
         """Checks that all required parameters were set. If not error message would be printed and
         program will exit with exit code 1"""
         for param, value in vars(self).items():
-            if "missing_" + param in FAULT_MAPPING and not value:
+            # --project and --title is not required when --case-id is set
+            if self.case_id is not None and param in ["project", "title"]:
+                continue
+            # run_id needs to be present when --case-id is set
+            elif (param == "run_id" and value is None) and self.case_id is not None:
+                self.log(FAULT_MAPPING["missing_run_id_when_case_id_present"])
+                exit(1)
+            elif "missing_" + param in FAULT_MAPPING and not value:
                 self.log(FAULT_MAPPING["missing_" + param])
                 exit(1)
         # special case for password and key (both needs to be missing for the error message to show up)
@@ -235,7 +242,7 @@ class TRCLI(click.MultiCommand):
     "--case-id",
     type=click.IntRange(min=1),
     metavar="",
-    help="Case ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
+    help="Case ID for the results they are reporting. Needs to be passed together with --run-id",
 )
 @click.option(
     "-y",

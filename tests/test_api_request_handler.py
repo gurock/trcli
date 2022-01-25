@@ -13,14 +13,18 @@ from trcli.constants import ProjectErrors, FAULT_MAPPING
 
 @pytest.fixture(scope="function")
 def handler_maker():
-    def _make_handler(verify=False):
+    def _make_handler(verify=False, custom_json=None):
         api_client = APIClient(host_name=TEST_RAIL_URL)
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(
-            Path(__file__).parent / "test_data/json/api_request_handler.json"
-        )
+        if custom_json is None:
+            json_path = (
+                Path(__file__).parent / "test_data/json/api_request_handler.json"
+            )
+        else:
+            json_path = custom_json
+        file_json = open(json_path)
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
@@ -37,6 +41,14 @@ def api_request_handler(handler_maker):
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
+
+
+@pytest.fixture(scope="function")
+def api_request_handler_update_case_json(handler_maker):
+    json_path = (
+        Path(__file__).parent / "test_data/json/update_case_result_single_with_id.json"
+    )
+    yield handler_maker(custom_json=json_path, verify=False)
 
 
 class TestApiRequestHandler:
@@ -647,3 +659,76 @@ class TestApiRequestHandler:
 
         resources_added, error = api_request_handler_verify.delete_run(run_id)
         assert error == "", "There should be no error in verification."
+
+    def test_update_case_succeed(
+        self, api_request_handler_update_case_json: ApiRequestHandler, requests_mock
+    ):
+        mocked_response = {
+            "id": 62228,
+            "test_id": 10,
+            "status_id": 5,
+            "created_on": 1643188787,
+            "assignedto_id": None,
+            "comment": "Type: pytest.failure\nMessage: Fail due to...\nText: failed due to...",
+            "version": None,
+            "elapsed": "2m 39s",
+            "defects": None,
+            "created_by": 2,
+            "custom_step_results": None,
+            "attachment_ids": [],
+        }
+        run_id = 20
+        case_id = 10
+
+        requests_mock.post(
+            create_url(f"add_result_for_case/{run_id}/{case_id}"),
+            json=mocked_response,
+        )
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+        assert (
+            response_text == mocked_response
+        ), "Updated test case result doesn't match expected."
+        assert error == "", "No error should be present."
+
+    def test_update_case_result_error(
+        self, api_request_handler_update_case_json: ApiRequestHandler, requests_mock
+    ):
+        """The purpose of this test is to check that proper message will be printed in
+        case of error during test case result update."""
+        run_id = 20
+        case_id = 10
+        requests_mock.post(
+            create_url(f"add_result_for_case/{run_id}/{case_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+
+        assert response_text == "", "No response text should be returned"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected."
+
+    def test_update_case_no_cases_for_update(
+        self, api_request_handler_update_case_json: ApiRequestHandler
+    ):
+        """The purpose of this test is to check that proper error message will be printed in case
+        there are no test case result to be updated."""
+        run_id = 20
+        case_id = 100
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+
+        assert response_text == "", "No response text should be returned"
+        assert (
+            error
+            == "Could not match --case-id with result file. Please make sure that:\n"
+            "--case-id matches ID (if present) under `testcase` tag in result xml file\nand\n"
+            "only one result is present in result xml file."
+        ), "Expected error message to be printed."
