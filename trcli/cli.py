@@ -103,14 +103,16 @@ class Environment:
 
     def parse_config_file(self, context: click.Context):
         """Sets config file path from context and information if default or custom config file should be used."""
+        executable_folder = Path(sys.argv[0]).parent
+
         if context.params["config"]:
             self.config = context.params["config"]
             self.default_config_file = False
         else:
-            if Path(trcli_folder / "config.yml").is_file():
-                self.config = trcli_folder / "config.yml"
-            elif Path(trcli_folder / "config.yaml").is_file():
-                self.config = trcli_folder / "config.yaml"
+            if Path(executable_folder / "config.yml").is_file():
+                self.config = executable_folder / "config.yml"
+            elif Path(executable_folder / "config.yaml").is_file():
+                self.config = executable_folder / "config.yaml"
             else:
                 self.config = None
         if self.config:

@@ -29,6 +29,7 @@ def load_config_resources(mocker):
     environment = Environment()
     environment.verbose = True
     stdout_mock = mocker.patch("sys.stdout", new_callable=io.StringIO)
+    mocker.patch("sys.argv", ["trcli"])
     yield environment, stdout_mock
 
 
@@ -77,7 +78,6 @@ class TestLoadDataFromConfig:
         with runner.isolated_filesystem():
             copyfile(config_file, "config.yaml")
             copyfile(correct_config_file_path, "custom_config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             environment.parse_config_file(context)
         check_parsed_data(correct_yaml_expected_result, environment.params_from_config)
         check_verbose_message(expected_verbose_message, stdout_mock.getvalue())
@@ -102,7 +102,6 @@ class TestLoadDataFromConfig:
         runner = CliRunner()
         with runner.isolated_filesystem():
             copyfile(correct_config_file_path, config_name)
-            trcli.cli.trcli_folder = Path(config_name).parent
             environment.parse_config_file(context)
             expected_verbose_message = ""
         check_parsed_data(correct_yaml_expected_result, environment.params_from_config)
@@ -183,7 +182,6 @@ class TestLoadDataFromConfig:
         with runner.isolated_filesystem():
             copyfile(correct_config_file_path_with_custom_config_path, "config.yaml")
             copyfile(correct_config_file_loop_check_path, "custom_config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             environment.parse_config_file(context)
         check_parsed_data(yaml_expected_results, environment.params_from_config)
         check_verbose_message(expected_verbose_message, stdout_mock.getvalue())
