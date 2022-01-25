@@ -109,7 +109,6 @@ class TestCli:
         [("batch_size", 1000), ("timeout", 160)],
         ids=["batch_size", "timeout"],
     )
-    @pytest.mark.test123
     def test_check_custom_config_overrides_defaults(
         self, argument_name, argument_value, mocker, cli_resources
     ):
@@ -124,7 +123,6 @@ class TestCli:
         with cli_runner.isolated_filesystem():
             with open("fake_config_file.yaml", "w+") as f:
                 f.write(f"{argument_name}: {argument_value}")
-            trcli.cli.trcli_folder = Path("fake_config_file.yaml").parent
             setattr_mock = mocker.patch("trcli.cli.setattr")
             _ = cli_runner.invoke(cli, args)
 
@@ -185,13 +183,12 @@ class TestCli:
         parameters"""
         cli_agrs_helper, cli_runner = cli_resources
         args = cli_agrs_helper.get_all_required_parameters()
-
         mocker.patch("sys.argv", ["trcli", *args])
 
         with cli_runner.isolated_filesystem():
             with open("config.yaml", "w+") as f:
                 f.write(f"{argument_name}: {argument_value}")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
+
             setattr_mock = mocker.patch("trcli.cli.setattr")
             _ = cli_runner.invoke(cli, args)
 
@@ -212,7 +209,6 @@ class TestCli:
 
         with cli_runner.isolated_filesystem():
             copyfile(default_config_file, "config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             _ = cli_runner.invoke(
                 cli,
                 args,
@@ -237,7 +233,6 @@ class TestCli:
         setattr_mock = mocker.patch("trcli.cli.setattr")
         with cli_runner.isolated_filesystem():
             copyfile(default_config_file, "config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             _ = cli_runner.invoke(cli, tool_args)
 
         expected = cli_agrs_helper.get_required_parameters_without_command_no_dashes()
