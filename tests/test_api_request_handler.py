@@ -79,7 +79,7 @@ class TestApiRequestHandler:
         assert api_request_handler.get_project_id("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,
             suite_mode=-1,
-            error_message="Some project project doesn't exists.",
+            error_message="Please specify a valid project name using the --project argument",
         ), "Get project should return proper project data object"
 
     def test_check_suite_exists(
