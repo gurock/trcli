@@ -117,7 +117,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
             RevertMessages.run_deleted,
             RevertMessages.test_cases_deleted,
             RevertMessages.section_deleted,
-            RevertMessages.suite_not_deleted,
+            RevertMessages.suite_not_deleted.format(
+                error="No permissions to delete suite."
+            ),
         ],
     ),
     (
@@ -125,7 +127,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
         [
             RevertMessages.run_deleted,
             RevertMessages.test_cases_deleted,
-            RevertMessages.section_not_deleted,
+            RevertMessages.section_not_deleted.format(
+                error="No permissions to delete sections."
+            ),
             RevertMessages.suite_deleted,
         ],
     ),
@@ -133,7 +137,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
         "delete_cases",
         [
             RevertMessages.run_deleted,
-            RevertMessages.test_cases_not_deleted,
+            RevertMessages.test_cases_not_deleted.format(
+                error="No permissions to delete cases."
+            ),
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,
         ],
@@ -141,7 +147,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
     (
         "delete_run",
         [
-            RevertMessages.run_not_deleted,
+            RevertMessages.run_not_deleted.format(
+                error="No permissions to delete run."
+            ),
             RevertMessages.test_cases_deleted,
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,

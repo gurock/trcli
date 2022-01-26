@@ -61,11 +61,11 @@ class TestResultsUploader:
         get_project_id_mocker(
             results_uploader=results_uploader,
             project_id=ProjectErrors.not_existing_project,
-            error_message=f"{environment.project} project doesn't exists.",
+            error_message=f"{environment.project} project doesn't exist.",
             failing=True,
         )
         expected_log_calls = [
-            mocker.call(f"{environment.project} project doesn't exists.")
+            mocker.call(f"\n{environment.project} project doesn't exist.")
         ]
 
         with pytest.raises(SystemExit) as exception:
@@ -110,7 +110,8 @@ class TestResultsUploader:
         )
         expected_log_calls = [
             mocker.call(
-                FAULT_MAPPING["error_checking_project"].format(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
                     error_message=error_message
                 )
             )
