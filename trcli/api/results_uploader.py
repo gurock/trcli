@@ -282,6 +282,11 @@ class ResultsUploader:
             error_message,
         ) = self.api_request_handler.check_missing_test_cases_ids(project_id)
         if missing_test_cases:
+            if self.api_request_handler.data_provider.check_for_case_names_duplicates():
+                self.environment.log(
+                    f"Warning: Case duplicates detected in {self.environment.file}. "
+                    f"This will result in improper results setting."
+                )
             prompt_message = PROMPT_MESSAGES["create_missing_test_cases"].format(
                 project_name=self.environment.project
             )

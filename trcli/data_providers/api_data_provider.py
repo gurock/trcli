@@ -117,6 +117,19 @@ class ApiDataProvider:
         for section in self.suites_input.testsections:
             section.suite_id = self.suites_input.suite_id
 
+    def check_for_case_names_duplicates(self):
+        """
+        Check if cases names in result xml file are duplicated.
+        """
+        testcases = [sections.testcases for sections in self.suites_input.testsections]
+        cases = [case for sublist in testcases for case in sublist]
+        cases_names = [case.title for case in cases]
+
+        if len(cases) == len(set(cases_names)):
+            return False
+        else:
+            return True
+
     def __update_section_data(self, section_data: List[dict]):
         """section_data comes from add_section API response
         example:

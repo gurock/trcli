@@ -65,6 +65,7 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [10, 11, 12],
         "Adding missing test cases to the suite.",
         1,
+        False,
     ),
     (
         True,
@@ -73,6 +74,7 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [],
         "Adding missing test cases to the suite.",
         -1,
+        False,
     ),
     (
         False,
@@ -81,9 +83,10 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [],
         FAULT_MAPPING["no_user_agreement"].format(type="test cases"),
         -1,
+        True,
     ),
 ]
-TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS = [
+TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS = [
     "user agrees, test cases added",
     "user agrees, test cases not added",
     "used does not agree",
