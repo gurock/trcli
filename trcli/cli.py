@@ -140,7 +140,10 @@ class Environment:
                 file_content = yaml.safe_load_all(f)
                 for page_content in file_content:
                     self.params_from_config.update(page_content)
-                    if "config" in self.params_from_config and self.default_config_file:
+                    if (
+                        self.params_from_config.get("config") is not None
+                        and self.default_config_file
+                    ):
                         self.default_config_file = False
                         self.parse_params_from_config_file(
                             self.params_from_config["config"]
