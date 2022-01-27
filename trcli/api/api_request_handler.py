@@ -78,7 +78,7 @@ class ApiRequestHandler:
                 return ProjectData(
                     project_id=ProjectErrors.not_existing_project,
                     suite_mode=-1,
-                    error_message=f"{project_name} {FAULT_MAPPING['project_doesnt_exists']}",
+                    error_message=FAULT_MAPPING["project_doesnt_exists"],
                 )
         else:
             return ProjectData(
