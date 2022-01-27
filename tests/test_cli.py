@@ -133,6 +133,28 @@ class TestCli:
             expected_output in result.output
         ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
 
+    @pytest.mark.api_client
+    @pytest.mark.parametrize(
+        "host",
+        ["http://", "fake_host.com/", "http:/fake_host.com"],
+        ids=["only scheme", "no scheme", "wrong scheme separator"],
+    )
+    def test_host_syntax_is_validated(self, host, cli_resources, mocker):
+        cli_agrs_helper, cli_runner = cli_resources
+        expected_exit_code = 1
+        expected_output = "Please provide a valid TestRail server address."
+        args = cli_agrs_helper.get_all_required_parameters_without_specified(["host"])
+        args = ["--host", host, *args]
+
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert (
+            result.exit_code == expected_exit_code
+        ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."
+        assert (
+            expected_output in result.output
+        ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
+
     @pytest.mark.cli
     @pytest.mark.parametrize(
         "argument_name, argument_value",
