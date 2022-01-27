@@ -50,7 +50,7 @@ class TestDataClassCreation:
         ), "Property description doesn't mach expected values"
 
     def test_generate_suite_name(self, freezer):
-        freezer.move_to("2020-01-10")
+        freezer.move_to("2020-01-10 01:00:00")
         suite = TestRailSuite(name=None, source="file.xml")
         assert suite.name == "file.xml 10-01-20 01:00:00", "Name not generated properly"
 

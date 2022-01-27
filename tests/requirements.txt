@@ -1,4 +1,5 @@
 pytest
+allure-pytest
 pytest-freezegun
 pytest-mock
 requests-mock

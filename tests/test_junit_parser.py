@@ -36,7 +36,7 @@ class TestJunitParser:
     def test_junit_xml_parser_valid_files(
         self, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
-        freezer.move_to("2020-05-20")
+        freezer.move_to("2020-05-20 01:00:00")
         file_reader = JunitParser(input_xml_path)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
         parsing_result_json = asdict(read_junit)
