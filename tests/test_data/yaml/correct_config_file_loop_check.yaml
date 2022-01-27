@@ -5,6 +5,7 @@ title: Project title
 verbose: False
 silent: False
 batch_size: 20
+config: config.yaml
 timeout: 50
 auto_creation_response: True
 suite_id: 50

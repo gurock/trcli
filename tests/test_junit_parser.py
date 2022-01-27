@@ -1,11 +1,13 @@
-from pathlib import Path
 import pytest
 import json
+from pathlib import Path
+from xml.etree.ElementTree import ParseError
 from junitparser import JUnitXmlError
 from trcli.readers.junit_xml import JunitParser
 from typing import Union
 from dataclasses import asdict
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.data_classes.validation_exception import ValidationException
 
 
 class TestJunitParser:
@@ -21,8 +23,8 @@ class TestJunitParser:
                 Path(__file__).parent / "test_data/json/root.json",
             ),
             (
-                Path(__file__).parent / "test_data/XML/empty.xml",
-                Path(__file__).parent / "test_data/json/empty.json",
+                Path(__file__).parent / "test_data/XML/required_only.xml",
+                Path(__file__).parent / "test_data/json/required_only.json",
             ),
         ],
         ids=[
@@ -49,9 +51,21 @@ class TestJunitParser:
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 
+    def test_junit_xml_parser_invalid_empty_file(self):
+        file_reader = JunitParser(
+            Path(__file__).parent / "test_data/XML/invalid_empty.xml"
+        )
+        with pytest.raises(ParseError):
+            file_reader.parse_file()
+
     def test_junit_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             JunitParser("not_found.xml")
+
+    def test_junit_xml_parser_validation_error(self):
+        file_reader = JunitParser(Path(__file__).parent / "test_data/XML/empty.xml")
+        with pytest.raises(ValidationException):
+            file_reader.parse_file()
 
     def __clear_unparsable_junit_elements(
         self, test_rail_suite: TestRailSuite

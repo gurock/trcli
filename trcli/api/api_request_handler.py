@@ -181,20 +181,23 @@ class ApiRequestHandler:
             f"get_sections/{project_id}&suite_id={suite_id}"
         )
         if not response.error_message:
-            return (
-                list(
-                    set(sections)
-                    - set(
-                        [
-                            section.get("id")
-                            for section in response.response_text["sections"]
-                        ]
-                    )
-                ),
-                response.error_message,
+            missing_sections = list(
+                set(sections)
+                - set(
+                    [
+                        section.get("id")
+                        for section in response.response_text["sections"]
+                    ]
+                )
             )
+            if any(missing_sections):
+                return False, FAULT_MAPPING["unknown_section_id"]
+            elif len(missing_sections) == 1:
+                return True, response.error_message
+            else:
+                return False, response.error_message
         else:
-            return [], response.error_message
+            return False, response.error_message
 
     def add_sections(self, project_id: int) -> (List[dict], str):
         """
@@ -444,6 +447,7 @@ class ApiRequestHandler:
         """
         response = self.client.send_post(f"delete_run/{run_id}", payload={})
         return response.response_text, response.error_message
+
     @staticmethod
     def retrieve_results_after_cancelling(futures):
         responses = []
@@ -460,7 +464,6 @@ class ApiRequestHandler:
         )
         for future in futures:
             future.cancel()
-
 
     def __get_all_cases(
         self, project_id=None, suite_id=None, link=None, cases=[]

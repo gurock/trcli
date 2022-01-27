@@ -18,13 +18,13 @@ CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
 trcli_folder = Path(__file__).parent
 cmd_folder = trcli_folder / "commands/"
-default_config_file_path = trcli_folder / "config.yaml"
 
 
 class Environment:
     def __init__(self):
         self.home = os.getcwd()
         self.default_config_file = True
+        self.params_from_config = dict()
         self.file = None
         self.host = None
         self.project = None
@@ -66,10 +66,10 @@ class Environment:
 
     def get_prompt_response_for_auto_creation(self, msg: str, *args):
         """Prompts for confirmation (yes/no) if auto_creation_response (--no/--yes parameters) is not set"""
-        if not self.auto_creation_response:
+        if self.auto_creation_response is None:
             return click.confirm(msg)
         else:
-            return True if self.auto_creation_response == "Yes" else False
+            return self.auto_creation_response
 
     def set_parameters(self, context: click.core.Context):
         """Sets parameters based on context. The function will override parameters with config file values
@@ -78,15 +78,13 @@ class Environment:
             param_sources_types = [ParameterSource.DEFAULT]
         else:
             param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
-
-        params_from_config = self.get_params_from_config_file(self.config)
         for param, value in context.params.items():
             # Don't set config again
             if param == "config":
                 continue
-            param_config_value = params_from_config.get(param, None)
+            param_config_value = self.params_from_config.get(param, None)
             param_source = context.get_parameter_source(param)
-            if param_source in param_sources_types and param_config_value:
+            if param_source in param_sources_types and (param_config_value is not None):
                 setattr(self, param, param_config_value)
             else:
                 setattr(self, param, value)
@@ -103,29 +101,46 @@ class Environment:
             self.log(FAULT_MAPPING["missing_password_and_key"])
             exit(1)
 
-    def set_config_file(self, context: click.Context):
+    def parse_config_file(self, context: click.Context):
         """Sets config file path from context and information if default or custom config file should be used."""
-        self.config = context.params["config"]
-        self.default_config_file = (
-            False
-            if context.get_parameter_source("config") == ParameterSource.COMMANDLINE
-            else True
-        )
+        executable_folder = Path(sys.argv[0]).parent
 
-    def get_params_from_config_file(self, file_path: str) -> dict:
+        if context.params["config"]:
+            self.config = context.params["config"]
+            self.default_config_file = False
+        else:
+            if Path(executable_folder / "config.yml").is_file():
+                self.config = executable_folder / "config.yml"
+            elif Path(executable_folder / "config.yaml").is_file():
+                self.config = executable_folder / "config.yaml"
+            else:
+                self.config = None
+        if self.config:
+            self.parse_params_from_config_file(self.config)
+
+    def parse_params_from_config_file(self, file_path: Path):
+        self.params_from_config = {}
         try:
             with open(file_path, "r") as f:
-                loaded_config = yaml.safe_load(f)
-        except yaml.YAMLError:
-            self.vlog(
-                FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
-            )
-            loaded_config = {}
+                file_content = yaml.safe_load_all(f)
+                for page_content in file_content:
+                    self.params_from_config.update(page_content)
+                    if "config" in self.params_from_config and self.default_config_file:
+                        self.default_config_file = False
+                        self.parse_params_from_config_file(
+                            self.params_from_config["config"]
+                        )
+        except yaml.YAMLError as e:
+            self.log(FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path))
+            self.log(f"Error details:\n{e}")
+            if not self.default_config_file:
+                exit(1)
+            self.params_from_config = {}
         except IOError:
-            self.vlog(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
-            loaded_config = {}
-
-        return loaded_config
+            self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
+            if not self.default_config_file:
+                exit(1)
+            self.params_from_config = {}
 
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
@@ -161,7 +176,6 @@ class TRCLI(click.MultiCommand):
     "-c",
     "--config",
     type=click.Path(),
-    default=default_config_file_path,
     metavar="",
     help="Optional path definition for testrail-credentials file or CF file.",
 )
@@ -199,7 +213,7 @@ class TRCLI(click.MultiCommand):
 @click.option(
     "-t",
     "--timeout",
-    type=click.IntRange(min=0),
+    type=click.FloatRange(min=0),
     default=DEFAULT_API_CALL_TIMEOUT,
     show_default=str(DEFAULT_API_CALL_TIMEOUT),
     metavar="",
@@ -227,17 +241,26 @@ class TRCLI(click.MultiCommand):
     "-y",
     "--yes",
     "auto_creation_response",
-    flag_value="Yes",
+    flag_value=True,
     help="answer 'yes' to all prompts around auto-creation",
+    default=None,
 )
 @click.option(
     "-n",
     "--no",
     "auto_creation_response",
-    flag_value="No",
+    flag_value=False,
     help="answer 'no' to all prompts around auto-creation",
+    default=None,
 )
-@click.option("-s", "--silent", flag_value="yes", help="Silence stdout")
+@click.option(
+    "-s",
+    "--silent",
+    flag_value=True,
+    is_flag=True,
+    help="Silence stdout",
+    default=False,
+)
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
     if not sys.argv[1:]:
@@ -249,5 +272,5 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
         print(MISSING_COMMAND_SLOGAN)
         exit(2)
 
-    environment.set_config_file(context)
+    environment.parse_config_file(context)
     environment.set_parameters(context)

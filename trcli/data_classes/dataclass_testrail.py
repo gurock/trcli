@@ -1,8 +1,8 @@
-import re
 from dataclasses import dataclass
 from typing import List
 from serde import field, serialize, deserialize
 from time import localtime, strftime
+from trcli.data_classes.validation_exception import ValidationException
 
 
 @serialize
@@ -91,6 +91,14 @@ class TestRailCase:
     def __getitem__(self, item):
         return getattr(self, item)
 
+    def __post_init__(self):
+        if not self.title:
+            raise ValidationException(
+                field_name="title",
+                class_name=self.__class__.__name__,
+                reason="Title is empty.",
+            )
+
 
 @serialize
 @deserialize
@@ -130,6 +138,14 @@ class TestRailSection:
 
     def __getitem__(self, item):
         return getattr(self, item)
+
+    def __post_init__(self):
+        if not self.name:
+            raise ValidationException(
+                field_name="name",
+                class_name=self.__class__.__name__,
+                reason="Name is empty.",
+            )
 
 
 @serialize
