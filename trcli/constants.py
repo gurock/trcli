@@ -36,6 +36,11 @@ FAULT_MAPPING = dict(
     unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail.",
     dataclass_validation_error="Unable to parse field {field} in {class_name} tag. {reason}",
     unknown_section_id="There are some sections that have IDs and not exist in Test Rail.",
+    missing_run_id_when_case_id_present="--case-id needs to be passed together with --run-id parameter.",
+    mismatch_between_case_id_and_result_file="Could not match --case-id with result file. "
+    "Please make sure that:\n--case-id matches ID "
+    "(if present) under `testcase` tag in result xml file\nand\n"
+    "only one result is present in result xml file.",
 )
 
 PROMPT_MESSAGES = dict(

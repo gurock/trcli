@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,7 @@ from click.testing import CliRunner
 import trcli.cli
 from shutil import copyfile
 from trcli.cli import cli
+from trcli.constants import FAULT_MAPPING
 from tests.helpers.cli_helpers import CLIParametersHelper
 
 from tests.test_data.cli_test_data import (
@@ -76,6 +78,34 @@ class TestCli:
         assert (
             "Missing command." in result.output
         ), "'Missing command.' is not present in output when calling trcli without command parameter."
+
+    @pytest.mark.cli
+    # @pytest.mark.parametrize()
+    def test_run_with_case_id_project_title_not_required(self, mocker, cli_resources):
+        cli_args_helper, cli_runner = cli_resources
+
+        args = cli_args_helper.get_all_required_parameters_without_specified(
+            ["project", "title"]
+        )
+        args = ["--run-id 20", "--case-id", "10", *args]
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert FAULT_MAPPING["missing_project"] not in result.output, ""
+        assert FAULT_MAPPING["missing_title"] not in result.output, ""
+
+    @pytest.mark.cli
+    def test_run_with_case_id_run_id_required(self, mocker, cli_resources):
+        cli_args_helper, cli_runner = cli_resources
+
+        args = cli_args_helper.get_all_required_parameters_without_specified(
+            ["project", "title"]
+        )
+        args = ["--case-id", "10", *args]
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert (
+            FAULT_MAPPING["missing_run_id_when_case_id_present"] in result.output
+        ), "Expected information about missing --run-id parameter."
 
     @pytest.mark.cli
     @pytest.mark.parametrize(

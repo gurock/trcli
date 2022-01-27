@@ -8,6 +8,16 @@ def post_data_provider():
     yield ApiDataProvider(test_input)
 
 
+@pytest.fixture(scope="function")
+def post_data_provider_single_result_with_id():
+    yield ApiDataProvider(test_input_single_result_with_id)
+
+
+@pytest.fixture(scope="function")
+def post_data_provider_single_result_without_id():
+    yield ApiDataProvider(test_input_single_result_without_id)
+
+
 class TestApiDataProvider:
     def test_post_suite(self, post_data_provider):
         assert (
@@ -103,3 +113,38 @@ class TestApiDataProvider:
         assert (
             result == expected_result
         ), f"Expected: {expected_result} but got {result} instead."
+
+    @pytest.mark.parametrize(
+        "case_id, expected_result",
+        [(1, None), (10, None)],
+        ids=["Existing case id", "Not existing case id"],
+    )
+    def test_add_result_for_case_multiple_results(
+        self, case_id, expected_result, post_data_provider
+    ):
+        result = post_data_provider.add_result_for_case(case_id)
+        assert result is expected_result, f"Expected None as a result. But got {result}"
+
+    def test_add_result_for_case_single_result_with_id(
+        self, post_data_provider_single_result_with_id
+    ):
+        case_id = 1
+        result = post_data_provider_single_result_with_id.add_result_for_case(case_id)
+        assert result is None, f"Expected None as a result. But got {result}"
+
+        case_id = 10
+        result = post_data_provider_single_result_with_id.add_result_for_case(case_id)
+        assert (
+            result == result_for_update_case
+        ), f"Expected None as a result. But got {result}"
+
+    def test_add_result_for_case_single_result_without_id(
+        self, post_data_provider_single_result_without_id
+    ):
+        case_id = 10
+        result = post_data_provider_single_result_without_id.add_result_for_case(
+            case_id
+        )
+        assert (
+            result == result_for_update_case
+        ), f"Expected None as a result. But got {result}"

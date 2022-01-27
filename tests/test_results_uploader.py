@@ -32,6 +32,8 @@ class TestResultsUploader:
         environment = mocker.patch("trcli.api.results_uploader.Environment")
         environment.host = "https://fake_host.com/"
         environment.project = "Fake project name"
+        environment.case_id = None
+        environment.run_id = None
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(
@@ -802,3 +804,70 @@ class TestResultsUploader:
         assert (
             results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
+
+    @pytest.mark.results_uploader
+    def test_update_case_succeed(self, result_uploader_data_provider, mocker):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_id = 10
+        environment.run_id = 20
+        exit_code = 0
+
+        expected_log_calls = [
+            mocker.call(
+                f"Updating test case with id: {environment.case_id}.", new_line=False
+            ),
+            mocker.call(f" Done."),
+        ]
+        results_uploader.api_request_handler.update_case_result.return_value = (
+            {"case_id": 10},
+            "",
+        )
+        with pytest.raises(SystemExit) as exception:
+            results_uploader.upload_results()
+
+        environment.log.assert_has_calls(expected_log_calls)
+        assert (
+            exception.type == SystemExit
+        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert (
+            exception.value.code == exit_code
+        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
+
+    @pytest.mark.results_uploader
+    def test_update_case_update_case_result_fails(
+        self, result_uploader_data_provider, mocker
+    ):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_id = 10
+        environment.run_id = 20
+        exit_code = 1
+        error_message = "update_case_result failed unexpectedly."
+
+        expected_log_calls = [
+            mocker.call(
+                f"Updating test case with id: {environment.case_id}.", new_line=False
+            ),
+            mocker.call(f"\n{error_message}"),
+        ]
+        results_uploader.api_request_handler.update_case_result.return_value = (
+            "",
+            error_message,
+        )
+        with pytest.raises(SystemExit) as exception:
+            results_uploader.upload_results()
+
+        environment.log.assert_has_calls(expected_log_calls)
+        assert (
+            exception.type == SystemExit
+        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert (
+            exception.value.code == exit_code
+        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
