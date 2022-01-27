@@ -332,16 +332,20 @@ class ResultsUploader:
         """
         Instantiate api client with needed attributes taken from environment.
         """
-        logging_function = self.environment.vlog
+        verbose_logging_function = self.environment.vlog
+        logging_function = self.environment.log
         if self.environment.timeout:
             api_client = APIClient(
                 self.environment.host,
+                verbose_logging_function=verbose_logging_function,
                 logging_function=logging_function,
                 timeout=self.environment.timeout,
             )
         else:
             api_client = APIClient(
-                self.environment.host, logging_function=logging_function
+                self.environment.host,
+                logging_function=logging_function,
+                verbose_logging_function=verbose_logging_function,
             )
         api_client.username = self.environment.username
         api_client.password = self.environment.password
