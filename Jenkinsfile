@@ -14,7 +14,7 @@ pipeline {
     }
             stage('Test') {
                 steps {
-                sh "python3 -m pytest --disable-warnings --alluredir=./allure-results"
+                sh "python3 -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --alluredir=./allure-results"
                 }
         }
             stage('Allure report') {

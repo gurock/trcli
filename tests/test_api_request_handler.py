@@ -40,6 +40,7 @@ def api_request_handler_verify(handler_maker):
 
 
 class TestApiRequestHandler:
+    @pytest.mark.api_handler
     def test_return_project(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -82,6 +83,7 @@ class TestApiRequestHandler:
             error_message="Please specify a valid project name using the --project argument",
         ), "Get project should return proper project data object"
 
+    @pytest.mark.api_handler
     def test_check_suite_exists(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -101,6 +103,7 @@ class TestApiRequestHandler:
             FAULT_MAPPING["missing_suite"].format(suite_id=6),
         ), "Given suite id should NOT exist in mocked response."
 
+    @pytest.mark.api_handler
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = {
@@ -128,6 +131,7 @@ class TestApiRequestHandler:
             == mocked_response["id"]
         ), "Added suite id in DataProvider doesn't match mocked response id."
 
+    @pytest.mark.api_handler
     def test_check_missing_sections(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -166,6 +170,7 @@ class TestApiRequestHandler:
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
         assert not missing, "There should be no missing section"
 
+    @pytest.mark.api_handler
     def test_add_sections(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = {
@@ -192,6 +197,7 @@ class TestApiRequestHandler:
             == mocked_response["id"]
         ), "Added section id in DataProvider doesn't match mocked response id."
 
+    @pytest.mark.api_handler
     def test_add_section_and_cases(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -245,6 +251,7 @@ class TestApiRequestHandler:
         ), "Added case id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
+    @pytest.mark.api_handler
     def test_add_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         run_name = "Test run name"
@@ -263,6 +270,7 @@ class TestApiRequestHandler:
         ), "Added run id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
+    @pytest.mark.api_handler
     def test_add_results(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
         mocked_response = {
@@ -295,6 +303,7 @@ class TestApiRequestHandler:
             mocked_response["results"]
         ), f"Expected {len(mocked_response['results'])} results to be added but got {results_added} instead."
 
+    @pytest.mark.api_handler
     def test_close_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
         mocked_response = {
@@ -308,6 +317,7 @@ class TestApiRequestHandler:
         assert mocked_response == resources_added, "Invalid response from close_run"
         assert error == "", "Error occurred in close_run"
 
+    @pytest.mark.api_handler
     def test_check_missing_test_cases_ids(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -345,6 +355,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["unknown_test_case_id"]
         ), "There should be an error because of invalid test case id"
 
+    @pytest.mark.api_handler
     def test_check_missing_test_case_id_not_found(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -369,6 +380,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["unknown_test_case_id"]
         ), "There should be an error because of invalid test case id"
 
+    @pytest.mark.api_handler
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = [
@@ -382,6 +394,7 @@ class TestApiRequestHandler:
         ), "ID in response doesn't match mocked response"
         assert error == "", "Error occurred in get_suite_ids"
 
+    @pytest.mark.api_handler
     def test_return_project_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -396,6 +409,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again.",
         ), "Get project should return proper project data object with error"
 
+    @pytest.mark.api_handler
     def test_add_suite_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -416,6 +430,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again."
         ), "Connection error is expected"
 
+    @pytest.mark.api_handler
     def test_add_sections_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -438,6 +453,7 @@ class TestApiRequestHandler:
             is None
         ), "No resources should be added to DataProvider"
 
+    @pytest.mark.api_handler
     def test_add_section_and_cases_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -489,6 +505,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again."
         ), "Connection error is expected"
 
+    @pytest.mark.api_handler
     def test_add_results_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -506,6 +523,7 @@ class TestApiRequestHandler:
         ), "Connection error is expected"
         assert results_added == 0, "Expected 0 resources to be added."
 
+    @pytest.mark.api_handler
     def test_add_results_keyboard_interrupt(
         self, api_request_handler: ApiRequestHandler, requests_mock, mocker
     ):
@@ -520,6 +538,7 @@ class TestApiRequestHandler:
         with pytest.raises(KeyboardInterrupt) as exception:
             api_request_handler.add_results(run_id)
 
+    @pytest.mark.api_handler
     def test_add_suite_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -537,6 +556,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.add_suites(project_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_add_section_with_verify(self, handler_maker, requests_mock):
         project_id = 3
         mocked_response = {
@@ -560,6 +580,7 @@ class TestApiRequestHandler:
             == "Data verification failed. Server added different resource than expected."
         ), "There should be error in verification."
 
+    @pytest.mark.api_handler
     def test_add_case_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -589,6 +610,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_section(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -603,6 +625,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.delete_sections(sections_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_suite(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -617,6 +640,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.delete_suite(suite_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_cases(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -634,6 +658,7 @@ class TestApiRequestHandler:
         )
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_run(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):

@@ -11,6 +11,7 @@ from trcli.data_classes.validation_exception import ValidationException
 
 
 class TestJunitParser:
+    @pytest.mark.parse_junit
     @pytest.mark.parametrize(
         "input_xml_path, expected_path",
         [
@@ -33,6 +34,7 @@ class TestJunitParser:
             "XML with no data",
         ],
     )
+    @pytest.mark.parse_junit
     def test_junit_xml_parser_valid_files(
         self, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
@@ -46,11 +48,13 @@ class TestJunitParser:
             parsing_result_json == expected_json
         ), "Result of parsing Junit XML is different than expected"
 
+    @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_file(self):
         file_reader = JunitParser(Path(__file__).parent / "test_data/XML/invalid.xml")
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 
+    @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_empty_file(self):
         file_reader = JunitParser(
             Path(__file__).parent / "test_data/XML/invalid_empty.xml"
@@ -58,10 +62,12 @@ class TestJunitParser:
         with pytest.raises(ParseError):
             file_reader.parse_file()
 
+    @pytest.mark.parse_junit
     def test_junit_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             JunitParser("not_found.xml")
 
+    @pytest.mark.parse_junit
     def test_junit_xml_parser_validation_error(self):
         file_reader = JunitParser(Path(__file__).parent / "test_data/XML/empty.xml")
         with pytest.raises(ValidationException):

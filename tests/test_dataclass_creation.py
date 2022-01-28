@@ -6,13 +6,15 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailResult,
     TestRailProperty,
     TestRailSuite,
-    TestRailCase, TestRailSection,
+    TestRailCase,
+    TestRailSection,
 )
 from serde.json import to_json
 from trcli.data_classes.validation_exception import ValidationException
 
 
 class TestDataClassCreation:
+    @pytest.mark.dataclass
     @pytest.mark.parametrize(
         "junit_test_result, expected_result",
         [
@@ -30,6 +32,7 @@ class TestDataClassCreation:
             "Test result passed",
         ],
     )
+    @pytest.mark.dataclass
     def test_create_test_result_from_junit_element(
         self, junit_test_result: Element, expected_result: dict
     ):
@@ -42,6 +45,7 @@ class TestDataClassCreation:
             result_json["comment"] == expected_result["comment"]
         ), "Joined comment doesn't mach expected comment"
 
+    @pytest.mark.dataclass
     def test_create_property(self):
         result_dataclass = TestRailProperty("Some property", "True")
         result_json = json.loads(to_json(result_dataclass))
@@ -49,11 +53,13 @@ class TestDataClassCreation:
             result_json["description"] == "Some property: True"
         ), "Property description doesn't mach expected values"
 
+    @pytest.mark.dataclass
     def test_generate_suite_name(self, freezer):
         freezer.move_to("2020-01-10 01:00:00")
         suite = TestRailSuite(name=None, source="file.xml")
         assert suite.name == "file.xml 10-01-20 01:00:00", "Name not generated properly"
 
+    @pytest.mark.dataclass
     @pytest.mark.parametrize(
         "input_time, output_time",
         [
@@ -68,6 +74,7 @@ class TestDataClassCreation:
         test_result = TestRailResult(case_id=1, elapsed=input_time)
         assert test_result.elapsed == output_time, "Elapsed not parsed properly"
 
+    @pytest.mark.dataclass
     def test_elapsed_time_calc_in_testresult_none(self):
         test_result = TestRailResult(case_id=1, elapsed=None)
         assert test_result.elapsed is None, "Elapsed is not None"
@@ -75,10 +82,12 @@ class TestDataClassCreation:
             test_result
         ), "Elapsed should be skipped by serde"
 
+    @pytest.mark.dataclass
     def test_validation_error_for_case(self):
         with pytest.raises(ValidationException):
             TestRailCase(section_id=1, title="")
 
+    @pytest.mark.dataclass
     def test_validation_error_for_section(self):
         with pytest.raises(ValidationException):
             TestRailSection(suite_id=1, name="")

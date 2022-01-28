@@ -9,11 +9,13 @@ def post_data_provider():
 
 
 class TestApiDataProvider:
+    @pytest.mark.data_provider
     def test_post_suite(self, post_data_provider):
         assert (
             post_data_provider.add_suites_data() == post_suite_bodies
         ), "Adding suite data doesn't match expected"
 
+    @pytest.mark.data_provider
     def test_data_provider_returns_items_without_id(self, post_data_provider):
         """Check if data providers returns data only for items with missing IDs. Numbers correspond to data in
         test_data"""
@@ -26,6 +28,7 @@ class TestApiDataProvider:
             len(post_data_provider.add_cases()["bodies"]) == missing_cases
         ), f"Adding cases data doesn't match expected {missing_cases}"
 
+    @pytest.mark.data_provider
     def test_post_section(self, post_data_provider):
         """Check body for adding sections"""
         suite_updater = [
@@ -39,6 +42,7 @@ class TestApiDataProvider:
             post_data_provider.add_sections_data() == post_section_bodies
         ), "Adding sections data doesn't match expected body"
 
+    @pytest.mark.data_provider
     def test_post_cases(self, post_data_provider):
         """Check body for adding cases"""
         section_updater = [
@@ -49,6 +53,7 @@ class TestApiDataProvider:
             post_data_provider.add_cases() == post_cases_bodies
         ), "Adding cases data doesn't match expected body"
 
+    @pytest.mark.data_provider
     def test_post_run(self, post_data_provider):
         """Check body for adding run"""
         suite_updater = [
@@ -61,6 +66,7 @@ class TestApiDataProvider:
             post_data_provider.add_run("test run") == post_run_bodies
         ), "Adding run data doesn't match expected body"
 
+    @pytest.mark.data_provider
     def test_post_results_for_cases(self, post_data_provider):
         """Check body for adding results"""
         case_updater = [
@@ -76,6 +82,7 @@ class TestApiDataProvider:
             == post_results_for_cases_body
         ), "Adding results data doesn't match expected body"
 
+    @pytest.mark.data_provider
     def test_return_all_items_flag(self, post_data_provider):
         all_sections = 3
         all_cases = 3
@@ -88,6 +95,7 @@ class TestApiDataProvider:
             == all_cases
         ), f"Adding cases with return_all_items flag should match {all_cases}"
 
+    @pytest.mark.data_provider
     @pytest.mark.parametrize(
         "list_to_divide, bulk_size, expected_result",
         [
