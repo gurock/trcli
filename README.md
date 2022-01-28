@@ -217,3 +217,13 @@ will be updated under run with ID 193.
 ```
 None: `--case-id` needs to be set to test case ID not to test ID (the one that can be seen in test run).
 ```
+
+Multithreading
+====================================
+TRCLI allows user to upload test cases and results using multithreading. This is enabled by default and set to `MAX_WORKERS_ADD_CASE = 5` and
+ `MAX_WORKERS_ADD_RESULTS = 10` in `trcli/settings.py`. To disable multithreading set those to `1`.
+
+During performance tests we discovered that using more than 10 workers didn't improve time of upload and could cause errors. Please set it accordingly to your machine specs.
+Average time for uploading:
+- 2000 test cases was around 460 seconds
+- 5000 test cases was around 1000 seconds
