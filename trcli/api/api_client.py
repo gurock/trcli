@@ -110,7 +110,7 @@ class APIClient:
                 error_message = FAULT_MAPPING[
                     "unexpected_error_during_request_send"
                 ].format(request=e.request)
-                self.logging_function(verbose_log_message)
+                self.verbose_logging_function(verbose_log_message)
                 break
             else:
                 status_code = response.status_code
