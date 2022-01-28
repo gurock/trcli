@@ -17,6 +17,13 @@ file_json = open(
 json_string = json.dumps(json.load(file_json))
 test_input_single_result_without_id = from_json(TestRailSuite, json_string)
 
+file_json = open(
+    Path(__file__).parent / "json/data_provider_duplicated_case_names.json"
+)
+json_string = json.dumps(json.load(file_json))
+test_input_duplicated_case_names = from_json(TestRailSuite, json_string)
+
+
 post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
 
 post_section_bodies = {

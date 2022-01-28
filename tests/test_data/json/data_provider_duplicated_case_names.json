@@ -46,7 +46,7 @@
             "testcases": [
                 {
                     "section_id": 2,
-                    "title": "testCase3",
+                    "title": "testCase2",
                     "case_id": 4,
                     "result": {"comment": "", "status_id": 1, "case_id": 4}
                 }
