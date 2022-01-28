@@ -20,6 +20,7 @@ from tests.test_data.load_data_from_config_test_data import (
     correct_config_file_multiple_documents_path_with_custom_config_path,
     correct_config_file_path_with_custom_config_path,
     correct_config_file_loop_check_path,
+    correct_config_file_with_custom_config_empty_path,
 )
 from trcli.constants import FAULT_MAPPING
 
@@ -182,6 +183,27 @@ class TestLoadDataFromConfig:
         with runner.isolated_filesystem():
             copyfile(correct_config_file_path_with_custom_config_path, "config.yaml")
             copyfile(correct_config_file_loop_check_path, "custom_config.yaml")
+            environment.parse_config_file(context)
+        check_parsed_data(yaml_expected_results, environment.params_from_config)
+        check_verbose_message(expected_verbose_message, stdout_mock.getvalue())
+
+    @pytest.mark.load_config
+    def test_loading_from_default_config_with_empty_custom_config(
+        self, load_config_resources, mocker
+    ):
+        """The purpose of this test is to check that parameters will be correctly parsed when default
+        config file contains empty custom config entry (config: )"""
+        runner = CliRunner()
+        context = mocker.Mock()
+        context.params = mocker.patch.dict({"config": None})
+        environment, stdout_mock = load_config_resources
+        environment.parse_config_file(context)
+        yaml_expected_results = correct_yaml_expected_result
+        yaml_expected_results["config"] = None
+        expected_verbose_message = ""
+
+        with runner.isolated_filesystem():
+            copyfile(correct_config_file_with_custom_config_empty_path, "config.yaml")
             environment.parse_config_file(context)
         check_parsed_data(yaml_expected_results, environment.params_from_config)
         check_verbose_message(expected_verbose_message, stdout_mock.getvalue())

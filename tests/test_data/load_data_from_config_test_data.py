@@ -17,6 +17,9 @@ correct_config_file_path = Path(__file__).parent / "yaml" / "correct_config_file
 correct_config_file_path_with_custom_config_path = (
     Path(__file__).parent / "yaml" / "correct_config_file_with_custom_config_path.yaml"
 )
+correct_config_file_with_custom_config_empty_path = (
+    Path(__file__).parent / "yaml" / "correct_config_file_with_custom_config_empty.yaml"
+)
 correct_config_file_loop_check_path = (
     Path(__file__).parent / "yaml" / "correct_config_file_loop_check.yaml"
 )
