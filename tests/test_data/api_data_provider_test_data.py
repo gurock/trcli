@@ -7,6 +7,23 @@ file_json = open(Path(__file__).parent / "json/data_provider.json")
 json_string = json.dumps(json.load(file_json))
 test_input = from_json(TestRailSuite, json_string)
 
+file_json = open(Path(__file__).parent / "json/update_case_result_single_with_id.json")
+json_string = json.dumps(json.load(file_json))
+test_input_single_result_with_id = from_json(TestRailSuite, json_string)
+
+file_json = open(
+    Path(__file__).parent / "json/update_case_result_single_without_id.json"
+)
+json_string = json.dumps(json.load(file_json))
+test_input_single_result_without_id = from_json(TestRailSuite, json_string)
+
+file_json = open(
+    Path(__file__).parent / "json/data_provider_duplicated_case_names.json"
+)
+json_string = json.dumps(json.load(file_json))
+test_input_duplicated_case_names = from_json(TestRailSuite, json_string)
+
+
 post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
 
 post_section_bodies = {
@@ -37,3 +54,9 @@ post_results_for_cases_body = [
         ]
     }
 ]
+
+result_for_update_case = {
+    "case_id": 10,
+    "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+    "status_id": 4,
+}

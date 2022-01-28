@@ -1,3 +1,4 @@
+import unittest
 from pathlib import Path
 
 import pytest
@@ -7,6 +8,7 @@ from click.testing import CliRunner
 import trcli.cli
 from shutil import copyfile
 from trcli.cli import cli
+from trcli.constants import FAULT_MAPPING
 from tests.helpers.cli_helpers import CLIParametersHelper
 
 from tests.test_data.cli_test_data import (
@@ -78,6 +80,34 @@ class TestCli:
         ), "'Missing command.' is not present in output when calling trcli without command parameter."
 
     @pytest.mark.cli
+    # @pytest.mark.parametrize()
+    def test_run_with_case_id_project_title_not_required(self, mocker, cli_resources):
+        cli_args_helper, cli_runner = cli_resources
+
+        args = cli_args_helper.get_all_required_parameters_without_specified(
+            ["project", "title"]
+        )
+        args = ["--run-id 20", "--case-id", "10", *args]
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert FAULT_MAPPING["missing_project"] not in result.output, ""
+        assert FAULT_MAPPING["missing_title"] not in result.output, ""
+
+    @pytest.mark.cli
+    def test_run_with_case_id_run_id_required(self, mocker, cli_resources):
+        cli_args_helper, cli_runner = cli_resources
+
+        args = cli_args_helper.get_all_required_parameters_without_specified(
+            ["project", "title"]
+        )
+        args = ["--case-id", "10", *args]
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert (
+            FAULT_MAPPING["missing_run_id_when_case_id_present"] in result.output
+        ), "Expected information about missing --run-id parameter."
+
+    @pytest.mark.cli
     @pytest.mark.parametrize(
         "missing_args, expected_output, expected_exit_code",
         CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_DATA,
@@ -103,13 +133,34 @@ class TestCli:
             expected_output in result.output
         ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
 
+    @pytest.mark.api_client
+    @pytest.mark.parametrize(
+        "host",
+        ["http://", "fake_host.com/", "http:/fake_host.com"],
+        ids=["only scheme", "no scheme", "wrong scheme separator"],
+    )
+    def test_host_syntax_is_validated(self, host, cli_resources, mocker):
+        cli_agrs_helper, cli_runner = cli_resources
+        expected_exit_code = 1
+        expected_output = "Please provide a valid TestRail server address."
+        args = cli_agrs_helper.get_all_required_parameters_without_specified(["host"])
+        args = ["--host", host, *args]
+
+        mocker.patch("sys.argv", ["trcli", *args])
+        result = cli_runner.invoke(cli, args)
+        assert (
+            result.exit_code == expected_exit_code
+        ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."
+        assert (
+            expected_output in result.output
+        ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
+
     @pytest.mark.cli
     @pytest.mark.parametrize(
         "argument_name, argument_value",
         [("batch_size", 1000), ("timeout", 160)],
         ids=["batch_size", "timeout"],
     )
-    @pytest.mark.test123
     def test_check_custom_config_overrides_defaults(
         self, argument_name, argument_value, mocker, cli_resources
     ):
@@ -124,7 +175,6 @@ class TestCli:
         with cli_runner.isolated_filesystem():
             with open("fake_config_file.yaml", "w+") as f:
                 f.write(f"{argument_name}: {argument_value}")
-            trcli.cli.trcli_folder = Path("fake_config_file.yaml").parent
             setattr_mock = mocker.patch("trcli.cli.setattr")
             _ = cli_runner.invoke(cli, args)
 
@@ -185,13 +235,12 @@ class TestCli:
         parameters"""
         cli_agrs_helper, cli_runner = cli_resources
         args = cli_agrs_helper.get_all_required_parameters()
-
         mocker.patch("sys.argv", ["trcli", *args])
 
         with cli_runner.isolated_filesystem():
             with open("config.yaml", "w+") as f:
                 f.write(f"{argument_name}: {argument_value}")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
+
             setattr_mock = mocker.patch("trcli.cli.setattr")
             _ = cli_runner.invoke(cli, args)
 
@@ -212,7 +261,6 @@ class TestCli:
 
         with cli_runner.isolated_filesystem():
             copyfile(default_config_file, "config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             _ = cli_runner.invoke(
                 cli,
                 args,
@@ -237,7 +285,6 @@ class TestCli:
         setattr_mock = mocker.patch("trcli.cli.setattr")
         with cli_runner.isolated_filesystem():
             copyfile(default_config_file, "config.yaml")
-            trcli.cli.trcli_folder = Path("config.yaml").parent
             _ = cli_runner.invoke(cli, tool_args)
 
         expected = cli_agrs_helper.get_required_parameters_without_command_no_dashes()

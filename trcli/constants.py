@@ -11,7 +11,7 @@ FAULT_MAPPING = dict(
     missing_username="Please provide a valid TestRail username using the -u argument.",
     more_than_one_project="Given project name matches more than one result."
     "Please specify which should be used using the --project-id argument",
-    project_doesnt_exists="project doesn't exists.",
+    project_doesnt_exists="Please specify a valid project name using the --project argument",
     missing_password_and_key="Please provide either a password using the -p "
     "argument or an API key using the -k argument.",
     no_response_from_host="Your upload to TestRail did not receive a successful response from your TestRail Instance. "
@@ -36,7 +36,12 @@ FAULT_MAPPING = dict(
     unknown_test_case_id="There are some test cases that have IDs and not exist in Test Rail.",
     dataclass_validation_error="Unable to parse field {field} in {class_name} tag. {reason}",
     unknown_section_id="There are some sections that have IDs and not exist in Test Rail.",
-
+    missing_run_id_when_case_id_present="--case-id needs to be passed together with --run-id parameter.",
+    mismatch_between_case_id_and_result_file="Could not match --case-id with result file. "
+    "Please make sure that:\n--case-id matches ID "
+    "(if present) under `testcase` tag in result xml file\nand\n"
+    "only one result is present in result xml file.",
+    unexpected_error_during_request_send="Unexpected error occurred during sending request: {request}",
 )
 
 PROMPT_MESSAGES = dict(
@@ -74,10 +79,10 @@ class SuiteModes(enum.IntEnum):
 
 class RevertMessages:
     suite_deleted = "Deleted created suite"
-    suite_not_deleted = "Unable to delete created suite"
+    suite_not_deleted = "Unable to delete created suite: {error}"
     section_deleted = "Deleted created section"
-    section_not_deleted = "Unable to delete created section"
+    section_not_deleted = "Unable to delete created section: {error}"
     test_cases_deleted = "Deleted created test cases"
-    test_cases_not_deleted = "Unable to delete created test cases"
+    test_cases_not_deleted = "Unable to delete created test cases: {error}"
     run_deleted = "Deleted created run"
-    run_not_deleted = "Unable to delete created run"
+    run_not_deleted = "Unable to delete created run: {error}"

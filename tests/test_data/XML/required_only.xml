@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites>
+<testsuite name="name must be here1">
+<testcase name="name must be here2"></testcase>
+<testcase name="name must be here3"><failure></failure></testcase>
+</testsuite>
+</testsuites>

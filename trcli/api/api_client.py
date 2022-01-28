@@ -34,6 +34,7 @@ class APIClient:
     def __init__(
         self,
         host_name: str,
+        verbose_logging_function: Callable = print,
         logging_function: Callable = print,
         retries: int = DEFAULT_API_CALL_RETRIES,
         timeout: int = DEFAULT_API_CALL_TIMEOUT,
@@ -41,9 +42,11 @@ class APIClient:
         self.username = ""
         self.password = ""
         self.api_key = ""
+        self.timeout = None
         self.retries = retries
-        self.timeout = timeout
+        self.verbose_logging_function = verbose_logging_function
         self.logging_function = logging_function
+        self.__validate_and_set_timeout(timeout)
         if not host_name.endswith("/"):
             host_name = host_name + "/"
         self.__url = host_name + self.SUFFIX_API_V2_VERSION
@@ -97,12 +100,17 @@ class APIClient:
                     )
             except Timeout:
                 error_message = FAULT_MAPPING["no_response_from_host"]
+                self.verbose_logging_function(verbose_log_message)
                 continue
             except ConnectionError:
                 error_message = FAULT_MAPPING["connection_error"]
+                self.verbose_logging_function(verbose_log_message)
                 continue
-            except RequestException:
-                error_message = FAULT_MAPPING["host_issues"]
+            except RequestException as e:
+                error_message = FAULT_MAPPING[
+                    "unexpected_error_during_request_send"
+                ].format(request=e.request)
+                self.verbose_logging_function(verbose_log_message)
                 break
             else:
                 status_code = response.status_code
@@ -123,11 +131,12 @@ class APIClient:
                         response.status_code, response_text
                     )
                 )
+            if verbose_log_message:
+                self.verbose_logging_function(verbose_log_message)
+
             if status_code not in self.RETRY_ON:
                 break
 
-        if verbose_log_message:
-            self.logging_function(verbose_log_message)
         return APIClientResult(status_code, response_text, error_message)
 
     def __get_password(self) -> str:
@@ -138,12 +147,23 @@ class APIClient:
             password = self.password
         return password
 
+    def __validate_and_set_timeout(self, timeout):
+        try:
+            self.timeout = float(timeout)
+        except ValueError:
+            self.logging_function(
+                f"Warning. Could not convert provided 'timeout' to float. "
+                f"Please make sure that timeout format is correct. Setting to default: "
+                f"{DEFAULT_API_CALL_TIMEOUT}"
+            )
+            self.timeout = DEFAULT_API_CALL_TIMEOUT
+
     @staticmethod
     def format_request_for_vlog(method: str, url: str, payload: dict):
         return (
             f"\n**** API Call\n"
             f"method: {method}\n"
-            f"url: {url}\n" + (f"payload: {payload}" if payload else "")
+            f"url: {url}\n" + (f"payload: {payload}\n" if payload else "")
         )
 
     @staticmethod
