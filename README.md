@@ -8,24 +8,33 @@ Configuration files can be used to pass parameters, options, settings
 and preferences to trcli tool. The configuration files should be written in YAML format.
 
 Possible fields:<br>
-host - specifies the URL of the TestRail instance in which to send the results<br>
-project - specifies the name of the Project the Test Run should be created under<br>
-file - specifies the filename and/or path of the result file to be used<br>
-title -  Specifies the title of the Test Run to be created in TestRail<br>
-verbose - enables verbose mode when true (false by default)<br>
-silence - enables silence mode when true (false by default)<br>
-config - specifies the filename and/or path of the configuration file to be used<br>
-batch_size - specifies the batch size of results to pass to TestRail ((50 by default, maximum to be determined by Dev Partner stress testing)<br>
-timeout - specifies how many seconds to wait for more results before termination (30 by default)<br>
-auto_creation_response - Sets the response for auto creation prompts (Yes/No). If not set user will be prompted whether to create resources (suite, test case etc.) or not.<br>
-suite_id - specifies the Suite ID for the Test Run to be created under<br>
-run_id - specifies the Run ID for the Test Run to be created under<br>
+
+Field name|description 
+---|---
+host | specifies the URL of the TestRail instance in which to send the results<br>host: https://fakename.testrail.io/
+project | specifies the name of the Project the Test Run should be created under<br>project: Mockup Automation Project
+username | username<br>username: myuser@name.com
+password | password<br>password: StrongP@ssword
+key | API key<br>key: AGT9PBifAxgWEWNGQgh/-Dc7Dr/fWDvEkLJwPFLRn
+file | specifies the filename and/or path of the result file to be used<br>file: \<PATH\>/result_file.xml
+title |  Specifies the title of the Test Run to be created in TestRail<br>title: Daily Selenium smoke test
+verbose | enables verbose mode when true (false by default)<br>verbose: false/true
+silent | enables silence mode when true (false by default)<br>silent: false/true
+config | specifies the filename and/or path of the configuration file to be used<br>config: \<PATH\>/alternate_config.yml
+batch_size | specifies the batch size of results to pass to TestRail<br>batch_size: 20
+timeout | specifies how many seconds to wait for more results before termination<br>timeout: 5.5
+auto_creation_response | Sets the response for auto creation prompts. If not set user will be prompted whether to create resources (suite, test case etc.) or not.<br>auto_creation_response: false/true
+suite_id | specifies the Suite ID for the Test Run to be created under<br>suite_id: 213
+run_id | specifies the Run ID for the Test Run to be created under<br>run_id: 12
+case_id | specifies the case ID to be updated with new results. If present also run_id needs to be provided<br>case_id: 123
 
 Default configuration file
 --------------------------
-Default configuration file should be named config.yaml or config.yml and be stored in the same directory
-as the trcli executable file. Where the executable file was placed can be found by executing `which trcli` on Linux-like
-systems or `where trcli` for Windows.
+Default configuration file should be named `config.yaml` or `config.yml` and be stored in the same directory
+as the trcli executable file. The default path for pip installation of executable depends on your system and python settings (venv).
+
+Please check where TRCLI was installed by using `which trcli` or `where trcli` command
+depending on the operating system.
 
 Custom configuration file
 -------------------------
@@ -38,6 +47,22 @@ It is possible to pass parameters and options to trcli tool by setting environme
 The variable should be named as follows: TR_CLI_Parameter_name_capitalized
 
 For exmaple for -c/--config: TR_CLI_CONFIG
+
+```
+Note: One exception to this rule is for --yes/--no parameters.
+One should use: TR_CLI_AUTO_CREATION_RESPONSE (false/true).
+true - agree for auto creation<br>
+false - do not agree for auto creation.
+```
+
+```
+Note: there are different ways of setting variables depending on system used.
+Please make sure that value was set correctly.
+
+example for setting environment variable (for single session) to string value:
+set TR_CLI_PROJECT=project name for Windows
+export TR_CLI_PROJECT="project name" for Linux-like systems
+```
 
 Command line
 ============
@@ -84,6 +109,49 @@ Commands:
   parse_junit
 ```
 
+Setting parameters from different places
+========================================
+User can choose to set parameters from different places like default config file,
+environment variables, custom config file, cli parameters or in some cases use
+default values.
+The priority (1-highest, 5-lowest)of setting parameters from different places is as follows:
+
+priority|source
+ ---|---
+1|cli parameters
+2|custom config file
+3|environment variables
+4|default config file
+5|default value
+
+
+Installation
+============
+
+From the source code:
+```
+pip install .
+```
+
+Without cloning the repository:
+```
+pip install git+https://github.com/gurock/trcli.git
+```
+
+Return values and messaging
+===========================
+trcli tool will return `0` to the console in case of success and value greater than `1` (usually `1` or `2`) in other cases.
+All messages that are being printed on the console are being redirected to `sys.stderr` except of
+user prompts.
+
+Parsers
+=======
+
+Parsers are located in `/trcli/readers/`. To add new parser please read desired file and fill required dataclasses with the data (located in `/trcli/data_classes/`).
+
+Available commands/parsers:
+
+`parse_junit` - XML Junit files compatibile with Jenkins and pytest reporting schemas
 ```
 $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
@@ -93,21 +161,18 @@ Options:
   --help       Show this message and exit.
 ```
 
-Installation
-============
-```
-pip install .
-```
 
-Parsers
-=======
+XML junit file tag|Test Rail mapped to
+ ---|---
+\<testsuites>|suite
+\<suite>|section
+\<testcase>|case
+\<testcase ***time=1***> | run - elapsed time of test case execution
+\<testcase>***\<skipped or error>***\</testcase>|run - result of case
+\<error>***"message"***\</error> | run - comment result of case
+\<properties>***\<property>\</property>***\</properties> | All properties joined and sent as run description
+name or title attributes on every level|name 
 
-Parsers are located in `/trcli/readers/`. To add new parser please read desired file and fill required dataclasses with the data (located in `/trcli/data_classes/`).
-
-Available parsers:
-
-* XML Junit files compatibile with Jenkins and pytest reporting schemas
-* ...
 
 Uploading test results from Junit file
 ======================================
@@ -134,5 +199,31 @@ Example content of result_file.xml:
 </testsuites>
 ```
 
-Note: id was not added to the testsuite. It can be provided either in result file<br>
+```
+Note: id was not added to the testsuite. It can be provided either in result file
 or by providing parameter --suite-id to the command.
+```
+
+Updating test result for single case
+====================================
+
+Updating test results can be made by using `--case-id` parameter.<br>
+In case of update only one result can be updated at once. Together with case ID <br>
+`--run-id` needs to be specified.
+
+For example when passing `--case-id 1983` and `--run-id 193` result for test with ID 1983
+will be updated under run with ID 193.
+
+```
+None: `--case-id` needs to be set to test case ID not to test ID (the one that can be seen in test run).
+```
+
+Multithreading
+====================================
+TRCLI allows user to upload test cases and results using multithreading. This is enabled by default and set to `MAX_WORKERS_ADD_CASE = 5` and
+ `MAX_WORKERS_ADD_RESULTS = 10` in `trcli/settings.py`. To disable multithreading set those to `1`.
+
+During performance tests we discovered that using more than 10 workers didn't improve time of upload and could cause errors. Please set it accordingly to your machine specs.
+Average time for uploading:
+- 2000 test cases was around 460 seconds
+- 5000 test cases was around 1000 seconds
