@@ -56,28 +56,31 @@ class ResultsUploader:
             else:
                 self.environment.log(" Done.")
                 exit(0)
-
+        self.environment.log("Checking project. ", new_line=False)
         project_data = self.api_request_handler.get_project_id(
             self.environment.project, self.environment.project_id
         )
         if project_data.project_id == ProjectErrors.not_existing_project:
-            self.environment.log(project_data.error_message)
+            self.environment.log("\n" + project_data.error_message)
             exit(1)
         elif project_data.project_id == ProjectErrors.other_error:
             self.environment.log(
-                FAULT_MAPPING["error_checking_project"].format(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
                 )
             )
             exit(1)
         elif project_data.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.log(
-                FAULT_MAPPING["error_checking_project"].format(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
                 )
             )
             exit(1)
         else:
+            self.environment.log("Done.")
             added_suite_id, result_code = self.get_suite_id(
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
             )
@@ -111,7 +114,7 @@ class ResultsUploader:
                     project_data.project_id, self.environment.title
                 )
                 if error_message:
-                    self.environment.log(error_message)
+                    self.environment.log("\n" + error_message)
                     revert_logs = self.rollback_changes(
                         added_suite_id=added_suite_id,
                         added_sections=added_sections,
@@ -143,13 +146,13 @@ class ResultsUploader:
 
             response, error_message = self.api_request_handler.close_run(run_id)
             if error_message:
-                self.environment.log(error_message)
+                self.environment.log("\n" + error_message)
                 exit(1)
             self.environment.log("Done.")
         stop = time.time()
         if results_amount:
             self.environment.log(
-                f"Submitted {results_amount} test results in {stop - start:.1f}secs."
+                f"Submitted {results_amount} test results in {stop - start:.1f} secs."
             )
 
     def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
@@ -374,7 +377,7 @@ class ResultsUploader:
         if run_id:
             _, error = self.api_request_handler.delete_run(run_id)
             if error:
-                returned_log.append(RevertMessages.run_not_deleted)
+                returned_log.append(RevertMessages.run_not_deleted.format(error=error))
             else:
                 returned_log.append(RevertMessages.run_deleted)
         if len(added_test_cases) > 0:
@@ -382,19 +385,25 @@ class ResultsUploader:
                 added_suite_id, added_test_cases
             )
             if error:
-                returned_log.append(RevertMessages.test_cases_not_deleted)
+                returned_log.append(
+                    RevertMessages.test_cases_not_deleted.format(error=error)
+                )
             else:
                 returned_log.append(RevertMessages.test_cases_deleted)
         if len(added_sections) > 0:
             _, error = self.api_request_handler.delete_sections(added_sections)
             if error:
-                returned_log.append(RevertMessages.section_not_deleted)
+                returned_log.append(
+                    RevertMessages.section_not_deleted.format(error=error)
+                )
             else:
                 returned_log.append(RevertMessages.section_deleted)
         if added_suite_id > 0:
             _, error = self.api_request_handler.delete_suite(added_suite_id)
             if error:
-                returned_log.append(RevertMessages.suite_not_deleted)
+                returned_log.append(
+                    RevertMessages.suite_not_deleted.format(error=error)
+                )
             else:
                 returned_log.append(RevertMessages.suite_deleted)
         return returned_log

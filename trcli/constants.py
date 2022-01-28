@@ -79,10 +79,10 @@ class SuiteModes(enum.IntEnum):
 
 class RevertMessages:
     suite_deleted = "Deleted created suite"
-    suite_not_deleted = "Unable to delete created suite"
+    suite_not_deleted = "Unable to delete created suite: {error}"
     section_deleted = "Deleted created section"
-    section_not_deleted = "Unable to delete created section"
+    section_not_deleted = "Unable to delete created section: {error}"
     test_cases_deleted = "Deleted created test cases"
-    test_cases_not_deleted = "Unable to delete created test cases"
+    test_cases_not_deleted = "Unable to delete created test cases: {error}"
     run_deleted = "Deleted created run"
-    run_not_deleted = "Unable to delete created run"
+    run_not_deleted = "Unable to delete created run: {error}"
