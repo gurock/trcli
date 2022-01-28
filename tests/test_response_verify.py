@@ -9,11 +9,13 @@ def api_response_verify():
 
 
 class TestResponseVerify:
+    @pytest.mark.verifier
     def test_verify_add_suite(self, api_response_verify: ApiResponseVerify):
         send_to_api = TestRailSuite("Suite1", description="Some Description")
         returned_from_api = {"name": "Suite1", "description": "Some Description"}
         assert api_response_verify.verify_returned_data(send_to_api, returned_from_api)
 
+    @pytest.mark.verifier
     def test_verify_add_suite_not_equal(self, api_response_verify: ApiResponseVerify):
         send_to_api = TestRailSuite("Suite1", description="Some Description")
         returned_from_api = {"name": "Suite1", "description": "Some other description"}
@@ -21,6 +23,7 @@ class TestResponseVerify:
             send_to_api, returned_from_api
         )
 
+    @pytest.mark.verifier
     def test_verify_data_in_list(self, api_response_verify: ApiResponseVerify):
         added_data = [{}, {}]
         response_data = [{}, {}]
@@ -56,6 +59,7 @@ class TestResponseVerify:
             added_data, response_data
         ), "Missing item in response data. Verification should fail."
 
+    @pytest.mark.verifier
     @pytest.mark.parametrize(
         "input_data_estimate, response_data_estimate",
         [
@@ -66,6 +70,7 @@ class TestResponseVerify:
             ({"time": "2m"}, {"time": "2m"}),
         ],
     )
+    @pytest.mark.verifier
     def test_verify_estimate(
         self,
         api_response_verify: ApiResponseVerify,
@@ -77,6 +82,7 @@ class TestResponseVerify:
             input_data_estimate, response_data_estimate
         ), "Added data and returned data should match"
 
+    @pytest.mark.verifier
     @pytest.mark.parametrize(
         "input_data_estimate, response_data_estimate",
         [
