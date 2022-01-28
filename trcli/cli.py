@@ -3,6 +3,7 @@ import sys
 import click
 import yaml
 from pathlib import Path
+from requests.models import PreparedRequest, InvalidURL, MissingSchema
 
 from click.core import ParameterSource
 from tqdm import tqdm
@@ -106,6 +107,13 @@ class Environment:
         # special case for password and key (both needs to be missing for the error message to show up)
         if not self.password and not self.key:
             self.log(FAULT_MAPPING["missing_password_and_key"])
+            exit(1)
+        # validate host syntax
+        try:
+            request = PreparedRequest()
+            request.prepare_url(self.host, params=None)
+        except (InvalidURL, MissingSchema):
+            self.log(FAULT_MAPPING["host_issues"])
             exit(1)
 
     def parse_config_file(self, context: click.Context):

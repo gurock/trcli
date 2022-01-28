@@ -167,7 +167,8 @@ class TestAPIClient:
         """The purpose of this test is to check that request exception during request sending would be caught and handled
         in a proper way (status code returned will be -1, proper error message would be returned)."""
         environment = mocker.patch("trcli.cli.Environment")
-        requests_mock.get(create_url("get_projects"), exc=RequestException)
+        request = create_url("get_projects")
+        requests_mock.get(request, exc=RequestException(request=request))
         api_client = api_resources_maker(environment=environment)
 
         expected_log_calls = [
@@ -180,7 +181,14 @@ class TestAPIClient:
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock)
-        check_response(-1, "", FAULT_MAPPING["host_issues"], response)
+        check_response(
+            -1,
+            "",
+            FAULT_MAPPING["unexpected_error_during_request_send"].format(
+                request=request
+            ),
+            response,
+        )
         environment.vlog.assert_has_calls(expected_log_calls)
 
     @pytest.mark.api_client
