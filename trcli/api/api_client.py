@@ -106,9 +106,11 @@ class APIClient:
                 error_message = FAULT_MAPPING["connection_error"]
                 self.verbose_logging_function(verbose_log_message)
                 continue
-            except RequestException:
-                error_message = FAULT_MAPPING["host_issues"]
-                self.verbose_logging_function(verbose_log_message)
+            except RequestException as e:
+                error_message = FAULT_MAPPING[
+                    "unexpected_error_during_request_send"
+                ].format(request=e.request)
+                self.logging_function(verbose_log_message)
                 break
             else:
                 status_code = response.status_code

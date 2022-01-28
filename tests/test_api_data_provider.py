@@ -18,6 +18,11 @@ def post_data_provider_single_result_without_id():
     yield ApiDataProvider(test_input_single_result_without_id)
 
 
+@pytest.fixture(scope="function")
+def post_data_provider_duplicated_case_names():
+    yield ApiDataProvider(test_input_duplicated_case_names)
+
+
 class TestApiDataProvider:
     def test_post_suite(self, post_data_provider):
         assert (
@@ -148,3 +153,17 @@ class TestApiDataProvider:
         assert (
             result == result_for_update_case
         ), f"Expected None as a result. But got {result}"
+
+    def test_check_for_case_names_duplicates_found(
+        self, post_data_provider_duplicated_case_names
+    ):
+        result = (
+            post_data_provider_duplicated_case_names.check_for_case_names_duplicates()
+        )
+
+        assert result, "Expected True as a result."
+
+    def test_check_for_case_names_duplicates_not_found(self, post_data_provider):
+        result = post_data_provider.check_for_case_names_duplicates()
+
+        assert not result, "Expected False as a result."
