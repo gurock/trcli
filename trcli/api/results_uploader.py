@@ -134,7 +134,7 @@ class ResultsUploader:
                     added_suite_id=added_suite_id,
                     added_sections=added_sections,
                     added_test_cases=added_test_cases,
-                    run_id=run_id,
+                    run_id=0 if run_id == self.environment.run_id else run_id,
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
