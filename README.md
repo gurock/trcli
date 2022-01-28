@@ -55,6 +55,15 @@ true - agree for auto creation<br>
 false - do not agree for auto creation.
 ```
 
+```
+Note: there are different ways of setting variables depending on system used.
+Please make sure that value was set correctly.
+
+example for setting environment variable (for single session) to string value:
+set TR_CLI_PROJECT=project name for Windows
+export TR_CLI_PROJECT="project name" for Linux-like systems
+```
+
 Command line
 ============
 ```
@@ -99,6 +108,21 @@ Options:
 Commands:
   parse_junit
 ```
+
+Setting parameters from different places
+========================================
+User can choose to set parameters from different places like default config file,
+environment variables, custom config file, cli parameters or in some cases use
+default values.
+The priority (1-highest, 5-lowest)of setting parameters from different places is as follows:
+
+priority|source
+ ---|---
+1|cli parameters
+2|custom config file
+3|environment variables
+4|default config file
+5|default value
 
 
 Installation
