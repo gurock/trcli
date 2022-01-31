@@ -333,11 +333,6 @@ class ApiRequestHandler:
         """
         add_run_data = self.data_provider.add_run(run_name)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
-        if not response.error_message:
-            if not self.response_verifier.verify_returned_data(
-                add_run_data, response.response_text
-            ):
-                response.error_message = FAULT_MAPPING["data_verification_error"]
         return response.response_text.get("id"), response.error_message
 
     def add_results(self, run_id: int) -> (dict, str):
