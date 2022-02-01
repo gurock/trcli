@@ -1,0 +1,12 @@
+pytest
+allure-pytest
+pytest-freezegun
+pytest-mock
+requests-mock
+click==8.0.3
+pyyaml
+junitparser
+pyserde
+requests
+tqdm
+humanfriendly

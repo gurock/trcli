@@ -13,7 +13,7 @@ from tests.test_data.results_provider_test_data import (
     TEST_ADD_MISSING_SECTIONS_PROMPTS_USER_TEST_DATA,
     TEST_ADD_MISSING_SECTIONS_PROMPTS_USER_IDS,
     TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA,
-    TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS,
+    TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS,
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_TEST_DATA,
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
     TEST_REVERT_FUNCTIONS_AND_EXPECTED,
@@ -32,6 +32,9 @@ class TestResultsUploader:
         environment = mocker.patch("trcli.api.results_uploader.Environment")
         environment.host = "https://fake_host.com/"
         environment.project = "Fake project name"
+        environment.case_id = None
+        environment.run_id = None
+        environment.file = "results.xml"
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(
@@ -58,11 +61,11 @@ class TestResultsUploader:
         get_project_id_mocker(
             results_uploader=results_uploader,
             project_id=ProjectErrors.not_existing_project,
-            error_message=f"{environment.project} project doesn't exists.",
+            error_message=f"{environment.project} project doesn't exist.",
             failing=True,
         )
         expected_log_calls = [
-            mocker.call(f"{environment.project} project doesn't exists.")
+            mocker.call(f"\n{environment.project} project doesn't exist.")
         ]
 
         with pytest.raises(SystemExit) as exception:
@@ -107,7 +110,8 @@ class TestResultsUploader:
         )
         expected_log_calls = [
             mocker.call(
-                FAULT_MAPPING["error_checking_project"].format(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
                     error_message=error_message
                 )
             )
@@ -635,9 +639,9 @@ class TestResultsUploader:
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
         "user_response, missing_test_cases, expected_add_test_cases_error, expected_added_test_cases, "
-        "expected_message, expected_result_code",
+        "expected_message, expected_result_code, duplicate_case_names",
         TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA,
-        ids=TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS,
+        ids=TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS,
     )
     def test_add_missing_test_cases_prompts_user(
         self,
@@ -647,6 +651,7 @@ class TestResultsUploader:
         expected_added_test_cases,
         expected_message,
         expected_result_code,
+        duplicate_case_names,
         result_uploader_data_provider,
         mocker,
     ):
@@ -658,6 +663,10 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
         project_id = 1
+        warning_duplicated_case_names = (
+            f"Warning: Case duplicates detected in {environment.file}. "
+            f"This will result in improper results setting."
+        )
         results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = (
             missing_test_cases,
             expected_message,
@@ -669,12 +678,21 @@ class TestResultsUploader:
             expected_added_test_cases,
             expected_add_test_cases_error,
         )
+        results_uploader.api_request_handler.data_provider.check_for_case_names_duplicates.return_value = (
+            duplicate_case_names
+        )
 
         (
             result_added_test_cases,
             result_code,
         ) = results_uploader.add_missing_test_cases(project_id)
+
         expected_log_calls = [mocker.call(expected_message)]
+        if duplicate_case_names:
+            expected_log_calls = [
+                mocker.call(warning_duplicated_case_names),
+                *expected_log_calls,
+            ]
         if expected_add_test_cases_error:
             expected_log_calls.append(mocker.call(expected_add_test_cases_error))
 
@@ -724,6 +742,13 @@ class TestResultsUploader:
             missing_test_cases,
             return_code,
         ), f"Expected to get {missing_test_cases, return_code} as a result but got {result} instead."
+
+    @pytest.mark.results_uploader
+    def test_add_missing_test_cases_duplicated_case_names(
+        self, result_uploader_data_provider, mocker
+    ):
+        """The purpose of this test is to check that proper warning will be printed when duplicated case
+        names will be detected in result file."""
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
@@ -802,3 +827,70 @@ class TestResultsUploader:
         assert (
             results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
+
+    @pytest.mark.results_uploader
+    def test_update_case_succeed(self, result_uploader_data_provider, mocker):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_id = 10
+        environment.run_id = 20
+        exit_code = 0
+
+        expected_log_calls = [
+            mocker.call(
+                f"Updating test case with id: {environment.case_id}.", new_line=False
+            ),
+            mocker.call(f" Done."),
+        ]
+        results_uploader.api_request_handler.update_case_result.return_value = (
+            {"case_id": 10},
+            "",
+        )
+        with pytest.raises(SystemExit) as exception:
+            results_uploader.upload_results()
+
+        environment.log.assert_has_calls(expected_log_calls)
+        assert (
+            exception.type == SystemExit
+        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert (
+            exception.value.code == exit_code
+        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
+
+    @pytest.mark.results_uploader
+    def test_update_case_update_case_result_fails(
+        self, result_uploader_data_provider, mocker
+    ):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_id = 10
+        environment.run_id = 20
+        exit_code = 1
+        error_message = "update_case_result failed unexpectedly."
+
+        expected_log_calls = [
+            mocker.call(
+                f"Updating test case with id: {environment.case_id}.", new_line=False
+            ),
+            mocker.call(f"\n{error_message}"),
+        ]
+        results_uploader.api_request_handler.update_case_result.return_value = (
+            "",
+            error_message,
+        )
+        with pytest.raises(SystemExit) as exception:
+            results_uploader.upload_results()
+
+        environment.log.assert_has_calls(expected_log_calls)
+        assert (
+            exception.type == SystemExit
+        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert (
+            exception.value.code == exit_code
+        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."

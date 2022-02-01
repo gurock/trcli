@@ -14,15 +14,20 @@ from tests.test_data.api_client_test_data import (
     INVALID_TEST_CASE_ERROR,
     NO_PERMISSION_PROJECT_ERROR,
     API_RATE_LIMIT_REACHED_ERROR,
+    TIMEOUT_PARSE_ERROR,
 )
 
 
 @pytest.fixture(scope="class")
 def api_resources_maker():
-    def _make_api_resources(retries=3, environment=Environment()):
+    def _make_api_resources(retries=3, environment=Environment(), timeout=30):
         environment.verbose = False
         api_client = APIClient(
-            host_name=TEST_RAIL_URL, logging_function=environment.vlog, retries=retries
+            host_name=TEST_RAIL_URL,
+            verbose_logging_function=environment.vlog,
+            logging_function=environment.log,
+            retries=retries,
+            timeout=timeout,
         )
         return api_client
 
@@ -167,7 +172,8 @@ class TestAPIClient:
         """The purpose of this test is to check that request exception during request sending would be caught and handled
         in a proper way (status code returned will be -1, proper error message would be returned)."""
         environment = mocker.patch("trcli.cli.Environment")
-        requests_mock.get(create_url("get_projects"), exc=RequestException)
+        request = create_url("get_projects")
+        requests_mock.get(request, exc=RequestException(request=request))
         api_client = api_resources_maker(environment=environment)
 
         expected_log_calls = [
@@ -180,7 +186,14 @@ class TestAPIClient:
         response = api_client.send_get("get_projects")
 
         check_calls_count(requests_mock)
-        check_response(-1, "", FAULT_MAPPING["host_issues"], response)
+        check_response(
+            -1,
+            "",
+            FAULT_MAPPING["unexpected_error_during_request_send"].format(
+                request=request
+            ),
+            response,
+        )
         environment.vlog.assert_has_calls(expected_log_calls)
 
     @pytest.mark.api_client
@@ -243,3 +256,27 @@ class TestAPIClient:
         _ = api_client.send_get("get_projects")
 
         environment.vlog.assert_has_calls(expected_log_calls)
+
+    @pytest.mark.api_client
+    @pytest.mark.parametrize(
+        "timeout_value, expected_message",
+        [
+            (10.5, ""),
+            (10, ""),
+            ("10", ""),
+            ("10.5", ""),
+            ("10.5a", TIMEOUT_PARSE_ERROR),
+        ],
+        ids=["float", "int", "int as string", "float as string", "invalid value"],
+    )
+    def test_timeout_is_parsed_and_validated(
+        self, timeout_value, expected_message, api_resources_maker, mocker
+    ):
+        environment = mocker.patch("trcli.cli.Environment")
+        api_client = api_resources_maker(environment=environment, timeout=timeout_value)
+
+        if expected_message:
+            environment.log.assert_has_calls([mocker.call(TIMEOUT_PARSE_ERROR)])
+        else:
+            with pytest.raises(AssertionError):
+                environment.log.assert_has_calls([mocker.call(TIMEOUT_PARSE_ERROR)])

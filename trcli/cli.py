@@ -3,6 +3,7 @@ import sys
 import click
 import yaml
 from pathlib import Path
+from requests.models import PreparedRequest, InvalidURL, MissingSchema
 
 from click.core import ParameterSource
 from tqdm import tqdm
@@ -93,12 +94,26 @@ class Environment:
         """Checks that all required parameters were set. If not error message would be printed and
         program will exit with exit code 1"""
         for param, value in vars(self).items():
-            if "missing_" + param in FAULT_MAPPING and not value:
+            # --project and --title is not required when --case-id is set
+            if self.case_id is not None and param in ["project", "title"]:
+                continue
+            # run_id needs to be present when --case-id is set
+            elif (param == "run_id" and value is None) and self.case_id is not None:
+                self.log(FAULT_MAPPING["missing_run_id_when_case_id_present"])
+                exit(1)
+            elif "missing_" + param in FAULT_MAPPING and not value:
                 self.log(FAULT_MAPPING["missing_" + param])
                 exit(1)
         # special case for password and key (both needs to be missing for the error message to show up)
         if not self.password and not self.key:
             self.log(FAULT_MAPPING["missing_password_and_key"])
+            exit(1)
+        # validate host syntax
+        try:
+            request = PreparedRequest()
+            request.prepare_url(self.host, params=None)
+        except (InvalidURL, MissingSchema):
+            self.log(FAULT_MAPPING["host_issues"])
             exit(1)
 
     def parse_config_file(self, context: click.Context):
@@ -125,7 +140,10 @@ class Environment:
                 file_content = yaml.safe_load_all(f)
                 for page_content in file_content:
                     self.params_from_config.update(page_content)
-                    if "config" in self.params_from_config and self.default_config_file:
+                    if (
+                        self.params_from_config.get("config") is not None
+                        and self.default_config_file
+                    ):
                         self.default_config_file = False
                         self.parse_params_from_config_file(
                             self.params_from_config["config"]
@@ -235,7 +253,7 @@ class TRCLI(click.MultiCommand):
     "--case-id",
     type=click.IntRange(min=1),
     metavar="",
-    help="Case ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
+    help="Case ID for the results they are reporting. Needs to be passed together with --run-id",
 )
 @click.option(
     "-y",

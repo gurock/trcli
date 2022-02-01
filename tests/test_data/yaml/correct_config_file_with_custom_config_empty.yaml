@@ -1,0 +1,12 @@
+host: https://fakename.testrail.io/
+project: Project name
+file: result.xml
+title: Project title
+verbose: False
+silent: False
+batch_size: 20
+timeout: 50
+config:
+auto_creation_response: True
+suite_id: 50
+run_id: 10

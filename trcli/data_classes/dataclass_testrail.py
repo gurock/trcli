@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import List
 from serde import field, serialize, deserialize
-from time import localtime, strftime
+from time import gmtime, strftime
 from trcli.data_classes.validation_exception import ValidationException
 
 
@@ -164,5 +164,5 @@ class TestRailSuite:
     source: str = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
-        current_time = strftime("%d-%m-%y %H:%M:%S", localtime())
+        current_time = strftime("%d-%m-%y %H:%M:%S", gmtime())
         self.name = f"{self.source} {current_time}" if self.name is None else self.name

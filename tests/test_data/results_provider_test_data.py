@@ -65,6 +65,7 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [10, 11, 12],
         "Adding missing test cases to the suite.",
         1,
+        False,
     ),
     (
         True,
@@ -73,6 +74,7 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [],
         "Adding missing test cases to the suite.",
         -1,
+        False,
     ),
     (
         False,
@@ -81,9 +83,10 @@ TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA = [
         [],
         FAULT_MAPPING["no_user_agreement"].format(type="test cases"),
         -1,
+        True,
     ),
 ]
-TEST_ADD_MISSING_TEST_CATAS_PROMPTS_USER_IDS = [
+TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS = [
     "user agrees, test cases added",
     "user agrees, test cases not added",
     "used does not agree",
@@ -114,7 +117,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
             RevertMessages.run_deleted,
             RevertMessages.test_cases_deleted,
             RevertMessages.section_deleted,
-            RevertMessages.suite_not_deleted,
+            RevertMessages.suite_not_deleted.format(
+                error="No permissions to delete suite."
+            ),
         ],
     ),
     (
@@ -122,7 +127,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
         [
             RevertMessages.run_deleted,
             RevertMessages.test_cases_deleted,
-            RevertMessages.section_not_deleted,
+            RevertMessages.section_not_deleted.format(
+                error="No permissions to delete sections."
+            ),
             RevertMessages.suite_deleted,
         ],
     ),
@@ -130,7 +137,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
         "delete_cases",
         [
             RevertMessages.run_deleted,
-            RevertMessages.test_cases_not_deleted,
+            RevertMessages.test_cases_not_deleted.format(
+                error="No permissions to delete cases."
+            ),
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,
         ],
@@ -138,7 +147,9 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
     (
         "delete_run",
         [
-            RevertMessages.run_not_deleted,
+            RevertMessages.run_not_deleted.format(
+                error="No permissions to delete run."
+            ),
             RevertMessages.test_cases_deleted,
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,

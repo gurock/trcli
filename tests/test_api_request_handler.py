@@ -13,14 +13,18 @@ from trcli.constants import ProjectErrors, FAULT_MAPPING
 
 @pytest.fixture(scope="function")
 def handler_maker():
-    def _make_handler(verify=False):
+    def _make_handler(verify=False, custom_json=None):
         api_client = APIClient(host_name=TEST_RAIL_URL)
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
-        file_json = open(
-            Path(__file__).parent / "test_data/json/api_request_handler.json"
-        )
+        if custom_json is None:
+            json_path = (
+                Path(__file__).parent / "test_data/json/api_request_handler.json"
+            )
+        else:
+            json_path = custom_json
+        file_json = open(json_path)
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
@@ -39,7 +43,16 @@ def api_request_handler_verify(handler_maker):
     yield handler_maker(verify=True)
 
 
+@pytest.fixture(scope="function")
+def api_request_handler_update_case_json(handler_maker):
+    json_path = (
+        Path(__file__).parent / "test_data/json/update_case_result_single_with_id.json"
+    )
+    yield handler_maker(custom_json=json_path, verify=False)
+
+
 class TestApiRequestHandler:
+    @pytest.mark.api_handler
     def test_return_project(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -79,9 +92,10 @@ class TestApiRequestHandler:
         assert api_request_handler.get_project_id("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,
             suite_mode=-1,
-            error_message="Some project project doesn't exists.",
+            error_message="Please specify a valid project name using the --project argument",
         ), "Get project should return proper project data object"
 
+    @pytest.mark.api_handler
     def test_check_suite_exists(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -101,6 +115,7 @@ class TestApiRequestHandler:
             FAULT_MAPPING["missing_suite"].format(suite_id=6),
         ), "Given suite id should NOT exist in mocked response."
 
+    @pytest.mark.api_handler
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = {
@@ -128,6 +143,7 @@ class TestApiRequestHandler:
             == mocked_response["id"]
         ), "Added suite id in DataProvider doesn't match mocked response id."
 
+    @pytest.mark.api_handler
     def test_check_missing_sections(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -166,6 +182,7 @@ class TestApiRequestHandler:
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
         assert not missing, "There should be no missing section"
 
+    @pytest.mark.api_handler
     def test_add_sections(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = {
@@ -192,6 +209,7 @@ class TestApiRequestHandler:
             == mocked_response["id"]
         ), "Added section id in DataProvider doesn't match mocked response id."
 
+    @pytest.mark.api_handler
     def test_add_section_and_cases(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -245,6 +263,7 @@ class TestApiRequestHandler:
         ), "Added case id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
+    @pytest.mark.api_handler
     def test_add_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         run_name = "Test run name"
@@ -263,6 +282,7 @@ class TestApiRequestHandler:
         ), "Added run id doesn't match mocked response id"
         assert error == "", "Error occurred in add_case"
 
+    @pytest.mark.api_handler
     def test_add_results(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
         mocked_response = {
@@ -295,6 +315,7 @@ class TestApiRequestHandler:
             mocked_response["results"]
         ), f"Expected {len(mocked_response['results'])} results to be added but got {results_added} instead."
 
+    @pytest.mark.api_handler
     def test_close_run(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
         mocked_response = {
@@ -308,6 +329,7 @@ class TestApiRequestHandler:
         assert mocked_response == resources_added, "Invalid response from close_run"
         assert error == "", "Error occurred in close_run"
 
+    @pytest.mark.api_handler
     def test_check_missing_test_cases_ids(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -345,6 +367,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["unknown_test_case_id"]
         ), "There should be an error because of invalid test case id"
 
+    @pytest.mark.api_handler
     def test_check_missing_test_case_id_not_found(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -369,6 +392,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["unknown_test_case_id"]
         ), "There should be an error because of invalid test case id"
 
+    @pytest.mark.api_handler
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = [
@@ -382,6 +406,7 @@ class TestApiRequestHandler:
         ), "ID in response doesn't match mocked response"
         assert error == "", "Error occurred in get_suite_ids"
 
+    @pytest.mark.api_handler
     def test_return_project_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -396,6 +421,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again.",
         ), "Get project should return proper project data object with error"
 
+    @pytest.mark.api_handler
     def test_add_suite_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -416,6 +442,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again."
         ), "Connection error is expected"
 
+    @pytest.mark.api_handler
     def test_add_sections_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -438,6 +465,7 @@ class TestApiRequestHandler:
             is None
         ), "No resources should be added to DataProvider"
 
+    @pytest.mark.api_handler
     def test_add_section_and_cases_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -489,6 +517,7 @@ class TestApiRequestHandler:
             " Please check your settings and try again."
         ), "Connection error is expected"
 
+    @pytest.mark.api_handler
     def test_add_results_error(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
@@ -506,6 +535,7 @@ class TestApiRequestHandler:
         ), "Connection error is expected"
         assert results_added == 0, "Expected 0 resources to be added."
 
+    @pytest.mark.api_handler
     def test_add_results_keyboard_interrupt(
         self, api_request_handler: ApiRequestHandler, requests_mock, mocker
     ):
@@ -520,6 +550,7 @@ class TestApiRequestHandler:
         with pytest.raises(KeyboardInterrupt) as exception:
             api_request_handler.add_results(run_id)
 
+    @pytest.mark.api_handler
     def test_add_suite_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -537,6 +568,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.add_suites(project_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_add_section_with_verify(self, handler_maker, requests_mock):
         project_id = 3
         mocked_response = {
@@ -560,6 +592,7 @@ class TestApiRequestHandler:
             == "Data verification failed. Server added different resource than expected."
         ), "There should be error in verification."
 
+    @pytest.mark.api_handler
     def test_add_case_with_verify(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -589,6 +622,7 @@ class TestApiRequestHandler:
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_section(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -603,6 +637,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.delete_sections(sections_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_suite(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -617,6 +652,7 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.delete_suite(suite_id)
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_cases(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -634,6 +670,7 @@ class TestApiRequestHandler:
         )
         assert error == "", "There should be no error in verification."
 
+    @pytest.mark.api_handler
     def test_delete_run(
         self, api_request_handler_verify: ApiRequestHandler, requests_mock
     ):
@@ -647,3 +684,76 @@ class TestApiRequestHandler:
 
         resources_added, error = api_request_handler_verify.delete_run(run_id)
         assert error == "", "There should be no error in verification."
+
+    def test_update_case_succeed(
+        self, api_request_handler_update_case_json: ApiRequestHandler, requests_mock
+    ):
+        mocked_response = {
+            "id": 62228,
+            "test_id": 10,
+            "status_id": 5,
+            "created_on": 1643188787,
+            "assignedto_id": None,
+            "comment": "Type: pytest.failure\nMessage: Fail due to...\nText: failed due to...",
+            "version": None,
+            "elapsed": "2m 39s",
+            "defects": None,
+            "created_by": 2,
+            "custom_step_results": None,
+            "attachment_ids": [],
+        }
+        run_id = 20
+        case_id = 10
+
+        requests_mock.post(
+            create_url(f"add_result_for_case/{run_id}/{case_id}"),
+            json=mocked_response,
+        )
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+        assert (
+            response_text == mocked_response
+        ), "Updated test case result doesn't match expected."
+        assert error == "", "No error should be present."
+
+    def test_update_case_result_error(
+        self, api_request_handler_update_case_json: ApiRequestHandler, requests_mock
+    ):
+        """The purpose of this test is to check that proper message will be printed in
+        case of error during test case result update."""
+        run_id = 20
+        case_id = 10
+        requests_mock.post(
+            create_url(f"add_result_for_case/{run_id}/{case_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+
+        assert response_text == "", "No response text should be returned"
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected."
+
+    def test_update_case_no_cases_for_update(
+        self, api_request_handler_update_case_json: ApiRequestHandler
+    ):
+        """The purpose of this test is to check that proper error message will be printed in case
+        there are no test case result to be updated."""
+        run_id = 20
+        case_id = 100
+        response_text, error = api_request_handler_update_case_json.update_case_result(
+            run_id, case_id
+        )
+
+        assert response_text == "", "No response text should be returned"
+        assert (
+            error
+            == "Could not match --case-id with result file. Please make sure that:\n"
+            "--case-id matches ID (if present) under `testcase` tag in result xml file\nand\n"
+            "only one result is present in result xml file."
+        ), "Expected error message to be printed."
