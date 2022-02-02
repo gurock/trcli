@@ -39,7 +39,7 @@ depending on the operating system.
 Custom configuration file
 -------------------------
 Apart from default configuration file a custom one can be passed after -c/--config
-as a parameter. For more details check Command line section.
+as a parameter. For more details check [Command line](#Command-line) section.
 
 Environment variables
 =====================
@@ -114,7 +114,7 @@ Setting parameters from different places
 User can choose to set parameters from different places like default config file,
 environment variables, custom config file, cli parameters or in some cases use
 default values.
-The priority (1-highest, 5-lowest)of setting parameters from different places is as follows:
+The priority (1-highest, 5-lowest) of setting parameters from different places is as follows:
 
 priority|source
  ---|---
@@ -276,3 +276,7 @@ readers|junit_xml|Junit result file parser. Used to parse result files into inte
 root|constants|Contains constants used in whole code (error messages, prompt slogans, --help related strings etc.)
 root|settings|Multithreading and some default settings.
 root|cli|Main cli module responsible for parsing parameters from command line. It parses all parameters and runtime information into Environment class. 
+
+Sending information to user (logging/prompting)
+-----------------------------------------------
+For printing messages on console and prompting users functions from Environment class should be used. <br>Those functions handles `--silent/--verbose/--yes/--no` parameters properly. 
