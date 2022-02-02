@@ -13,6 +13,7 @@ from xml.etree.ElementTree import ParseError
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, file):
+    """Parse Junit XML files (& similar)"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     try:
