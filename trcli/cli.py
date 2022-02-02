@@ -134,7 +134,6 @@ class Environment:
             self.parse_params_from_config_file(self.config)
 
     def parse_params_from_config_file(self, file_path: Path):
-        self.params_from_config = {}
         try:
             with open(file_path, "r") as f:
                 file_content = yaml.safe_load_all(f)
@@ -153,12 +152,10 @@ class Environment:
             self.log(f"Error details:\n{e}")
             if not self.default_config_file:
                 exit(1)
-            self.params_from_config = {}
         except IOError:
             self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
             if not self.default_config_file:
                 exit(1)
-            self.params_from_config = {}
 
 
 pass_environment = click.make_pass_decorator(Environment, ensure=True)

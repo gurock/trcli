@@ -1,11 +1,11 @@
 import io
+from copy import deepcopy
 
 import pytest
 from click.testing import CliRunner
 from shutil import copyfile
-from pathlib import Path
 
-import trcli
+from tests.test_data.cli_test_data import RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE
 from tests.helpers.load_data_from_config_helper import (
     check_parsed_data,
     check_verbose_message,
@@ -23,6 +23,7 @@ from tests.test_data.load_data_from_config_test_data import (
     correct_config_file_with_custom_config_empty_path,
     incorrect_config_file_with_string_path,
     incorrect_config_file_with_list_path,
+    custom_config_file_path,
 )
 from trcli.constants import FAULT_MAPPING
 
@@ -77,12 +78,15 @@ class TestLoadDataFromConfig:
         environment, stdout_mock = load_config_resources
         environment.parse_config_file(context)
         expected_verbose_message = ""
-
+        expected_result = deepcopy(correct_yaml_expected_result)
+        expected_result.update(RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE)
+        expected_result.update({"config": "custom_config.yaml"})
         with runner.isolated_filesystem():
             copyfile(config_file, "config.yaml")
-            copyfile(correct_config_file_path, "custom_config.yaml")
+            copyfile(custom_config_file_path, "custom_config.yaml")
             environment.parse_config_file(context)
-        check_parsed_data(correct_yaml_expected_result, environment.params_from_config)
+
+        check_parsed_data(expected_result, environment.params_from_config)
         check_verbose_message(expected_verbose_message, stdout_mock.getvalue())
 
     @pytest.mark.load_config

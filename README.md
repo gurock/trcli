@@ -124,6 +124,12 @@ priority|source
 4|default config file
 5|default value
 
+```
+Note: if custom_config file is specified in default config file the priority of both config files
+will be set to 2. In this case values set in default config file will not be overiten by values from
+environment variables. Still priority between default and custom configs will remain unchanged and
+custom config file will override all values from default config file. 
+```
 
 Installation
 ============

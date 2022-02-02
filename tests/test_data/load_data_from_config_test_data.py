@@ -43,3 +43,4 @@ incorrect_config_file_with_list_path = (
 incorrect_config_file_multiple_documents_path = (
     Path(__file__).parent / "yaml" / "corrupted_config_file_multiple_documents.yaml"
 )
+custom_config_file_path = Path(__file__).parent / "yaml" / "custom_config_file.yaml"
