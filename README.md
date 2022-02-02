@@ -106,7 +106,7 @@ Options:
   --help             Show this message and exit.
 
 Commands:
-  parse_junit
+  parse_junit  Parse Junit XML files (& similar)
 ```
 
 Setting parameters from different places
@@ -156,9 +156,12 @@ Available commands/parsers:
 $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
 
+  Parse Junit XML files (& similar)
+
 Options:
   -f, --file   Filename and path.
   --help       Show this message and exit.
+
 ```
 
 
