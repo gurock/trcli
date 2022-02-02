@@ -56,6 +56,11 @@ false - do not agree for auto creation.
 ```
 
 ```
+Note: In case there is a `-` in the parameter name it should be changed to `_`.
+Example: for --project-id environment variable name will be TR_CLI_PROJECT_ID
+```
+
+```
 Note: there are different ways of setting variables depending on system used.
 Please make sure that value was set correctly.
 
