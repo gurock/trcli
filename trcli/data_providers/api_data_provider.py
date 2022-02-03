@@ -41,8 +41,13 @@ class ApiDataProvider:
             ],
         }
 
-    def add_run(self, run_name: str):
+    def add_run(self, run_name: str, case_ids=None):
         """Return body for adding a run."""
+        if case_ids is None:
+            case_ids = [
+                int(case)
+                for section in self.suites_input.testsections
+                for case in section.testcases]
         properties = [
             str(prop)
             for section in self.suites_input.testsections
@@ -53,6 +58,8 @@ class ApiDataProvider:
             "name": run_name,
             "suite_id": self.suites_input.suite_id,
             "description": f"{' '.join(properties)}",
+            "include_all": False,
+            "case_ids": case_ids,
         }
 
     def add_result_for_case(self, case_id):
