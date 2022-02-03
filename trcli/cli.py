@@ -148,7 +148,7 @@ class Environment:
                         self.parse_params_from_config_file(
                             self.params_from_config["config"]
                         )
-        except (yaml.YAMLError, ValueError) as e:
+        except (yaml.YAMLError, ValueError, TypeError) as e:
             self.log(FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path))
             self.log(f"Error details:\n{e}")
             if not self.default_config_file:

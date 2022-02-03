@@ -23,6 +23,8 @@ from tests.test_data.load_data_from_config_test_data import (
     correct_config_file_with_custom_config_empty_path,
     incorrect_config_file_with_string_path,
     incorrect_config_file_with_list_path,
+    incorrect_config_file_with_start_indicator_at_the_end_path,
+    incorrect_config_file_with_with_empty_document,
 )
 from trcli.constants import FAULT_MAPPING
 
@@ -118,12 +120,16 @@ class TestLoadDataFromConfig:
             incorrect_config_file_multiple_documents_path,
             incorrect_config_file_with_string_path,
             incorrect_config_file_with_list_path,
+            incorrect_config_file_with_start_indicator_at_the_end_path,
+            incorrect_config_file_with_with_empty_document,
         ],
         ids=[
             "single_document",
             "multiple_documents",
             "single_document_just_string",
             "single_document_just_list",
+            "multiple_document_with_start_indicator_at_the_end",
+            "multiple_document_with_one_empty",
         ],
     )
     def test_check_loading_data_from_corrupted_custom_file(
