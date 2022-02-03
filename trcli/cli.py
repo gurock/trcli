@@ -46,16 +46,23 @@ class Environment:
         self.silent = None
 
     def log(self, msg: str, new_line=True, *args):
-        """Logs a message to stderr."""
+        """Logs a message to stdout only is silent mode is disabled."""
         if not self.silent:
             if args:
                 msg %= args
-            click.echo(msg, file=sys.stderr, nl=new_line)
+            click.echo(msg, file=sys.stdout, nl=new_line)
 
     def vlog(self, msg: str, *args):
-        """Logs a message to stderr only if the verbose option is enabled"""
+        """Logs a message to stdout only if the verbose option is enabled."""
         if self.verbose:
             self.log(msg, *args)
+
+    @staticmethod
+    def elog(msg: str, new_line=True, *args):
+        """Logs a message to stderr."""
+        if args:
+            msg %= args
+        click.echo(msg, file=sys.stderr, nl=new_line)
 
     def get_progress_bar(self, results_amount: int, prefix: str):
         disabled = True if self.silent else False
@@ -99,21 +106,21 @@ class Environment:
                 continue
             # run_id needs to be present when --case-id is set
             elif (param == "run_id" and value is None) and self.case_id is not None:
-                self.log(FAULT_MAPPING["missing_run_id_when_case_id_present"])
+                self.elog(FAULT_MAPPING["missing_run_id_when_case_id_present"])
                 exit(1)
             elif "missing_" + param in FAULT_MAPPING and not value:
-                self.log(FAULT_MAPPING["missing_" + param])
+                self.elog(FAULT_MAPPING["missing_" + param])
                 exit(1)
         # special case for password and key (both needs to be missing for the error message to show up)
         if not self.password and not self.key:
-            self.log(FAULT_MAPPING["missing_password_and_key"])
+            self.elog(FAULT_MAPPING["missing_password_and_key"])
             exit(1)
         # validate host syntax
         try:
             request = PreparedRequest()
             request.prepare_url(self.host, params=None)
         except (InvalidURL, MissingSchema):
-            self.log(FAULT_MAPPING["host_issues"])
+            self.elog(FAULT_MAPPING["host_issues"])
             exit(1)
 
     def parse_config_file(self, context: click.Context):
@@ -149,13 +156,15 @@ class Environment:
                             self.params_from_config["config"]
                         )
         except (yaml.YAMLError, ValueError, TypeError) as e:
-            self.log(FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path))
-            self.log(f"Error details:\n{e}")
+            self.elog(
+                FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
+            )
+            self.elog(f"Error details:\n{e}")
             if not self.default_config_file:
                 exit(1)
             self.params_from_config = {}
         except IOError:
-            self.log(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
+            self.elog(FAULT_MAPPING["file_open_issue"].format(file_path=file_path))
             if not self.default_config_file:
                 exit(1)
             self.params_from_config = {}

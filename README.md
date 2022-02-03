@@ -21,7 +21,7 @@ file | specifies the filename and/or path of the result file to be used<br>file:
 title |  Specifies the title of the Test Run to be created in TestRail<br>title: Daily Selenium smoke test
 verbose | enables verbose mode when true (false by default)<br>verbose: false/true
 verify | verify the data was added correctly<br>verify: false/true
-silent | enables silence mode when true (false by default)<br>silent: false/true
+silent | enables silence mode (only stdout) when true (false by default)<br>silent: false/true
 config | specifies the filename and/or path of the configuration file to be used<br>config: \<PATH\>/alternate_config.yml
 batch_size | specifies the batch size of results to pass to TestRail<br>batch_size: 20
 timeout | specifies how many seconds to wait for more results before termination<br>timeout: 5.5
@@ -148,8 +148,7 @@ pip install git+https://github.com/gurock/trcli.git
 Return values and messaging
 ===========================
 trcli tool will return `0` to the console in case of success and value greater than `1` (usually `1` or `2`) in other cases.
-All messages that are being printed on the console are being redirected to `sys.stderr` except of
-user prompts.
+Messages that are being printed on the console are being redirected to `sys.stdout` or `sys.stderr`.
 
 Parsers
 =======
@@ -289,4 +288,4 @@ root|cli|Main cli module responsible for parsing parameters from command line. I
 
 Sending information to user (logging/prompting)
 -----------------------------------------------
-For printing messages on console and prompting users functions from Environment class should be used. <br>Those functions handles `--silent/--verbose/--yes/--no` parameters properly. 
+For printing messages on console and prompting users functions from Environment class should be used. <br>Those functions handles `--silent/--verbose/--yes/--no` parameters properly.
