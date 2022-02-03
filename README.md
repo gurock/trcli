@@ -13,12 +13,14 @@ Field name|description
 ---|---
 host | specifies the URL of the TestRail instance in which to send the results<br>host: https://fakename.testrail.io/
 project | specifies the name of the Project the Test Run should be created under<br>project: Mockup Automation Project
+project_id | Project id. Will be only used in case project name will be duplicated in TestRail<br>project_id: 10
 username | username<br>username: myuser@name.com
 password | password<br>password: StrongP@ssword
 key | API key<br>key: AGT9PBifAxgWEWNGQgh/-Dc7Dr/fWDvEkLJwPFLRn
 file | specifies the filename and/or path of the result file to be used<br>file: \<PATH\>/result_file.xml
 title |  Specifies the title of the Test Run to be created in TestRail<br>title: Daily Selenium smoke test
 verbose | enables verbose mode when true (false by default)<br>verbose: false/true
+verify | verify the data was added correctly<br>verify: false/true
 silent | enables silence mode when true (false by default)<br>silent: false/true
 config | specifies the filename and/or path of the configuration file to be used<br>config: \<PATH\>/alternate_config.yml
 batch_size | specifies the batch size of results to pass to TestRail<br>batch_size: 20
