@@ -250,6 +250,11 @@ class ResultsUploader:
             error_message,
         ) = self.api_request_handler.check_missing_section_ids(project_id)
         if missing_sections:
+            if self.api_request_handler.data_provider.check_section_names_duplicates():
+                self.environment.log(
+                    f"Warning: Section duplicates detected in {self.environment.file}. "
+                    f"This will result to failure to upload all cases."
+                )
             prompt_message = PROMPT_MESSAGES["create_missing_sections"].format(
                 project_name=self.environment.project
             )
