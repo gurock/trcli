@@ -1,3 +1,5 @@
+import sys
+
 import pytest
 
 from tests.helpers.results_uploader_helper import (
@@ -64,14 +66,14 @@ class TestResultsUploader:
             error_message=f"{environment.project} project doesn't exist.",
             failing=True,
         )
-        expected_log_calls = [
+        expected_elog_calls = [
             mocker.call(f"\n{environment.project} project doesn't exist.")
         ]
 
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         assert (
             exception.type == SystemExit
         ), f"Expected SystemExit exception, but got {exception.type} instead."
@@ -119,7 +121,7 @@ class TestResultsUploader:
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_log_calls)
         assert (
             exception.type == SystemExit
         ), f"Expected SystemExit exception, but got {exception.type} instead."
@@ -291,9 +293,15 @@ class TestResultsUploader:
         result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
-        expected_log_calls = [mocker.call(expected_message)]
+        expected_elog_calls = []
+        expected_log_calls = []
+        if "User did not agree to create" not in expected_message:
+            expected_log_calls = [mocker.call(expected_message)]
+        else:
+            expected_elog_calls.append(mocker.call(expected_message))
+
         if suite_add_error:
-            expected_log_calls.append(
+            expected_elog_calls.append(
                 mocker.call(
                     FAULT_MAPPING["error_while_adding_suite"].format(
                         error_message="Failed to add suite."
@@ -318,6 +326,7 @@ class TestResultsUploader:
                 project_id=project_id
             )
         environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
@@ -348,8 +357,9 @@ class TestResultsUploader:
             suite_ids,
             error_message,
         )
+        expected_elog_calls = []
         if error_message:
-            expected_log_calls = [mocker.call(error_message)]
+            expected_elog_calls = [mocker.call(error_message)]
         result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
@@ -361,7 +371,7 @@ class TestResultsUploader:
             result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
         if error_message:
-            environment.log.assert_has_calls(expected_log_calls)
+            environment.elog.assert_has_calls(expected_elog_calls)
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
@@ -391,9 +401,9 @@ class TestResultsUploader:
         results_uploader.api_request_handler.get_suite_ids.return_value = (
             get_suite_ids_result
         )
-        expected_log_calls = []
+        expected_elog_calls = []
         if expected_error_message:
-            expected_log_calls = [mocker.call(expected_error_message)]
+            expected_elog_calls = [mocker.call(expected_error_message)]
         result_suite_id, result_code = results_uploader.get_suite_id(
             project_id, suite_mode
         )
@@ -404,8 +414,7 @@ class TestResultsUploader:
         assert (
             result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
-        if expected_error_message:
-            environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
 
     @pytest.mark.results_uploader
     def test_get_suite_id_unknown_suite_mode(
@@ -423,7 +432,7 @@ class TestResultsUploader:
         expected_result_code = -1
         expected_suite_id = -1
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
-        expected_log_calls = [
+        expected_elog_calls = [
             mocker.call(
                 FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
             )
@@ -438,7 +447,7 @@ class TestResultsUploader:
         assert (
             result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
 
     @pytest.mark.results_uploader
     def test_check_suite_id_returns_id(self, result_uploader_data_provider):
@@ -484,11 +493,11 @@ class TestResultsUploader:
         result_code = results_uploader.check_suite_id(
             suite_id=suite_id, project_id=project_id
         )
-        expected_log_calls = [
+        expected_elog_calls = [
             mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
         ]
 
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         assert (
             result_code == expected_result_code
         ), f"Expected to get {expected_result_code} as result code, but got {result_code} instead."
@@ -560,9 +569,14 @@ class TestResultsUploader:
             result_added_sections,
             result_code,
         ) = results_uploader.add_missing_sections(project_id)
-        expected_log_calls = [mocker.call(expected_message)]
+        expected_elog_calls = []
+        expected_log_calls = []
+        if "User did not agree to create" not in expected_message:
+            expected_log_calls = [mocker.call(expected_message)]
+        else:
+            expected_elog_calls.append(mocker.call(expected_message))
         if expected_add_sections_error:
-            expected_log_calls.append(mocker.call(expected_add_sections_error))
+            expected_elog_calls.append(mocker.call(expected_add_sections_error))
 
         assert (
             result_code == expected_result_code
@@ -571,6 +585,7 @@ class TestResultsUploader:
             result_added_sections == expected_added_sections
         ), f"Expected sections to be added: {expected_added_sections} but got {result_added_sections} instead."
         environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         environment.get_prompt_response_for_auto_creation.assert_called_with(
             PROMPT_MESSAGES["create_missing_sections"].format(
                 project_name=environment.project
@@ -597,7 +612,7 @@ class TestResultsUploader:
             error_message,
         )
         result = results_uploader.add_missing_sections(project_id)
-        expected_log_calls = [
+        expected_elog_calls = [
             mocker.call(
                 FAULT_MAPPING["error_checking_missing_item"].format(
                     missing_item="missing sections", error_message=error_message
@@ -605,7 +620,7 @@ class TestResultsUploader:
             )
         ]
 
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         assert result == (
             missing_sections,
             return_code,
@@ -687,14 +702,19 @@ class TestResultsUploader:
             result_code,
         ) = results_uploader.add_missing_test_cases(project_id)
 
-        expected_log_calls = [mocker.call(expected_message)]
+        expected_elog_calls = []
+        expected_log_calls = []
+        if "User did not agree to create" not in expected_message:
+            expected_log_calls = [mocker.call(expected_message)]
+        else:
+            expected_elog_calls.append(mocker.call(expected_message))
         if duplicate_case_names:
             expected_log_calls = [
                 mocker.call(warning_duplicated_case_names),
                 *expected_log_calls,
             ]
         if expected_add_test_cases_error:
-            expected_log_calls.append(mocker.call(expected_add_test_cases_error))
+            expected_elog_calls.append(mocker.call(expected_add_test_cases_error))
 
         assert (
             result_code == expected_result_code
@@ -703,6 +723,7 @@ class TestResultsUploader:
             result_added_test_cases == expected_added_test_cases
         ), f"Expected test cases to be added: {expected_added_test_cases} but got {result_added_test_cases} instead."
         environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         environment.get_prompt_response_for_auto_creation.assert_called_with(
             PROMPT_MESSAGES["create_missing_test_cases"].format(
                 project_name=environment.project
@@ -729,7 +750,7 @@ class TestResultsUploader:
             error_message,
         )
         result = results_uploader.add_missing_test_cases(project_id)
-        expected_log_calls = [
+        expected_elog_calls = [
             mocker.call(
                 FAULT_MAPPING["error_checking_missing_item"].format(
                     missing_item="missing test cases", error_message=error_message
@@ -737,7 +758,7 @@ class TestResultsUploader:
             )
         ]
 
-        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         assert result == (
             missing_test_cases,
             return_code,
@@ -877,9 +898,9 @@ class TestResultsUploader:
         expected_log_calls = [
             mocker.call(
                 f"Updating test case with id: {environment.case_id}.", new_line=False
-            ),
-            mocker.call(f"\n{error_message}"),
+            )
         ]
+        expected_elog_calls = [mocker.call(f"\n{error_message}")]
         results_uploader.api_request_handler.update_case_result.return_value = (
             "",
             error_message,
@@ -888,6 +909,7 @@ class TestResultsUploader:
             results_uploader.upload_results()
 
         environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
         assert (
             exception.type == SystemExit
         ), f"Expected SystemExit exception, but got {exception.type} instead."

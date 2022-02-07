@@ -1,3 +1,4 @@
+import sys
 from typing import Tuple, Callable, List
 
 from trcli.api.api_client import APIClient
@@ -51,7 +52,7 @@ class ResultsUploader:
                 self.environment.run_id, self.environment.case_id
             )
             if error_message:
-                self.environment.log("\n" + error_message)
+                self.environment.elog("\n" + error_message)
                 exit(1)
             else:
                 self.environment.log(" Done.")
@@ -61,10 +62,10 @@ class ResultsUploader:
             self.environment.project, self.environment.project_id
         )
         if project_data.project_id == ProjectErrors.not_existing_project:
-            self.environment.log("\n" + project_data.error_message)
+            self.environment.elog("\n" + project_data.error_message)
             exit(1)
         elif project_data.project_id == ProjectErrors.other_error:
-            self.environment.log(
+            self.environment.elog(
                 "\n"
                 + FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
@@ -72,7 +73,7 @@ class ResultsUploader:
             )
             exit(1)
         elif project_data.project_id == ProjectErrors.multiple_project_same_name:
-            self.environment.log(
+            self.environment.elog(
                 "\n"
                 + FAULT_MAPPING["error_checking_project"].format(
                     error_message=project_data.error_message
@@ -114,7 +115,7 @@ class ResultsUploader:
                     project_data.project_id, self.environment.title
                 )
                 if error_message:
-                    self.environment.log("\n" + error_message)
+                    self.environment.elog("\n" + error_message)
                     revert_logs = self.rollback_changes(
                         added_suite_id=added_suite_id,
                         added_sections=added_sections,
@@ -132,7 +133,7 @@ class ResultsUploader:
                 results_amount,
             ) = self.api_request_handler.add_results(run_id)
             if error_message:
-                self.environment.log(error_message)
+                self.environment.elog(error_message)
                 revert_logs = self.rollback_changes(
                     added_suite_id=added_suite_id,
                     added_sections=added_sections,
@@ -146,7 +147,7 @@ class ResultsUploader:
 
             response, error_message = self.api_request_handler.close_run(run_id)
             if error_message:
-                self.environment.log("\n" + error_message)
+                self.environment.elog("\n" + error_message)
                 exit(1)
             self.environment.log("Done.")
         stop = time.time()
@@ -192,10 +193,10 @@ class ResultsUploader:
                     project_id=project_id
                 )
                 if error_message:
-                    self.environment.log(error_message)
+                    self.environment.elog(error_message)
                 else:
                     if len(suite_ids) > 1:
-                        self.environment.log(
+                        self.environment.elog(
                             FAULT_MAPPING[
                                 "not_unique_suite_id_single_suite_baselines"
                             ].format(project_name=self.environment.project)
@@ -207,11 +208,11 @@ class ResultsUploader:
                     project_id=project_id
                 )
                 if error_message:
-                    self.environment.log(error_message)
+                    self.environment.elog(error_message)
                 else:
                     result_code = 1
             else:
-                self.environment.log(
+                self.environment.elog(
                     FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
                 )
         else:
@@ -233,7 +234,7 @@ class ResultsUploader:
         if suite_exists:
             result_code = 1
         else:
-            self.environment.log(error_message)
+            self.environment.elog(error_message)
         return result_code
 
     def add_missing_sections(self, project_id: int) -> Tuple[list, int]:
@@ -249,6 +250,11 @@ class ResultsUploader:
             error_message,
         ) = self.api_request_handler.check_missing_section_ids(project_id)
         if missing_sections:
+            if self.api_request_handler.data_provider.check_section_names_duplicates():
+                self.environment.log(
+                    f"Warning: Section duplicates detected in {self.environment.file}. "
+                    f"This will result to failure to upload all cases."
+                )
             prompt_message = PROMPT_MESSAGES["create_missing_sections"].format(
                 project_name=self.environment.project
             )
@@ -263,7 +269,7 @@ class ResultsUploader:
             )
         else:
             if error_message:
-                self.environment.log(
+                self.environment.elog(
                     FAULT_MAPPING["error_checking_missing_item"].format(
                         missing_item="missing sections", error_message=error_message
                     )
@@ -303,7 +309,7 @@ class ResultsUploader:
             )
         else:
             if error_message:
-                self.environment.log(
+                self.environment.elog(
                     FAULT_MAPPING["error_checking_missing_item"].format(
                         missing_item="missing test cases", error_message=error_message
                     )
@@ -329,11 +335,11 @@ class ResultsUploader:
             else:
                 added_items, error_message = add_function()
             if error_message:
-                self.environment.log(error_message)
+                self.environment.elog(error_message)
             else:
                 result_code = 1
         else:
-            self.environment.log(fault_message)
+            self.environment.elog(fault_message)
         return added_items, result_code
 
     def instantiate_api_client(self) -> APIClient:

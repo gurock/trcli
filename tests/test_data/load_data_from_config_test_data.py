@@ -34,6 +34,19 @@ correct_config_file_multiple_documents_path_with_custom_config_path = (
 incorrect_config_file_path = (
     Path(__file__).parent / "yaml" / "corrupted_config_file.yaml"
 )
+incorrect_config_file_with_string_path = (
+    Path(__file__).parent / "yaml" / "corrupted_config_file_with_string.yaml"
+)
+incorrect_config_file_with_list_path = (
+    Path(__file__).parent / "yaml" / "corrupted_config_file_with_list.yaml"
+)
+incorrect_config_file_with_start_indicator_at_the_end_path = (
+    Path(__file__).parent / "yaml" / "corrupted_config_start_indicator_at_the_end.yaml"
+)
+incorrect_config_file_with_with_empty_document = (
+    Path(__file__).parent / "yaml" / "corrupted_config_file_with_empty_document.yaml"
+)
+
 incorrect_config_file_multiple_documents_path = (
     Path(__file__).parent / "yaml" / "corrupted_config_file_multiple_documents.yaml"
 )

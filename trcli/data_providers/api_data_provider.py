@@ -41,8 +41,13 @@ class ApiDataProvider:
             ],
         }
 
-    def add_run(self, run_name: str):
+    def add_run(self, run_name: str, case_ids=None):
         """Return body for adding a run."""
+        if case_ids is None:
+            case_ids = [
+                int(case)
+                for section in self.suites_input.testsections
+                for case in section.testcases]
         properties = [
             str(prop)
             for section in self.suites_input.testsections
@@ -53,6 +58,8 @@ class ApiDataProvider:
             "name": run_name,
             "suite_id": self.suites_input.suite_id,
             "description": f"{' '.join(properties)}",
+            "include_all": False,
+            "case_ids": case_ids,
         }
 
     def add_result_for_case(self, case_id):
@@ -117,6 +124,17 @@ class ApiDataProvider:
         for section in self.suites_input.testsections:
             section.suite_id = self.suites_input.suite_id
 
+    def check_section_names_duplicates(self):
+        """
+        Check if section names in result xml file are duplicated.
+        """
+        sections_names = [sections.name for sections in self.suites_input.testsections]
+
+        if len(sections_names) == len(set(sections_names)):
+            return False
+        else:
+            return True
+
     def check_for_case_names_duplicates(self):
         """
         Check if cases names in result xml file are duplicated.
@@ -140,14 +158,15 @@ class ApiDataProvider:
 
         """
         for section_updater in section_data:
-            matched_section = next(
+            matched_section = next((
                 section
                 for section in self.suites_input.testsections
                 if section["name"] == section_updater["name"]
-            )
-            matched_section.section_id = section_updater["section_id"]
-            for case in matched_section.testcases:
-                case.section_id = section_updater["section_id"]
+            ), None)
+            if matched_section is not None:
+                matched_section.section_id = section_updater["section_id"]
+                for case in matched_section.testcases:
+                    case.section_id = section_updater["section_id"]
 
     def __update_case_data(self, case_data: List[dict]):
         """case_data comes from add_case API response
@@ -161,15 +180,16 @@ class ApiDataProvider:
         """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         for case_updater in case_data:
-            matched_case = next(
+            matched_case = next((
                 case
                 for sublist in testcases
                 for case in sublist
                 if case["title"] == case_updater["title"]
-            )
-            matched_case.case_id = case_updater["case_id"]
-            matched_case.result.case_id = case_updater["case_id"]
-            matched_case.section_id = case_updater["section_id"]
+            ), None)
+            if matched_case is not None:
+                matched_case.case_id = case_updater["case_id"]
+                matched_case.result.case_id = case_updater["case_id"]
+                matched_case.section_id = case_updater["section_id"]
 
     @staticmethod
     def divide_list_into_bulks(input_list: List, bulk_size: int) -> List:

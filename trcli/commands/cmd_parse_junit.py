@@ -13,6 +13,7 @@ from xml.etree.ElementTree import ParseError
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, file):
+    """Parse Junit XML files (& similar)"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     try:
@@ -21,13 +22,13 @@ def cli(environment: Environment, context: click.Context, file):
         )
         result_uploader.upload_results()
     except FileNotFoundError:
-        environment.log(FAULT_MAPPING["missing_file"])
+        environment.elog(FAULT_MAPPING["missing_file"])
         exit(1)
     except (JUnitXmlError, ParseError):
-        environment.log(FAULT_MAPPING["invalid_file"])
+        environment.elog(FAULT_MAPPING["invalid_file"])
         exit(1)
     except ValidationException as exception:
-        environment.log(
+        environment.elog(
             FAULT_MAPPING["dataclass_validation_error"].format(
                 field=exception.field_name,
                 class_name=exception.class_name,

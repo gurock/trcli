@@ -13,13 +13,15 @@ Field name|description
 ---|---
 host | specifies the URL of the TestRail instance in which to send the results<br>host: https://fakename.testrail.io/
 project | specifies the name of the Project the Test Run should be created under<br>project: Mockup Automation Project
+project_id | Project id. Will be only used in case project name will be duplicated in TestRail<br>project_id: 10
 username | username<br>username: myuser@name.com
 password | password<br>password: StrongP@ssword
 key | API key<br>key: AGT9PBifAxgWEWNGQgh/-Dc7Dr/fWDvEkLJwPFLRn
 file | specifies the filename and/or path of the result file to be used<br>file: \<PATH\>/result_file.xml
 title |  Specifies the title of the Test Run to be created in TestRail<br>title: Daily Selenium smoke test
 verbose | enables verbose mode when true (false by default)<br>verbose: false/true
-silent | enables silence mode when true (false by default)<br>silent: false/true
+verify | verify the data was added correctly<br>verify: false/true
+silent | enables silence mode (only stdout) when true (false by default)<br>silent: false/true
 config | specifies the filename and/or path of the configuration file to be used<br>config: \<PATH\>/alternate_config.yml
 batch_size | specifies the batch size of results to pass to TestRail<br>batch_size: 20
 timeout | specifies how many seconds to wait for more results before termination<br>timeout: 5.5
@@ -39,7 +41,7 @@ depending on the operating system.
 Custom configuration file
 -------------------------
 Apart from default configuration file a custom one can be passed after -c/--config
-as a parameter. For more details check Command line section.
+as a parameter. For more details check [Command line](#Command-line) section.
 
 Environment variables
 =====================
@@ -53,6 +55,11 @@ Note: One exception to this rule is for --yes/--no parameters.
 One should use: TR_CLI_AUTO_CREATION_RESPONSE (false/true).
 true - agree for auto creation<br>
 false - do not agree for auto creation.
+```
+
+```
+Note: In case there is a `-` in the parameter name it should be changed to `_`.
+Example: for --project-id environment variable name will be TR_CLI_PROJECT_ID
 ```
 
 ```
@@ -106,7 +113,7 @@ Options:
   --help             Show this message and exit.
 
 Commands:
-  parse_junit
+  parse_junit  Parse Junit XML files (& similar)
 ```
 
 Setting parameters from different places
@@ -114,7 +121,7 @@ Setting parameters from different places
 User can choose to set parameters from different places like default config file,
 environment variables, custom config file, cli parameters or in some cases use
 default values.
-The priority (1-highest, 5-lowest)of setting parameters from different places is as follows:
+The priority (1-highest, 5-lowest) of setting parameters from different places is as follows:
 
 priority|source
  ---|---
@@ -141,8 +148,7 @@ pip install git+https://github.com/gurock/trcli.git
 Return values and messaging
 ===========================
 trcli tool will return `0` to the console in case of success and value greater than `1` (usually `1` or `2`) in other cases.
-All messages that are being printed on the console are being redirected to `sys.stderr` except of
-user prompts.
+Messages that are being printed on the console are being redirected to `sys.stdout` or `sys.stderr`.
 
 Parsers
 =======
@@ -156,9 +162,12 @@ Available commands/parsers:
 $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
 
+  Parse Junit XML files (& similar)
+
 Options:
   -f, --file   Filename and path.
   --help       Show this message and exit.
+
 ```
 
 
@@ -227,3 +236,56 @@ During performance tests we discovered that using more than 10 workers didn't im
 Average time for uploading:
 - 2000 test cases was around 460 seconds
 - 5000 test cases was around 1000 seconds
+
+Unit Tests
+==========
+
+Running tests
+-------------
+Ensure testing libraries are installed. In the root directory, run:<br>
+`python3 -m pip install -r ./tests/requirements.txt`<br>
+To run all tests:<br>
+`python3 -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --alluredir=./allure-results`<br>
+List of all test markers can be found by running:<br>
+`pytest --markers -c ./tests/pytest.ini`<br>
+
+Folder structure
+----------------
+Folder|description
+---|---
+helpers|modules used during the tests usually to prepare needed data 
+test_data|data used during the tests (files with input data, expected results, structures passed as pytest.mark.parameters etc.)
+
+Jenkins configuration
+---------------------
+Jenkinsfile can be used to configure jenkins build (for unit tests). It can be found in
+root folder.
+
+Code structure
+==============
+Folder structure
+----------------
+|Folder|module|description|
+|---|---|---|
+api|-|modules to be used to communicate with TestRail over API.
+api|api_client|Used for basic communication with TestRail over API. Handles retries and timeouts.
+api|api_request_handler|Used for API communication with TestRail (getting and adding resources). It uses api_client for basic communication and api_data_provider to get bodies from internal data classes. <br>
+api|api_response_verify|Used for verifying the response from TestRail.
+api|results_uploader|Used for uploading the results into TestRail instance.
+commands|-|commands that extends parsing functionality. For more details please check [Parsers](#Parsers) section.
+commands|cmd_parse_junit|Junit parser command. It's used together with cli module. The idea is to have separate commands for different file parsers. This way it should be easier to extend trcli in case other result file format needs to be parsed.
+data_classes|-|modules that are responsible for storing data parsed from result files in unified format
+data_classes|dataclass_testrail|Used to store data parsed from result file. Contains common structures that are reflecting data structures within TestRail. Each reader should parse result file to those structures.
+data_classes|validation_exception|Exception raised on validation errors
+data_providers|-|module that is responsible for creating bodies for API calls
+data_providers|api_data_provider|Module that is responsible for creating bodies for API calls
+readers|-|modules that are responsible for parsing result files into internal data classes. Check [Parsers](#Parsers) section for more details
+readers|file_parser|Contains basic abstract class to be used to create all results parsers.
+readers|junit_xml|Junit result file parser. Used to parse result files into internal data structures.
+root|constants|Contains constants used in whole code (error messages, prompt slogans, --help related strings etc.)
+root|settings|Multithreading and some default settings.
+root|cli|Main cli module responsible for parsing parameters from command line. It parses all parameters and runtime information into Environment class. 
+
+Sending information to user (logging/prompting)
+-----------------------------------------------
+For printing messages on console and prompting users functions from Environment class should be used. <br>Those functions handles `--silent/--verbose/--yes/--no` parameters properly.
