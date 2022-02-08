@@ -42,6 +42,7 @@ FAULT_MAPPING = dict(
     "(if present) under `testcase` tag in result xml file\nand\n"
     "only one result is present in result xml file.",
     unexpected_error_during_request_send="Unexpected error occurred during sending request: {request}",
+    error_during_get_cases_from_run="Error during getting cases ids from existing run.",
 )
 
 PROMPT_MESSAGES = dict(
