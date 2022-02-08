@@ -25,6 +25,7 @@ FAULT_MAPPING = dict(
     "Make sure that the file exists or the path is correct.",
     missing_suite="Suite with ID '{suite_id}' does not exist in TestRail.",
     no_user_agreement="User did not agree to create '{type}' automatically. Exiting.",
+    no_user_agreement_for_update_run="User did not agree to update test run. Exiting.",
     error_checking_project="Error detected while checking a project: '{error_message}'",
     error_while_adding_suite="Error detected while adding suite: '{error_message}'",
     not_unique_suite_id_single_suite_baselines="One or more baselines created under '{project_name}' (single suite "
@@ -55,6 +56,9 @@ PROMPT_MESSAGES = dict(
     create_missing_test_cases="Some of the test cases in provided file are missing "
     "in TestRail or the IDs are not specified.\n"
     "Would you like to create missing test cases under project: '{project_name}'?",
+    add_missing_tests_to_run="Some of the test cases provided in result file are missing "
+    "in given TestRail run ID '{run_id}'.\n"
+    "Would you like to add missing test cases to existing run?"
 )
 
 TOOL_VERSION_AND_USAGE = f"""TestRail Connect v{trcli.__version__}

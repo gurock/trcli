@@ -128,6 +128,13 @@ class ResultsUploader:
                 run_id = added_run
             else:
                 run_id = self.environment.run_id
+                added_cases_to_run, result_code = self.add_missing_tests_to_run(
+                    run_id
+                )
+                if result_code == -1:
+                    # rollback?
+                    exit(1)
+
             (
                 added_results,
                 error_message,
@@ -319,6 +326,40 @@ class ResultsUploader:
                 result_code = 1
         return added_cases, result_code
 
+    def add_missing_tests_to_run(self, run_id: int) -> Tuple[list, int]:
+        """
+        Checks for missing test cases in specified run. Add missing test cases if user agrees to
+        do so. Returns list of added test case IDs if succeeds or empty list with result_code set to
+        -1.
+        """
+        result_code = -1
+        run_existing_cases, error_message = self.api_request_handler.get_cases_from_run(run_id)
+        added_and_existing_cases = self.api_request_handler.data_provider.get_case_ids()
+
+        diff = list(set(added_and_existing_cases) - set(run_existing_cases))
+        joined_cases = list(set(run_existing_cases + added_and_existing_cases))
+
+        if len(diff) > 0 and not error_message:
+            prompt_message = PROMPT_MESSAGES["add_missing_tests_to_run"].format(
+                run_id=run_id
+            )
+            adding_message = "Updating test run. Adding missing test cases to the run."
+            fault_message = FAULT_MAPPING["no_user_agreement_for_update_run"]
+            _, result_code = self.prompt_user_and_add_items(
+                prompt_message=prompt_message,
+                adding_message=adding_message,
+                fault_message=fault_message,
+                add_function=self.api_request_handler.update_run_with_test_cases,
+                optional_args=[run_id, joined_cases],
+            )
+        elif error_message:
+            self.environment.elog(error_message)
+        else:
+            self.environment.log(f"No new test cases to add. Proceed to add results.")
+            result_code = 1
+
+        return diff, result_code
+
     def prompt_user_and_add_items(
         self,
         prompt_message,
@@ -326,6 +367,7 @@ class ResultsUploader:
         fault_message,
         add_function: Callable,
         project_id: int = None,
+        optional_args: list = None,
     ):
         added_items = []
         result_code = -1
@@ -333,6 +375,8 @@ class ResultsUploader:
             self.environment.log(adding_message)
             if project_id:
                 added_items, error_message = add_function(project_id=project_id)
+            elif optional_args:
+                added_items, error_message = add_function(*optional_args)
             else:
                 added_items, error_message = add_function()
             if error_message:
