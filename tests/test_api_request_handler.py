@@ -368,6 +368,57 @@ class TestApiRequestHandler:
         ), "There should be an error because of invalid test case id"
 
     @pytest.mark.api_handler
+    def test_get_cases_from_run(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        run_id = 1
+        mocked_response_page_1 = {
+            "_links": {
+                "next": f"/api/v2/get_tests/{run_id}&limit=1&offset=1",
+                "prev": None,
+            },
+            "tests": [{"id": 2, "title": "..", "case_id": 111}],
+        }
+        mocked_response_page_2 = {
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1, "title": "..", "case_id": 222}],
+        }
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json=mocked_response_page_1,
+        )
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}&limit=1&offset=1"),
+            json=mocked_response_page_2,
+        )
+        cases, error = api_request_handler.get_cases_from_run(run_id)
+        assert cases == [111, 222], "There should be list of cases"
+        assert error == "", "Error occurred in check"
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}&limit=1&offset=1"),
+            json={"error": "Field :run_id is not a valid test run."},
+            status_code=400,
+        )
+        cases, error = api_request_handler.get_cases_from_run(run_id)
+        assert (
+            error == FAULT_MAPPING["error_during_get_cases_from_run"]
+        ), "There should be an error because of error in page 2"
+
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json={
+                "_links": {
+                    "next": None,
+                    "prev": None,
+                },
+                "tests": [],
+            },
+        )
+        cases, error = api_request_handler.get_cases_from_run(run_id)
+        assert cases == [], "Empty run"
+        assert error == "", "Error occurred in check"
+
+    @pytest.mark.api_handler
     def test_check_missing_test_case_id_not_found(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):

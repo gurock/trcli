@@ -8,7 +8,7 @@ from trcli.constants import (
     FAULT_MAPPING,
 )
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from typing import List, Union
+from typing import List, Union, Any
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -248,7 +248,9 @@ class ApiRequestHandler:
             for test_case in sections.testcases
         ]
 
-        returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
+        returned_cases, error_message = self.__get_all_items(
+            f"get_cases/{project_id}&suite_id={suite_id}", "cases"
+        )
         if not error_message:
             missing_cases = list(
                 set(test_cases)
@@ -334,6 +336,25 @@ class ApiRequestHandler:
         add_run_data = self.data_provider.add_run(run_name)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
         return response.response_text.get("id"), response.error_message
+
+    def get_cases_from_run(self, run_id: int) -> (List[int], str):
+        """
+        Return all test cases IDs attached to run.
+        :run_id: run id
+        :returns: List with cases ids
+        """
+        returned_tests, error_message = self.__get_all_items(
+            f"get_tests/{run_id}", "tests"
+        )
+        if error_message:
+            returned_cases = []
+            error_message = FAULT_MAPPING["error_during_get_cases_from_run"]
+        else:
+            if len(returned_tests) > 0:
+                returned_cases = [test.get("case_id") for test in returned_tests]
+            else:
+                returned_cases = []
+        return returned_cases, error_message
 
     def add_results(self, run_id: int) -> (dict, str):
         """
@@ -496,26 +517,27 @@ class ApiRequestHandler:
         for future in futures:
             future.cancel()
 
-    def __get_all_cases(
-        self, project_id=None, suite_id=None, link=None, cases=[]
-    ) -> (List[dict], str):
+    def __get_all_items(
+        self, url: str, key_to_get: str, link=None, items=[]
+    ) -> (List[Any], str):
         """
-        Get all cases from all pages if number of cases is too big to return in single response.
+        Get all items from all pages if number of items is too big to return in single response.
         Function using next page field in API response.
         """
         if link is None:
-            response = self.client.send_get(
-                f"get_cases/{project_id}&suite_id={suite_id}"
-            )
+            response = self.client.send_get(url)
         else:
             response = self.client.send_get(link.replace(self.suffix, ""))
         if not response.error_message:
-            cases = cases + response.response_text["cases"]
+            items = items + response.response_text[key_to_get]
             if response.response_text["_links"]["next"] is not None:
-                return self.__get_all_cases(
-                    link=response.response_text["_links"]["next"], cases=cases
+                return self.__get_all_items(
+                    url=url,
+                    link=response.response_text["_links"]["next"],
+                    key_to_get=key_to_get,
+                    items=items,
                 )
             else:
-                return cases, response.error_message
+                return items, response.error_message
         else:
             return [], response.error_message
