@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from tests.test_data.api_data_provider_test_data import *
 from trcli.data_providers.api_data_provider import ApiDataProvider
 import pytest
@@ -5,22 +7,22 @@ import pytest
 
 @pytest.fixture(scope="function")
 def post_data_provider():
-    yield ApiDataProvider(test_input)
+    yield ApiDataProvider(deepcopy(test_input))
 
 
 @pytest.fixture(scope="function")
 def post_data_provider_single_result_with_id():
-    yield ApiDataProvider(test_input_single_result_with_id)
+    yield ApiDataProvider(deepcopy(test_input_single_result_with_id))
 
 
 @pytest.fixture(scope="function")
 def post_data_provider_single_result_without_id():
-    yield ApiDataProvider(test_input_single_result_without_id)
+    yield ApiDataProvider(deepcopy(test_input_single_result_without_id))
 
 
 @pytest.fixture(scope="function")
 def post_data_provider_duplicated_case_names():
-    yield ApiDataProvider(test_input_duplicated_case_names)
+    yield ApiDataProvider(deepcopy(test_input_duplicated_case_names))
 
 
 class TestApiDataProvider:
@@ -197,3 +199,10 @@ class TestApiDataProvider:
         assert (
             result == expected_result
         ), "Expected {expected_result} as a result but got {result} instead."
+
+    @pytest.mark.data_provider
+    def test_get_case_ids(self, post_data_provider):
+        expected_result = [60, 4]
+        result = post_data_provider.get_case_ids()
+
+        assert result == expected_result, "Returned IDs are not equal expected."
