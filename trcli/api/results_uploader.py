@@ -101,6 +101,7 @@ class ResultsUploader:
             added_test_cases, result_code = self.add_missing_test_cases(
                 project_data.project_id
             )
+
             if result_code == -1:
                 revert_logs = self.rollback_changes(
                     added_suite_id=added_suite_id,

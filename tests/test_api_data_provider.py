@@ -127,6 +127,7 @@ class TestApiDataProvider:
             result == expected_result
         ), f"Expected: {expected_result} but got {result} instead."
 
+    @pytest.mark.data_provider
     @pytest.mark.parametrize(
         "case_id, expected_result",
         [(1, None), (10, None)],
@@ -138,6 +139,7 @@ class TestApiDataProvider:
         result = post_data_provider.add_result_for_case(case_id)
         assert result is expected_result, f"Expected None as a result. But got {result}"
 
+    @pytest.mark.data_provider
     def test_add_result_for_case_single_result_with_id(
         self, post_data_provider_single_result_with_id
     ):
@@ -151,6 +153,7 @@ class TestApiDataProvider:
             result == result_for_update_case
         ), f"Expected None as a result. But got {result}"
 
+    @pytest.mark.data_provider
     def test_add_result_for_case_single_result_without_id(
         self, post_data_provider_single_result_without_id
     ):
@@ -162,6 +165,7 @@ class TestApiDataProvider:
             result == result_for_update_case
         ), f"Expected None as a result. But got {result}"
 
+    @pytest.mark.data_provider
     def test_check_for_case_names_duplicates_found(
         self, post_data_provider_duplicated_case_names
     ):
@@ -171,7 +175,25 @@ class TestApiDataProvider:
 
         assert result, "Expected True as a result."
 
+    @pytest.mark.data_provider
     def test_check_for_case_names_duplicates_not_found(self, post_data_provider):
         result = post_data_provider.check_for_case_names_duplicates()
 
         assert not result, "Expected False as a result."
+
+    @pytest.mark.data_provider
+    @pytest.mark.parametrize(
+        "input, expected_result",
+        UPDATE_RUN_RETURNS_IDS_LIST_TEST_DATA,
+        ids=UPDATE_RUN_RETURNS_IDS_LIST_TEST_IDS,
+    )
+    def test_update_run_returns_ids_list(
+        self, input, expected_result, post_data_provider
+    ):
+        """Check list of ids will be returned when providing response add case response to
+        update_run"""
+        result = post_data_provider.update_run(input)
+
+        assert (
+            result == expected_result
+        ), "Expected {expected_result} as a result but got {result} instead."

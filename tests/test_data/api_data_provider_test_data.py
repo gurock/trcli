@@ -39,8 +39,8 @@ post_run_bodies = {
     "description": "logging: True debug: False",
     "name": "test run",
     "suite_id": 123,
-    'case_ids': [60, -1, 4],
-    'include_all': False,
+    "case_ids": [60, -1, 4],
+    "include_all": False,
 }
 
 post_results_for_cases_body = [
@@ -62,3 +62,14 @@ result_for_update_case = {
     "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
     "status_id": 4,
 }
+
+
+UPDATE_RUN_RETURNS_IDS_LIST_TEST_DATA = [
+    (
+        [1, 2, 3],
+        {"include_all": False, "case_ids": [1, 2, 3]},
+    ),
+    ([], {"include_all": False, "case_ids": []}),
+]
+
+UPDATE_RUN_RETURNS_IDS_LIST_TEST_IDS = ["correct_data", "empty_list"]

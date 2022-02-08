@@ -757,3 +757,64 @@ class TestApiRequestHandler:
             "--case-id matches ID (if present) under `testcase` tag in result xml file\nand\n"
             "only one result is present in result xml file."
         ), "Expected error message to be printed."
+
+    def test_update_run_with_test_cases_succeed(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        run_id = 20
+        test_cases = [1, 2, 3]
+        mocked_response = {
+            "id": 1159,
+            "suite_id": 1088,
+            "name": "MR test RUN - demo",
+            "url": "https://fake_url.com",
+        }
+
+        requests_mock.post(
+            create_url(f"update_run/{run_id}"),
+            json=mocked_response,
+        )
+        response_text, error = api_request_handler.update_run_with_test_cases(
+            run_id, test_cases
+        )
+
+        assert (
+            response_text == mocked_response
+        ), "Updated run result doesn't match expected."
+        assert error == "", "There should be no error during successful run."
+
+    def test_update_run_with_test_cases_error(self, api_request_handler, requests_mock):
+        run_id = 20
+        test_cases = [1, 2, 3]
+
+        requests_mock.post(
+            create_url(f"update_run/{run_id}"),
+            exc=requests.exceptions.ConnectTimeout,
+        )
+        response_text, error = api_request_handler.update_run_with_test_cases(
+            run_id, test_cases
+        )
+
+        assert (
+            response_text == ""
+        ), "No response text should be returned when error occured."
+        assert (
+            error
+            == "Your upload to TestRail did not receive a successful response from your TestRail Instance."
+            " Please check your settings and try again."
+        ), "Connection error is expected."
+
+    def test_update_run_with_test_cases_empty_list(
+        self, api_request_handler, requests_mock
+    ):
+        run_id = 10
+        test_cases = []
+
+        response_text, error = api_request_handler.update_run_with_test_cases(
+            run_id, test_cases
+        )
+
+        assert (
+            response_text == ""
+        ), "Expected empty string for empty list of test cases."
+        assert error == "", "Expected no errors for empty list of test cases."
