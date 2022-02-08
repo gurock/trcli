@@ -8,7 +8,7 @@ from trcli.constants import (
     FAULT_MAPPING,
 )
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from typing import List, Any
+from typing import List, Union, Any
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -392,6 +392,22 @@ class ApiRequestHandler:
                 responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
         return responses, error_message, progress_bar.n
+
+    def update_run_with_test_cases(
+        self, run_id: int, test_cases_ids: List[int]
+    ) -> (Union[str, dict], str):
+        """Update existing run with provided test cases.
+        :run_id: run id
+        :test_cases: List of test cases IDs to be added in a format of add case response
+        :returns: Tuple with response and error string."""
+        error_message = ""
+        response_text = ""
+        if test_cases_ids:
+            body = self.data_provider.update_run(test_cases_ids)
+            response = self.client.send_post(f"update_run/{run_id}", body)
+            error_message = response.error_message
+            response_text = response.response_text
+        return response_text, error_message
 
     def handle_futures(self, futures, action_string, progress_bar):
         responses = []
