@@ -150,6 +150,16 @@ class ApiDataProvider:
         else:
             return True
 
+    def get_case_ids(self):
+        """Returns case ids stored in result file"""
+        testcases = [sections.testcases for sections in self.suites_input.testsections]
+        return [
+            case.case_id
+            for sublist in testcases
+            for case in sublist
+            if case.case_id is not None
+        ]
+
     def __update_section_data(self, section_data: List[dict]):
         """section_data comes from add_section API response
         example:
