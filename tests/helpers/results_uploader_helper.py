@@ -13,6 +13,9 @@ def upload_results_inner_functions_mocker(
         add_run_mocker,
         add_results_mocker,
         close_run_mocker,
+        get_cases_from_run_mocker,
+        get_case_ids_mocker,
+        update_run_with_test_cases_mocker,
     ]
 
     for mocker_function in mocker_functions:
@@ -132,6 +135,30 @@ def close_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=Fal
         results_uploader.api_request_handler.close_run.return_value = ([100], "")
 
 
+def get_cases_from_run_mocker(
+    results_uploader: ResultsUploader, mocker=None, failing=False, case_ids=None
+):
+    if failing:
+        results_uploader.api_request_handler.get_cases_from_run.return_value = (
+            [],
+            "Failed to get cases from run.",
+        )
+    else:
+        results_uploader.api_request_handler.get_cases_from_run.return_value = (
+            case_ids if case_ids is not None else [1, 2, 3],
+            "",
+        )
+
+
+def get_case_ids_mocker(
+    results_uploader: ResultsUploader, mocker=None, failing=False, case_ids=None
+):
+    results_uploader.api_request_handler.data_provider.get_case_ids = mocker.Mock()
+    results_uploader.api_request_handler.data_provider.get_case_ids.return_value = (
+        case_ids if case_ids is not None else [4, 5, 6]
+    )
+
+
 def delete_suite_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
     if failing:
         results_uploader.api_request_handler.delete_suite.return_value = (
@@ -172,3 +199,18 @@ def delete_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=Fa
         )
     else:
         results_uploader.api_request_handler.delete_run.return_value = ([100], "")
+
+
+def update_run_with_test_cases_mocker(
+    results_uploader: ResultsUploader, mocker=None, failing=False
+):
+    if failing:
+        results_uploader.api_request_handler.update_run_with_test_cases.return_value = (
+            [],
+            "Update run with test cases failed.",
+        )
+    else:
+        results_uploader.api_request_handler.update_run_with_test_cases.return_value = (
+            [4, 5, 6],
+            "",
+        )

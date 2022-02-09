@@ -6,6 +6,8 @@ from tests.helpers.results_uploader_helper import (
     get_project_id_mocker,
     upload_results_inner_functions_mocker,
     api_request_handler_delete_mocker,
+    get_case_ids_mocker,
+    get_cases_from_run_mocker,
 )
 from tests.test_data.results_provider_test_data import (
     TEST_UPLOAD_RESULTS_FLOW_TEST_DATA,
@@ -20,6 +22,8 @@ from tests.test_data.results_provider_test_data import (
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
     TEST_REVERT_FUNCTIONS_AND_EXPECTED,
     TEST_REVERT_FUNCTIONS_IDS,
+    TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_TEST_DATA,
+    TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_IDS,
 )
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import Environment
@@ -192,6 +196,8 @@ class TestResultsUploader:
         ) = result_uploader_data_provider
         project_id = 10
         environment.run_id = run_id
+        environment.auto_creation_response = True
+
         get_project_id_mocker(
             results_uploader=results_uploader,
             project_id=project_id,
@@ -202,16 +208,28 @@ class TestResultsUploader:
             results_uploader=results_uploader, mocker=mocker, failing_functions=[]
         )
         expected_log_calls = []
-        if not run_id:
+        if run_id is None:
             expected_log_calls.extend(
                 [
                     mocker.call("Creating test run. ", new_line=False),
                     mocker.call("Done."),
+                    mocker.call("Closing added test run. ", new_line=False),
+                    mocker.call("Done."),
                 ]
             )
-        expected_log_calls.extend(
-            [mocker.call("Closing test run. ", new_line=False), mocker.call("Done.")]
-        )
+        else:
+            expected_log_calls.extend(
+                [
+                    mocker.call(
+                        "Updating test run. Adding missing test cases to the run."
+                    ),
+                    mocker.call(
+                        "Processed existing run. It will not be closed. ",
+                        new_line=False,
+                    ),
+                    mocker.call("Done."),
+                ]
+            )
         results_uploader.upload_results()
 
         environment.log.assert_has_calls(expected_log_calls)
@@ -838,7 +856,6 @@ class TestResultsUploader:
             api_request_handler,
             results_uploader,
         ) = result_uploader_data_provider
-
         api_request_handler_delete_mocker(
             results_uploader=results_uploader,
             mocker=mocker,
@@ -916,3 +933,153 @@ class TestResultsUploader:
         assert (
             exception.value.code == exit_code
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
+
+    @pytest.mark.results_uploader
+    @pytest.mark.parametrize(
+        "cases_from_file, cases_from_run, expected_added_cases, expected_message",
+        [
+            (
+                [1, 2, 3],
+                [4, 5, 6],
+                [4, 5, 6],
+                "Updating test run. Adding missing test cases to the run.",
+            ),
+            (
+                [1, 2, 3, 4],
+                [4, 5, 6],
+                [4, 5, 6],
+                "Updating test run. Adding missing test cases to the run.",
+            ),
+            (
+                [],
+                [4, 5, 6],
+                [4, 5, 6],
+                "No new test cases to add. Proceed to add results.",
+            ),
+            (
+                [1, 2, 3, 4],
+                [],
+                [],
+                "Updating test run. Adding missing test cases to the run.",
+            ),
+            ([], [], [], "No new test cases to add. Proceed to add results."),
+        ],
+        ids=[
+            "different cases",
+            "added and existing contains some ids from run",
+            "added and existing empty",
+            "run ids empty",
+            "both id lists empty",
+        ],
+    )
+    def test_add_missing_tests_to_run_no_new_tests(
+        self,
+        cases_from_file,
+        cases_from_run,
+        expected_added_cases,
+        expected_message,
+        result_uploader_data_provider,
+        mocker,
+    ):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+
+        run_id = 10
+        expected_result_code = 1
+
+        environment.auto_creation_response = True
+        expected_log_calls = [mocker.call(expected_message)]
+
+        results_uploader.api_request_handler.update_run_with_test_cases.return_value = (
+            [1, 2, 3],
+            "",
+        )
+        get_cases_from_run_mocker(results_uploader, mocker, case_ids=cases_from_run)
+        get_case_ids_mocker(results_uploader, mocker, case_ids=cases_from_file)
+
+        added_cases, result_code = results_uploader.add_missing_tests_to_run(run_id)
+
+        assert (
+            result_code == expected_result_code
+        ), f"Expected result code {expected_result_code} but got {result_code} instead."
+        assert (
+            added_cases == expected_added_cases
+        ), f"Expected cases to be added {expected_added_cases} but {added_cases} was added instead."
+        environment.log.assert_has_calls(expected_log_calls)
+
+    @pytest.mark.results_uploader
+    @pytest.mark.parametrize(
+        "user_response, expected_message, expected_result_code",
+        TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_TEST_DATA,
+        ids=TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_IDS,
+    )
+    def test_add_missing_tests_to_run_prompts_user(
+        self,
+        user_response,
+        expected_message,
+        expected_result_code,
+        result_uploader_data_provider,
+        mocker,
+    ):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        run_id = 10
+        cases_from_file = [1, 2, 3]
+        cases_from_run = [4, 5, 6]
+        expected_added_cases = [4, 5, 6]
+        expected_elog_calls = []
+        expected_log_calls = []
+        if expected_result_code == 1:
+            expected_log_calls = [mocker.call(expected_message)]
+        else:
+            expected_elog_calls = [mocker.call(expected_message)]
+
+        environment.get_prompt_response_for_auto_creation.return_value = user_response
+        results_uploader.api_request_handler.update_run_with_test_cases.return_value = (
+            [1, 2, 3],
+            "",
+        )
+        get_cases_from_run_mocker(results_uploader, mocker, case_ids=cases_from_run)
+        get_case_ids_mocker(results_uploader, mocker, case_ids=cases_from_file)
+
+        added_cases, result_code = results_uploader.add_missing_tests_to_run(run_id)
+
+        assert (
+            result_code == expected_result_code
+        ), f"Expected result code {expected_result_code} but got {result_code} instead."
+        assert (
+            added_cases == expected_added_cases
+        ), f"Expected cases to be added {expected_added_cases} but {added_cases} was added instead."
+        environment.log.assert_has_calls(expected_log_calls)
+        environment.elog.assert_has_calls(expected_elog_calls)
+
+    @pytest.mark.results_uploader
+    def test_add_missing_tests_to_run_error_checking(
+        self, result_uploader_data_provider, mocker
+    ):
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+
+        run_id = 10
+        expected_result_code = -1
+
+        upload_results_inner_functions_mocker(
+            results_uploader, mocker, failing_functions=["get_cases_from_run"]
+        )
+        expected_elog_calls = [mocker.call(f"Failed to get cases from run.")]
+
+        _, result_code = results_uploader.add_missing_tests_to_run(run_id)
+
+        assert (
+            result_code == expected_result_code
+        ), f"Expected result code {expected_result_code} but got {result_code} instead."
+        environment.elog.assert_has_calls(expected_elog_calls)

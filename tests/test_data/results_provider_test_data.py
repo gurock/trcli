@@ -163,3 +163,14 @@ TEST_REVERT_FUNCTIONS_IDS = [
     "unable_to_delete_cases",
     "unable_to_delete_run",
 ]
+
+TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_TEST_DATA = [
+    (True, "Updating test run. Adding missing test cases to the run.", 1),
+    (True, "Updating test run. Adding missing test cases to the run.", 1),
+    (False, FAULT_MAPPING["no_user_agreement_for_update_run"], -1),
+]
+TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_IDS = [
+    "user agrees",
+    "user agrees, fail to update run",
+    "used does not agree",
+]

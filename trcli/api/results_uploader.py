@@ -348,10 +348,8 @@ class ResultsUploader:
             run_id
         )
         added_and_existing_cases = self.api_request_handler.data_provider.get_case_ids()
-
         diff = list(set(added_and_existing_cases) - set(run_existing_cases))
         joined_cases = list(set(run_existing_cases + added_and_existing_cases))
-
         if len(diff) > 0 and not error_message:
             prompt_message = PROMPT_MESSAGES["add_missing_tests_to_run"].format(
                 run_id=run_id
