@@ -91,3 +91,5 @@ class RevertMessages:
     test_cases_not_deleted = "Unable to delete created test cases: {error}"
     run_deleted = "Deleted created run"
     run_not_deleted = "Unable to delete created run: {error}"
+    run_rollback_completed = "Run returned to previous state"
+    run_rollback_not_completed = "Unable to return run to previous state: {error}"

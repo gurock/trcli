@@ -128,11 +128,14 @@ class ResultsUploader:
                 run_id = added_run
             else:
                 run_id = self.environment.run_id
-                added_cases_to_run, result_code = self.add_missing_tests_to_run(
-                    run_id
-                )
+                run_existing_cases, result_code = self.add_missing_tests_to_run(run_id)
                 if result_code == -1:
-                    # rollback?
+                    revert_logs = self.rollback_changes(
+                        added_suite_id=added_suite_id,
+                        added_sections=added_sections,
+                        added_test_cases=added_test_cases,
+                    )
+                    self.environment.log("\n".join(revert_logs))
                     exit(1)
 
             (
@@ -147,16 +150,24 @@ class ResultsUploader:
                     added_sections=added_sections,
                     added_test_cases=added_test_cases,
                     run_id=0 if run_id == self.environment.run_id else run_id,
+                    rollback_run_cases=run_existing_cases
+                    if run_id == self.environment.run_id
+                    else [],
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
+            if run_id != self.environment.run_id:
+                self.environment.log("Closing added test run. ", new_line=False)
 
-            self.environment.log("Closing test run. ", new_line=False)
-
-            response, error_message = self.api_request_handler.close_run(run_id)
-            if error_message:
-                self.environment.elog("\n" + error_message)
-                exit(1)
+                response, error_message = self.api_request_handler.close_run(run_id)
+                if error_message:
+                    self.environment.elog("\n" + error_message)
+                    exit(1)
+            else:
+                self.environment.log(
+                    "Processed existing run. It will not be closed. ",
+                    new_line=False,
+                )
             self.environment.log("Done.")
         stop = time.time()
         if results_amount:
@@ -329,11 +340,13 @@ class ResultsUploader:
     def add_missing_tests_to_run(self, run_id: int) -> Tuple[list, int]:
         """
         Checks for missing test cases in specified run. Add missing test cases if user agrees to
-        do so. Returns list of added test case IDs if succeeds or empty list with result_code set to
-        -1.
+        do so. Returns list of cases that was present before update. It's needed for
+        rollback procedure.
         """
         result_code = -1
-        run_existing_cases, error_message = self.api_request_handler.get_cases_from_run(run_id)
+        run_existing_cases, error_message = self.api_request_handler.get_cases_from_run(
+            run_id
+        )
         added_and_existing_cases = self.api_request_handler.data_provider.get_case_ids()
 
         diff = list(set(added_and_existing_cases) - set(run_existing_cases))
@@ -358,7 +371,7 @@ class ResultsUploader:
             self.environment.log(f"No new test cases to add. Proceed to add results.")
             result_code = 1
 
-        return diff, result_code
+        return run_existing_cases, result_code
 
     def prompt_user_and_add_items(
         self,
@@ -412,7 +425,12 @@ class ResultsUploader:
         return api_client
 
     def rollback_changes(
-        self, added_suite_id=0, added_sections=None, added_test_cases=None, run_id=0
+        self,
+        added_suite_id=0,
+        added_sections=None,
+        added_test_cases=None,
+        run_id=0,
+        rollback_run_cases=[],
     ) -> List[str]:
         """
         Flow for rollback changes that was uploaded before error or user prompt.
@@ -425,15 +443,26 @@ class ResultsUploader:
         if added_sections is None:
             added_sections = []
         returned_log = []
-        if run_id:
+        if run_id and not rollback_run_cases:
             _, error = self.api_request_handler.delete_run(run_id)
             if error:
                 returned_log.append(RevertMessages.run_not_deleted.format(error=error))
             else:
                 returned_log.append(RevertMessages.run_deleted)
+        if rollback_run_cases:
+            _, error = self.api_request_handler.update_run_with_test_cases(
+                self.environment.run_id, rollback_run_cases
+            )
+            if error:
+                returned_log.append(
+                    RevertMessages.run_rollback_not_completed.format(error=error)
+                )
+            else:
+                returned_log.append(RevertMessages.run_rollback_completed)
         if len(added_test_cases) > 0:
             _, error = self.api_request_handler.delete_cases(
-                added_suite_id, added_test_cases
+                self.api_request_handler.data_provider.suites_input.suite_id,
+                added_test_cases,
             )
             if error:
                 returned_log.append(
