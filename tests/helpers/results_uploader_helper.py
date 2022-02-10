@@ -35,6 +35,7 @@ def api_request_handler_delete_mocker(
         delete_sections_mocker,
         delete_cases_mocker,
         delete_run_mocker,
+        update_run_with_test_cases_mocker,
     ]
 
     for mocker_function in mocker_functions:

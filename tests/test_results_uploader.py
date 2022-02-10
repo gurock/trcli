@@ -135,12 +135,12 @@ class TestResultsUploader:
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
-        "failing_function",
+        "failing_function, run_id",
         TEST_UPLOAD_RESULTS_FLOW_TEST_DATA,
         ids=TEST_UPLOAD_RESULTS_FLOW_IDS,
     )
     def test_upload_results_flow(
-        self, failing_function, result_uploader_data_provider, mocker
+        self, failing_function, run_id, result_uploader_data_provider, mocker
     ):
         """The purpose of those tests is to check that proper message would be printed and trcli tool
         will terminate with proper code when one of the functions in the flow fails."""
@@ -151,7 +151,8 @@ class TestResultsUploader:
         ) = result_uploader_data_provider
         project_id = 10
         exit_code = 1
-        environment.run_id = None
+        environment.run_id = run_id
+
         get_project_id_mocker(
             results_uploader=results_uploader,
             project_id=project_id,
@@ -842,12 +843,17 @@ class TestResultsUploader:
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
-        "failing_function, expected_result",
+        "failing_function, expected_result, rollback_run_cases",
         TEST_REVERT_FUNCTIONS_AND_EXPECTED,
         ids=TEST_REVERT_FUNCTIONS_IDS,
     )
     def test_rollback_changes_after_error(
-        self, result_uploader_data_provider, failing_function, expected_result, mocker
+        self,
+        result_uploader_data_provider,
+        failing_function,
+        expected_result,
+        rollback_run_cases,
+        mocker,
     ):
         """The purpose of this test is to check that if rollback behave properly
         when no perrmisions on deleting resources on every stage"""
@@ -863,7 +869,8 @@ class TestResultsUploader:
         )
 
         assert (
-            results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
+            results_uploader.rollback_changes(1, [1, 2], [1, 2], 2, rollback_run_cases)
+            == expected_result
         ), "Revert process not completed as expected in test."
 
     @pytest.mark.results_uploader

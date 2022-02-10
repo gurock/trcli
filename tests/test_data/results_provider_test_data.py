@@ -1,12 +1,14 @@
 from trcli.constants import FAULT_MAPPING, RevertMessages
 
 TEST_UPLOAD_RESULTS_FLOW_TEST_DATA = [
-    "get_suite_id",
-    "check_for_missing_sections_and_add",
-    "check_for_missing_test_cases_and_add",
-    "add_run",
-    "add_results",
-    "close_run",
+    ("get_suite_id", None),
+    ("check_for_missing_sections_and_add", None),
+    ("check_for_missing_test_cases_and_add", None),
+    ("add_run", None),
+    ("add_results", None),
+    ("add_results", 10),
+    ("get_cases_from_run", 10),
+    ("close_run", None),
 ]
 TEST_UPLOAD_RESULTS_FLOW_IDS = [
     "failed_to_get_suite_id",
@@ -14,6 +16,8 @@ TEST_UPLOAD_RESULTS_FLOW_IDS = [
     "check_and_add_test_cases_failed",
     "add_run_failed",
     "add_results_failed",
+    "add_results_failed_existing_run",
+    "add_missing_tests_to_run_failed",
     "close_run_failed",
 ]
 TEST_GET_SUITE_ID_PROMPTS_USER_TEST_DATA = [
@@ -121,6 +125,7 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
                 error="No permissions to delete suite."
             ),
         ],
+        [],
     ),
     (
         "delete_sections",
@@ -132,6 +137,7 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
             ),
             RevertMessages.suite_deleted,
         ],
+        [],
     ),
     (
         "delete_cases",
@@ -143,6 +149,7 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,
         ],
+        [],
     ),
     (
         "delete_run",
@@ -154,6 +161,19 @@ TEST_REVERT_FUNCTIONS_AND_EXPECTED = [
             RevertMessages.section_deleted,
             RevertMessages.suite_deleted,
         ],
+        [],
+    ),
+    (
+        "update_run_with_test_cases",
+        [
+            RevertMessages.run_rollback_not_completed.format(
+                error="Update run with test cases failed."
+            ),
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_deleted,
+            RevertMessages.suite_deleted,
+        ],
+        [1, 2],
     ),
 ]
 
@@ -162,6 +182,7 @@ TEST_REVERT_FUNCTIONS_IDS = [
     "unable_to_delete_sections",
     "unable_to_delete_cases",
     "unable_to_delete_run",
+    "unable_to_update_run",
 ]
 
 TEST_ADD_MISSING_TESTS_TO_RUN_PROMPTS_USER_TEST_DATA = [
