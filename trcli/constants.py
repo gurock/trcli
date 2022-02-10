@@ -20,7 +20,7 @@ FAULT_MAPPING = dict(
     "valid network connection then try again.",
     host_issues="Please provide a valid TestRail server address.",
     yaml_file_parse_issue="Error occurred while parsing yaml file ({file_path}). "
-    "Make sure that structure of a file is correct.",
+    "Make sure that structure of a file is correct.\nWe expect only `key: value`, `---` and `...`. Please check README file for more details.",
     file_open_issue="Error occurred while opening the file ({file_path}). "
     "Make sure that the file exists or the path is correct.",
     missing_suite="Suite with ID '{suite_id}' does not exist in TestRail.",

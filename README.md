@@ -7,6 +7,8 @@ Configuration files
 Configuration files can be used to pass parameters, options, settings
 and preferences to trcli tool. The configuration files should be written in YAML format.
 
+We expect only `key: value`, `---` and `...`.
+
 Possible fields:<br>
 
 Field name|description 
