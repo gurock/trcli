@@ -47,7 +47,9 @@ class ApiDataProvider:
             case_ids = [
                 int(case)
                 for section in self.suites_input.testsections
-                for case in section.testcases]
+                for case in section.testcases
+                if int(case) > 0
+            ]
         properties = [
             str(prop)
             for section in self.suites_input.testsections
@@ -158,11 +160,14 @@ class ApiDataProvider:
 
         """
         for section_updater in section_data:
-            matched_section = next((
-                section
-                for section in self.suites_input.testsections
-                if section["name"] == section_updater["name"]
-            ), None)
+            matched_section = next(
+                (
+                    section
+                    for section in self.suites_input.testsections
+                    if section["name"] == section_updater["name"]
+                ),
+                None,
+            )
             if matched_section is not None:
                 matched_section.section_id = section_updater["section_id"]
                 for case in matched_section.testcases:
@@ -180,12 +185,15 @@ class ApiDataProvider:
         """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         for case_updater in case_data:
-            matched_case = next((
-                case
-                for sublist in testcases
-                for case in sublist
-                if case["title"] == case_updater["title"]
-            ), None)
+            matched_case = next(
+                (
+                    case
+                    for sublist in testcases
+                    for case in sublist
+                    if case["title"] == case_updater["title"]
+                ),
+                None,
+            )
             if matched_case is not None:
                 matched_case.case_id = case_updater["case_id"]
                 matched_case.result.case_id = case_updater["case_id"]

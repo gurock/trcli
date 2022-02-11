@@ -560,6 +560,9 @@ class TestResultsUploader:
         results_uploader.environment.get_prompt_response_for_auto_creation.return_value = (
             user_response
         )
+        results_uploader.api_request_handler.data_provider.check_section_names_duplicates.return_value = (
+            False
+        )
         results_uploader.api_request_handler.add_sections.return_value = (
             expected_added_sections,
             expected_add_sections_error,

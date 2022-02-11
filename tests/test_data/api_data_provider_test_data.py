@@ -39,8 +39,8 @@ post_run_bodies = {
     "description": "logging: True debug: False",
     "name": "test run",
     "suite_id": 123,
-    'case_ids': [60, -1, 4],
-    'include_all': False,
+    "case_ids": [60, 4],
+    "include_all": False,
 }
 
 post_results_for_cases_body = [
