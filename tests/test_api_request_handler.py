@@ -568,6 +568,13 @@ class TestApiRequestHandler:
         resources_added, error = api_request_handler_verify.add_suites(project_id)
         assert error == "", "There should be no error in verification."
 
+        mocked_response["name"] = "Suite2"
+        resources_added, error = api_request_handler_verify.add_suites(project_id)
+        assert len(resources_added) == 1, "Added resources should not be doubled."
+        assert (
+            error == FAULT_MAPPING["data_verification_error"]
+        ), "There should be error in verification."
+
     @pytest.mark.api_handler
     def test_add_section_with_verify(self, handler_maker, requests_mock):
         project_id = 3
@@ -587,6 +594,7 @@ class TestApiRequestHandler:
         mocked_response["suite_id"] = 0
         api_request_handler_verify = handler_maker(verify=True)
         resources_added, error = api_request_handler_verify.add_sections(project_id)
+        assert len(resources_added) == 1, "Added resources should not be doubled."
         assert (
             error
             == "Data verification failed. Server added different resource than expected."
@@ -618,6 +626,7 @@ class TestApiRequestHandler:
             1
         ].case_id = None
         resources_added, error = api_request_handler_verify.add_cases()
+        assert len(resources_added) == 1, "Added resources should not be doubled."
         assert (
             error == FAULT_MAPPING["data_verification_error"]
         ), "There should be error in verification."

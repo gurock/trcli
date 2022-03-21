@@ -147,7 +147,6 @@ class ApiRequestHandler:
                 if not self.response_verifier.verify_returned_data(
                     body, response.response_text
                 ):
-                    responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
             else:
@@ -216,7 +215,6 @@ class ApiRequestHandler:
                 if not self.response_verifier.verify_returned_data(
                     body, response.response_text
                 ):
-                    responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
             else:
@@ -387,7 +385,6 @@ class ApiRequestHandler:
                         if not self.response_verifier.verify_returned_data(
                             arguments, response.response_text
                         ):
-                            responses.append(response)
                             error_message = FAULT_MAPPING["data_verification_error"]
                             self.__cancel_running_futures(futures, action_string)
                             break

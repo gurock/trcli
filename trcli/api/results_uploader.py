@@ -86,6 +86,8 @@ class ResultsUploader:
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
             )
             if result_code == -1:
+                revert_logs = self.rollback_changes(added_suite_id=added_suite_id)
+                self.environment.log("\n".join(revert_logs))
                 exit(1)
 
             added_sections, result_code = self.add_missing_sections(
