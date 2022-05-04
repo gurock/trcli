@@ -184,11 +184,13 @@ Options:
 Uploading test results from Junit file
 ======================================
 
-Specification first:
+### Specification first:
+
 TR CLI tool expects test case IDs to be present in the result file.<br>
 This means you can first create your test cases on TestRail and map them on your test code using the respective IDs.
 
-Code first (automatic test provisioning):
+### Code first (automatic test provisioning):
+
 In case any test on the report does not have a test_id property (such as in the report example below), 
 you will be prompted to automatically add the cases to TestRail. 
 In order to use this feature, you must first add a custom field of type string named `automation_id` on TestRail. 
@@ -198,7 +200,7 @@ You can provide the ID of the test suite you want the tests created in using the
 otherwise the CLI tool will attempt to find the suite on TestRail by name.
 If you are using the CLI tool in a CI context, you can use the `-y` option to automatically accept all prompts.
 
-Example content of result_file.xml:
+### Example content of result_file.xml:
 ```
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
