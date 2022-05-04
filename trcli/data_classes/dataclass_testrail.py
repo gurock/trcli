@@ -77,13 +77,14 @@ class TestRailCase:
 
     section_id: int
     title: str
-    case_id: str = field(default=None, skip_if_default=True)
+    case_id: int = field(default=None, skip_if_default=True)
     estimate: str = field(default=None, skip_if_default=True)
     template_id: int = field(default=None, skip_if_default=True)
     type_id: int = field(default=None, skip_if_default=True)
     milestone_id: int = field(default=None, skip_if_default=True)
     refs: str = field(default=None, skip_if_default=True)
     result: TestRailResult = field(default=None, metadata={"serde_skip": True})
+    custom_automation_id: str = field(default=None, skip_if_default=True)
 
     def __int__(self):
         return int(self.case_id) if self.case_id is not None else -1

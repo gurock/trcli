@@ -144,11 +144,13 @@ class TestApiRequestHandler:
         ), "Added suite id in DataProvider doesn't match mocked response id."
 
     @pytest.mark.api_handler
-    def test_check_missing_sections(
-        self, api_request_handler: ApiRequestHandler, requests_mock
+    def test_check_missing_sections_true(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
     ):
         project_id = 3
+        update_data_mock = mocker.patch('trcli.api.api_request_handler.ApiDataProvider.update_data')
         mocked_response = {
+            "_links": {"next": None, "prev": None},
             "sections": [
                 {
                     "id": 0,
@@ -162,24 +164,45 @@ class TestApiRequestHandler:
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
 
-        _, error = api_request_handler.check_missing_section_ids(project_id)
-        assert (
-            error == FAULT_MAPPING["unknown_section_id"]
-        ), " Extra section ID that is not in testrail should be detected."
-
-        mocked_response["sections"][0]["id"] = 1234
-        requests_mock.get(
-            create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
-        )
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
+        update_data_mock.assert_called_with(
+            section_data=[{'section_id': 0, 'suite_id': 4, 'name': 'Skipped test'}]
+        )
         assert missing, "There should be missing section"
 
-        mocked_response["sections"].append({"id": 1})
-        api_request_handler.suites_data_from_provider.testsections[1].section_id = 1
+    @pytest.mark.api_handler
+    def test_check_missing_sections_false(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        project_id = 3
+        update_data_mock = mocker.patch('trcli.api.api_request_handler.ApiDataProvider.update_data')
+        mocked_response = {
+            "_links": {"next": None, "prev": None},
+            "sections": [
+                {
+                    "id": 1,
+                    "suite_id": 4,
+                    "name": "Skipped test",
+                },
+                {
+                    "id": 2,
+                    "suite_id": 4,
+                    "name": "Passed test",
+                }
+            ]
+        }
+
         requests_mock.get(
             create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response
         )
+
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
+        update_data_mock.assert_called_with(
+            section_data=[
+                {'name': 'Skipped test', 'section_id': 1, 'suite_id': 4},
+                {'name': 'Passed test', 'section_id': 2, 'suite_id': 4}
+            ]
+        )
         assert not missing, "There should be no missing section"
 
     @pytest.mark.api_handler
@@ -330,21 +353,61 @@ class TestApiRequestHandler:
         assert error == "", "Error occurred in close_run"
 
     @pytest.mark.api_handler
-    def test_check_missing_test_cases_ids(
-        self, api_request_handler: ApiRequestHandler, requests_mock
+    def test_check_missing_test_cases_ids_true(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
     ):
         project_id = 3
         suite_id = api_request_handler.suites_data_from_provider.suite_id
+        update_data_mock = mocker.patch('trcli.api.api_request_handler.ApiDataProvider.update_data')
+        mocked_response_page_1 = {
+            "_links": {
+                "next": None,
+                "prev": None,
+            },
+            "cases": [
+                {"title": "testCase1", "custom_automation_id": "Skipped test.testCase1", "id": 1, "section_id": 1234},
+                {"title": "testCase2", "custom_automation_id": "Skipped test.testCase2", "id": 2, "section_id": 1234}
+            ],
+        }
+        requests_mock.get(
+            create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
+            json=mocked_response_page_1,
+        )
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
+            project_id
+        )
+
+        update_data_mock.assert_called_with(
+            case_data=[
+                {"case_id": 1, "section_id": 1234, "title": "testCase1"},
+                {"case_id": 2, "section_id": 1234, "title": "testCase2"}
+            ]
+        )
+        assert missing_ids, "There is one missing test case"
+        assert error == "", "Error occurred in check"
+
+    @pytest.mark.api_handler
+    def test_check_missing_test_cases_ids_false(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        project_id = 3
+        suite_id = api_request_handler.suites_data_from_provider.suite_id
+        update_data_mock = mocker.patch('trcli.api.api_request_handler.ApiDataProvider.update_data')
         mocked_response_page_1 = {
             "_links": {
                 "next": f"/api/v2/get_cases/{project_id}&suite_id={suite_id}&limit=1&offset=1",
                 "prev": None,
             },
-            "cases": [{"id": 2, "title": ".."}],
+            "cases": [
+                {"title": "testCase1", "custom_automation_id": "Skipped test.testCase1", "id": 1, "section_id": 1234},
+                {"title": "testCase2", "custom_automation_id": "Skipped test.testCase2", "id": 2, "section_id": 1234}
+            ],
         }
         mocked_response_page_2 = {
             "_links": {"next": None, "prev": None},
-            "cases": [{"id": 1, "title": ".."}],
+            "cases": [
+                {"title": "testCase3", "custom_automation_id": "Passed test.testCase3", "id": 1, "section_id": 2},
+            ],
         }
         requests_mock.get(
             create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
@@ -357,40 +420,15 @@ class TestApiRequestHandler:
         missing_ids, error = api_request_handler.check_missing_test_cases_ids(
             project_id
         )
-        assert missing_ids, "There should be one, None type case missing"
-        assert error == "", "Error occurred in check"
-        mocked_response_page_2["cases"] = [{"id": 10, "title": ".."}]
-        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
-            project_id
+        update_data_mock.assert_called_with(
+            case_data=[
+                {"case_id": 1, "section_id": 1234, "title": "testCase1"},
+                {"case_id": 2, "section_id": 1234, "title": "testCase2"},
+                {"case_id": 1, "section_id": 2, "title": "testCase3"}
+            ]
         )
-        assert (
-            error == FAULT_MAPPING["unknown_test_case_id"]
-        ), "There should be an error because of invalid test case id"
-
-    @pytest.mark.api_handler
-    def test_check_missing_test_case_id_not_found(
-        self, api_request_handler: ApiRequestHandler, requests_mock
-    ):
-        project_id = 3
-        suite_id = api_request_handler.suites_data_from_provider.suite_id
-        section_1 = api_request_handler.suites_data_from_provider.testsections[0]
-        section_2 = api_request_handler.suites_data_from_provider.testsections[1]
-        mocked_response_page = {
-            "_links": {"next": None, "prev": None},
-            "cases": [{"id": 1, "title": ".."}, {"id": 2, "title": ".."}],
-        }
-        requests_mock.get(
-            create_url(f"get_cases/{project_id}&suite_id={suite_id}"),
-            json=mocked_response_page,
-        )
-        section_1.testcases[1].case_id = 1
-        section_2.testcases[0].case_id = 123
-        missing_ids, error = api_request_handler.check_missing_test_cases_ids(
-            project_id
-        )
-        assert (
-            error == FAULT_MAPPING["unknown_test_case_id"]
-        ), "There should be an error because of invalid test case id"
+        assert not missing_ids, "No missing ids"
+        assert error == "", "No error should have occurred"
 
     @pytest.mark.api_handler
     def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -602,6 +640,7 @@ class TestApiRequestHandler:
             "section_id": 1234,
             "title": "testCase2",
             "estimate": "30s",
+            "custom_automation_id": "Skipped test.testCase2"
         }
 
         requests_mock.post(

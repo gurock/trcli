@@ -12,6 +12,7 @@
                 {
                     "section_id": 1234,
                     "title": "testCase1",
+                    "custom_automation_id": "Skipped test.testCase1",
                     "case_id": 1,
                     "result": {
                         "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
@@ -22,6 +23,7 @@
                 {
                     "section_id": 1234,
                     "title": "testCase2",
+                    "custom_automation_id": "Skipped test.testCase2",
                     "estimate": "30s",
                     "case_id": null,
                     "result": {"comment": "Comment testCase2", "status_id": 1, "case_id": null}
@@ -40,6 +42,7 @@
                 {
                     "section_id": 2,
                     "title": "testCase3",
+                    "custom_automation_id": "Passed test.testCase3",
                     "case_id": null,
                     "result": {"comment": "Comment testCase3", "status_id": 1, "case_id": null}
                 }

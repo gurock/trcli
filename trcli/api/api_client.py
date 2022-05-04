@@ -17,7 +17,7 @@ class APIClientResult:
     error_message - custom error message when -1 was returned in status_code"""
 
     status_code: int
-    response_text: Union[dict, str]
+    response_text: Union[dict, str, list]
     error_message: str
 
 

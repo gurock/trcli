@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing import Union
-from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError
+from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
 from xml.etree import ElementTree as etree
 from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
@@ -14,6 +14,16 @@ from trcli.data_classes.dataclass_testrail import (
 TestCase.id = IntAttr("id")
 TestSuite.id = IntAttr("id")
 JUnitXml.id = IntAttr("id")
+
+
+class Properties(Element):
+    _tag = "properties"
+
+
+class Property(Element):
+    _tag = "property"
+    name = Attr()
+    value = Attr()
 
 
 class JunitParser(FileParser):
@@ -46,19 +56,24 @@ class JunitParser(FileParser):
             for prop in section.properties():
                 properties.append(TestRailProperty(prop.name, prop.value))
             for case in section:
-
+                case_id = None
+                for case_props in case.iterchildren(Properties):
+                    for prop in case_props.iterchildren(Property):
+                        if prop.name and prop.name == "test_id":
+                            case_id = int(prop.value.lower().replace("c", ""))
                 test_cases.append(
                     TestRailCase(
                         section.id,
                         case.name,
-                        case.id,
+                        case_id,
                         result=(
                             TestRailResult(
-                                case.id,
+                                case_id,
                                 elapsed=case.time,
                                 junit_result_unparsed=case.result,
                             )
                         ),
+                        custom_automation_id=f"{case.classname}.{case.name}"
                     )
                 )
             test_sections.append(
