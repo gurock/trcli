@@ -48,7 +48,10 @@ class ApiRequestHandler:
         response = self.client.send_get("get_case_fields")
         if not response.error_message:
             fields: list = response.response_text
-            automation_id_field = next(filter(lambda x: x["system_name"] == "custom_automation_id", fields), None)
+            automation_id_field = next(
+                filter(lambda x: x["system_name"] == "custom_automation_id", fields),
+                None
+            )
             if automation_id_field:
                 context = automation_id_field["configs"][0]["context"]
                 if context["is_global"]:
@@ -135,8 +138,10 @@ class ApiRequestHandler:
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
             suites = response.response_text
-            suite = next(filter(
-                lambda x: x["name"] == self.suites_data_from_provider.name, suites), None)
+            suite = next(
+                filter(lambda x: x["name"] == self.suites_data_from_provider.name, suites),
+                None
+            )
             if suite:
                 suite_id = suite["id"]
                 self.data_provider.update_data([{"suite_id": suite["id"], "name": suite["name"]}])
