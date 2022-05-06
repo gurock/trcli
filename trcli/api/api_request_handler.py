@@ -10,7 +10,7 @@ from trcli.constants import (
     FAULT_MAPPING,
 )
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from typing import List
+from typing import List, Union
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -39,7 +39,7 @@ class ApiRequestHandler:
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
 
-    def check_automation_id_field(self, project_id: int) -> str:
+    def check_automation_id_field(self, project_id: int) -> Union[str, None]:
         """
         Checks if the automation_id field (custom_automation_id) is available for the project
         :param project_id: the id of the project
@@ -52,7 +52,7 @@ class ApiRequestHandler:
             if automation_id_field:
                 context = automation_id_field["configs"][0]["context"]
                 if context["is_global"]:
-                    return ""
+                    return None
                 elif project_id not in context["project_ids"]:
                     return FAULT_MAPPING["automation_id_unavailable"]
         else:

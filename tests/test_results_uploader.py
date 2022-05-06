@@ -200,7 +200,7 @@ class TestResultsUploader:
         upload_results_inner_functions_mocker(
             results_uploader=results_uploader, mocker=mocker, failing_functions=[]
         )
-        results_uploader.api_request_handler.check_automation_id_field.return_value = False
+        results_uploader.api_request_handler.check_automation_id_field.return_value = None
         expected_log_calls = []
         if not run_id:
             expected_log_calls.extend(
