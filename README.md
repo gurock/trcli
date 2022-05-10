@@ -7,7 +7,7 @@ TR CLI (trcli) is a command line tool for interacting with TestRail.
 Configuration files
 ===================
 Configuration files can be used to pass parameters, options, settings
-and preferences to trcli tool. The configuration files should be written in YAML format.
+and preferences to the trcli tool. The configuration files should be written in YAML format.
 
 We expect only `key: value`, `---` and `...`.
 
@@ -32,14 +32,13 @@ Possible fields:<br>
 | auto_creation_response | Sets the response for auto creation prompts. If not set user will be prompted whether to create resources (suite, test case etc.) or not.<br>auto_creation_response: false/true |
 | suite_id               | specifies the Suite ID for the Test Run to be created under<br>suite_id: 213                                                                                                    |
 | run_id                 | specifies the Run ID for the Test Run to be created under<br>run_id: 12                                                                                                         |
-| case_id                | specifies the case ID to be updated with new results. If present also run_id needs to be provided<br>case_id: 123                                                               |
 
 Default configuration file
 --------------------------
 Default configuration file should be named `config.yaml` or `config.yml` and be stored in the same directory
 as the trcli executable file. The default path for pip installation of executable depends on your system and python settings (venv).
 
-Please check where TRCLI was installed by using `which trcli` or `where trcli` command
+Please check where trcli was installed by using `which trcli` or `where trcli` command
 depending on the operating system.
 
 Custom configuration file
@@ -49,10 +48,10 @@ as a parameter. For more details check [Command line](#Command-line) section.
 
 Environment variables
 =====================
-It is possible to pass parameters and options to trcli tool by setting environment variables.
+It is possible to pass parameters and options to the trcli tool by setting environment variables.
 The variable should be named as follows: TR_CLI_Parameter_name_capitalized
 
-For exmaple for -c/--config: TR_CLI_CONFIG
+For example for -c/--config: TR_CLI_CONFIG
 
 ```
 Note: One exception to this rule is for --yes/--no parameters.
@@ -227,7 +226,7 @@ If you are using the CLI tool in a CI context, you can use the `-y` option to au
 
 Multithreading
 ====================================
-TRCLI allows user to upload test cases and results using multithreading. This is enabled by default and set to `MAX_WORKERS_ADD_CASE = 5` and
+trcli allows user to upload test cases and results using multithreading. This is enabled by default and set to `MAX_WORKERS_ADD_CASE = 5` and
  `MAX_WORKERS_ADD_RESULTS = 10` in `trcli/settings.py`. To disable multithreading set those to `1`.
 
 During performance tests we discovered that using more than 10 workers didn't improve time of upload and could cause errors. Please set it accordingly to your machine specs.
