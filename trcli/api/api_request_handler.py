@@ -1,3 +1,4 @@
+import html
 from pprint import pprint
 
 from trcli.api.api_client import APIClient, APIClientResult
@@ -283,9 +284,13 @@ class ApiRequestHandler:
         suite_id = self.suites_data_from_provider.suite_id
         returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
         if not error_message:
-            missing_test_cases = False
-            test_cases_by_aut_id = {case["custom_automation_id"]: case for case in returned_cases}
+            test_cases_by_aut_id = {}
+            for case in returned_cases:
+                aut_case_id = case["custom_automation_id"]
+                aut_case_id = aut_case_id if not aut_case_id else html.unescape(case["custom_automation_id"])
+                test_cases_by_aut_id[aut_case_id] = case
             test_case_data = []
+            missing_cases_number = 0
             for section in self.suites_data_from_provider.testsections:
                 for test_case in section.testcases:
                     if test_case.custom_automation_id in test_cases_by_aut_id.keys():
@@ -296,9 +301,10 @@ class ApiRequestHandler:
                             "title": case["title"],
                         })
                     else:
-                        missing_test_cases = True
+                        missing_cases_number += 1
             self.data_provider.update_data(case_data=test_case_data)
-            return missing_test_cases, error_message
+            self.environment.log(f"Found test cases not matching any TestRail case (count: {missing_cases_number})")
+            return missing_cases_number > 0, error_message
         else:
             return False, error_message
 
