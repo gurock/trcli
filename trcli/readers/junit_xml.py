@@ -51,6 +51,8 @@ class JunitParser(FileParser):
 
         test_sections = []
         for section in suite:
+            if not len(section):
+                continue
             test_cases = []
             properties = []
             for prop in section.properties():
