@@ -303,7 +303,8 @@ class ApiRequestHandler:
                     else:
                         missing_cases_number += 1
             self.data_provider.update_data(case_data=test_case_data)
-            self.environment.log(f"Found test cases not matching any TestRail case (count: {missing_cases_number})")
+            if missing_cases_number:
+                self.environment.log(f"Found test cases not matching any TestRail case (count: {missing_cases_number})")
             return missing_cases_number > 0, error_message
         else:
             return False, error_message
