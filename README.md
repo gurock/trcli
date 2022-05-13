@@ -1,8 +1,9 @@
 trcli - The TestRail CLI client
 ================================
-TR CLI (trcli) is a command line tool for interacting with TestRail.
+TR CLI (trcli) is a command line tool for interacting with TestRail and uploading test automation results.
 
 ![Tests](https://github.com/gurock/trcli/actions/workflows/python-app.yml/badge.svg)
+
 
 Configuration files
 ===================
@@ -15,23 +16,44 @@ Possible fields:<br>
 
 | Field name             | description                                                                                                                                                                     |
 |------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| host                   | specifies the URL of the TestRail instance in which to send the results<br>host: https://fakename.testrail.io/                                                                  |
-| project                | specifies the name of the Project the Test Run should be created under<br>project: Mockup Automation Project                                                                    |
-| project_id             | Project id. Will be only used in case project name will be duplicated in TestRail<br>project_id: 10                                                                             |
-| username               | username<br>username: myuser@name.com                                                                                                                                           |
-| password               | password<br>password: StrongP@ssword                                                                                                                                            |
-| key                    | API key<br>key: AGT9PBifAxgWEWNGQgh/-Dc7Dr/fWDvEkLJwPFLRn                                                                                                                       |
-| file                   | specifies the filename and/or path of the result file to be used<br>file: \<PATH\>/result_file.xml                                                                              |
-| title                  | Specifies the title of the Test Run to be created in TestRail<br>title: Daily Selenium smoke test                                                                               |
-| verbose                | enables verbose mode when true (false by default)<br>verbose: false/true                                                                                                        |
-| verify                 | verify the data was added correctly<br>verify: false/true                                                                                                                       |
-| silent                 | enables silence mode (only stdout) when true (false by default)<br>silent: false/true                                                                                           |
-| config                 | specifies the filename and/or path of the configuration file to be used<br>config: \<PATH\>/alternate_config.yml                                                                |
-| batch_size             | specifies the batch size of results to pass to TestRail<br>batch_size: 20                                                                                                       |
-| timeout                | specifies how many seconds to wait for more results before termination<br>timeout: 5.5                                                                                          |
-| auto_creation_response | Sets the response for auto creation prompts. If not set user will be prompted whether to create resources (suite, test case etc.) or not.<br>auto_creation_response: false/true |
-| suite_id               | specifies the Suite ID for the Test Run to be created under<br>suite_id: 213                                                                                                    |
-| run_id                 | specifies the Run ID for the Test Run to be created under<br>run_id: 12                                                                                                         |
+| host                   | specifies the URL of the TestRail instance in which to send the results                                                                  |
+| project                | specifies the name of the Project the Test Run should be created under                                                                    |
+| project_id             | Project id. Will be only used in case project name will be duplicated in TestRail                                                                             |
+| username               | Your TestRail username                                                                                                                                           |
+| password               | Your TestRail password                                                                                                                                            |
+| key                    | API key     |                                                                                                                  |
+| file                   | specifies the filename and/or path of the result file to be used                                       |
+| title                  | Specifies the title of the Test Run to be created in TestRail                                                                               |
+| verbose                | enables verbose mode when true (false by default)                                                                                                        |
+| verify                 | verify the data was added correctly                                                                                                                       |
+| silent                 | enables silence mode (only stdout) when true (false by default)                                                                                           |
+| config                 | specifies the filename and/or path of the configuration file to be used                                                                |
+| batch_size             | specifies the batch size of results to pass to TestRail                                                                                                       |
+| timeout                | specifies how many seconds to wait for more results before termination                                                                                          |
+| auto_creation_response | Sets the response for auto creation prompts. If not set user will be prompted whether to create resources (suite, test case etc.) or not |
+| suite_id               | specifies the Suite ID for the Test Run to be created under                                                                                                    |
+| run_id                 | specifies the Run ID for the Test Run to be created under                                                                                                         |
+### Example
+Below is an example of a sample configuration file for the TestRail CLI.
+```
+host: https://fakename.testrail.io/
+project: Mockup Automation Project
+project_id: 10
+username: myuser@name.com
+password: StrongP@ssword
+key: AGT9PBifAxgWEWNGQgh/-Dc7Dr/fWDvEkLJwPFLRn
+file: \<PATH\>/result_file.xml
+title: Daily Selenium smoke test
+verbose: false/true
+verify: false/true
+silent: false/true
+config: \<PATH\>/alternate_config.yml
+batch_size: 20
+timeout: 5.5
+auto_creation_response: false/true
+suite_id: 213
+run_id: 12
+```
 
 Default configuration file
 --------------------------
@@ -74,7 +96,7 @@ set TR_CLI_PROJECT=project name for Windows
 export TR_CLI_PROJECT="project name" for Linux-like systems
 ```
 
-Command line
+Commands 
 ============
 ```
 $ trcli
@@ -125,18 +147,7 @@ The priority (1-highest, 5-lowest) of setting parameters from different places i
 | 4        | default config file   |
 | 5        | default value         |
 
-Installation
-============
 
-From the source code:
-```
-pip install .
-```
-
-Without cloning the repository:
-```
-pip install git+https://github.com/gurock/trcli.git
-```
 
 Return values and messaging
 ===========================
