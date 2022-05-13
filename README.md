@@ -201,7 +201,7 @@ otherwise the CLI tool will attempt to find the suite on TestRail by name.<br>
 If you are using the CLI tool in a CI context, you can use the `-y` option to automatically accept all prompts.
 
 ### Example content of result_file.xml:
-```
+```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
     <properties><property name="setting1" value="True"/></properties>
