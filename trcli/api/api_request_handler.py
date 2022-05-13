@@ -1,3 +1,6 @@
+import html
+from pprint import pprint
+
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
@@ -8,7 +11,7 @@ from trcli.constants import (
     FAULT_MAPPING,
 )
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from typing import List
+from typing import List, Union
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -36,6 +39,28 @@ class ApiRequestHandler:
         self.data_provider = ApiDataProvider(suites_data)
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
+
+    def check_automation_id_field(self, project_id: int) -> Union[str, None]:
+        """
+        Checks if the automation_id field (custom_automation_id) is available for the project
+        :param project_id: the id of the project
+        :return: error message
+        """
+        response = self.client.send_get("get_case_fields")
+        if not response.error_message:
+            fields: list = response.response_text
+            automation_id_field = next(
+                filter(lambda x: x["system_name"] == "custom_automation_id", fields),
+                None
+            )
+            if automation_id_field:
+                context = automation_id_field["configs"][0]["context"]
+                if context["is_global"]:
+                    return None
+                elif project_id not in context["project_ids"]:
+                    return FAULT_MAPPING["automation_id_unavailable"]
+        else:
+            return response.error_message
 
     def get_project_id(self, project_name: str, project_id: int = None) -> ProjectData:
         """
@@ -105,6 +130,27 @@ class ApiRequestHandler:
         else:
             return None, response.error_message
 
+    def resolve_suite_id_using_name(self, project_id: int) -> (int, str):
+        """Get suite ID matching suite name on data provider or returns -1 if unable to match any suite.
+        :arg project_id: project id
+        :returns: tuple with id of the suite and error message"""
+        suite_id = -1
+        error_message = ""
+        response = self.client.send_get(f"get_suites/{project_id}")
+        if not response.error_message:
+            suites = response.response_text
+            suite = next(
+                filter(lambda x: x["name"] == self.suites_data_from_provider.name, suites),
+                None
+            )
+            if suite:
+                suite_id = suite["id"]
+                self.data_provider.update_data([{"suite_id": suite["id"], "name": suite["name"]}])
+        else:
+            error_message = response.error_message
+
+        return suite_id, error_message
+
     def get_suite_ids(self, project_id: int) -> (List[int], str):
         """Get suite IDs for requested project_id.
         : project_id: project id
@@ -173,31 +219,25 @@ class ApiRequestHandler:
         :returns: Tuple with list missing section ID and error string.
         """
         suite_id = self.suites_data_from_provider.suite_id
-        sections = [
-            section.section_id
-            for section in self.suites_data_from_provider.testsections
-        ]
-        response = self.client.send_get(
-            f"get_sections/{project_id}&suite_id={suite_id}"
-        )
-        if not response.error_message:
-            missing_sections = list(
-                set(sections)
-                - set(
-                    [
-                        section.get("id")
-                        for section in response.response_text["sections"]
-                    ]
-                )
-            )
-            if any(missing_sections):
-                return False, FAULT_MAPPING["unknown_section_id"]
-            elif len(missing_sections) == 1:
-                return True, response.error_message
-            else:
-                return False, response.error_message
+        returned_sections, error_message = self.__get_all_sections(project_id, suite_id)
+        if not error_message:
+            missing_test_sections = False
+            sections_by_name = {section["name"]: section for section in returned_sections}
+            section_data = []
+            for section in self.suites_data_from_provider.testsections:
+                if section.name in sections_by_name.keys():
+                    section_json = sections_by_name[section.name]
+                    section_data.append({
+                        "section_id": section_json["id"],
+                        "suite_id": section_json["suite_id"],
+                        "name": section_json["name"],
+                    })
+                else:
+                    missing_test_sections = True
+            self.data_provider.update_data(section_data=section_data)
+            return missing_test_sections, error_message
         else:
-            return False, response.error_message
+            return False, error_message
 
     def add_sections(self, project_id: int) -> (List[dict], str):
         """
@@ -242,24 +282,30 @@ class ApiRequestHandler:
         :returns: Tuple with list test case ID missing and error string.
         """
         suite_id = self.suites_data_from_provider.suite_id
-        test_cases = [
-            test_case["case_id"]
-            for sections in self.suites_data_from_provider.testsections
-            for test_case in sections.testcases
-        ]
-
         returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
         if not error_message:
-            missing_cases = list(
-                set(test_cases)
-                - set([test_case.get("id") for test_case in returned_cases])
-            )
-            if any(missing_cases):
-                return False, FAULT_MAPPING["unknown_test_case_id"]
-            elif len(missing_cases) == 1:
-                return True, error_message
-            else:
-                return False, error_message
+            test_cases_by_aut_id = {}
+            for case in returned_cases:
+                aut_case_id = case["custom_automation_id"]
+                aut_case_id = aut_case_id if not aut_case_id else html.unescape(case["custom_automation_id"])
+                test_cases_by_aut_id[aut_case_id] = case
+            test_case_data = []
+            missing_cases_number = 0
+            for section in self.suites_data_from_provider.testsections:
+                for test_case in section.testcases:
+                    if test_case.custom_automation_id in test_cases_by_aut_id.keys():
+                        case = test_cases_by_aut_id[test_case.custom_automation_id]
+                        test_case_data.append({
+                            "case_id": case["id"],
+                            "section_id": case["section_id"],
+                            "title": case["title"],
+                        })
+                    else:
+                        missing_cases_number += 1
+            self.data_provider.update_data(case_data=test_case_data)
+            if missing_cases_number:
+                self.environment.log(f"Found test cases not matching any TestRail case (count: {missing_cases_number})")
+            return missing_cases_number > 0, error_message
         else:
             return False, error_message
 
@@ -480,26 +526,35 @@ class ApiRequestHandler:
         for future in futures:
             future.cancel()
 
-    def __get_all_cases(
-        self, project_id=None, suite_id=None, link=None, cases=[]
+    def __get_all_cases(self, project_id=None, suite_id=None, link=None) -> (List[dict], str):
+        """
+        Get all cases from all pages
+        """
+        return self.__get_all_entities('cases', project_id, suite_id, link)
+
+    def __get_all_sections(self, project_id=None, suite_id=None, link=None) -> (List[dict], str):
+        """
+        Get all sections from all pages
+        """
+        return self.__get_all_entities('sections', project_id, suite_id, link)
+
+    def __get_all_entities(
+        self, entity: str, project_id=None, suite_id=None, link=None, entities=[]
     ) -> (List[dict], str):
         """
-        Get all cases from all pages if number of cases is too big to return in single response.
+        Get all entities from all pages if number of entities is too big to return in single response.
         Function using next page field in API response.
+        Entity examples: cases, sections
         """
         if link is None:
-            response = self.client.send_get(
-                f"get_cases/{project_id}&suite_id={suite_id}"
-            )
+            response = self.client.send_get(f"get_{entity}/{project_id}&suite_id={suite_id}")
         else:
             response = self.client.send_get(link.replace(self.suffix, ""))
         if not response.error_message:
-            cases = cases + response.response_text["cases"]
+            entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
-                return self.__get_all_cases(
-                    link=response.response_text["_links"]["next"], cases=cases
-                )
+                return self.__get_all_entities(entity, link=response.response_text["_links"]["next"], entities=entities)
             else:
-                return cases, response.error_message
+                return entities, response.error_message
         else:
             return [], response.error_message

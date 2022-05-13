@@ -17,7 +17,7 @@ class APIClientResult:
     error_message - custom error message when -1 was returned in status_code"""
 
     status_code: int
-    response_text: Union[dict, str]
+    response_text: Union[dict, str, list]
     error_message: str
 
 
@@ -30,6 +30,7 @@ class APIClient:
     VERSION = "/api/v2/"
     SUFFIX_API_V2_VERSION = f"{PREFIX}{VERSION}"
     RETRY_ON = [429, 500, 502]
+    USER_AGENT = "TRCLI"
 
     def __init__(
         self,
@@ -78,7 +79,10 @@ class APIClient:
         url = self.__url + uri
         password = self.__get_password()
         auth = HTTPBasicAuth(username=self.username, password=password)
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "User-Agent": self.USER_AGENT
+        }
         verbose_log_message = ""
         for i in range(self.retries + 1):
             error_message = ""

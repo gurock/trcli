@@ -68,7 +68,7 @@ class TestCli:
         printing message about missing command"""
         cli_args_helper, cli_runner = cli_resources
         args = cli_args_helper.get_all_required_parameters_without_specified(
-            ["parse_junit", "file"]
+            ["parse_junit", "file", "title"]
         )
         mocker.patch("sys.argv", ["trcli", *args])
         result = cli_runner.invoke(cli, args)
@@ -92,20 +92,6 @@ class TestCli:
         result = cli_runner.invoke(cli, args)
         assert FAULT_MAPPING["missing_project"] not in result.output, ""
         assert FAULT_MAPPING["missing_title"] not in result.output, ""
-
-    @pytest.mark.cli
-    def test_run_with_case_id_run_id_required(self, mocker, cli_resources):
-        cli_args_helper, cli_runner = cli_resources
-
-        args = cli_args_helper.get_all_required_parameters_without_specified(
-            ["project", "title"]
-        )
-        args = ["--case-id", "10", *args]
-        mocker.patch("sys.argv", ["trcli", *args])
-        result = cli_runner.invoke(cli, args)
-        assert (
-            FAULT_MAPPING["missing_run_id_when_case_id_present"] in result.output
-        ), "Expected information about missing --run-id parameter."
 
     @pytest.mark.cli
     @pytest.mark.parametrize(
@@ -213,7 +199,6 @@ class TestCli:
         args = cli_agrs_helper.get_all_required_parameters_plus_optional(
             ["--config", custom_config_file]
         )
-
         mocker.patch("sys.argv", ["trcli", *args])
         setattr_mock = mocker.patch("trcli.cli.setattr")
         _ = cli_runner.invoke(cli, args)
@@ -269,7 +254,7 @@ class TestCli:
 
         for arg_name, arg_value in ENVIRONMENT_VARIABLES.items():
             setattr_mock.assert_any_call(
-                mocker.ANY, arg_name.split("_")[-1].lower(), arg_value
+                mocker.ANY, arg_name.removeprefix("TR_CLI_").lower(), arg_value
             )
 
     @pytest.mark.cli

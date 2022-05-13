@@ -11,6 +11,7 @@
                    "section_id": 321,
                    "suite_id": 123,
                    "testcases": [{"case_id": 666,
+                                  "custom_automation_id": "tests.test_junit_to_dataclass.test_testrail_test_suite",
                                   "estimate": null,
                                   "milestone_id": null,
                                   "refs": null,

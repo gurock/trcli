@@ -43,20 +43,6 @@ class ResultsUploader:
         """
         start = time.time()
         results_amount = None
-        if self.environment.case_id:
-            self.environment.log(
-                f"Updating test case with id: {self.environment.case_id}.",
-                new_line=False,
-            )
-            response_text, error_message = self.api_request_handler.update_case_result(
-                self.environment.run_id, self.environment.case_id
-            )
-            if error_message:
-                self.environment.elog("\n" + error_message)
-                exit(1)
-            else:
-                self.environment.log(" Done.")
-                exit(0)
         self.environment.log("Checking project. ", new_line=False)
         project_data = self.api_request_handler.get_project_id(
             self.environment.project, self.environment.project_id
@@ -81,6 +67,11 @@ class ResultsUploader:
             )
             exit(1)
         else:
+            if self.environment.auto_creation_response:
+                automation_id_error = self.api_request_handler.check_automation_id_field(project_data.project_id)
+                if automation_id_error:
+                    self.environment.elog(automation_id_error)
+                    exit(1)
             self.environment.log("Done.")
             added_suite_id, result_code = self.get_suite_id(
                 project_id=project_data.project_id, suite_mode=project_data.suite_mode
@@ -142,10 +133,9 @@ class ResultsUploader:
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
-
-            self.environment.log("Closing test run. ", new_line=False)
-
-            response, error_message = self.api_request_handler.close_run(run_id)
+            if self.environment.close_run:
+                self.environment.log("Closing test run. ", new_line=False)
+                response, error_message = self.api_request_handler.close_run(run_id)
             if error_message:
                 self.environment.elog("\n" + error_message)
                 exit(1)
@@ -169,6 +159,13 @@ class ResultsUploader:
         """
         suite_id = -1
         result_code = -1
+
+        if not self.api_request_handler.suites_data_from_provider.suite_id:
+            if suite_mode in [SuiteModes.multiple_suites, SuiteModes.single_suite_baselines]:
+                suite_id, error_msg = self.api_request_handler.resolve_suite_id_using_name(project_id)
+                if suite_id != -1:
+                    self.api_request_handler.suites_data_from_provider.suite_id = suite_id
+
         if not self.api_request_handler.suites_data_from_provider.suite_id:
             if suite_mode == SuiteModes.multiple_suites:
                 prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
@@ -216,12 +213,10 @@ class ResultsUploader:
                     FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
                 )
         else:
-            result_code = self.check_suite_id(
-                self.api_request_handler.suites_data_from_provider.suite_id, project_id
-            )
+            result_code = self.check_suite_id(project_id)
         return suite_id, result_code
 
-    def check_suite_id(self, suite_id: int, project_id: int) -> int:
+    def check_suite_id(self, project_id: int) -> int:
         """
         Checks that suite ID is correct.
         Returns suite ID is succeeds or -1 on failure. Proper information will be printed

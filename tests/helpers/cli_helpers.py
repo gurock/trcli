@@ -9,11 +9,11 @@ class CLIParametersHelper:
         self.required_arguments = {
             "host": ["--host", "fake host name"],
             "project": ["--project", "fake project name"],
-            "title": ["--title", "fake run title"],
             "username": ["--username", "fake user name"],
             "password": ["--password", "fake password"],
             "key": ["--key", "fake API key"],
             "parse_junit": ["parse_junit"],
+            "title": ["--title", "fake run title"],
             "file": ["--file", "fake_result_file.xml"],
         }
 

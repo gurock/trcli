@@ -41,9 +41,9 @@ class Environment:
         self.timeout = None
         self.suite_id = None
         self.run_id = None
-        self.case_id = None
         self.auto_creation_response = None
         self.silent = None
+        self.close_run = None
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""
@@ -101,14 +101,7 @@ class Environment:
         """Checks that all required parameters were set. If not error message would be printed and
         program will exit with exit code 1"""
         for param, value in vars(self).items():
-            # --project and --title is not required when --case-id is set
-            if self.case_id is not None and param in ["project", "title"]:
-                continue
-            # run_id needs to be present when --case-id is set
-            elif (param == "run_id" and value is None) and self.case_id is not None:
-                self.elog(FAULT_MAPPING["missing_run_id_when_case_id_present"])
-                exit(1)
-            elif "missing_" + param in FAULT_MAPPING and not value:
+            if "missing_" + param in FAULT_MAPPING and not value:
                 self.elog(FAULT_MAPPING["missing_" + param])
                 exit(1)
         # special case for password and key (both needs to be missing for the error message to show up)
@@ -219,9 +212,6 @@ class TRCLI(click.MultiCommand):
     metavar="",
     help="Project id. Will be only used in case project name will be duplicated in TestRail",
 )
-@click.option(
-    "--title", metavar="", help="Title of Test Run to be created in TestRail."
-)
 @click.option("-u", "--username", type=click.STRING, metavar="", help="Username.")
 @click.option("-p", "--password", type=click.STRING, metavar="", help="Password.")
 @click.option("-k", "--key", metavar="", help="API key.")
@@ -246,24 +236,6 @@ class TRCLI(click.MultiCommand):
     show_default=str(DEFAULT_API_CALL_TIMEOUT),
     metavar="",
     help="Batch timeout duration.",
-)
-@click.option(
-    "--suite-id",
-    type=click.IntRange(min=1),
-    metavar="",
-    help="Suite ID for the results they are reporting.",
-)
-@click.option(
-    "--run-id",
-    type=click.IntRange(min=1),
-    metavar="",
-    help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
-)
-@click.option(
-    "--case-id",
-    type=click.IntRange(min=1),
-    metavar="",
-    help="Case ID for the results they are reporting. Needs to be passed together with --run-id",
 )
 @click.option(
     "-y",

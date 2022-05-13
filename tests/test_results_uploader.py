@@ -45,7 +45,6 @@ class TestResultsUploader:
         results_uploader = ResultsUploader(
             environment=environment, result_file_parser=junit_file_parser
         )
-
         yield environment, api_request_handler, results_uploader
 
     @pytest.mark.results_uploader
@@ -201,6 +200,7 @@ class TestResultsUploader:
         upload_results_inner_functions_mocker(
             results_uploader=results_uploader, mocker=mocker, failing_functions=[]
         )
+        results_uploader.api_request_handler.check_automation_id_field.return_value = None
         expected_log_calls = []
         if not run_id:
             expected_log_calls.extend(
@@ -270,6 +270,7 @@ class TestResultsUploader:
         project_id = 1
         suite_name = "Fake suite name"
         suite_mode = SuiteModes.multiple_suites
+        results_uploader.api_request_handler.resolve_suite_id_using_name.return_value = (-1, "Any Error")
         if not suite_add_error:
             results_uploader.api_request_handler.add_suites.return_value = (
                 [
@@ -397,6 +398,7 @@ class TestResultsUploader:
         ) = result_uploader_data_provider
         project_id = 1
         suite_mode = SuiteModes.single_suite_baselines
+        results_uploader.api_request_handler.resolve_suite_id_using_name.return_value = (-1, "Any Error")
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
         results_uploader.api_request_handler.get_suite_ids.return_value = (
             get_suite_ids_result
@@ -463,9 +465,7 @@ class TestResultsUploader:
         project_id = 2
         results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
 
-        result_code = results_uploader.check_suite_id(
-            suite_id=suite_id, project_id=project_id
-        )
+        result_code = results_uploader.check_suite_id(project_id=project_id)
 
         assert (
             result_code == expected_result_code
@@ -490,9 +490,7 @@ class TestResultsUploader:
             FAULT_MAPPING["missing_suite"].format(suite_id=suite_id),
         )
 
-        result_code = results_uploader.check_suite_id(
-            suite_id=suite_id, project_id=project_id
-        )
+        result_code = results_uploader.check_suite_id(project_id=project_id)
         expected_elog_calls = [
             mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
         ]
@@ -851,71 +849,3 @@ class TestResultsUploader:
         assert (
             results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
-
-    @pytest.mark.results_uploader
-    def test_update_case_succeed(self, result_uploader_data_provider, mocker):
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        environment.case_id = 10
-        environment.run_id = 20
-        exit_code = 0
-
-        expected_log_calls = [
-            mocker.call(
-                f"Updating test case with id: {environment.case_id}.", new_line=False
-            ),
-            mocker.call(f" Done."),
-        ]
-        results_uploader.api_request_handler.update_case_result.return_value = (
-            {"case_id": 10},
-            "",
-        )
-        with pytest.raises(SystemExit) as exception:
-            results_uploader.upload_results()
-
-        environment.log.assert_has_calls(expected_log_calls)
-        assert (
-            exception.type == SystemExit
-        ), f"Expected SystemExit exception, but got {exception.type} instead."
-        assert (
-            exception.value.code == exit_code
-        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
-
-    @pytest.mark.results_uploader
-    def test_update_case_update_case_result_fails(
-        self, result_uploader_data_provider, mocker
-    ):
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        environment.case_id = 10
-        environment.run_id = 20
-        exit_code = 1
-        error_message = "update_case_result failed unexpectedly."
-
-        expected_log_calls = [
-            mocker.call(
-                f"Updating test case with id: {environment.case_id}.", new_line=False
-            )
-        ]
-        expected_elog_calls = [mocker.call(f"\n{error_message}")]
-        results_uploader.api_request_handler.update_case_result.return_value = (
-            "",
-            error_message,
-        )
-        with pytest.raises(SystemExit) as exception:
-            results_uploader.upload_results()
-
-        environment.log.assert_has_calls(expected_log_calls)
-        environment.elog.assert_has_calls(expected_elog_calls)
-        assert (
-            exception.type == SystemExit
-        ), f"Expected SystemExit exception, but got {exception.type} instead."
-        assert (
-            exception.value.code == exit_code
-        ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."

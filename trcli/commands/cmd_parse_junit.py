@@ -10,10 +10,24 @@ from xml.etree.ElementTree import ParseError
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
+@click.option("--close-run", type=click.BOOL, default=False, help="Whether to close the newly created run")
+@click.option("--title", metavar="", help="Title of Test Run to be created in TestRail.")
+@click.option(
+    "--suite-id",
+    type=click.IntRange(min=1),
+    metavar="",
+    help="Suite ID for the results they are reporting.",
+)
+@click.option(
+    "--run-id",
+    type=click.IntRange(min=1),
+    metavar="",
+    help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
+)
 @click.pass_context
 @pass_environment
-def cli(environment: Environment, context: click.Context, file):
-    """Parse Junit XML files (& similar)"""
+def cli(environment: Environment, context: click.Context, *args, **kwargs):
+    """Parse report files and upload results to TestRail"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     try:
