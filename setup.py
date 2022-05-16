@@ -3,6 +3,7 @@ from trcli import __version__
 
 setup(
     name="trcli",
+    long_description="The TR CLI (trcli) is a command line tool for interacting with TestRail and uploading test automation results.",
     version=__version__,
     packages=[
         "trcli",
