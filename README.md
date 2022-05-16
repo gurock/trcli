@@ -76,7 +76,7 @@ Options:
 ```
 
 #### JUnit XML report example
-```
+```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
     <properties><property name="setting1" value="True"/></properties>
