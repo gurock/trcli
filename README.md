@@ -4,7 +4,7 @@ TR CLI (trcli) is a command line tool for interacting with TestRail and uploadin
 
 - Install the CLI tool on your system and run it as part of your build pipeline
 -  Automatically generate new test runs and upload results from automated tests
-Optionally create new test cases in TestRail for test cases scripted in your test automation suite
+- Optionally create new test cases in TestRail for test cases scripted in your test automation suite
 
 ![Tests](https://github.com/gurock/trcli/actions/workflows/python-app.yml/badge.svg)
 
