@@ -24,6 +24,11 @@ from xml.etree.ElementTree import ParseError
     metavar="",
     help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
+@click.option(
+    "--case_fields",
+    metavar="",
+    help="Dictionary with case field name and value pairs to be filled in on case creation.",
+)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):

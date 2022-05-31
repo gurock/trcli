@@ -44,6 +44,8 @@ class Environment:
         self.auto_creation_response = None
         self.silent = None
         self.close_run = None
+        self.case_fields = None
+        self.insecure = None
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""
@@ -219,6 +221,7 @@ class TRCLI(click.MultiCommand):
     "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
 )
 @click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
+@click.option("--insecure", is_flag=True, help="Allow insecure requests.")
 @click.option(
     "-b",
     "--batch-size",

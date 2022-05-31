@@ -46,6 +46,7 @@ Options:
   -k, --key          API key.
   -v, --verbose      Output all API calls and their results.
   --verify           Verify the data was added correctly.
+  --insecure         Allow insecure requests.
   -b, --batch-size   Configurable batch size.  [default: (50); x>=2]
   -t, --timeout      Batch timeout duration.  [default: (30); x>=0]
   -y, --yes          answer 'yes' to all prompts around auto-creation
@@ -72,6 +73,8 @@ Options:
   --suite-id           Suite ID for the results they are reporting.  [x>=1]
   --run-id             Run ID for the results they are reporting (otherwise
                        the tool will attempt to create a new run).  [x>=1]
+  --case_fields        Dictionary with case field name and value pairs to be
+                       filled in on case creation.
   --help               Show this message and exit.
 ```
 
@@ -176,6 +179,7 @@ Possible fields:<br>
 | title                  | Specifies the title of the Test Run to be created in TestRail                                                                             |
 | verbose                | enables verbose mode when true (false by default)                                                                                         |
 | verify                 | verify the data was added correctly                                                                                                       |
+| insecure               | allow insecure requests                                                                                                                   |
 | silent                 | enables silence mode (only stdout) when true (false by default)                                                                           |
 | config                 | specifies the filename and/or path of the configuration file to be used                                                                   |
 | batch_size             | specifies the batch size of results to pass to TestRail                                                                                   |
@@ -184,6 +188,7 @@ Possible fields:<br>
 | suite_id               | specifies the Suite ID for the Test Run to be created under                                                                               |
 | run_id                 | specifies the Run ID for the Test Run to be created under                                                                                 |
 | close_run              | specifies whether to close the run after adding all the results (false by default)                                                        |
+| case_fields            | dictionary with case fields to be filled on case creation as a key value pair                                                             |
 
 Below is an example of a sample configuration file for the TestRail CLI.
 ```yaml
@@ -197,6 +202,9 @@ config: \<PATH\>/alternate_config.yml
 batch_size: 20
 timeout: 5.5
 auto_creation_response: true
+case_fields: 
+  type_id: 1,
+  priority_id: 3
 ```
 
 #### Default configuration file

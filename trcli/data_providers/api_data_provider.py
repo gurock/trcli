@@ -8,8 +8,9 @@ class ApiDataProvider:
     ApiPostProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
     """
 
-    def __init__(self, suites_input: TestRailSuite):
+    def __init__(self, suites_input: TestRailSuite, case_fields: dict = None):
         self.suites_input = suites_input
+        self.case_fields = case_fields
 
     def add_suites_data(self):
         """Return list of bodies for adding suites"""
@@ -32,14 +33,16 @@ class ApiDataProvider:
     def add_cases(self, return_all_items=False):
         """Return list of bodies for adding test cases."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
-        return {
-            "bodies": [
-                to_dict(case)
-                for sublist in testcases
-                for case in sublist
-                if case.case_id is None or return_all_items
-            ],
-        }
+        bodies = []
+        for sublist in testcases:
+            for case in sublist:
+                if case.case_id is None or return_all_items:
+                    body = to_dict(case)
+                    if self.case_fields:
+                        for field, val in self.case_fields.items():
+                            body[field] = val
+                    bodies.append(body)
+        return {"bodies": bodies}
 
     def add_run(self, run_name: str, case_ids=None):
         """Return body for adding a run."""
