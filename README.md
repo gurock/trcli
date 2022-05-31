@@ -73,7 +73,7 @@ Options:
   --suite-id           Suite ID for the results they are reporting.  [x>=1]
   --run-id             Run ID for the results they are reporting (otherwise
                        the tool will attempt to create a new run).  [x>=1]
-  --case_fields        Dictionary with case field name and value pairs to be
+  --case-fields        Dictionary with case field name and value pairs to be
                        filled in on case creation.
   --help               Show this message and exit.
 ```

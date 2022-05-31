@@ -25,7 +25,7 @@ from xml.etree.ElementTree import ParseError
     help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
 @click.option(
-    "--case_fields",
+    "--case-fields",
     metavar="",
     help="Dictionary with case field name and value pairs to be filled in on case creation.",
 )
