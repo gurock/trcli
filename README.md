@@ -73,8 +73,9 @@ Options:
   --suite-id           Suite ID for the results they are reporting.  [x>=1]
   --run-id             Run ID for the results they are reporting (otherwise
                        the tool will attempt to create a new run).  [x>=1]
-  --case-fields        Dictionary with case field name and value pairs to be
-                       filled in on case creation.
+  --case-fields        List of case fields and values for new test cases
+                       creation. Usage: --case-fields type_id:1 --case-fields
+                       priority_id:3
   --help               Show this message and exit.
 ```
 

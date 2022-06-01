@@ -1,5 +1,8 @@
+import json
 import os
 import sys
+from typing import List, Union
+
 import click
 import yaml
 from pathlib import Path
@@ -44,8 +47,26 @@ class Environment:
         self.auto_creation_response = None
         self.silent = None
         self.close_run = None
-        self.case_fields = None
         self.insecure = None
+        self._case_fields = None
+
+    @property
+    def case_fields(self):
+        return self._case_fields
+
+    @case_fields.setter
+    def case_fields(self, case_fields: Union[List[str], dict]):
+        fields_dictionary = {}
+        if isinstance(case_fields, list):
+            for case_field in case_fields:
+                field, value = case_field.split(":", maxsplit=1)
+                fields_dictionary[field] = value
+        elif isinstance(case_fields, dict):
+            fields_dictionary = case_fields
+        else:
+            self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are list and dictionary.")
+            exit(1)
+        self._case_fields = fields_dictionary
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""

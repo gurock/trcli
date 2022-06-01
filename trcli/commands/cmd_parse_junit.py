@@ -26,8 +26,10 @@ from xml.etree.ElementTree import ParseError
 )
 @click.option(
     "--case-fields",
+    multiple=True,
     metavar="",
-    help="Dictionary with case field name and value pairs to be filled in on case creation.",
+    help="List of case fields and values for new test cases creation. "
+         "Usage: --case-fields type_id:1 --case-fields priority_id:3",
 )
 @click.pass_context
 @pass_environment
