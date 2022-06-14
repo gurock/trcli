@@ -22,7 +22,7 @@ Commands
 --------
 ```
 $ trcli
-TestRail Connect v0.1
+TestRail Connect v1.1.0
 Copyright 2021 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - junit: JUnit XML Files (& Similar)
@@ -53,6 +53,9 @@ Options:
   -n, --no           answer 'no' to all prompts around auto-creation
   -s, --silent       Silence stdout
   --help             Show this message and exit.
+
+Commands:
+  parse_junit  Parse report files and upload results to TestRail
 ```
 
 Parsers
@@ -73,6 +76,7 @@ Options:
   --suite-id           Suite ID for the results they are reporting.  [x>=1]
   --run-id             Run ID for the results they are reporting (otherwise
                        the tool will attempt to create a new run).  [x>=1]
+  --run-description    Summary text to be added to the test run.
   --case-fields        List of case fields and values for new test cases
                        creation. Usage: --case-fields type_id:1 --case-fields
                        priority_id:3
@@ -190,6 +194,7 @@ Possible fields:<br>
 | run_id                 | specifies the Run ID for the Test Run to be created under                                                                                 |
 | close_run              | specifies whether to close the run after adding all the results (false by default)                                                        |
 | case_fields            | dictionary with case fields to be filled on case creation as a key value pair                                                             |
+| run_description        | text to be added to the run description (for example, if you want to add the link to your CI job)                                         |
 
 Below is an example of a sample configuration file for the TestRail CLI.
 ```yaml

@@ -10,7 +10,7 @@ from xml.etree.ElementTree import ParseError
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
-@click.option("--close-run", type=click.BOOL, default=False, help="Whether to close the newly created run")
+@click.option("--close-run", is_flag=True, help="Close the newly created run")
 @click.option("--title", metavar="", help="Title of Test Run to be created in TestRail.")
 @click.option(
     "--suite-id",
@@ -24,6 +24,7 @@ from xml.etree.ElementTree import ParseError
     metavar="",
     help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
+@click.option("--run-description", metavar="", default="", help="Summary text to be added to the test run.")
 @click.option(
     "--case-fields",
     multiple=True,
