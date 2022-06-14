@@ -28,6 +28,7 @@ from xml.etree.ElementTree import ParseError
     "--case-fields",
     multiple=True,
     metavar="",
+    default=[],
     help="List of case fields and values for new test cases creation. "
          "Usage: --case-fields type_id:1 --case-fields priority_id:3",
 )

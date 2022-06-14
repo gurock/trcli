@@ -57,14 +57,14 @@ class Environment:
     @case_fields.setter
     def case_fields(self, case_fields: Union[List[str], dict]):
         fields_dictionary = {}
-        if isinstance(case_fields, list):
+        if isinstance(case_fields, list) or isinstance(case_fields, tuple):
             for case_field in case_fields:
                 field, value = case_field.split(":", maxsplit=1)
                 fields_dictionary[field] = value
         elif isinstance(case_fields, dict):
             fields_dictionary = case_fields
         else:
-            self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are list and dictionary.")
+            self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are tuple/list/dictionary.")
             exit(1)
         self._case_fields = fields_dictionary
 
