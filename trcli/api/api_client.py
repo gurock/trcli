@@ -1,6 +1,8 @@
 import requests
 from typing import Union, Callable
 from time import sleep
+
+import urllib3
 from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
 from requests.exceptions import RequestException, Timeout, ConnectionError
@@ -39,18 +41,22 @@ class APIClient:
         logging_function: Callable = print,
         retries: int = DEFAULT_API_CALL_RETRIES,
         timeout: int = DEFAULT_API_CALL_TIMEOUT,
+        verify: bool = True,
     ):
         self.username = ""
         self.password = ""
         self.api_key = ""
         self.timeout = None
         self.retries = retries
+        self.verify = verify
         self.verbose_logging_function = verbose_logging_function
         self.logging_function = logging_function
         self.__validate_and_set_timeout(timeout)
         if not host_name.endswith("/"):
             host_name = host_name + "/"
         self.__url = host_name + self.SUFFIX_API_V2_VERSION
+        if not verify:
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
     def send_get(self, uri: str) -> APIClientResult:
         """
@@ -97,10 +103,11 @@ class APIClient:
                         json=payload,
                         timeout=self.timeout,
                         headers=headers,
+                        verify=self.verify,
                     )
                 else:
                     response = requests.get(
-                        url=url, auth=auth, json=payload, timeout=self.timeout
+                        url=url, auth=auth, json=payload, timeout=self.timeout, verify=self.verify,
                     )
             except Timeout:
                 error_message = FAULT_MAPPING["no_response_from_host"]

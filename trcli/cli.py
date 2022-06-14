@@ -1,5 +1,8 @@
+import json
 import os
 import sys
+from typing import List, Union
+
 import click
 import yaml
 from pathlib import Path
@@ -44,6 +47,27 @@ class Environment:
         self.auto_creation_response = None
         self.silent = None
         self.close_run = None
+        self.insecure = None
+        self.run_description = None
+        self._case_fields = None
+
+    @property
+    def case_fields(self):
+        return self._case_fields
+
+    @case_fields.setter
+    def case_fields(self, case_fields: Union[List[str], dict]):
+        fields_dictionary = {}
+        if isinstance(case_fields, list) or isinstance(case_fields, tuple):
+            for case_field in case_fields:
+                field, value = case_field.split(":", maxsplit=1)
+                fields_dictionary[field] = value
+        elif isinstance(case_fields, dict):
+            fields_dictionary = case_fields
+        else:
+            self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are tuple/list/dictionary.")
+            exit(1)
+        self._case_fields = fields_dictionary
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""
@@ -219,6 +243,7 @@ class TRCLI(click.MultiCommand):
     "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
 )
 @click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
+@click.option("--insecure", is_flag=True, help="Allow insecure requests.")
 @click.option(
     "-b",
     "--batch-size",

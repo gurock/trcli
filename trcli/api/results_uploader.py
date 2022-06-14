@@ -350,12 +350,14 @@ class ResultsUploader:
                 verbose_logging_function=verbose_logging_function,
                 logging_function=logging_function,
                 timeout=self.environment.timeout,
+                verify=not self.environment.insecure,
             )
         else:
             api_client = APIClient(
                 self.environment.host,
                 logging_function=logging_function,
                 verbose_logging_function=verbose_logging_function,
+                verify=not self.environment.insecure,
             )
         api_client.username = self.environment.username
         api_client.password = self.environment.password

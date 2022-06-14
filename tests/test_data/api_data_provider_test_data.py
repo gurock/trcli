@@ -36,7 +36,7 @@ post_section_bodies = {
 post_cases_bodies = {"bodies": [{"section_id": 12345, "title": "testCase2"}]}
 
 post_run_bodies = {
-    "description": "logging: True debug: False",
+    "description": "logging: True\ndebug: False",
     "name": "test run",
     "suite_id": 123,
     "case_ids": [60, 4],
