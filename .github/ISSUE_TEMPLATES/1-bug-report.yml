@@ -10,7 +10,7 @@ body:
       placeholder: ex. 1.1.0
     validations:
       required: true
-  - type: textarea
+  - type: input
     id: cli-system
     attributes:
       label: CLI Environment
