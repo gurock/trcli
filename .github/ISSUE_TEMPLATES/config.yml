@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 💬 Community
+    url: https://discuss.gurock.com/
+    about: Want to discuss about the TestRail CLI with others? Check out our community forums.
+  - name: 📃 Documentation
+    url: https://www.gurock.com/testrail/docs/integrate/testrail-test-automation/testrail-cli/
+    about: Check the TestRail documentation for more CLI info and real usage examples.
