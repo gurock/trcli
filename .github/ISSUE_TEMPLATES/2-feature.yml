@@ -1,5 +1,6 @@
 name: "🆕 Feature or improvement"
 description: Suggest a feature or improvement for the TestRail CLI
+labels: ["enhancement", "triage"]
 body:
   - type: textarea
     id: feature
@@ -18,7 +19,7 @@ body:
   - type: textarea
     id: other
     attributes:
-      label: More Details
+      label: More details
       placeholder: Other details you would like to include.
   - type: dropdown
     id: will-implement
@@ -28,5 +29,6 @@ body:
       options:
         - "Yes"
         - "No"
+        - "Maybe, let's talk!"
     validations:
       required: true
