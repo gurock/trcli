@@ -51,7 +51,7 @@ body:
       description: Explain what would be the expected behavior for the situation you just described.
       placeholder: I would expect that...
   - type: textarea
-    id: other details
+    id: more-details
     attributes:
       label: More Details
       placeholder: Other details you would like to include.
