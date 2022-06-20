@@ -1,31 +1,45 @@
 Contribution guidelines
 =======================
 
-Unit Tests
+How to contribute
+----------
+If you are able and willing to contribute to the TestRail CLI, you are welcome to, just follow the steps below:
+1. Create an issue according using our pre-defined templates 
+2. Add a comment stating your intention and a high level description of the solution you propose to implement
+3. Wait for approval before starting to code
+4. Implement solution and create pull request using the available template
+6. If everything goes according to plan, the pull request will be merged and a new version will be released :)
+
+
+Coding guidelines
 ----------
 
-### Running tests
-Ensure testing libraries are installed. In the root directory, run:<br>
-`python3 -m pip install -r ./tests/requirements.txt`<br>
-To run all tests:<br>
-`python3 -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --alluredir=./allure-results`<br>
-List of all test markers can be found by running:<br>
-`pytest --markers -c ./tests/pytest.ini`<br>
+### Unit tests
 
-### Folder structure
+#### Executing the unit tests
+Ensure testing libraries are installed. In the root directory, run:
+```shell
+python3 -m pip install -r ./tests/requirements.txt
+```
+To run all tests:
+```shell
+python3 -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --alluredir=./allure-results
+```
+List of all test markers can be found by running:
+```shell
+pytest --markers -c ./tests/pytest.ini
+```
+
+#### Folder structure
 | Folder    | description                                                                                                            |
 |-----------|------------------------------------------------------------------------------------------------------------------------|
 | helpers   | modules used during the tests usually to prepare needed data                                                           |
 | test_data | data used during the tests (files with input data, expected results, structures passed as pytest.mark.parameters etc.) |
 
-### Jenkins configuration
-Jenkinsfile can be used to configure jenkins build (for unit tests). It can be found in
-root folder.
 
-Code structure
---------------
+### CLI App
 
-### Folder structure
+#### Folder structure
 | Folder         | module               | description                                                                                                                                                                                                                   |
 |----------------|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | api            | -                    | modules to be used to communicate with TestRail over API.                                                                                                                                                                     |
@@ -51,4 +65,4 @@ Code structure
 Parsers are located in `/trcli/readers/`. To add a new parser please read the desired file and fill required dataclasses with the data (located in `/trcli/data_classes/`).
 
 ### Sending information to user (logging/prompting)
-For printing messages on console and prompting users functions from Environment class should be used. <br>Those functions handles `--silent/--verbose/--yes/--no` parameters properly.
+For printing messages on console and prompting users functions from Environment class should be used. Those functions handle `--silent/--verbose/--yes/--no` parameters properly.
