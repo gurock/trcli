@@ -130,7 +130,7 @@ Example:
 
 | Test Result from Automation Results File                                               | Automation ID in TestRail   |
 |----------------------------------------------------------------------------------------|-----------------------------|
-| ```<testcase classname="tests.LoginTests" name="test_case_1" time="159"></testcase>``` | test.LoginTests.test_case_1 |
+| ```<testcase classname="tests.LoginTests" name="test_case_1" time="159"></testcase>``` | tests.LoginTests.test_case_1 |
 
 ```
 Important usage notes: 
