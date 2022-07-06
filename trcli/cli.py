@@ -6,6 +6,8 @@ from typing import List, Union
 import click
 import yaml
 from pathlib import Path
+
+from click.testing import CliRunner
 from requests.models import PreparedRequest, InvalidURL, MissingSchema
 
 from click.core import ParameterSource
@@ -299,3 +301,13 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
 
     environment.parse_config_file(context)
     environment.set_parameters(context)
+
+
+if __name__ == '__main__':
+    runner = CliRunner()
+    result = runner.invoke(cli, [
+        '-h', 'https://3dhubs.testrail.io/',
+        '--username', 'account+testrail@3dhubs.com',
+        '--key', 'D1PF9gqpoZo0j.JX4DUz-vajn4KaP9Joa3mtgfNHI',
+         'parse_junit', '--file', '/Users/kravchuk/PycharmProjects/e2e/playwright_demo/out_report.xml'])
+    print(result.output)
