@@ -59,10 +59,13 @@ class JunitParser(FileParser):
                 properties.append(TestRailProperty(prop.name, prop.value))
             for case in section:
                 case_id = None
+                attachments = None
                 for case_props in case.iterchildren(Properties):
                     for prop in case_props.iterchildren(Property):
                         if prop.name and prop.name == "test_id":
                             case_id = int(prop.value.lower().replace("c", ""))
+                        if prop.name and prop.name == "attachments":
+                            attachments = prop.value.strip('][').split(', ')
                 test_cases.append(
                     TestRailCase(
                         section.id,
@@ -73,6 +76,7 @@ class JunitParser(FileParser):
                                 case_id,
                                 elapsed=case.time,
                                 junit_result_unparsed=case.result,
+                                attached_files=attachments,
                             )
                         ),
                         custom_automation_id=f"{case.classname}.{case.name}"

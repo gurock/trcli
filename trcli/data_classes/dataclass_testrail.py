@@ -18,6 +18,7 @@ class TestRailResult:
     elapsed: str = field(default=None, skip_if_default=True)
     defects: str = field(default=None, skip_if_default=True)
     assignedto_id: int = field(default=None, skip_if_default=True)
+    attached_files: List[str] = field(default_factory=list, skip_if_default=True)
     junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
