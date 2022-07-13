@@ -3,7 +3,10 @@
 <testsuite id="321" failures="0" errors="0" skipped="1" tests="1" time="0.05" name="Skipped test">
 <properties><property name="setting1" value="True"/></properties>
 <testcase classname="tests.test_junit_to_dataclass" name="test_testrail_test_suite" time="159">
-<properties><property name="test_id" value="666"/></properties>
+<properties>
+    <property name="test_id" value="666"/>
+    <property name="attachments" value="['/first.file', 'second.file']"/>
+</properties>
 <skipped type="pytest.skip" message="Please skip">skipped by user</skipped></testcase>
 </testsuite>
 </testsuites>
