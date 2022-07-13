@@ -1,5 +1,5 @@
 import html
-from pprint import pprint
+
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
@@ -387,6 +387,17 @@ class ApiRequestHandler:
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
         return response.response_text.get("id"), response.error_message
 
+    def upload_attachments(self, test_results: [dict], run_id: int):
+        """ Getting test result id and upload attachments for it. """
+        for test_result in test_results:
+            result_id = self.client.send_get(f"get_results_for_case/{run_id}/{test_result['case_id']}").response_text['results'][0]['id']
+            for file_path in test_result.get("attachments"):
+                try:
+                    file = open(file_path, "rb")
+                except OSError:
+                    raise OSError(f"File {file_path} not found")
+                self.client.send_post(f"add_attachment_to_result/{result_id}", files={"attachment": file})
+
     def add_results(self, run_id: int) -> (dict, str):
         """
         Adds one or more new test results.
@@ -422,6 +433,11 @@ class ApiRequestHandler:
                 # Iterate through futures to get all responses from done tasks (not cancelled)
                 responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
+        results_with_attachments = []
+        for test_result in add_results_data_chunks[0]["results"]:
+            if test_result["attachments"]:
+                results_with_attachments.append(test_result)
+        self.upload_attachments(results_with_attachments, run_id)
         return responses, error_message, progress_bar.n
 
     def handle_futures(self, futures, action_string, progress_bar):

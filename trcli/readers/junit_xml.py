@@ -1,3 +1,4 @@
+import ast
 from pathlib import Path
 from typing import Union
 from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
@@ -65,7 +66,7 @@ class JunitParser(FileParser):
                         if prop.name and prop.name == "test_id":
                             case_id = int(prop.value.lower().replace("c", ""))
                         if prop.name and prop.name == "attachments":
-                            attachments = prop.value.strip('][').split(', ')
+                            attachments = ast.literal_eval(prop.value)
                 test_cases.append(
                     TestRailCase(
                         section.id,
@@ -76,7 +77,7 @@ class JunitParser(FileParser):
                                 case_id,
                                 elapsed=case.time,
                                 junit_result_unparsed=case.result,
-                                attached_files=attachments,
+                                attachments=attachments,
                             )
                         ),
                         custom_automation_id=f"{case.classname}.{case.name}"
