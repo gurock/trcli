@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import requests
 from typing import Union, Callable
 from time import sleep
@@ -68,7 +70,7 @@ class APIClient:
         """
         return self.__send_request("GET", uri, None)
 
-    def send_post(self, uri: str, payload: dict) -> APIClientResult:
+    def send_post(self, uri: str, payload: dict = None, files: {str: Path} = None) -> APIClientResult:
         """
         Sends POST request to host specified by host_name.
         Handles retries taking into consideration retries parameter. Retry will occur when one of the following happens:
@@ -76,19 +78,18 @@ class APIClient:
             * timeout occurred
             * connection error occurred
         """
-        return self.__send_request("POST", uri, payload)
+        return self.__send_request("POST", uri, payload, files)
 
-    def __send_request(self, method: str, uri: str, payload: dict) -> APIClientResult:
+    def __send_request(self, method: str, uri: str, payload: dict, files: {str: Path} = None) -> APIClientResult:
         status_code = -1
         response_text = ""
         error_message = ""
         url = self.__url + uri
         password = self.__get_password()
         auth = HTTPBasicAuth(username=self.username, password=password)
-        headers = {
-            "Content-Type": "application/json",
-            "User-Agent": self.USER_AGENT
-        }
+        headers = {"User-Agent": self.USER_AGENT}
+        if files is None:
+            headers["Content-Type"] = "application/json"
         verbose_log_message = ""
         for i in range(self.retries + 1):
             error_message = ""
@@ -104,6 +105,7 @@ class APIClient:
                         timeout=self.timeout,
                         headers=headers,
                         verify=self.verify,
+                        files=files,
                     )
                 else:
                     response = requests.get(

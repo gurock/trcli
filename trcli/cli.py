@@ -168,8 +168,8 @@ class Environment:
                     if page_content:
                         self.params_from_config.update(page_content)
                         if (
-                            self.params_from_config.get("config") is not None
-                            and self.default_config_file
+                                self.params_from_config.get("config") is not None
+                                and self.default_config_file
                         ):
                             self.default_config_file = False
                             self.parse_params_from_config_file(
@@ -301,11 +301,3 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
 
     environment.parse_config_file(context)
     environment.set_parameters(context)
-
-
-if __name__ == '__main__':
-    runner = CliRunner()
-    result = runner.invoke(cli, [
-        '--config', '/Users/kravchuk/PycharmProjects/e2e/playwright_demo/rtcli_config.yaml',
-         'parse_junit', '--file', '/Users/kravchuk/PycharmProjects/e2e/playwright_demo/out_report.xml'])
-    print(result.output)
