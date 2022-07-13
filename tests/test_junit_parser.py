@@ -2,6 +2,8 @@ import pytest
 import json
 from pathlib import Path
 from xml.etree.ElementTree import ParseError
+
+from deepdiff import DeepDiff
 from junitparser import JUnitXmlError
 from trcli.readers.junit_xml import JunitParser
 from typing import Union
@@ -44,9 +46,9 @@ class TestJunitParser:
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
-        assert (
-            parsing_result_json == expected_json
-        ), "Result of parsing Junit XML is different than expected"
+        assert DeepDiff(parsing_result_json, expected_json) == {}, \
+            f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_file(self):

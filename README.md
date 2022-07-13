@@ -147,6 +147,22 @@ If you are using the CLI tool in a CI context, you can use the `-y` option to au
 
 You can also provide the ID of the test suite you want the cases to be created in using the `--suite-id` command line option, otherwise the CLI tool will attempt to find the suite on TestRail by name.<br>
 
+#### Attaching logs, screenshots, etc. to test results
+CLI tool could attach any file type to test results. The maximum allowable upload size is set to 256MB.
+You need to add the file path to the test case as an attachment property.
+```xml
+<testsuites name="test suites root">
+  <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
+    <properties><property name="setting1" value="True"/></properties>
+    <testcase classname="tests.LoginTests" name="test_case_2" time="650">
+     <properties>
+         <property name="attachments" 
+                   value="['/path_to_/logs.log', '/path_to_/screenshot.jpg']"/>
+     </properties>>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
 
 Setting parameters from different places
 ----------------------------------------
