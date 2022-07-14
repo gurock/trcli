@@ -6,8 +6,6 @@ from typing import List, Union
 import click
 import yaml
 from pathlib import Path
-
-from click.testing import CliRunner
 from requests.models import PreparedRequest, InvalidURL, MissingSchema
 
 from click.core import ParameterSource
@@ -168,8 +166,8 @@ class Environment:
                     if page_content:
                         self.params_from_config.update(page_content)
                         if (
-                                self.params_from_config.get("config") is not None
-                                and self.default_config_file
+                            self.params_from_config.get("config") is not None
+                            and self.default_config_file
                         ):
                             self.default_config_file = False
                             self.parse_params_from_config_file(
