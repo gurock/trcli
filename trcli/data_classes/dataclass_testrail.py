@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from serde import field, serialize, deserialize
 from time import gmtime, strftime
 from trcli.data_classes.validation_exception import ValidationException
@@ -18,7 +18,7 @@ class TestRailResult:
     elapsed: str = field(default=None, skip_if_default=True)
     defects: str = field(default=None, skip_if_default=True)
     assignedto_id: int = field(default=None, skip_if_default=True)
-    attachments: List[str] = field(default_factory=list, skip_if_default=True)
+    attachments: Optional[List[str]] = field(default_factory=list, skip_if_default=True)
     junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
