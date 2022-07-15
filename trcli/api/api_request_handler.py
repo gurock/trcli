@@ -70,11 +70,17 @@ class ApiRequestHandler:
         """
         response = self.client.send_get("get_projects")
         if not response.error_message:
+            if isinstance(response.response_text, dict):
+                projects_data = response.response_text["projects"]
+            else:
+                projects_data = response.response_text
+
             available_projects = [
                 project
-                for project in response.response_text["projects"]
+                for project in projects_data
                 if project["name"] == project_name
             ]
+
             if len(available_projects) == 1:
                 return ProjectData(
                     project_id=int(available_projects[0]["id"]),
