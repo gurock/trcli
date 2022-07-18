@@ -70,9 +70,9 @@ class ApiRequestHandler:
         """
         response = self.client.send_get("get_projects")
         if not response.error_message:
-            if isinstance(response.response_text, dict):
+            if isinstance(response.response_text, dict):  # Endpoints with pagination
                 projects_data = response.response_text["projects"]
-            else:
+            else:  # Endpoints without pagination (legacy)
                 projects_data = response.response_text
 
             available_projects = [
@@ -557,6 +557,10 @@ class ApiRequestHandler:
         else:
             response = self.client.send_get(link.replace(self.suffix, ""))
         if not response.error_message:
+            # Endpoints without pagination (legacy)
+            if isinstance(response.response_text, list):
+                return response.response_text, response.error_message
+            # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
                 return self.__get_all_entities(entity, link=response.response_text["_links"]["next"], entities=entities)
