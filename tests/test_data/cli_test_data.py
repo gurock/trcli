@@ -1,3 +1,5 @@
+from trcli import __version__
+
 CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_DATA = [
     (
         ["file"],
@@ -66,7 +68,7 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
     "key": "key_from_custom_config",
 }
 
-trcli_description = f"TestRail Connect v1.1.0\n\
+trcli_description = f"TestRail Connect v{__version__}\n\
 Copyright 2021 Gurock Software GmbH - www.gurock.com\n\
 Supported and loaded modules:\n\
     - junit: JUnit XML Files (& Similar)\n"
