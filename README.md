@@ -149,15 +149,16 @@ You can also provide the ID of the test suite you want the cases to be created i
 
 #### Attaching logs, screenshots, etc. to test results
 CLI tool could attach any file type to test results. The maximum allowable upload size is set to 256MB.
-You need to add the file path to the test case as an attachment property.
+To send attach any file to a test result, you can make use of properties under testcases.
+You can add one or more properties with the name `testrail_attachment` and the file path you want to upload as the value attribute.
 ```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
     <properties><property name="setting1" value="True"/></properties>
     <testcase classname="tests.LoginTests" name="test_case_2" time="650">
      <properties>
-         <property name="attachments" 
-                   value="['/path_to_/logs.log', '/path_to_/screenshot.jpg']"/>
+         <property name="testrail_attachment" value="/path_to_/logs.log"/>
+         <property name="testrail_attachment" value="/path_to_/screenshot.jpg"/>
      </properties>>
     </testcase>
   </testsuite>
