@@ -1,4 +1,6 @@
 import json
+from unittest.mock import patch, mock_open, call
+
 import requests
 import pytest
 from pathlib import Path
@@ -323,35 +325,57 @@ class TestApiRequestHandler:
     @pytest.mark.api_handler
     def test_add_results(self, api_request_handler: ApiRequestHandler, requests_mock):
         run_id = 2
-        mocked_response = {
-            "offset": 0,
-            "limit": 250,
-            "size": 250,
-            "results": [
-                {
-                    "assignedto_id": 1,
-                    "comment": "This test failed: ..",
-                    "created_by": 1,
-                    "created_on": 1393851801,
-                    "defects": "TR-1",
-                    "elapsed": "5m",
-                    "id": 1,
-                    "status_id": 5,
-                    "test_id": 1,
-                    "version": "1.0RC1",
-                }
-            ],
-        }
-
+        result_id = 9
+        mocked_response = [
+            {
+                "assignedto_id": 1,
+                "comment": "This test failed: ..",
+                "created_by": 1,
+                "created_on": 1393851801,
+                "defects": "TR-1",
+                "elapsed": "5m",
+                "id": result_id,
+                "status_id": 5,
+                "test_id": 4,
+                "version": "1.0RC1",
+            }
+        ]
         requests_mock.post(
             create_url(f"add_results_for_cases/{run_id}"), json=mocked_response
         )
-        resources_added, error, results_added = api_request_handler.add_results(run_id)
-        assert [mocked_response] == resources_added, "Invalid response from add_results"
-        assert error == "", "Error occurred in add_results"
-        assert results_added == len(
-            mocked_response["results"]
-        ), f"Expected {len(mocked_response['results'])} results to be added but got {results_added} instead."
+
+        tests_mocked_response = {
+            'offset': 0,
+            'limit': 250,
+            'size': 4,
+            '_links': {'next': None, 'prev': None},
+            'tests': [
+                {
+                    'id': 4,
+                    'case_id': 1,
+                    'status_id': 5,
+                    'assignedto_id': None,
+                    'run_id': run_id,
+                    'title': 'Fail To Login With Invalid Password'
+                 }
+            ]
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=tests_mocked_response)
+
+        attachments_mock_response = {"attachment_id": 123}
+
+        requests_mock.post(
+            create_url(f"add_attachment_to_result/{result_id}"), json=attachments_mock_response
+        )
+
+        with patch("builtins.open", mock_open()) as mock_file:
+            resources_added, error, results_added = api_request_handler.add_results(run_id)
+            assert [mocked_response] == resources_added, "Invalid response from add_results"
+            assert error == "", "Error occurred in add_results"
+            assert results_added == len(mocked_response), \
+                f"Expected {len(mocked_response)} results to be added but got {results_added} instead."
+            mock_file.assert_any_call("./path1", "rb")
+            mock_file.assert_any_call("./path2", "rb")
 
     @pytest.mark.api_handler
     def test_close_run(self, api_request_handler: ApiRequestHandler, requests_mock):
@@ -579,6 +603,23 @@ class TestApiRequestHandler:
             create_url(f"add_results_for_cases/{run_id}"),
             exc=requests.exceptions.ConnectTimeout,
         )
+        tests_mocked_response = {
+            'offset': 0,
+            'limit': 250,
+            'size': 4,
+            '_links': {'next': None, 'prev': None},
+            'tests': [
+                {
+                    'id': 18319,
+                    'case_id': 6086,
+                    'status_id': 5,
+                    'assignedto_id': None,
+                    'run_id': run_id,
+                    'title': 'Fail To Login With Invalid Password'
+                 }
+            ]
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=tests_mocked_response)
         resources_added, error, results_added = api_request_handler.add_results(run_id)
         assert resources_added == [], "Expected empty list of added resources"
         assert (

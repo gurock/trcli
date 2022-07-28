@@ -60,13 +60,13 @@ class JunitParser(FileParser):
                 properties.append(TestRailProperty(prop.name, prop.value))
             for case in section:
                 case_id = None
-                attachments = None
+                attachments = []
                 for case_props in case.iterchildren(Properties):
                     for prop in case_props.iterchildren(Property):
                         if prop.name and prop.name == "test_id":
                             case_id = int(prop.value.lower().replace("c", ""))
-                        if prop.name and prop.name == "attachments":
-                            attachments = ast.literal_eval(prop.value)
+                        if prop.name and prop.name.startswith("testrail_attachment"):
+                            attachments.append(prop.value)
                 test_cases.append(
                     TestRailCase(
                         section.id,
