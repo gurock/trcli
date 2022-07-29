@@ -17,7 +17,8 @@
                     "result": {
                         "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
                         "status_id": 4,
-                        "case_id": 1
+                        "case_id": 1,
+                        "attachments": ["./path1", "./path2"]
                     }
                 },
                 {

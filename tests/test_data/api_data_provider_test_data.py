@@ -49,10 +49,11 @@ post_results_for_cases_body = [
             {
                 "case_id": 60,
                 "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                "attachments": [],
                 "status_id": 4,
             },
-            {"case_id": 1234567, "comment": "", "status_id": 1},
-            {"case_id": 4, "comment": "", "status_id": 1},
+            {"case_id": 1234567, "comment": "", "attachments": [], "status_id": 1},
+            {"case_id": 4, "comment": "", "attachments": [], "status_id": 1},
         ]
     }
 ]
@@ -61,4 +62,5 @@ result_for_update_case = {
     "case_id": 10,
     "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
     "status_id": 4,
+    "attachments": [],
 }

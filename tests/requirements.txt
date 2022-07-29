@@ -10,3 +10,4 @@ pyserde
 requests
 tqdm
 humanfriendly
+deepdiff
