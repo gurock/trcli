@@ -1,5 +1,6 @@
 import html
-
+import json
+from pprint import pprint
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
@@ -381,16 +382,22 @@ class ApiRequestHandler:
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
         return response.response_text.get("id"), response.error_message
 
-    def upload_attachments(self, test_results: [dict], run_id: int):
+    def upload_attachments(self, report_results: [dict], results: list[dict], run_id: int):
         """ Getting test result id and upload attachments for it. """
-        for test_result in test_results:
-            result_id = self.client.send_get(f"get_results_for_case/{run_id}/{test_result['case_id']}").response_text['results'][0]['id']
-            for file_path in test_result.get("attachments"):
-                try:
-                    file = open(file_path, "rb")
-                except OSError:
-                    raise OSError(f"File {file_path} not found")
-                self.client.send_post(f"add_attachment_to_result/{result_id}", files={"attachment": file})
+        tests_in_run, error = self.__get_all_tests_in_run(run_id)
+        if not error:
+            for report_result in report_results:
+                case_id = report_result["case_id"]
+                test_id = next((test["id"] for test in tests_in_run if test["case_id"] == case_id), None)
+                result_id = next((result["id"] for result in results if result["test_id"] == test_id), None)
+                for file_path in report_result.get("attachments"):
+                    try:
+                        with open(file_path, "rb") as file:
+                            self.client.send_post(f"add_attachment_to_result/{result_id}", files={"attachment": file})
+                    except Exception as ex:
+                        self.environment.elog(f"Error uploading attachment for case {case_id}: {ex}")
+        else:
+            self.environment.elog(f"Unable to upload attachments due to API request error: {error}")
 
     def add_results(self, run_id: int) -> (dict, str):
         """
@@ -427,11 +434,17 @@ class ApiRequestHandler:
                 # Iterate through futures to get all responses from done tasks (not cancelled)
                 responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
-        results_with_attachments = []
-        for test_result in add_results_data_chunks[0]["results"]:
-            if test_result["attachments"]:
-                results_with_attachments.append(test_result)
-        self.upload_attachments(results_with_attachments, run_id)
+        results = [
+            result
+            for results_list in responses
+            for result in results_list
+        ]
+        report_results_w_attachments = []
+        for results_data_chunk in add_results_data_chunks:
+            for test_result in results_data_chunk["results"]:
+                if test_result["attachments"]:
+                    report_results_w_attachments.append(test_result)
+        self.upload_attachments(report_results_w_attachments, results, run_id)
         return responses, error_message, progress_bar.n
 
     def handle_futures(self, futures, action_string, progress_bar):
@@ -542,30 +555,34 @@ class ApiRequestHandler:
         for future in futures:
             future.cancel()
 
-    def __get_all_cases(self, project_id=None, suite_id=None, link=None) -> (List[dict], str):
+    def __get_all_cases(self, project_id=None, suite_id=None) -> (List[dict], str):
         """
         Get all cases from all pages
         """
-        return self.__get_all_entities('cases', project_id, suite_id, link)
+        url = f"get_cases/{project_id}&suite_id={suite_id}"
+        return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
 
-    def __get_all_sections(self, project_id=None, suite_id=None, link=None) -> (List[dict], str):
+    def __get_all_sections(self, project_id=None, suite_id=None) -> (List[dict], str):
         """
         Get all sections from all pages
         """
-        return self.__get_all_entities('sections', project_id, suite_id, link)
+        return self.__get_all_entities('sections', f"get_sections/{project_id}&suite_id={suite_id}")
 
-    def __get_all_entities(
-        self, entity: str, project_id=None, suite_id=None, link=None, entities=[]
-    ) -> (List[dict], str):
+    def __get_all_tests_in_run(self, run_id=None) -> (List[dict], str):
+        """
+        Get all tests from all pages
+        """
+        return self.__get_all_entities('tests', f"get_tests/{run_id}")
+
+    def __get_all_entities(self, entity: str, link=None, entities=[]) -> (List[dict], str):
         """
         Get all entities from all pages if number of entities is too big to return in single response.
         Function using next page field in API response.
         Entity examples: cases, sections
         """
-        if link is None:
-            response = self.client.send_get(f"get_{entity}/{project_id}&suite_id={suite_id}")
-        else:
-            response = self.client.send_get(link.replace(self.suffix, ""))
+        if link.startswith(self.suffix):
+            link = link.replace(self.suffix, "")
+        response = self.client.send_get(link)
         if not response.error_message:
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
