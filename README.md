@@ -148,7 +148,7 @@ If you are using the CLI tool in a CI context, you can use the `-y` option to au
 You can also provide the ID of the test suite you want the cases to be created in using the `--suite-id` command line option, otherwise the CLI tool will attempt to find the suite on TestRail by name.<br>
 
 #### Attaching logs, screenshots, etc. to test results
-CLI tool could attach any file type to test results. The maximum allowable upload size is set to 256MB.
+The TestRail CLI can attach any file type to test results, up to a maximum allowable upload size of 256MB.
 To send attach any file to a test result, you can make use of properties under testcases.
 You can add one or more properties with the name `testrail_attachment` and the file path you want to upload as the value attribute.
 ```xml
