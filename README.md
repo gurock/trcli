@@ -159,7 +159,7 @@ You can add one or more properties with the name `testrail_attachment` and the f
      <properties>
          <property name="testrail_attachment" value="/path_to_/logs.log"/>
          <property name="testrail_attachment" value="/path_to_/screenshot.jpg"/>
-     </properties>>
+     </properties>
     </testcase>
   </testsuite>
 </testsuites>
