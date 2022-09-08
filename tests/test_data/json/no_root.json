@@ -16,7 +16,7 @@
                                   "result": {"assignedto_id": null,
                                              "comment": "",
                                              "defects": null,
-                                             "elapsed": null,
+                                             "elapsed": "50ms",
                                              "junit_result_unparsed": [],
                                              "status_id": 1,
                                              "case_id": null,

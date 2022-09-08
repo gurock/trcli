@@ -5,6 +5,7 @@ from time import gmtime, strftime
 from trcli.data_classes.validation_exception import ValidationException
 
 
+
 @serialize
 @deserialize
 @dataclass
@@ -63,8 +64,15 @@ class TestRailResult:
     @staticmethod
     def proper_format_for_elapsed(elapsed):
         try:
-            rounded_secs = round(float(elapsed))
-            return f"{rounded_secs}s" if rounded_secs > 0 else None
+            # If elapsed is less than 1 convert it to milliseconds
+            # Anything lower than 1 millisecond will be omitted
+            if float(elapsed) < 1:
+                rounded_ms = round(float(elapsed) * 1000)
+                return f"{rounded_ms}ms" if rounded_ms > 0 else None
+            else:
+                rounded_secs = round(float(elapsed))
+                return f"{rounded_secs}s" if rounded_secs > 0 else None
+
         except ValueError:
             # unable to parse time format
             return None
