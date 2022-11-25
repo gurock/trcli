@@ -100,6 +100,8 @@ class TestRailCase:
                 class_name=self.__class__.__name__,
                 reason="Title is empty.",
             )
+        if self.custom_automation_id:
+            self.custom_automation_id = self.custom_automation_id.strip()
 
 
 @serialize
