@@ -33,6 +33,7 @@
                 {
                     "section_id": null,
                     "title": "testCase2",
+                    "custom_automation_id": "className.testCase2abc",
                     "case_id": null,
                     "time": 400,
                     "result": {"comment": "", "status_id": 1, "case_id": null}
