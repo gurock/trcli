@@ -306,6 +306,7 @@ class ApiRequestHandler:
                             "case_id": case["id"],
                             "section_id": case["section_id"],
                             "title": case["title"],
+                            "custom_automation_id": test_case.custom_automation_id
                         })
                     else:
                         missing_cases_number += 1
@@ -349,6 +350,7 @@ class ApiRequestHandler:
                 "case_id": response.response_text["id"],
                 "section_id": response.response_text["section_id"],
                 "title": response.response_text["title"],
+                "custom_automation_id": response.response_text["custom_automation_id"]
             }
             for response in responses
         ]

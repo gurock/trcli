@@ -89,6 +89,7 @@ class TestApiDataProvider:
                 "case_id": 1234567,
                 "section_id": 12345,
                 "title": "testCase2",
+                "custom_automation_id": "className.testCase2abc"
             }
         ]
         post_data_provider.update_data(case_data=case_updater)
