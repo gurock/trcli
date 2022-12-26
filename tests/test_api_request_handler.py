@@ -11,6 +11,7 @@ from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.constants import ProjectErrors, FAULT_MAPPING
+from trcli.data_classes.matchers import Matchers
 
 
 @pytest.fixture(scope="function")
@@ -20,6 +21,7 @@ def handler_maker():
         environment = Environment()
         environment.project = "Test Project"
         environment.batch_size = 10
+        environment.case_matcher = Matchers.AUTO
         if custom_json is None:
             json_path = (
                 Path(__file__).parent / "test_data/json/api_request_handler.json"

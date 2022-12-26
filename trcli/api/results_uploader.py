@@ -6,6 +6,7 @@ from trcli.cli import Environment
 from trcli.api.api_request_handler import ApiRequestHandler
 from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuiteModes
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.data_classes.matchers import Matchers
 from trcli.readers.file_parser import FileParser
 from trcli.constants import ProjectErrors, RevertMessages
 import time
@@ -18,6 +19,7 @@ class ResultsUploader:
     """
 
     def __init__(self, environment: Environment, result_file_parser: FileParser):
+        self.project = None
         self.environment = environment
         self.result_file_parser = result_file_parser
         self.parsed_data: TestRailSuite = self.result_file_parser.parse_file()
@@ -44,66 +46,80 @@ class ResultsUploader:
         start = time.time()
         results_amount = None
         self.environment.log("Checking project. ", new_line=False)
-        project_data = self.api_request_handler.get_project_id(
+        self.project = self.api_request_handler.get_project_id(
             self.environment.project, self.environment.project_id
         )
-        if project_data.project_id == ProjectErrors.not_existing_project:
-            self.environment.elog("\n" + project_data.error_message)
+        if self.project.project_id == ProjectErrors.not_existing_project:
+            self.environment.elog("\n" + self.project.error_message)
             exit(1)
-        elif project_data.project_id == ProjectErrors.other_error:
+        elif self.project.project_id == ProjectErrors.other_error:
             self.environment.elog(
                 "\n"
                 + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=project_data.error_message
+                    error_message=self.project.error_message
                 )
             )
             exit(1)
-        elif project_data.project_id == ProjectErrors.multiple_project_same_name:
+        elif self.project.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.elog(
                 "\n"
                 + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=project_data.error_message
+                    error_message=self.project.error_message
                 )
             )
             exit(1)
         else:
             if self.environment.auto_creation_response:
-                automation_id_error = self.api_request_handler.check_automation_id_field(project_data.project_id)
-                if automation_id_error:
-                    self.environment.elog(automation_id_error)
-                    exit(1)
+                if self.environment.case_matcher == Matchers.AUTO:
+                    automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
+                    if automation_id_error:
+                        self.environment.elog(automation_id_error)
+                        exit(1)
             self.environment.log("Done.")
             added_suite_id, result_code = self.get_suite_id(
-                project_id=project_data.project_id, suite_mode=project_data.suite_mode
+                project_id=self.project.project_id, suite_mode=self.project.suite_mode
             )
             if result_code == -1:
                 exit(1)
 
-            added_sections, result_code = self.add_missing_sections(
-                project_data.project_id
+            missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
+                self.project.project_id
             )
-            if result_code == -1:
-                revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id, added_sections=added_sections
+            if error_message:
+                self.environment.elog(
+                    FAULT_MAPPING["error_checking_missing_item"].format(
+                        missing_item="missing test cases", error_message=error_message
+                    )
                 )
-                self.environment.log("\n".join(revert_logs))
-                exit(1)
+            added_sections = None
+            added_test_cases = None
+            if self.environment.auto_creation_response:
+                added_sections, result_code = self.add_missing_sections(
+                    self.project.project_id
+                )
+                if result_code == -1:
+                    revert_logs = self.rollback_changes(
+                        added_suite_id=added_suite_id, added_sections=added_sections
+                    )
+                    self.environment.log("\n".join(revert_logs))
+                    exit(1)
 
-            added_test_cases, result_code = self.add_missing_test_cases(
-                project_data.project_id
-            )
-            if result_code == -1:
-                revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id,
-                    added_sections=added_sections,
-                    added_test_cases=added_test_cases,
-                )
-                self.environment.log("\n".join(revert_logs))
-                exit(1)
+                if missing_test_cases:
+                    added_test_cases, result_code = self.add_missing_test_cases()
+                else:
+                    result_code = 1
+                if result_code == -1:
+                    revert_logs = self.rollback_changes(
+                        added_suite_id=added_suite_id,
+                        added_sections=added_sections,
+                        added_test_cases=added_test_cases,
+                    )
+                    self.environment.log("\n".join(revert_logs))
+                    exit(1)
             if not self.environment.run_id:
                 self.environment.log(f"Creating test run. ", new_line=False)
                 added_run, error_message = self.api_request_handler.add_run(
-                    project_data.project_id, self.environment.title
+                    self.project.project_id, self.environment.title
                 )
                 if error_message:
                     self.environment.elog("\n" + error_message)
@@ -114,10 +130,11 @@ class ResultsUploader:
                     )
                     self.environment.log("\n".join(revert_logs))
                     exit(1)
-                self.environment.log("Done.")
                 run_id = added_run
+                self.environment.log(f"Run created: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
             else:
                 run_id = self.environment.run_id
+                self.environment.log(f"Updating run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
             (
                 added_results,
                 error_message,
@@ -139,12 +156,9 @@ class ResultsUploader:
             if error_message:
                 self.environment.elog("\n" + error_message)
                 exit(1)
-            self.environment.log("Done.")
         stop = time.time()
         if results_amount:
-            self.environment.log(
-                f"Submitted {results_amount} test results in {stop - start:.1f} secs."
-            )
+            self.environment.log(f"Submitted {results_amount} test results in {stop - start:.1f} secs.")
 
     def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
         """
@@ -165,8 +179,6 @@ class ResultsUploader:
                 suite_id, error_msg = self.api_request_handler.resolve_suite_id_using_name(project_id)
                 if suite_id != -1:
                     self.api_request_handler.suites_data_from_provider.suite_id = suite_id
-
-        if not self.api_request_handler.suites_data_from_provider.suite_id:
             if suite_mode == SuiteModes.multiple_suites:
                 prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
                     suite_name=self.api_request_handler.suites_data_from_provider.name,
@@ -207,6 +219,7 @@ class ResultsUploader:
                 if error_message:
                     self.environment.elog(error_message)
                 else:
+                    suite_id = suite_ids[0]
                     result_code = 1
             else:
                 self.environment.elog(
@@ -274,44 +287,24 @@ class ResultsUploader:
                 result_code = 1
         return added_sections, result_code
 
-    def add_missing_test_cases(self, project_id: int) -> Tuple[list, int]:
+    def add_missing_test_cases(self) -> Tuple[list, int]:
         """
         Checks for missing test cases in specified project. Add missing test cases if user agrees to
         do so. Returns list of added test case IDs if succeeds or empty list with result_code set to
         -1.
         """
-        added_cases = []
-        result_code = -1
-        (
-            missing_test_cases,
-            error_message,
-        ) = self.api_request_handler.check_missing_test_cases_ids(project_id)
-        if missing_test_cases:
-            if self.api_request_handler.data_provider.check_for_case_names_duplicates():
-                self.environment.log(
-                    f"Warning: Case duplicates detected in {self.environment.file}. "
-                    f"This will result in improper results setting."
-                )
-            prompt_message = PROMPT_MESSAGES["create_missing_test_cases"].format(
-                project_name=self.environment.project
-            )
-            adding_message = "Adding missing test cases to the suite."
-            fault_message = FAULT_MAPPING["no_user_agreement"].format(type="test cases")
-            added_cases, result_code = self.prompt_user_and_add_items(
-                prompt_message=prompt_message,
-                adding_message=adding_message,
-                fault_message=fault_message,
-                add_function=self.api_request_handler.add_cases,
-            )
-        else:
-            if error_message:
-                self.environment.elog(
-                    FAULT_MAPPING["error_checking_missing_item"].format(
-                        missing_item="missing test cases", error_message=error_message
-                    )
-                )
-            else:
-                result_code = 1
+        prompt_message = PROMPT_MESSAGES["create_missing_test_cases"].format(
+            project_name=self.environment.project
+        )
+        adding_message = "Adding missing test cases to the suite."
+        fault_message = FAULT_MAPPING["no_user_agreement"].format(type="test cases")
+        added_cases, result_code = self.prompt_user_and_add_items(
+            prompt_message=prompt_message,
+            adding_message=adding_message,
+            fault_message=fault_message,
+            add_function=self.api_request_handler.add_cases,
+        )
+
         return added_cases, result_code
 
     def prompt_user_and_add_items(
@@ -402,7 +395,7 @@ class ResultsUploader:
                 )
             else:
                 returned_log.append(RevertMessages.section_deleted)
-        if added_suite_id > 0:
+        if self.project.suite_mode != SuiteModes.single_suite and added_suite_id > 0:
             _, error = self.api_request_handler.delete_suite(added_suite_id)
             if error:
                 returned_log.append(

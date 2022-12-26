@@ -104,7 +104,7 @@ def add_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False
             "Failed to add run.",
         )
     else:
-        results_uploader.api_request_handler.add_run.return_value = ([100], "")
+        results_uploader.api_request_handler.add_run.return_value = (100, "")
 
 
 def add_results_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):

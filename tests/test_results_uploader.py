@@ -24,6 +24,7 @@ from tests.test_data.results_provider_test_data import (
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import Environment
 from trcli.constants import FAULT_MAPPING, PROMPT_MESSAGES, SuiteModes
+from trcli.data_classes.matchers import Matchers
 from trcli.readers.junit_xml import JunitParser
 from trcli.constants import ProjectErrors
 
@@ -36,7 +37,8 @@ class TestResultsUploader:
         environment.project = "Fake project name"
         environment.case_id = None
         environment.run_id = None
-        environment.file = "results.xml"
+        environment.file = "attachments.xml"
+        environment.case_matcher = Matchers.AUTO
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(
@@ -201,6 +203,7 @@ class TestResultsUploader:
             results_uploader=results_uploader, mocker=mocker, failing_functions=[]
         )
         results_uploader.api_request_handler.check_automation_id_field.return_value = None
+        results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = ([], "")
         expected_log_calls = []
         if not run_id:
             expected_log_calls.extend(
@@ -213,7 +216,6 @@ class TestResultsUploader:
             [mocker.call("Closing test run. ", new_line=False), mocker.call("Done.")]
         )
         results_uploader.upload_results()
-
         environment.log.assert_has_calls(expected_log_calls)
 
     @pytest.mark.results_uploader

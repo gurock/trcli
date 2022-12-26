@@ -8,10 +8,27 @@ from trcli.data_classes.validation_exception import ValidationException
 from xml.etree.ElementTree import ParseError
 
 
+def print_config(env: Environment):
+    env.log(f"TestRail CLI - Execution Parameters"
+            f"\n> Report file: {env.file}"
+            f"\n> Config file: {env.config}"
+            f"\n> TestRail instance: {env.host} (user: {env.username})"
+            f"\n> Project: {env.project if env.project else env.project_id}"
+            f"\n> Run title: {env.title}"
+            f"\n> Auto-create entities: {env.auto_creation_response}")
+
+
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
 @click.option("--close-run", is_flag=True, help="Close the newly created run")
 @click.option("--title", metavar="", help="Title of Test Run to be created in TestRail.")
+@click.option(
+    "--case-matcher",
+    metavar="",
+    default="auto",
+    type=click.Choice(["auto", "name", "property"], case_sensitive=False),
+    help="Mechanism to match cases between the JUnit report and TestRail."
+)
 @click.option(
     "--suite-id",
     type=click.IntRange(min=1),
@@ -39,9 +56,10 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Parse report files and upload results to TestRail"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
+    print_config(environment)
     try:
         result_uploader = ResultsUploader(
-            environment=environment, result_file_parser=JunitParser(environment.file)
+            environment=environment, result_file_parser=JunitParser(environment)
         )
         result_uploader.upload_results()
     except FileNotFoundError:

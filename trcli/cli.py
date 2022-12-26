@@ -49,6 +49,7 @@ class Environment:
         self.close_run = None
         self.insecure = None
         self.run_description = None
+        self.case_matcher = None
         self._case_fields = None
 
     @property
