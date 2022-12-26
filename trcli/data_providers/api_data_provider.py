@@ -1,3 +1,4 @@
+from pprint import pprint
 from typing import List
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from serde.json import to_dict
@@ -139,19 +140,6 @@ class ApiDataProvider:
         sections_names = [sections.name for sections in self.suites_input.testsections]
 
         if len(sections_names) == len(set(sections_names)):
-            return False
-        else:
-            return True
-
-    def check_for_case_names_duplicates(self):
-        """
-        Check if cases names in result xml file are duplicated.
-        """
-        testcases = [sections.testcases for sections in self.suites_input.testsections]
-        cases = [case for sublist in testcases for case in sublist]
-        cases_names = [case.title for case in cases]
-
-        if len(cases) == len(set(cases_names)):
             return False
         else:
             return True

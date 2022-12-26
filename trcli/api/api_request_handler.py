@@ -6,6 +6,7 @@ from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.data_classes.matchers import Matchers
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import (
     ProjectErrors,
@@ -55,11 +56,11 @@ class ApiRequestHandler:
                 None
             )
             if automation_id_field:
-                context = automation_id_field["configs"][0]["context"]
-                if context["is_global"]:
-                    return None
-                elif project_id not in context["project_ids"]:
-                    return FAULT_MAPPING["automation_id_unavailable"]
+                for config in automation_id_field["configs"]:
+                    context = config["context"]
+                    if context["is_global"] or project_id in context["project_ids"]:
+                        return None
+            return FAULT_MAPPING["automation_id_unavailable"]
         else:
             return response.error_message
 
@@ -288,16 +289,18 @@ class ApiRequestHandler:
         :project_id: project_id
         :returns: Tuple with list test case ID missing and error string.
         """
+        missing_cases_number = 0
         suite_id = self.suites_data_from_provider.suite_id
         returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
-        if not error_message:
+        if error_message:
+            return False, error_message
+        if self.environment.case_matcher == Matchers.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
                 aut_case_id = case["custom_automation_id"]
                 aut_case_id = aut_case_id if not aut_case_id else html.unescape(case["custom_automation_id"])
                 test_cases_by_aut_id[aut_case_id] = case
             test_case_data = []
-            missing_cases_number = 0
             for section in self.suites_data_from_provider.testsections:
                 for test_case in section.testcases:
                     if test_case.custom_automation_id in test_cases_by_aut_id.keys():
@@ -312,10 +315,23 @@ class ApiRequestHandler:
                         missing_cases_number += 1
             self.data_provider.update_data(case_data=test_case_data)
             if missing_cases_number:
-                self.environment.log(f"Found test cases not matching any TestRail case (count: {missing_cases_number})")
-            return missing_cases_number > 0, error_message
+                self.environment.log(f"Found {missing_cases_number} test cases not matching any TestRail case.")
         else:
-            return False, error_message
+            nonexistent_ids = []
+            all_case_ids = [case["id"] for case in returned_cases]
+            for section in self.suites_data_from_provider.testsections:
+                for test_case in section.testcases:
+                    if not test_case.case_id:
+                        missing_cases_number += 1
+                    elif int(test_case.case_id) not in all_case_ids:
+                        nonexistent_ids.append(test_case.case_id)
+            if missing_cases_number:
+                self.environment.log(f"Found {missing_cases_number} test cases without case ID in the report file.")
+            if nonexistent_ids:
+                self.environment.elog(f"Nonexistent case IDs found in the report file: {nonexistent_ids}")
+                return False, "Case IDs not in TestRail project or suite were detected in the report file."
+
+        return missing_cases_number > 0, ""
 
     def add_cases(self) -> (List[dict], str):
         """
@@ -452,7 +468,15 @@ class ApiRequestHandler:
             for test_result in results_data_chunk["results"]:
                 if test_result["attachments"]:
                     report_results_w_attachments.append(test_result)
-        self.upload_attachments(report_results_w_attachments, results, run_id)
+        if report_results_w_attachments:
+            attachments_count = 0
+            for result in report_results_w_attachments:
+                attachments_count += len(result["attachments"])
+            self.environment.log(f"Uploading {attachments_count} attachments "
+                                 f"for {len(report_results_w_attachments)} test results.")
+            self.upload_attachments(report_results_w_attachments, results, run_id)
+        else:
+            self.environment.log(f"No attachments found to upload.")
         return responses, error_message, progress_bar.n
 
     def handle_futures(self, futures, action_string, progress_bar):
