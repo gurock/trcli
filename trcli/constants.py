@@ -42,7 +42,7 @@ FAULT_MAPPING = dict(
     "(if present) under `testcase` tag in result xml file\nand\n"
     "only one result is present in result xml file.",
     unexpected_error_during_request_send="Unexpected error occurred during sending request: {request}",
-    automation_id_unavailable=f"The automation_id field currently exists, but is not available in the project."
+    automation_id_unavailable=f"The automation_id field currently exists, but is not available in the project. "
     f"Please manually add your project id through Administration under Customizations > Case Fields.\n"
     f"The field should have the following mandatory details:\n"
     f"  - System Name: automation_id\n"

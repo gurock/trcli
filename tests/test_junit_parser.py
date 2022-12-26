@@ -5,6 +5,9 @@ from xml.etree.ElementTree import ParseError
 
 from deepdiff import DeepDiff
 from junitparser import JUnitXmlError
+
+from trcli.cli import Environment
+from trcli.data_classes.matchers import Matchers
 from trcli.readers.junit_xml import JunitParser
 from typing import Union
 from dataclasses import asdict
@@ -41,7 +44,10 @@ class TestJunitParser:
         self, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
         freezer.move_to("2020-05-20 01:00:00")
-        file_reader = JunitParser(input_xml_path)
+        env = Environment()
+        env.case_matcher = Matchers.AUTO
+        env.file = input_xml_path
+        file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
@@ -49,29 +55,53 @@ class TestJunitParser:
         assert DeepDiff(parsing_result_json, expected_json) == {}, \
             f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
+    @pytest.mark.parse_junit
+    @pytest.mark.parametrize(
+        "matcher", [Matchers.NAME, Matchers.PROPERTY],
+        ids=["Case Matcher Name", "Case Matcher Property"],
+    )
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_id_matcher_name(self, matcher, freezer):
+        freezer.move_to("2020-05-20 01:00:00")
+        env = Environment()
+        env.case_matcher = matcher
+        env.file = Path(__file__).parent / f"test_data/xml/root_id_in_{matcher}.xml"
+        file_reader = JunitParser(env)
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
+        parsing_result_json = asdict(read_junit)
+        file_json = open(Path(__file__).parent / f"test_data/json/root_id_in_{matcher}.json")
+        expected_json = json.load(file_json)
+        assert DeepDiff(parsing_result_json, expected_json) == {}, \
+            f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_file(self):
-        file_reader = JunitParser(Path(__file__).parent / "test_data/XML/invalid.xml")
+        env = Environment()
+        env.file = Path(__file__).parent / "test_data/XML/invalid.xml"
+        file_reader = JunitParser(env)
         with pytest.raises(JUnitXmlError):
             file_reader.parse_file()
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_empty_file(self):
-        file_reader = JunitParser(
-            Path(__file__).parent / "test_data/XML/invalid_empty.xml"
-        )
+        env = Environment()
+        env.file = Path(__file__).parent / "test_data/XML/invalid_empty.xml"
+        file_reader = JunitParser(env)
         with pytest.raises(ParseError):
             file_reader.parse_file()
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
-            JunitParser("not_found.xml")
+            env = Environment()
+            env.file = Path(__file__).parent / "not_found.xml"
+            JunitParser(env)
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_validation_error(self):
-        file_reader = JunitParser(Path(__file__).parent / "test_data/XML/empty.xml")
+        env = Environment()
+        env.file = Path(__file__).parent / "test_data/XML/empty.xml"
+        file_reader = JunitParser(env)
         with pytest.raises(ValidationException):
             file_reader.parse_file()
 

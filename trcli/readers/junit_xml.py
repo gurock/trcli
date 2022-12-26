@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Union
 from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
 from xml.etree import ElementTree as etree
+
+from trcli.data_classes.matchers import Matchers
 from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -49,7 +51,8 @@ class JunitParser(FileParser):
         suite = JUnitXml.fromfile(
             self.filepath, parse_func=self._add_root_element_to_tree
         )
-
+        self.env.log(f"Parsing JUnit report.")
+        cases_count = 0
         test_sections = []
         for section in suite:
             if not len(section):
@@ -59,18 +62,25 @@ class JunitParser(FileParser):
             for prop in section.properties():
                 properties.append(TestRailProperty(prop.name, prop.value))
             for case in section:
+                cases_count += 1
                 case_id = None
+                automation_id = None
+                case_name = case.name
                 attachments = []
+                if self.case_matcher == Matchers.AUTO:
+                    automation_id = f"{case.classname}.{case_name}"
+                elif self.case_matcher == Matchers.NAME:
+                    case_id, case_name = Matchers.parse_name_with_id(case_name)
                 for case_props in case.iterchildren(Properties):
                     for prop in case_props.iterchildren(Property):
-                        if prop.name and prop.name == "test_id":
+                        if prop.name and self.case_matcher == Matchers.PROPERTY and prop.name == "test_id":
                             case_id = int(prop.value.lower().replace("c", ""))
                         if prop.name and prop.name.startswith("testrail_attachment"):
                             attachments.append(prop.value)
                 test_cases.append(
                     TestRailCase(
                         section.id,
-                        case.name,
+                        case_name,
                         case_id,
                         result=(
                             TestRailResult(
@@ -80,7 +90,7 @@ class JunitParser(FileParser):
                                 attachments=attachments,
                             )
                         ),
-                        custom_automation_id=f"{case.classname}.{case.name}"
+                        custom_automation_id=automation_id
                     )
                 )
             test_sections.append(
@@ -101,4 +111,5 @@ class JunitParser(FileParser):
             testsections=test_sections,
             source=self.filename,
         )
+        self.env.log(f"Processed {cases_count} test cases in {len(suite.testsections)} sections.")
         return suite

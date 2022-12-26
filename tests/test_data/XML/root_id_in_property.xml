@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="test suites root" id="123">
+    <testsuite id="321" failures="0" errors="0" skipped="1" tests="1" time="0.05" name="Skipped test">
+        <properties>
+            <property name="setting1" value="True"/>
+        </properties>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 1" time="159">
+            <properties>
+                <property name="test_id" value="100"/>
+            </properties>
+        </testcase>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 2" time="159">
+            <properties>
+                <property name="test_id" value="C101"/>
+            </properties>
+        </testcase>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 3" time="159">
+            <properties>
+                <property name="test_id" value="c102"/>
+                <property name="testrail_attachment" value="/first.file"/>
+                <property name="testrail_attachment" value="second.file"/>
+            </properties>
+            <skipped type="pytest.skip" message="Please skip">skipped by user</skipped>
+        </testcase>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 4" time="159"/>
+    </testsuite>
+</testsuites>
