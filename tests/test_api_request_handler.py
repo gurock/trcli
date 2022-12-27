@@ -68,16 +68,16 @@ class TestApiRequestHandler:
             ]
         }
         requests_mock.get(create_url("get_projects"), json=mocked_response)
-        assert api_request_handler.get_project_id("Test Project") == ProjectData(
+        assert api_request_handler.get_project_data("Test Project") == ProjectData(
             project_id=2, suite_mode=1, error_message=""
         ), "Get project should return proper project data object"
-        assert api_request_handler.get_project_id("DataHub") == ProjectData(
+        assert api_request_handler.get_project_data("DataHub") == ProjectData(
             project_id=ProjectErrors.multiple_project_same_name,
             suite_mode=-1,
             error_message="Given project name matches more than one result."
             "Please specify which should be used using the --project-id argument",
         ), "Get project should return proper project data object"
-        assert api_request_handler.get_project_id("DataHub", 2) == ProjectData(
+        assert api_request_handler.get_project_data("DataHub", 2) == ProjectData(
             project_id=ProjectErrors.multiple_project_same_name,
             suite_mode=-1,
             error_message="Given project name matches more than one result."
@@ -86,14 +86,14 @@ class TestApiRequestHandler:
             "Get project should return proper project data object when passing"
             "project_id and project_id doesn't match the response"
         )
-        assert api_request_handler.get_project_id("DataHub", 3) == ProjectData(
+        assert api_request_handler.get_project_data("DataHub", 3) == ProjectData(
             project_id=3, suite_mode=1, error_message=""
         ), (
             "Get project should return proper project data object when passing"
             "project_id and project_id matches response"
         )
 
-        assert api_request_handler.get_project_id("Some project") == ProjectData(
+        assert api_request_handler.get_project_data("Some project") == ProjectData(
             project_id=ProjectErrors.not_existing_project,
             suite_mode=-1,
             error_message="Please specify a valid project name using the --project argument",
@@ -110,7 +110,7 @@ class TestApiRequestHandler:
         ]
 
         requests_mock.get(create_url("get_projects"), json=mocked_response)
-        assert api_request_handler.get_project_id("Test Project") == ProjectData(
+        assert api_request_handler.get_project_data("Test Project") == ProjectData(
             project_id=2, suite_mode=1, error_message=""
         ), "Get project should return proper project data object"
 
@@ -522,7 +522,7 @@ class TestApiRequestHandler:
         requests_mock.get(
             create_url("get_projects"), exc=requests.exceptions.ConnectTimeout
         )
-        assert api_request_handler.get_project_id("Test Project") == ProjectData(
+        assert api_request_handler.get_project_data("Test Project") == ProjectData(
             project_id=-3,
             suite_mode=-1,
             error_message="Your upload to TestRail did not receive a successful response from your TestRail Instance."

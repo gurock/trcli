@@ -21,6 +21,7 @@ from tests.test_data.results_provider_test_data import (
     TEST_REVERT_FUNCTIONS_AND_EXPECTED,
     TEST_REVERT_FUNCTIONS_IDS,
 )
+from trcli.api.api_request_handler import ProjectData
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import Environment
 from trcli.constants import FAULT_MAPPING, PROMPT_MESSAGES, SuiteModes
@@ -37,7 +38,7 @@ class TestResultsUploader:
         environment.project = "Fake project name"
         environment.case_id = None
         environment.run_id = None
-        environment.file = "attachments.xml"
+        environment.file = "results.xml"
         environment.case_matcher = Matchers.AUTO
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
@@ -206,17 +207,21 @@ class TestResultsUploader:
         results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = ([], "")
         expected_log_calls = []
         if not run_id:
-            expected_log_calls.extend(
-                [
-                    mocker.call("Creating test run. ", new_line=False),
-                    mocker.call("Done."),
-                ]
-            )
-        expected_log_calls.extend(
-            [mocker.call("Closing test run. ", new_line=False), mocker.call("Done.")]
-        )
+            calls = {
+                2: mocker.call("Creating test run. ", new_line=False),
+                3: mocker.call("Run created: https://fake_host.com/index.php?/runs/view/100"),
+                4: mocker.call("Closing test run. ", new_line=False),
+            }
+        else:
+            calls = {
+                2: mocker.call("Updating run: https://fake_host.com/index.php?/runs/view/10"),
+                3: mocker.call("Closing test run. ", new_line=False),
+            }
+
         results_uploader.upload_results()
-        environment.log.assert_has_calls(expected_log_calls)
+        for index, call in calls.items():
+            assert environment.log.call_args_list[index] == call
+
 
     @pytest.mark.results_uploader
     def test_get_suite_id_returns_valid_id(self, result_uploader_data_provider):
@@ -334,7 +339,7 @@ class TestResultsUploader:
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
         "suite_ids, error_message, expected_suite_id, expected_result_code",
-        [([10], "", -1, 1), ([], "Could not get suites", -1, -1)],
+        [([10], "", 10, 1), ([], "Could not get suites", -1, -1)],
         ids=["get_suite_ids succeeds", "get_suite_ids fails"],
     )
     def test_get_suite_id_single_suite_mode(
@@ -630,34 +635,9 @@ class TestResultsUploader:
         ), f"Expected to get {missing_sections, return_code} as a result but got {result} instead."
 
     @pytest.mark.results_uploader
-    def test_add_missing_test_cases_no_missing_test_cases(
-        self, result_uploader_data_provider
-    ):
-        """The purpose of this test is to check that add_missing_test_cases will
-        return empty list and proper return code when there are no missing tests cases."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        result_code = 1
-        missing_test_cases = []
-        results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = (
-            missing_test_cases,
-            "",
-        )
-        result = results_uploader.add_missing_test_cases(project_id)
-
-        assert result == (
-            missing_test_cases,
-            result_code,
-        ), f"Expected to get {(missing_test_cases, result_code)} as a result but got {result} instead."
-
-    @pytest.mark.results_uploader
     @pytest.mark.parametrize(
         "user_response, missing_test_cases, expected_add_test_cases_error, expected_added_test_cases, "
-        "expected_message, expected_result_code, duplicate_case_names",
+        "expected_message, expected_result_code",
         TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA,
         ids=TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS,
     )
@@ -669,7 +649,6 @@ class TestResultsUploader:
         expected_added_test_cases,
         expected_message,
         expected_result_code,
-        duplicate_case_names,
         result_uploader_data_provider,
         mocker,
     ):
@@ -680,11 +659,6 @@ class TestResultsUploader:
             api_request_handler,
             results_uploader,
         ) = result_uploader_data_provider
-        project_id = 1
-        warning_duplicated_case_names = (
-            f"Warning: Case duplicates detected in {environment.file}. "
-            f"This will result in improper results setting."
-        )
         results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = (
             missing_test_cases,
             expected_message,
@@ -696,14 +670,11 @@ class TestResultsUploader:
             expected_added_test_cases,
             expected_add_test_cases_error,
         )
-        results_uploader.api_request_handler.data_provider.check_for_case_names_duplicates.return_value = (
-            duplicate_case_names
-        )
 
         (
             result_added_test_cases,
             result_code,
-        ) = results_uploader.add_missing_test_cases(project_id)
+        ) = results_uploader.add_missing_test_cases()
 
         expected_elog_calls = []
         expected_log_calls = []
@@ -711,11 +682,6 @@ class TestResultsUploader:
             expected_log_calls = [mocker.call(expected_message)]
         else:
             expected_elog_calls.append(mocker.call(expected_message))
-        if duplicate_case_names:
-            expected_log_calls = [
-                mocker.call(warning_duplicated_case_names),
-                *expected_log_calls,
-            ]
         if expected_add_test_cases_error:
             expected_elog_calls.append(mocker.call(expected_add_test_cases_error))
 
@@ -732,40 +698,6 @@ class TestResultsUploader:
                 project_name=environment.project
             )
         )
-
-    @pytest.mark.results_uploader
-    def test_add_missing_test_cases_error_checking(
-        self, result_uploader_data_provider, mocker
-    ):
-        """The purpose of this test is to check that add_missing_test_cases will return empty list
-        and -1 as result code when check_missing_test_cases_ids will fail. Proper message will be printed."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        return_code = -1
-        missing_test_cases = []
-        error_message = "Connection Error."
-        results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = (
-            [],
-            error_message,
-        )
-        result = results_uploader.add_missing_test_cases(project_id)
-        expected_elog_calls = [
-            mocker.call(
-                FAULT_MAPPING["error_checking_missing_item"].format(
-                    missing_item="missing test cases", error_message=error_message
-                )
-            )
-        ]
-
-        environment.elog.assert_has_calls(expected_elog_calls)
-        assert result == (
-            missing_test_cases,
-            return_code,
-        ), f"Expected to get {missing_test_cases, return_code} as a result but got {result} instead."
 
     @pytest.mark.results_uploader
     def test_add_missing_test_cases_duplicated_case_names(
@@ -821,6 +753,12 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
 
+        results_uploader.project = ProjectData(
+            project_id=1,
+            suite_mode=SuiteModes.single_suite,
+            error_message=""
+        )
+
         assert (
             results_uploader.rollback_changes() == []
         ), "No revert function invoked inside so revert_changes output should be empty"
@@ -835,12 +773,18 @@ class TestResultsUploader:
         self, result_uploader_data_provider, failing_function, expected_result, mocker
     ):
         """The purpose of this test is to check that if rollback behave properly
-        when no perrmisions on deleting resources on every stage"""
+        when no permissions on deleting resources on every stage"""
         (
             environment,
             api_request_handler,
             results_uploader,
         ) = result_uploader_data_provider
+
+        results_uploader.project = ProjectData(
+            project_id=1,
+            suite_mode=SuiteModes.multiple_suites,
+            error_message=""
+        )
 
         api_request_handler_delete_mocker(
             results_uploader=results_uploader,
