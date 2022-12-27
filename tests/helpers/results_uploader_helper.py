@@ -47,11 +47,11 @@ def get_project_id_mocker(
     results_uploader: ResultsUploader, project_id, error_message: str, failing=False
 ):
     if failing:
-        results_uploader.api_request_handler.get_project_id.return_value = ProjectData(
+        results_uploader.api_request_handler.get_project_data.return_value = ProjectData(
             project_id=project_id, suite_mode=-1, error_message=error_message
         )
     else:
-        results_uploader.api_request_handler.get_project_id.return_value = ProjectData(
+        results_uploader.api_request_handler.get_project_data.return_value = ProjectData(
             project_id=project_id, suite_mode=1, error_message=""
         )
 
