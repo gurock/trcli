@@ -46,7 +46,7 @@ class ResultsUploader:
         start = time.time()
         results_amount = None
         self.environment.log("Checking project. ", new_line=False)
-        self.project = self.api_request_handler.get_project_id(
+        self.project = self.api_request_handler.get_project_data(
             self.environment.project, self.environment.project_id
         )
         if self.project.project_id == ProjectErrors.not_existing_project:

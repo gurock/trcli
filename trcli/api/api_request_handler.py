@@ -64,7 +64,7 @@ class ApiRequestHandler:
         else:
             return response.error_message
 
-    def get_project_id(self, project_name: str, project_id: int = None) -> ProjectData:
+    def get_project_data(self, project_name: str, project_id: int = None) -> ProjectData:
         """
         Send get_projects with project name
         :project_name: Project name
@@ -591,7 +591,6 @@ class ApiRequestHandler:
         """
         Get all cases from all pages
         """
-        url = f"get_cases/{project_id}&suite_id={suite_id}"
         return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
 
     def __get_all_sections(self, project_id=None, suite_id=None) -> (List[dict], str):
