@@ -82,6 +82,8 @@ Options:
   --case-fields       List of case fields and values for new test cases
                       creation. Usage: --case-fields type_id:1 --case-fields
                       priority_id:3
+  --result-fields     List of result fields and values for test results
+                      creation. Usage: --result-fields custom_environment:2 
   --help              Show this message and exit.
 ```
 
@@ -253,6 +255,7 @@ Possible fields:<br>
 | run_id                 | specifies the Run ID for the Test Run to be created under                                                                                 |
 | close_run              | specifies whether to close the run after adding all the results (false by default)                                                        |
 | case_fields            | dictionary with case fields to be filled on case creation as a key value pair                                                             |
+| result_fields          | dictionary with result fields to be filled on results creation as a key value pair                                                        |
 | run_description        | text to be added to the run description (for example, if you want to add the link to your CI job)                                         |
 
 Below is an example of a sample configuration file for the TestRail CLI.

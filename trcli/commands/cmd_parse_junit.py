@@ -50,6 +50,14 @@ def print_config(env: Environment):
     help="List of case fields and values for new test cases creation. "
          "Usage: --case-fields type_id:1 --case-fields priority_id:3",
 )
+@click.option(
+    "--result-fields",
+    multiple=True,
+    metavar="",
+    default=[],
+    help="List of result fields and values for test results creation. "
+         "Usage: --result-fields custom_type_id:1 --result-fields custom_priority_id:3",
+)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
