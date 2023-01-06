@@ -9,10 +9,11 @@ class ApiDataProvider:
     ApiPostProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
     """
 
-    def __init__(self, suites_input: TestRailSuite, case_fields: dict = None, run_description: str = None):
+    def __init__(self, suites_input: TestRailSuite, case_fields: dict = None, run_description: str = None, result_fields: dict = None):
         self.suites_input = suites_input
         self.case_fields = case_fields
         self.run_description = run_description
+        self.result_fields = result_fields
 
     def add_suites_data(self):
         """Return list of bodies for adding suites"""
@@ -68,7 +69,7 @@ class ApiDataProvider:
             "suite_id": self.suites_input.suite_id,
             "description": '\n'.join(properties),
             "include_all": False,
-            "case_ids": case_ids,
+            "case_ids": case_ids
         }
 
     def add_result_for_case(self, case_id):
@@ -81,6 +82,10 @@ class ApiDataProvider:
         if len(cases) == 1:
             case_id_from_file = cases[0].case_id
             result = to_dict(cases[0].result)
+            if self.result_fields:
+                for field, val in self.result_fields.items():
+                    result[field] = val
+
             if case_id_from_file is None or case_id_from_file == case_id:
                 result["case_id"] = case_id
                 results = [result]
@@ -94,13 +99,19 @@ class ApiDataProvider:
         """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
 
+        bodies = []
+
+        for sublist in testcases:
+            for case in sublist:
+                if case.case_id is not None:
+                    body = to_dict(case.result)
+                    if self.result_fields:
+                        for field, val in self.result_fields.items():
+                            body[field] = val
+                    bodies.append(body)
+
         result_bulks = ApiDataProvider.divide_list_into_bulks(
-            [
-                to_dict(case.result)
-                for sublist in testcases
-                for case in sublist
-                if case.case_id is not None
-            ],
+            bodies,
             bulk_size=bulk_size,
         )
         return [{"results": result_bulk} for result_bulk in result_bulks]
