@@ -51,6 +51,7 @@ class Environment:
         self.run_description = None
         self.case_matcher = None
         self._case_fields = None
+        self._result_fields = None
 
     @property
     def case_fields(self):
@@ -69,6 +70,24 @@ class Environment:
             self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are tuple/list/dictionary.")
             exit(1)
         self._case_fields = fields_dictionary
+
+    @property 
+    def result_fields(self):
+        return self._result_fields
+
+    @result_fields.setter
+    def result_fields(self, result_fields: Union[List[str], dict]):
+        fields_dictionary = {}
+        if isinstance(result_fields, list) or isinstance(result_fields, tuple):
+            for result_field in result_fields:
+                field, value = result_field.split(":", maxsplit=1)
+                fields_dictionary[field] = value
+        elif isinstance(result_fields, dict):
+            fields_dictionary = result_fields
+        else:
+            self.elog(f"Invalid result fields type ({type(result_fields)}), supported types are tuple/list/dictionary.")
+            exit(1)
+        self._result_fields = fields_dictionary
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""
