@@ -1,15 +1,13 @@
-import sys
+import time
 from typing import Tuple, Callable, List
 
 from trcli.api.api_client import APIClient
-from trcli.cli import Environment
 from trcli.api.api_request_handler import ApiRequestHandler
+from trcli.cli import Environment
 from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuiteModes
+from trcli.constants import ProjectErrors, RevertMessages
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_classes.matchers import Matchers
-from trcli.readers.file_parser import FileParser
-from trcli.constants import ProjectErrors, RevertMessages
-import time
 
 
 class ResultsUploader:
@@ -18,11 +16,13 @@ class ResultsUploader:
     Initialized with environment object and result file parser object (any parser derived from FileParser).
     """
 
-    def __init__(self, environment: Environment, result_file_parser: FileParser):
+    def __init__(self, environment: Environment, suite: TestRailSuite):
         self.project = None
         self.environment = environment
-        self.result_file_parser = result_file_parser
-        self.parsed_data: TestRailSuite = self.result_file_parser.parse_file()
+        self.parsed_data = suite
+        self.run_name = self.environment.title
+        if self.environment.special_parser == "saucectl":
+            self.run_name += f" ({self.parsed_data.name})"
         if self.environment.suite_id:
             self.parsed_data.suite_id = self.environment.suite_id
         self.api_request_handler = ApiRequestHandler(
@@ -119,7 +119,7 @@ class ResultsUploader:
             if not self.environment.run_id:
                 self.environment.log(f"Creating test run. ", new_line=False)
                 added_run, error_message = self.api_request_handler.add_run(
-                    self.project.project_id, self.environment.title
+                    self.project.project_id, self.run_name
                 )
                 if error_message:
                     self.environment.elog("\n" + error_message)

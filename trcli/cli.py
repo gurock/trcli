@@ -50,6 +50,7 @@ class Environment:
         self.insecure = None
         self.run_description = None
         self.case_matcher = None
+        self.special_parser = None
         self._case_fields = None
         self._result_fields = None
 
