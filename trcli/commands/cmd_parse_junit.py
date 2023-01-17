@@ -2,6 +2,8 @@ import click
 from junitparser import JUnitXmlError
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
 from trcli.constants import FAULT_MAPPING
+from trcli.readers.file_parser import FileParser
+from trcli.readers.junit_saucectl_xml import JunitSaucectlParser
 from trcli.readers.junit_xml import JunitParser
 from trcli.api.results_uploader import ResultsUploader
 from trcli.data_classes.validation_exception import ValidationException
@@ -56,7 +58,14 @@ def print_config(env: Environment):
     metavar="",
     default=[],
     help="List of result fields and values for test results creation. "
-         "Usage: --result-fields custom_type_id:1 --result-fields custom_priority_id:3",
+         "Usage: --result-fields custom_field_a:value1 --result-fields custom_field_b:3",
+)
+@click.option(
+    "--special-parser",
+    metavar="",
+    default="junit",
+    type=click.Choice(["junit", "saucectl"], case_sensitive=False),
+    help="Optional special parser option for specialized JUnit reports"
 )
 @click.pass_context
 @pass_environment
@@ -66,10 +75,17 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     environment.check_for_required_parameters()
     print_config(environment)
     try:
-        result_uploader = ResultsUploader(
-            environment=environment, result_file_parser=JunitParser(environment)
-        )
-        result_uploader.upload_results()
+        parsers = {
+            "junit": JunitParser,
+            "saucectl": JunitSaucectlParser
+        }
+        selected_parser: FileParser = parsers[environment.special_parser](environment)
+        parsed_suites = selected_parser.parse_file()
+        for suite in parsed_suites:
+            result_uploader = ResultsUploader(
+                environment=environment, suite=suite
+            )
+            result_uploader.upload_results()
     except FileNotFoundError:
         environment.elog(FAULT_MAPPING["missing_file"])
         exit(1)

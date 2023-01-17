@@ -3,6 +3,7 @@ from abc import abstractmethod
 from typing import Union
 
 from trcli.cli import Environment
+from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
 class FileParser:
@@ -24,5 +25,5 @@ class FileParser:
             raise FileNotFoundError("File not found.")
 
     @abstractmethod
-    def parse_file(self):
+    def parse_file(self) -> list[TestRailSuite]:
         raise NotImplementedError
