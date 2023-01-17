@@ -29,7 +29,7 @@ class Property(Element):
     value = Attr()
 
 
-class JunitParser(FileParser):
+class JunitSaucectlParser(FileParser):
     @classmethod
     def _add_root_element_to_tree(cls, filepath: Union[str, Path]) -> etree:
         """
@@ -51,16 +51,33 @@ class JunitParser(FileParser):
         suite = JUnitXml.fromfile(
             self.filepath, parse_func=self._add_root_element_to_tree
         )
-        self.env.log(f"Parsing JUnit report.")
+        self.env.log(f"Parsing JUnit report (special parser: saucectl).")
         cases_count = 0
-        test_sections = []
+
+        subsuites = {}
+        subsuites_parsed_properties = {}
         for section in suite:
             if not len(section):
                 continue
+
+            divider_index = section.name.find('-')
+            subsuite_name = section.name[:divider_index].strip()
+            section_name = section.name[divider_index + 1:].strip()
+
+            if subsuite_name not in subsuites.keys():
+                subsuites[subsuite_name] = []
+                subsuites_parsed_properties[subsuite_name] = []
+
             test_cases = []
             properties = []
+            section_url = None
             for prop in section.properties():
-                properties.append(TestRailProperty(prop.name, prop.value))
+                if prop.name == "url":
+                    section_url = prop.value
+                elif prop.name not in subsuites_parsed_properties[subsuite_name]:
+                    properties.append(TestRailProperty(prop.name, prop.value))
+                    subsuites_parsed_properties[subsuite_name].append(prop.name)
+
             for case in section:
                 cases_count += 1
                 case_id = None
@@ -77,25 +94,25 @@ class JunitParser(FileParser):
                             case_id = int(prop.value.lower().replace("c", ""))
                         if prop.name and prop.name.startswith("testrail_attachment"):
                             attachments.append(prop.value)
+                result = TestRailResult(
+                    case_id,
+                    elapsed=case.time,
+                    junit_result_unparsed=case.result,
+                    attachments=attachments
+                )
+                result.comment = f"SauceLabs session: {section_url}\n\n{result.comment}"
                 test_cases.append(
                     TestRailCase(
                         section.id,
                         case_name,
                         case_id,
-                        result=(
-                            TestRailResult(
-                                case_id,
-                                elapsed=case.time,
-                                junit_result_unparsed=case.result,
-                                attachments=attachments,
-                            )
-                        ),
+                        result=result,
                         custom_automation_id=automation_id
                     )
                 )
-            test_sections.append(
+            subsuites[subsuite_name].append(
                 TestRailSection(
-                    section.name,
+                    section_name,
                     suite.id,
                     time=section.time,
                     section_id=section.id,
@@ -103,15 +120,16 @@ class JunitParser(FileParser):
                     properties=properties,
                 )
             )
-
-        suites = [
-            TestRailSuite(
-                suite.name,
-                suite_id=suite.id,
-                time=suite.time,
-                testsections=test_sections,
-                source=self.filename,
+        suites = []
+        for subsuite_name, test_sections in subsuites.items():
+            suites.append(
+                TestRailSuite(
+                    subsuite_name,
+                    suite_id=suite.id,
+                    time=suite.time,
+                    testsections=test_sections,
+                    source=self.filename,
+                )
             )
-        ]
-        self.env.log(f"Processed {cases_count} test cases in {len(suite.testsections)} sections.")
+        self.env.log(f"Processed {cases_count} test cases in {len(subsuites)} subsuites.")
         return suites
