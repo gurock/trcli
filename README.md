@@ -22,7 +22,7 @@ Commands
 --------
 ```
 $ trcli
-TestRail Connect v1.1.0
+TestRail Connect v1.4.0
 Copyright 2021 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - junit: JUnit XML Files (& Similar)
@@ -62,7 +62,7 @@ Parsers
 -------
 
 ### parse_junit
-For JUnit XML files compatible with Jenkins and pytest reporting schemas
+For JUnit XML files
 ```
 $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
@@ -70,24 +70,28 @@ Usage: trcli parse_junit [OPTIONS]
   Parse report files and upload results to TestRail
 
 Options:
-  -f, --file           Filename and path.
-  --close-run BOOLEAN  Whether to close the newly created run
-  --title              Title of Test Run to be created in TestRail.
-  --suite-id           Suite ID for the results they are reporting.  [x>=1]
-  --run-id             Run ID for the results they are reporting (otherwise
-                       the tool will attempt to create a new run).  [x>=1]
-  --run-description    Summary text to be added to the test run.
-  --case-fields        List of case fields and values for new test cases
-                       creation. Usage: --case-fields type_id:1 --case-fields
-                       priority_id:3
-  --help               Show this message and exit.
+  -f, --file          Filename and path.
+  --close-run         Close the newly created run
+  --title             Title of Test Run to be created in TestRail.
+  --case-matcher      Mechanism to match cases between the JUnit report and
+                      TestRail.
+  --suite-id          Suite ID for the results they are reporting.  [x>=1]
+  --run-id            Run ID for the results they are reporting (otherwise the
+                      tool will attempt to create a new run).  [x>=1]
+  --run-description   Summary text to be added to the test run.
+  --case-fields       List of case fields and values for new test cases
+                      creation. Usage: --case-fields type_id:1 --case-fields
+                      priority_id:3
+  --help              Show this message and exit.
 ```
 
 #### JUnit XML report example
 ```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
-    <properties><property name="setting1" value="True"/></properties>
+    <properties>
+     <property name="setting1" value="True"/>
+    </properties>
     <testcase classname="tests.LoginTests" name="test_case_1" time="159">
       <skipped type="pytest.skip" message="Please skip">skipped by user</skipped>
     </testcase>
@@ -119,8 +123,23 @@ Options:
 When you upload a new JUnit XML file containing test automation results, the TestRail CLI will automatically generate a new test run with the test cases from your report file and upload the results.
 
 To specify which test cases to add to the test run, the TestRail CLI will attempt to match the test cases in your automation suite to test cases in TestRail.
+There are 2 mechanisms to match test cases:
+- Using Automation ID
+- Using Case ID (in test case `name` or `property`)
 
-To allow for this, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
+The first mechanism allows to automatically create test cases, meaning you can take an automation-first approach,
+while the second one is suited for a specification first approach, where you write your test cases in TestRail and add the case ID to your automated tests.
+
+> **Note:**
+> 
+> If you are using a **multi-suite project** in TestRail, you should provide the ID of the test suite 
+> you want the cases to be created in using the `--suite-id` command line option, 
+> otherwise the CLI tool will attempt to find the suite on TestRail by name.
+
+
+##### Using Automation ID
+
+To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
 of type `String` with system name `automation_id`.
 
 The TestRail CLI will use the unique combination of your automation test case’s classname and name (expressed as `classname.name`) to compare against values of the `automation_id` field in your TestRail test case repository.
@@ -128,24 +147,47 @@ If a match is found, this test case will be included in the auto-generated test 
 
 Example:
 
-| Test Result from Automation Results File                                               | Automation ID in TestRail   |
-|----------------------------------------------------------------------------------------|-----------------------------|
+| Test Result from Automation Results File                                               | Automation ID in TestRail    |
+|----------------------------------------------------------------------------------------|------------------------------|
 | ```<testcase classname="tests.LoginTests" name="test_case_1" time="159"></testcase>``` | tests.LoginTests.test_case_1 |
 
-```
-Important usage notes: 
 
-1. If you would like to upload automation results for test cases that already exist in TestRail, be sure to update the automation_id for those test cases before uploading your automation results
-2. If you change the test name in your automation suite later, that will create a new test case in TestRail, unless you also update the automation_id field for the test case in TestRail
-```
+> **Important usage notes:**
+> 1. If you would like to upload automation results for test cases that already exist in TestRail, be sure to update the `automation_id` for those test cases before uploading your automation results
+> 2. If you change the test name in your automation suite later, that will create a new test case in TestRail, unless you also update the `automation_id` field for the test case in TestRail
 
-When you upload your test automation results, the TestRail CLI will prompt you to choose how it should handle test cases that it cannot match in TestRail:
-- If you enter `yes`, the TestRail CLI will automatically add new test cases in TestRail based on your automation test case, and add the `classname.name` value to the Automation ID field of the new test case.
-- If you enter `no`, the TestRail CLI will not automatically provision a test case in TestRail and will ignore your test automation result
+> When you upload your test automation results, the TestRail CLI will prompt you to choose how it should handle test cases that it cannot match in TestRail:
+> - If you enter `yes`, the TestRail CLI will automatically add new test cases in TestRail based on your automation test case, and add the `classname.name` value to the Automation ID field of the new test case.
+> - If you enter `no`, the TestRail CLI will not automatically provision a test case in TestRail and will ignore your test automation result
 
 If you are using the CLI tool in a CI context, you can use the `-y` option to automatically accept all prompts.
 
-You can also provide the ID of the test suite you want the cases to be created in using the `--suite-id` command line option, otherwise the CLI tool will attempt to find the suite on TestRail by name.<br>
+##### Using Case ID
+
+You can use the Case ID mechanism if you want to manually match your automated test cases to case IDs in TestRail.
+From an implementation perspective, you can do this in one of two ways:
+
+- Map by setting the case ID in the test name, using the case-matcher `name`:
+```xml
+<testsuites name="test suites root">
+  <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
+    <testcase classname="tests.LoginTests" name="[C123] test_case_1" time="650" />
+  </testsuite>
+</testsuites>
+```
+
+- Map by setting the case ID in a test case property, using case-matcher `property`:
+```xml
+<testsuites name="test suites root">
+  <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
+    <testcase classname="tests.LoginTests" name="test_case_1" time="650">
+     <properties>
+         <property name="test_id" value="C123"/>
+     </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
 
 #### Attaching logs, screenshots, etc. to test results
 The TestRail CLI can attach any file type to test results, up to a maximum allowable upload size of 256MB.
@@ -159,7 +201,7 @@ You can add one or more properties with the name `testrail_attachment` and the f
      <properties>
          <property name="testrail_attachment" value="/path_to_/logs.log"/>
          <property name="testrail_attachment" value="/path_to_/screenshot.jpg"/>
-     </properties>>
+     </properties>
     </testcase>
   </testsuite>
 </testsuites>
