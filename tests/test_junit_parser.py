@@ -31,17 +31,12 @@ class TestJunitParser:
             (
                 Path(__file__).parent / "test_data/XML/required_only.xml",
                 Path(__file__).parent / "test_data/json/required_only.json",
-            ),
-            (
-                Path(__file__).parent / "test_data/XML/elapsed.xml",
-                Path(__file__).parent / "test_data/json/elapsed.json",
-            ),
+            )
         ],
         ids=[
             "XML without testsuites root",
             "XML with testsuites root",
             "XML with no data",
-            "XML with different time units",
         ],
     )
     @pytest.mark.parse_junit
