@@ -66,12 +66,13 @@ class TestRailResult:
         try:
             # If elapsed is less than 1 convert it to milliseconds
             # Anything lower than 1 millisecond will be omitted
-            if float(elapsed) < 1:
-                rounded_ms = round(float(elapsed) * 1000)
-                return f"{rounded_ms}ms" if rounded_ms > 0 else None
+            elapsed = float(elapsed)
+            if elapsed >= 1:
+                return f"{round(elapsed)}s"
+            elif elapsed >= 0.001:
+                return f"{round(elapsed * 1000)}ms"
             else:
-                rounded_secs = round(float(elapsed))
-                return f"{rounded_secs}s" if rounded_secs > 0 else None
+                return None
 
         except ValueError:
             # unable to parse time format
