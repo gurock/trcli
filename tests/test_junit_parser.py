@@ -57,19 +57,33 @@ class TestJunitParser:
 
     @pytest.mark.parse_junit
     @pytest.mark.parametrize(
-        "matcher", [Matchers.NAME, Matchers.PROPERTY],
+        "matcher, input_xml_path, expected_path",
+        [
+            (
+                Matchers.NAME,
+                Path(__file__).parent / "test_data/XML/root_id_in_name.xml",
+                Path(__file__).parent / "test_data/json/root_id_in_name.json",
+            ),
+            (
+                Matchers.PROPERTY,
+                Path(__file__).parent / "test_data/XML/root_id_in_property.xml",
+                Path(__file__).parent / "test_data/json/root_id_in_property.json",
+            )
+        ],
         ids=["Case Matcher Name", "Case Matcher Property"],
     )
     @pytest.mark.parse_junit
-    def test_junit_xml_parser_id_matcher_name(self, matcher, freezer):
+    def test_junit_xml_parser_id_matcher_name(
+            self, matcher: str, input_xml_path: Union[str, Path], expected_path: str, freezer
+    ):
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
         env.case_matcher = matcher
-        env.file = Path(__file__).parent / f"test_data/xml/root_id_in_{matcher}.xml"
+        env.file = input_xml_path
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
         parsing_result_json = asdict(read_junit)
-        file_json = open(Path(__file__).parent / f"test_data/json/root_id_in_{matcher}.json")
+        file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert DeepDiff(parsing_result_json, expected_json) == {}, \
             f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
