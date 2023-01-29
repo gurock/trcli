@@ -1,0 +1,86 @@
+{
+    "name": "Firefox",
+    "suite_id": null,
+    "time": 3.419,
+    "description": null,
+    "testsections": [
+        {
+            "name": "test_suite_1.cy.js",
+            "suite_id": null,
+            "time": 0.945,
+            "parent_id": null,
+            "description": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "section_id": null,
+                    "title": "Component 1 Verify page structure",
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "result": {
+                        "case_id": null,
+                        "status_id": 1,
+                        "comment": "SauceLabs session: https://app.saucelabs.com/tests/7d7544f09a47428fb97ee53d1a5b1419\n\n",
+                        "version": null,
+                        "elapsed": "1s",
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [],
+                        "junit_result_unparsed": []
+                    },
+                    "custom_automation_id": "Verify page structure.Component 1 Verify page structure"
+                }
+            ],
+            "properties": [
+                {
+                    "name": "browser",
+                    "value": "firefox 108",
+                    "description": "browser: firefox 108"
+                },
+                {
+                    "name": "platform",
+                    "value": "Windows 11",
+                    "description": "platform: Windows 11"
+                }
+            ]
+        },
+        {
+            "name": "test_suite_2.cy.js",
+            "suite_id": null,
+            "time": 0.967,
+            "parent_id": null,
+            "description": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "section_id": null,
+                    "title": "Component 2 Verify page structure",
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "result": {
+                        "case_id": null,
+                        "status_id": 1,
+                        "comment": "SauceLabs session: https://app.saucelabs.com/tests/cbb864e049c645e1a96d56e953fe33f0\n\n",
+                        "version": null,
+                        "elapsed": "1s",
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [],
+                        "junit_result_unparsed": []
+                    },
+                    "custom_automation_id": "Verify page structure.Component 2 Verify page structure"
+                }
+            ],
+            "properties": []
+        }
+    ],
+    "source": "sauce.xml"
+}
