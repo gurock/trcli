@@ -83,7 +83,10 @@ Options:
                       creation. Usage: --case-fields type_id:1 --case-fields
                       priority_id:3
   --result-fields     List of result fields and values for test results
-                      creation. Usage: --result-fields custom_environment:2 
+                      creation. Usage: --result-fields custom_field_a:value1
+                      --result-fields custom_field_b:3
+  --special-parser    Optional special parser option for specialized JUnit
+                      reports
   --help              Show this message and exit.
 ```
 
