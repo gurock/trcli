@@ -5,6 +5,7 @@ from xml.etree.ElementTree import ParseError
 
 from deepdiff import DeepDiff
 from junitparser import JUnitXmlError
+from trcli.readers.junit_saucectl_xml import JunitSaucectlParser
 
 from trcli.cli import Environment
 from trcli.data_classes.matchers import Matchers
@@ -54,6 +55,24 @@ class TestJunitParser:
         expected_json = json.load(file_json)
         assert DeepDiff(parsing_result_json, expected_json) == {}, \
             f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_sauce(self, freezer):
+        def _compare(junit_output, expected_path):
+            read_junit = self.__clear_unparsable_junit_elements(junit_output)
+            parsing_result_json = asdict(read_junit)
+            file_json = open(expected_path)
+            expected_json = json.load(file_json)
+            assert DeepDiff(parsing_result_json, expected_json) == {}, \
+                f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+        freezer.move_to("2020-05-20 01:00:00")
+        env = Environment()
+        env.case_matcher = Matchers.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/sauce.xml"
+        file_reader = JunitSaucectlParser(env)
+        junit_outputs = file_reader.parse_file()
+        _compare(junit_outputs[0], Path(__file__).parent / "test_data/json/sauce1.json",)
+        _compare(junit_outputs[1], Path(__file__).parent / "test_data/json/sauce2.json", )
 
     @pytest.mark.parse_junit
     @pytest.mark.parametrize(
