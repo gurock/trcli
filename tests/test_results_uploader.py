@@ -46,7 +46,7 @@ class TestResultsUploader:
             "trcli.api.results_uploader.ApiRequestHandler"
         )
         results_uploader = ResultsUploader(
-            environment=environment, result_file_parser=junit_file_parser
+            environment=environment, suite=junit_file_parser
         )
         yield environment, api_request_handler, results_uploader
 
@@ -726,7 +726,7 @@ class TestResultsUploader:
             environment.timeout = timeout
         timeout_expected_result = 30 if not timeout else timeout
         result_uploader = ResultsUploader(
-            environment=environment, result_file_parser=junit_file_parser
+            environment=environment, suite=junit_file_parser
         )
 
         api_client = result_uploader.instantiate_api_client()

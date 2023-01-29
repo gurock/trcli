@@ -48,7 +48,7 @@ class TestJunitParser:
         env.case_matcher = Matchers.AUTO
         env.file = input_xml_path
         file_reader = JunitParser(env)
-        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
@@ -81,7 +81,7 @@ class TestJunitParser:
         env.case_matcher = matcher
         env.file = input_xml_path
         file_reader = JunitParser(env)
-        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file())
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
