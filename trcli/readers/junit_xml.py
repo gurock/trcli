@@ -113,5 +113,5 @@ class JunitParser(FileParser):
                 source=self.filename,
             )
         ]
-        self.env.log(f"Processed {cases_count} test cases in {len(suite.testsections)} sections.")
+        self.env.log(f"Processed {cases_count} test cases in {len(suites[0].testsections)} sections.")
         return suites
