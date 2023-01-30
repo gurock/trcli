@@ -6,7 +6,7 @@ from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.data_classes.matchers import Matchers
+from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import (
     ProjectErrors,
@@ -294,7 +294,7 @@ class ApiRequestHandler:
         returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
         if error_message:
             return False, error_message
-        if self.environment.case_matcher == Matchers.AUTO:
+        if self.environment.case_matcher == MatchersParser.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
                 aut_case_id = case["custom_automation_id"]
@@ -374,26 +374,6 @@ class ApiRequestHandler:
             returned_resources
         ) > 0 else "Update skipped"
         return returned_resources, error_message
-
-    def update_case_result(self, run_id, case_id):
-        """
-        Updates result for case.
-        :run_id: run id
-        :case_id: case id
-        :returns: Tuple with dict (updated resource) and error string.
-        """
-        update_case_data = self.data_provider.add_result_for_case(case_id=case_id)
-        response_text = ""
-        if update_case_data:
-            response = self.client.send_post(
-                f"add_result_for_case/{run_id}/{update_case_data.pop('case_id')}",
-                update_case_data,
-            )
-            response_text = response.response_text
-            error_message = response.error_message
-        else:
-            error_message = FAULT_MAPPING["mismatch_between_case_id_and_result_file"]
-        return response_text, error_message
 
     def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
         """

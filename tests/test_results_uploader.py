@@ -25,7 +25,7 @@ from trcli.api.api_request_handler import ProjectData
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import Environment
 from trcli.constants import FAULT_MAPPING, PROMPT_MESSAGES, SuiteModes
-from trcli.data_classes.matchers import Matchers
+from trcli.data_classes.data_parsers import MatchersParser
 from trcli.readers.junit_xml import JunitParser
 from trcli.constants import ProjectErrors
 
@@ -39,7 +39,7 @@ class TestResultsUploader:
         environment.case_id = None
         environment.run_id = None
         environment.file = "results.xml"
-        environment.case_matcher = Matchers.AUTO
+        environment.case_matcher = MatchersParser.AUTO
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(

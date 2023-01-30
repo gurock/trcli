@@ -4,7 +4,7 @@ from typing import Union
 from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
 from xml.etree import ElementTree as etree
 
-from trcli.data_classes.matchers import Matchers
+from trcli.data_classes.data_parsers import MatchersParser, ResultFieldsParser
 from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -67,16 +67,23 @@ class JunitParser(FileParser):
                 automation_id = None
                 case_name = case.name
                 attachments = []
-                if self.case_matcher == Matchers.AUTO:
+                result_fields = []
+                if self.case_matcher == MatchersParser.AUTO:
                     automation_id = f"{case.classname}.{case_name}"
-                elif self.case_matcher == Matchers.NAME:
-                    case_id, case_name = Matchers.parse_name_with_id(case_name)
+                elif self.case_matcher == MatchersParser.NAME:
+                    case_id, case_name = MatchersParser.parse_name_with_id(case_name)
                 for case_props in case.iterchildren(Properties):
                     for prop in case_props.iterchildren(Property):
-                        if prop.name and self.case_matcher == Matchers.PROPERTY and prop.name == "test_id":
+                        if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
                             case_id = int(prop.value.lower().replace("c", ""))
                         if prop.name and prop.name.startswith("testrail_attachment"):
                             attachments.append(prop.value)
+                        if prop.name and prop.name.startswith("testrail_result_field"):
+                            result_fields.append(prop.value)
+                result_fields_dict, error = ResultFieldsParser.parse_result_fields(result_fields)
+                if error:
+                    self.env.elog(error)
+                    raise Exception(error)
                 test_cases.append(
                     TestRailCase(
                         section.id,
@@ -88,6 +95,7 @@ class JunitParser(FileParser):
                                 elapsed=case.time,
                                 junit_result_unparsed=case.result,
                                 attachments=attachments,
+                                result_fields=result_fields_dict
                             )
                         ),
                         custom_automation_id=automation_id

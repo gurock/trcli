@@ -33,7 +33,8 @@
             "status_id": 1,
             "case_id": 100,
             "version": null,
-            "attachments": []
+            "attachments": [],
+            "result_fields": {}
           },
           "section_id": 321,
           "template_id": null,
@@ -58,7 +59,8 @@
             "attachments": [
               "/first.file",
               "second.file"
-            ]
+            ],
+            "result_fields": {}
           },
           "section_id": 321,
           "template_id": null,
@@ -80,7 +82,8 @@
             "status_id": 1,
             "case_id": null,
             "version": null,
-            "attachments": []
+            "attachments": [],
+            "result_fields": {}
           },
           "section_id": 321,
           "template_id": null,

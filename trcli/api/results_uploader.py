@@ -7,7 +7,7 @@ from trcli.cli import Environment
 from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuiteModes
 from trcli.constants import ProjectErrors, RevertMessages
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.data_classes.matchers import Matchers
+from trcli.data_classes.data_parsers import MatchersParser
 
 
 class ResultsUploader:
@@ -70,7 +70,7 @@ class ResultsUploader:
             exit(1)
         else:
             if self.environment.auto_creation_response:
-                if self.environment.case_matcher == Matchers.AUTO:
+                if self.environment.case_matcher == MatchersParser.AUTO:
                     automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
                     if automation_id_error:
                         self.environment.elog(automation_id_error)
