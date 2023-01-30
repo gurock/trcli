@@ -43,6 +43,7 @@ post_run_bodies = {
     "suite_id": 123,
     "case_ids": [60, 4],
     "include_all": False,
+    "milestone_id": None
 }
 
 post_results_for_cases_body = [

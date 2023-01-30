@@ -119,7 +119,7 @@ class ResultsUploader:
             if not self.environment.run_id:
                 self.environment.log(f"Creating test run. ", new_line=False)
                 added_run, error_message = self.api_request_handler.add_run(
-                    self.project.project_id, self.run_name
+                    self.project.project_id, self.run_name, self.environment.milestone_id
                 )
                 if error_message:
                     self.environment.elog("\n" + error_message)
