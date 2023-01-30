@@ -43,6 +43,12 @@ def print_config(env: Environment):
     metavar="",
     help="Run ID for the results they are reporting (otherwise the tool will attempt to create a new run).",
 )
+@click.option(
+    "--milestone-id",
+    type=click.IntRange(min=1),
+    metavar="",
+    help="Milestone ID to which the Test Run should be associated to.",
+)
 @click.option("--run-description", metavar="", default="", help="Summary text to be added to the test run.")
 @click.option(
     "--case-fields",
