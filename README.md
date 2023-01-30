@@ -194,10 +194,19 @@ From an implementation perspective, you can do this in one of two ways:
 </testsuites>
 ```
 
-#### Attaching logs, screenshots, etc. to test results
+#### Test results fields and attachments
+
+##### Result fields
+TestRail allows adding various types of data to test results, including custom fields. To enrich your automated test 
+results, you can use the `testrail_result_field` property on your test cases to send in various types of information, 
+using the pattern on the sample report below.
+
+##### Attachments
 The TestRail CLI can attach any file type to test results, up to a maximum allowable upload size of 256MB.
 To send attach any file to a test result, you can make use of properties under testcases.
 You can add one or more properties with the name `testrail_attachment` and the file path you want to upload as the value attribute.
+
+##### Sample report
 ```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="tests.LoginTests">
@@ -206,6 +215,8 @@ You can add one or more properties with the name `testrail_attachment` and the f
      <properties>
          <property name="testrail_attachment" value="/path_to_/logs.log"/>
          <property name="testrail_attachment" value="/path_to_/screenshot.jpg"/>
+         <property name="testrail_result_field" value="version:1.1"/>
+         <property name="testrail_result_field" value="custom_field:custom_value"/>
      </properties>
     </testcase>
   </testsuite>
