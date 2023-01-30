@@ -78,6 +78,8 @@ Options:
   --suite-id          Suite ID for the results they are reporting.  [x>=1]
   --run-id            Run ID for the results they are reporting (otherwise the
                       tool will attempt to create a new run).  [x>=1]
+  --milestone-id      Milestone ID to which the Test Run should be associated
+                      to.  [x>=1] 
   --run-description   Summary text to be added to the test run.
   --case-fields       List of case fields and values for new test cases
                       creation. Usage: --case-fields type_id:1 --case-fields
@@ -266,7 +268,8 @@ Possible fields:<br>
 | timeout                | specifies how many seconds to wait for more results before termination                                                                    |
 | auto_creation_response | Sets the response for auto creation prompts. If not set user will be prompted whether to create resources (suite, test case etc.) or not. |
 | suite_id               | specifies the Suite ID for the Test Run to be created under                                                                               |
-| run_id                 | specifies the Run ID for the Test Run to be created under                                                                                 |
+| run_id                 | specifies the Run ID to be updated                                                                                                        |
+| milesonte_id           | specifies the Milestone ID for the Test Run to be created under                                                                           |
 | close_run              | specifies whether to close the run after adding all the results (false by default)                                                        |
 | case_fields            | dictionary with case fields to be filled on case creation as a key value pair                                                             |
 | result_fields          | dictionary with result fields to be filled on results creation as a key value pair                                                        |

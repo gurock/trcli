@@ -375,14 +375,14 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def add_run(self, project_id: int, run_name: str) -> (List[dict], str):
+    def add_run(self, project_id: int, run_name: str, milestone_id: int = None) -> (List[dict], str):
         """
         Creates a new test run.
         :project_id: project_id
         :run_name: run name
         :returns: Tuple with run id and error string.
         """
-        add_run_data = self.data_provider.add_run(run_name)
+        add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
         response = self.client.send_post(f"add_run/{project_id}", add_run_data)
         return response.response_text.get("id"), response.error_message
 
