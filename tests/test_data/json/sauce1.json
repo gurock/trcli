@@ -30,8 +30,9 @@
                         "defects": null,
                         "assignedto_id": null,
                         "attachments": [],
-                        "junit_result_unparsed": []
-                    },
+                        "junit_result_unparsed": [],
+                        "result_fields": {}
+                },
                     "custom_automation_id": "Verify page structure.Component 1 Verify page structure"
                 }
             ],
@@ -74,7 +75,8 @@
                         "defects": null,
                         "assignedto_id": null,
                         "attachments": [],
-                        "junit_result_unparsed": []
+                        "junit_result_unparsed": [],
+                        "result_fields": {}
                     },
                     "custom_automation_id": "Verify page structure.Component 2 Verify page structure"
                 }

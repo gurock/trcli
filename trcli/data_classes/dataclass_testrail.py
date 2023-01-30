@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List, Optional
-from serde import field, serialize, deserialize
+from serde import field, serialize, deserialize, to_dict
 from time import gmtime, strftime
 from trcli.data_classes.validation_exception import ValidationException
 
@@ -20,6 +20,7 @@ class TestRailResult:
     defects: str = field(default=None, skip_if_default=True)
     assignedto_id: int = field(default=None, skip_if_default=True)
     attachments: Optional[List[str]] = field(default_factory=list, skip_if_default=True)
+    result_fields: Optional[dict] = field(default_factory=dict, skip=True)
     junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
@@ -32,6 +33,7 @@ class TestRailResult:
             )
         if self.elapsed is not None:
             self.elapsed = self.proper_format_for_elapsed(self.elapsed)
+
 
     @staticmethod
     def calculate_status_id_from_junit_element(junit_result: list) -> int:
@@ -75,6 +77,22 @@ class TestRailResult:
             # unable to parse time format
             return None
 
+    def add_global_result_fields(self, results_fields: dict) -> None:
+        """Add global result fields without overriding the existing test-specific result fields
+
+        :param results_fields: Global results fields to be added to the result
+        :return: None
+        """
+        if not results_fields:
+            return
+        new_results_fields = results_fields.copy()
+        new_results_fields.update(self.result_fields)
+        self.result_fields = new_results_fields
+
+    def to_dict(self) -> dict:
+        result_dict = to_dict(self)
+        result_dict.update(self.result_fields)
+        return result_dict
 
 @serialize
 @deserialize

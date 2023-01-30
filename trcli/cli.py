@@ -16,6 +16,7 @@ from trcli.constants import (
     TOOL_VERSION_AND_USAGE,
     MISSING_COMMAND_SLOGAN,
 )
+from trcli.data_classes.data_parsers import ResultFieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
@@ -78,17 +79,11 @@ class Environment:
 
     @result_fields.setter
     def result_fields(self, result_fields: Union[List[str], dict]):
-        fields_dictionary = {}
-        if isinstance(result_fields, list) or isinstance(result_fields, tuple):
-            for result_field in result_fields:
-                field, value = result_field.split(":", maxsplit=1)
-                fields_dictionary[field] = value
-        elif isinstance(result_fields, dict):
-            fields_dictionary = result_fields
-        else:
-            self.elog(f"Invalid result fields type ({type(result_fields)}), supported types are tuple/list/dictionary.")
+        fields_dict, error = ResultFieldsParser.parse_result_fields(result_fields)
+        if error:
+            self.elog(error)
             exit(1)
-        self._result_fields = fields_dictionary
+        self._result_fields = fields_dict
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only is silent mode is disabled."""

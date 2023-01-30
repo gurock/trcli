@@ -7,6 +7,8 @@
     <property name="test_id" value="666"/>
     <property name="testrail_attachment" value="/first.file"/>
     <property name="testrail_attachment" value="second.file"/>
+    <property name="testrail_result_field" value="version:1.1"/>
+    <property name="testrail_result_field" value="custom_field:custom_val"/>
 </properties>
 <skipped type="pytest.skip" message="Please skip">skipped by user</skipped></testcase>
 </testsuite>
