@@ -8,7 +8,7 @@ from junitparser import JUnitXmlError
 from trcli.readers.junit_saucectl_xml import JunitSaucectlParser
 
 from trcli.cli import Environment
-from trcli.data_classes.matchers import Matchers
+from trcli.data_classes.data_parsers import MatchersParser
 from trcli.readers.junit_xml import JunitParser
 from typing import Union
 from dataclasses import asdict
@@ -46,13 +46,15 @@ class TestJunitParser:
     ):
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
-        env.case_matcher = Matchers.AUTO
+        env.case_matcher = MatchersParser.AUTO
         env.file = input_xml_path
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
+        print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
+        print(expected_json)
         assert DeepDiff(parsing_result_json, expected_json) == {}, \
             f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
@@ -67,7 +69,7 @@ class TestJunitParser:
                 f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
-        env.case_matcher = Matchers.AUTO
+        env.case_matcher = MatchersParser.AUTO
         env.file = Path(__file__).parent / "test_data/XML/sauce.xml"
         file_reader = JunitSaucectlParser(env)
         junit_outputs = file_reader.parse_file()
@@ -79,14 +81,14 @@ class TestJunitParser:
         "matcher, input_xml_path, expected_path",
         [
             (
-                Matchers.NAME,
-                Path(__file__).parent / "test_data/XML/root_id_in_name.xml",
-                Path(__file__).parent / "test_data/json/root_id_in_name.json",
+                    MatchersParser.NAME,
+                    Path(__file__).parent / "test_data/XML/root_id_in_name.xml",
+                    Path(__file__).parent / "test_data/json/root_id_in_name.json",
             ),
             (
-                Matchers.PROPERTY,
-                Path(__file__).parent / "test_data/XML/root_id_in_property.xml",
-                Path(__file__).parent / "test_data/json/root_id_in_property.json",
+                    MatchersParser.PROPERTY,
+                    Path(__file__).parent / "test_data/XML/root_id_in_property.xml",
+                    Path(__file__).parent / "test_data/json/root_id_in_property.json",
             )
         ],
         ids=["Case Matcher Name", "Case Matcher Property"],

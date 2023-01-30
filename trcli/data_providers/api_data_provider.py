@@ -72,29 +72,6 @@ class ApiDataProvider:
             "case_ids": case_ids
         }
 
-    def add_result_for_case(self, case_id):
-        """Return body for adding result for case with case_id."""
-        results = []
-
-        testcases = [sections.testcases for sections in self.suites_input.testsections]
-        cases = [case for sublist in testcases for case in sublist]
-
-        if len(cases) == 1:
-            case_id_from_file = cases[0].case_id
-            result = to_dict(cases[0].result)
-            if self.result_fields:
-                for field, val in self.result_fields.items():
-                    result[field] = val
-
-            if case_id_from_file is None or case_id_from_file == case_id:
-                result["case_id"] = case_id
-                results = [result]
-            else:
-                results = []
-        else:
-            results = []
-        return results[0] if results else None
-
     def add_results_for_cases(self, bulk_size):
         """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
@@ -104,10 +81,8 @@ class ApiDataProvider:
         for sublist in testcases:
             for case in sublist:
                 if case.case_id is not None:
-                    body = to_dict(case.result)
-                    if self.result_fields:
-                        for field, val in self.result_fields.items():
-                            body[field] = val
+                    case.result.add_global_result_fields(self.result_fields)
+                    body = case.result.to_dict()
                     bodies.append(body)
 
         result_bulks = ApiDataProvider.divide_list_into_bulks(
