@@ -1,19 +1,18 @@
-import pytest
 import json
+from dataclasses import asdict
 from pathlib import Path
+from typing import Union
 from xml.etree.ElementTree import ParseError
 
+import pytest
 from deepdiff import DeepDiff
 from junitparser import JUnitXmlError
-from trcli.readers.junit_saucectl_xml import JunitSaucectlParser
 
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser
-from trcli.readers.junit_xml import JunitParser
-from typing import Union
-from dataclasses import asdict
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_classes.validation_exception import ValidationException
+from trcli.readers.junit_xml import JunitParser
 
 
 class TestJunitParser:
@@ -51,7 +50,6 @@ class TestJunitParser:
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
-        print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         print(expected_json)
@@ -71,7 +69,8 @@ class TestJunitParser:
         env = Environment()
         env.case_matcher = MatchersParser.AUTO
         env.file = Path(__file__).parent / "test_data/XML/sauce.xml"
-        file_reader = JunitSaucectlParser(env)
+        env.special_parser = "saucectl"
+        file_reader = JunitParser(env)
         junit_outputs = file_reader.parse_file()
         _compare(junit_outputs[0], Path(__file__).parent / "test_data/json/sauce1.json",)
         _compare(junit_outputs[1], Path(__file__).parent / "test_data/json/sauce2.json", )

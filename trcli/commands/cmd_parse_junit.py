@@ -1,13 +1,13 @@
+from xml.etree.ElementTree import ParseError
+
 import click
 from junitparser import JUnitXmlError
+
+from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
 from trcli.constants import FAULT_MAPPING
-from trcli.readers.file_parser import FileParser
-from trcli.readers.junit_saucectl_xml import JunitSaucectlParser
-from trcli.readers.junit_xml import JunitParser
-from trcli.api.results_uploader import ResultsUploader
 from trcli.data_classes.validation_exception import ValidationException
-from xml.etree.ElementTree import ParseError
+from trcli.readers.junit_xml import JunitParser
 
 
 def print_config(env: Environment):
@@ -17,6 +17,8 @@ def print_config(env: Environment):
             f"\n> TestRail instance: {env.host} (user: {env.username})"
             f"\n> Project: {env.project if env.project else env.project_id}"
             f"\n> Run title: {env.title}"
+            f"\n> Update run: {env.run_id if env.run_id else 'No'}"
+            f"\n> Add to milestone: {env.milestone_id if env.milestone_id else 'No'}"
             f"\n> Auto-create entities: {env.auto_creation_response}")
 
 
@@ -81,16 +83,9 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     environment.check_for_required_parameters()
     print_config(environment)
     try:
-        parsers = {
-            "junit": JunitParser,
-            "saucectl": JunitSaucectlParser
-        }
-        selected_parser: FileParser = parsers[environment.special_parser](environment)
-        parsed_suites = selected_parser.parse_file()
+        parsed_suites = JunitParser(environment).parse_file()
         for suite in parsed_suites:
-            result_uploader = ResultsUploader(
-                environment=environment, suite=suite
-            )
+            result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()
     except FileNotFoundError:
         environment.elog(FAULT_MAPPING["missing_file"])
