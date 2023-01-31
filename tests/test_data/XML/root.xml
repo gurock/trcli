@@ -9,6 +9,8 @@
     <property name="testrail_attachment" value="second.file"/>
     <property name="testrail_result_field" value="version:1.1"/>
     <property name="testrail_result_field" value="custom_field:custom_val"/>
+    <property name="testrail_result_comment" value="Finding 1"/>
+    <property name="testrail_result_comment" value="Finding 2"/>
 </properties>
 <skipped type="pytest.skip" message="Please skip">skipped by user</skipped></testcase>
 </testsuite>

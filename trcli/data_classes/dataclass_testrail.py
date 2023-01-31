@@ -77,6 +77,9 @@ class TestRailResult:
             # unable to parse time format
             return None
 
+    def prepend_comment(self, comment: str):
+        self.comment = f"{comment}\n\n{self.comment}"
+
     def add_global_result_fields(self, results_fields: dict) -> None:
         """Add global result fields without overriding the existing test-specific result fields
 
