@@ -16,7 +16,7 @@
                                   "milestone_id": null,
                                   "refs": null,
                                   "result": {"assignedto_id": null,
-                                             "comment": "Type: pytest.skip\nMessage: Please skip\nText: skipped by user",
+                                             "comment": "Finding 1\n\nFinding 2\n\nType: pytest.skip\nMessage: Please skip\nText: skipped by user",
                                              "defects": null,
                                              "elapsed": "159s",
                                              "junit_result_unparsed": [],

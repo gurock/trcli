@@ -203,6 +203,10 @@ TestRail allows adding various types of data to test results, including custom f
 results, you can use the `testrail_result_field` property on your test cases to send in various types of information, 
 using the pattern on the sample report below.
 
+##### Result comments
+TestRail results allow you to add comments. In case you want to send in extra information from your automated
+test cases, you can use the `testrail_result_comment` property to append one or more text values to the result comment.
+
 ##### Attachments
 The TestRail CLI can attach any file type to test results, up to a maximum allowable upload size of 256MB.
 To send attach any file to a test result, you can make use of properties under testcases.
@@ -219,6 +223,8 @@ You can add one or more properties with the name `testrail_attachment` and the f
          <property name="testrail_attachment" value="/path_to_/screenshot.jpg"/>
          <property name="testrail_result_field" value="version:1.1"/>
          <property name="testrail_result_field" value="custom_field:custom_value"/>
+         <property name="testrail_result_comment" value="Finding 1"/>
+         <property name="testrail_result_comment" value="Finding 2"/>
      </properties>
     </testcase>
   </testsuite>

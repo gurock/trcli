@@ -18,6 +18,7 @@ class FileParser:
         self.filename = Path(filepath).name
         self.case_matcher = environment.case_matcher
         self.env = environment
+        self.special = environment.special_parser
 
     @staticmethod
     def check_file(filepath: Union[str, Path]):
