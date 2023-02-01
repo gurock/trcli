@@ -59,12 +59,13 @@ class TestJunitParser:
     @pytest.mark.parse_junit
     def test_junit_xml_elapsed_milliseconds(self, freezer):
         freezer.move_to("2020-05-20 01:00:00")
-        settings.ALLOW_ELAPSED_MS = True
         env = Environment()
         env.case_matcher = MatchersParser.AUTO
         env.file = Path(__file__).parent / "test_data/XML/milliseconds.xml"
+        settings.ALLOW_ELAPSED_MS = True
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
+        settings.ALLOW_ELAPSED_MS = False
         parsing_result_json = asdict(read_junit)
         file_json = open(Path(__file__).parent / "test_data/json/milliseconds.json")
         expected_json = json.load(file_json)
