@@ -71,8 +71,13 @@ class TestRailResult:
             if settings.ALLOW_ELAPSED_MS:
                 return f"{round(elapsed, 3)}s" if float(elapsed) >= 0.001 else None
             else:
-                rounded_secs = round(float(elapsed))
-                return f"{rounded_secs}s" if rounded_secs > 1 else "1s"
+                elapsed = float(elapsed)
+                if elapsed > 1:
+                    return f"{round(elapsed)}s"
+                elif elapsed > 0:
+                    return "1s"
+                else:
+                    return None
         except ValueError:
             # unable to parse time format
             elapsed = None
