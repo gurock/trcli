@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from typing import List, Optional
 from serde import field, serialize, deserialize, to_dict
 from time import gmtime, strftime
-from trcli.data_classes.validation_exception import ValidationException
 
+from trcli import settings
+
+from trcli.data_classes.validation_exception import ValidationException
 
 
 @serialize
@@ -66,16 +68,16 @@ class TestRailResult:
     @staticmethod
     def proper_format_for_elapsed(elapsed):
         try:
-            elapsed = float(elapsed)
-            if elapsed >= 1:
-                return f"{round(elapsed)}s"
-            elif elapsed >= 0.001:
-                return "1s"  # TODO: If TestRail to support milliseconds: "{round(elapsed * 1000)}ms"
+            if settings.ALLOW_ELAPSED_MS:
+                return f"{round(elapsed, 3)}s" if float(elapsed) >= 0.001 else None
             else:
-                return None
+                rounded_secs = round(float(elapsed))
+                return f"{rounded_secs}s" if rounded_secs > 1 else "1s"
         except ValueError:
             # unable to parse time format
-            return None
+            elapsed = None
+
+        return elapsed
 
     def prepend_comment(self, comment: str):
         self.comment = f"{comment}\n\n{self.comment}"
