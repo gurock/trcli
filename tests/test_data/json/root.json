@@ -28,6 +28,7 @@
                                   "section_id": 321,
                                   "template_id": null,
                                   "title": "test_testrail_test_suite",
+                                  "case_fields": {"custom_case_field": "custom_case_val"},
                                   "type_id": null}],
                    "time": 0.05}],
  "time": 159.0}

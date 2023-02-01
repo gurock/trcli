@@ -21,6 +21,7 @@
                     "type_id": null,
                     "milestone_id": null,
                     "refs": null,
+                    "case_fields": {},
                     "result": {
                         "case_id": null,
                         "status_id": 1,
@@ -66,6 +67,7 @@
                     "type_id": null,
                     "milestone_id": null,
                     "refs": null,
+                    "case_fields": {},
                     "result": {
                         "case_id": null,
                         "status_id": 1,

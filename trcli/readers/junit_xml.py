@@ -4,7 +4,7 @@ from xml.etree import ElementTree as etree
 
 from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
 
-from trcli.data_classes.data_parsers import MatchersParser, ResultFieldsParser
+from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -77,15 +77,14 @@ class JunitParser(FileParser):
                 for case in section:
                     cases_count += 1
                     case_id = None
-                    automation_id = None
                     case_name = case.name
                     attachments = []
                     result_fields = []
+                    case_fields = []
                     comments = []
                     sauce_session = None
-                    if self.case_matcher == MatchersParser.AUTO:
-                        automation_id = f"{case.classname}.{case_name}"
-                    elif self.case_matcher == MatchersParser.NAME:
+                    automation_id = f"{case.classname}.{case_name}"
+                    if self.case_matcher == MatchersParser.NAME:
                         case_id, case_name = MatchersParser.parse_name_with_id(case_name)
                     for case_props in case.iterchildren(Properties):
                         for prop in case_props.iterchildren(Property):
@@ -97,9 +96,15 @@ class JunitParser(FileParser):
                                 result_fields.append(prop.value)
                             if prop.name and prop.name.startswith("testrail_result_comment"):
                                 comments.append(prop.value)
+                            if prop.name and prop.name.startswith("testrail_case_field"):
+                                case_fields.append(prop.value)
                             if prop.name and prop.name.startswith("testrail_sauce_session"):
                                 sauce_session = prop.value
-                    result_fields_dict, error = ResultFieldsParser.parse_result_fields(result_fields)
+                    result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
+                    if error:
+                        self.env.elog(error)
+                        raise Exception(error)
+                    case_fields_dict, error = FieldsParser.resolve_fields(case_fields)
                     if error:
                         self.env.elog(error)
                         raise Exception(error)
@@ -120,7 +125,8 @@ class JunitParser(FileParser):
                             case_name,
                             case_id,
                             result=result,
-                            custom_automation_id=automation_id
+                            custom_automation_id=automation_id,
+                            case_fields=case_fields_dict
                         )
                     )
                 test_sections.append(

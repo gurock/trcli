@@ -20,7 +20,7 @@
       "testcases": [
         {
           "case_id": 100,
-          "custom_automation_id": null,
+          "custom_automation_id": "tests.test_junit_to_dataclass.test_testrail 1",
           "estimate": null,
           "milestone_id": null,
           "refs": null,
@@ -39,11 +39,12 @@
           "section_id": 321,
           "template_id": null,
           "title": "test_testrail 1",
-          "type_id": null
+          "type_id": null,
+          "case_fields": {}
         },
         {
           "case_id": 101,
-          "custom_automation_id": null,
+          "custom_automation_id": "tests.test_junit_to_dataclass.test_testrail 2",
           "estimate": null,
           "milestone_id": null,
           "refs": null,
@@ -62,11 +63,12 @@
           "section_id": 321,
           "template_id": null,
           "title": "test_testrail 2",
-          "type_id": null
+          "type_id": null,
+          "case_fields": {}
         },
         {
           "case_id": 102,
-          "custom_automation_id": null,
+          "custom_automation_id": "tests.test_junit_to_dataclass.test_testrail 3",
           "estimate": null,
           "milestone_id": null,
           "refs": null,
@@ -88,11 +90,12 @@
           "section_id": 321,
           "template_id": null,
           "title": "test_testrail 3",
-          "type_id": null
+          "type_id": null,
+          "case_fields": {}
         },
         {
           "case_id": null,
-          "custom_automation_id": null,
+          "custom_automation_id": "tests.test_junit_to_dataclass.test_testrail 4",
           "estimate": null,
           "milestone_id": null,
           "refs": null,
@@ -111,7 +114,8 @@
           "section_id": 321,
           "template_id": null,
           "title": "test_testrail 4",
-          "type_id": null
+          "type_id": null,
+          "case_fields": {}
         }
       ],
       "time": 0.05
