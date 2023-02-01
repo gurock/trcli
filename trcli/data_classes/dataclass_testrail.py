@@ -118,6 +118,7 @@ class TestRailCase:
     type_id: int = field(default=None, skip_if_default=True)
     milestone_id: int = field(default=None, skip_if_default=True)
     refs: str = field(default=None, skip_if_default=True)
+    case_fields: Optional[dict] = field(default_factory=dict, skip=True)
     result: TestRailResult = field(default=None, metadata={"serde_skip": True})
     custom_automation_id: str = field(default=None, skip_if_default=True)
 
@@ -137,6 +138,22 @@ class TestRailCase:
         if self.custom_automation_id:
             self.custom_automation_id = self.custom_automation_id.strip()
 
+    def add_global_case_fields(self, case_fields: dict) -> None:
+        """Add global case fields without overriding the existing case-specific fields
+
+        :param case_fields: Global case fields to be added to the result
+        :return: None
+        """
+        if not case_fields:
+            return
+        new_results_fields = case_fields.copy()
+        new_results_fields.update(self.result_fields)
+        self.case_fields = new_results_fields
+
+    def to_dict(self) -> dict:
+        case_dict = to_dict(self)
+        case_dict.update(self.case_fields)
+        return case_dict
 
 @serialize
 @deserialize

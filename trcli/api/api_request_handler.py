@@ -340,6 +340,9 @@ class ApiRequestHandler:
         :returns: Tuple with list of dict created resources and error string.
         """
         add_case_data = self.data_provider.add_cases()
+        if self.environment.case_matcher != MatchersParser.AUTO:
+            for case in add_case_data["bodies"]:
+                case.pop("custom_automation_id")
         responses = []
         error_message = ""
         with self.environment.get_progress_bar(

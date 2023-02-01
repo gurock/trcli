@@ -26,6 +26,7 @@
                                   "section_id": null,
                                   "template_id": null,
                                   "title": "Passing",
+                                  "case_fields": {},
                                   "type_id": null},
                                  {"case_id": null,
                                   "custom_automation_id": "One passing scenario, one failing scenario.Failing",
@@ -45,6 +46,7 @@
                                   "section_id": null,
                                   "template_id": null,
                                   "title": "Failing",
+                                  "case_fields": {},
                                   "type_id": null}],
                    "time": 10.05}],
  "time": 10.05}

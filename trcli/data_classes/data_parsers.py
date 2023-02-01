@@ -18,21 +18,21 @@ class MatchersParser:
             return None, case_name
 
 
-class ResultFieldsParser:
+class FieldsParser:
 
     @staticmethod
-    def parse_result_fields(result_fields: Union[list[str], dict]) -> (dict, str):
+    def resolve_fields(fields: Union[list[str], dict]) -> (dict, str):
         error = None
         fields_dictionary = {}
         try:
-            if isinstance(result_fields, list) or isinstance(result_fields, tuple):
-                for result_field in result_fields:
-                    field, value = result_field.split(":", maxsplit=1)
+            if isinstance(fields, list) or isinstance(fields, tuple):
+                for field in fields:
+                    field, value = field.split(":", maxsplit=1)
                     fields_dictionary[field] = value
-            elif isinstance(result_fields, dict):
-                fields_dictionary = result_fields
+            elif isinstance(fields, dict):
+                fields_dictionary = fields
             else:
-                error = f"Invalid result fields type ({type(result_fields)}), supported types are tuple/list/dictionary"
+                error = f"Invalid field type ({type(fields)}), supported types are tuple/list/dictionary"
             return fields_dictionary, error
         except Exception as ex:
-            return fields_dictionary, f"Error parsing result fields: {ex}"
+            return fields_dictionary, f"Error parsing fields: {ex}"

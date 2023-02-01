@@ -16,7 +16,7 @@ from trcli.constants import (
     TOOL_VERSION_AND_USAGE,
     MISSING_COMMAND_SLOGAN,
 )
-from trcli.data_classes.data_parsers import ResultFieldsParser
+from trcli.data_classes.data_parsers import FieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
@@ -63,17 +63,11 @@ class Environment:
 
     @case_fields.setter
     def case_fields(self, case_fields: Union[List[str], dict]):
-        fields_dictionary = {}
-        if isinstance(case_fields, list) or isinstance(case_fields, tuple):
-            for case_field in case_fields:
-                field, value = case_field.split(":", maxsplit=1)
-                fields_dictionary[field] = value
-        elif isinstance(case_fields, dict):
-            fields_dictionary = case_fields
-        else:
-            self.elog(f"Invalid case fields type ({type(case_fields)}), supported types are tuple/list/dictionary.")
+        fields_dict, error = FieldsParser.resolve_fields(case_fields)
+        if error:
+            self.elog(error)
             exit(1)
-        self._case_fields = fields_dictionary
+        self._case_fields = fields_dict
 
     @property 
     def result_fields(self):
@@ -81,7 +75,7 @@ class Environment:
 
     @result_fields.setter
     def result_fields(self, result_fields: Union[List[str], dict]):
-        fields_dict, error = ResultFieldsParser.parse_result_fields(result_fields)
+        fields_dict, error = FieldsParser.resolve_fields(result_fields)
         if error:
             self.elog(error)
             exit(1)

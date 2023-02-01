@@ -41,11 +41,8 @@ class ApiDataProvider:
         for sublist in testcases:
             for case in sublist:
                 if case.case_id is None or return_all_items:
-                    body = to_dict(case)
-                    if self.case_fields:
-                        for field, val in self.case_fields.items():
-                            body[field] = val
-                    bodies.append(body)
+                    case.add_global_case_fields(self.case_fields)
+                    bodies.append(case.to_dict())
         return {"bodies": bodies}
 
     def add_run(self, run_name: str, case_ids=None, milestone_id=None):
@@ -84,8 +81,7 @@ class ApiDataProvider:
             for case in sublist:
                 if case.case_id is not None:
                     case.result.add_global_result_fields(self.result_fields)
-                    body = case.result.to_dict()
-                    bodies.append(body)
+                    bodies.append(case.result.to_dict())
 
         result_bulks = ApiDataProvider.divide_list_into_bulks(
             bodies,
