@@ -45,117 +45,103 @@ class ResultsUploader:
         """
         start = time.time()
         results_amount = None
+
+        # Validate project settings
         self.environment.log("Checking project. ", new_line=False)
         self.project = self.api_request_handler.get_project_data(
             self.environment.project, self.environment.project_id
         )
-        if self.project.project_id == ProjectErrors.not_existing_project:
-            self.environment.elog("\n" + self.project.error_message)
-            exit(1)
-        elif self.project.project_id == ProjectErrors.other_error:
-            self.environment.elog(
-                "\n"
-                + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=self.project.error_message
-                )
-            )
-            exit(1)
-        elif self.project.project_id == ProjectErrors.multiple_project_same_name:
-            self.environment.elog(
-                "\n"
-                + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=self.project.error_message
-                )
-            )
-            exit(1)
-        else:
-            if self.environment.auto_creation_response:
-                if self.environment.case_matcher == MatchersParser.AUTO:
-                    automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
-                    if automation_id_error:
-                        self.environment.elog(automation_id_error)
-                        exit(1)
-            self.environment.log("Done.")
-            added_suite_id, result_code = self.get_suite_id(
-                project_id=self.project.project_id, suite_mode=self.project.suite_mode
-            )
-            if result_code == -1:
-                exit(1)
+        self._validate_project_id()
+        if self.environment.auto_creation_response:
+            if self.environment.case_matcher == MatchersParser.AUTO:
+                automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
+                if automation_id_error:
+                    self.environment.elog(automation_id_error)
+                    exit(1)
+        self.environment.log("Done.")
 
-            missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
+        # Resolve test suite
+        added_suite_id, result_code = self.get_suite_id(
+            project_id=self.project.project_id, suite_mode=self.project.suite_mode
+        )
+        if result_code == -1:
+            exit(1)
+
+        # Resolve missing test cases and sections
+        missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
+            self.project.project_id
+        )
+        if error_message:
+            self.environment.elog(
+                FAULT_MAPPING["error_checking_missing_item"].format(
+                    missing_item="missing test cases", error_message=error_message
+                )
+            )
+        added_sections = None
+        added_test_cases = None
+        if self.environment.auto_creation_response:
+            added_sections, result_code = self.add_missing_sections(
                 self.project.project_id
             )
-            if error_message:
-                self.environment.elog(
-                    FAULT_MAPPING["error_checking_missing_item"].format(
-                        missing_item="missing test cases", error_message=error_message
-                    )
+            if result_code == -1:
+                revert_logs = self.rollback_changes(
+                    added_suite_id=added_suite_id, added_sections=added_sections
                 )
-            added_sections = None
-            added_test_cases = None
-            if self.environment.auto_creation_response:
-                added_sections, result_code = self.add_missing_sections(
-                    self.project.project_id
-                )
-                if result_code == -1:
-                    revert_logs = self.rollback_changes(
-                        added_suite_id=added_suite_id, added_sections=added_sections
-                    )
-                    self.environment.log("\n".join(revert_logs))
-                    exit(1)
+                self.environment.log("\n".join(revert_logs))
+                exit(1)
 
-                if missing_test_cases:
-                    added_test_cases, result_code = self.add_missing_test_cases()
-                else:
-                    result_code = 1
-                if result_code == -1:
-                    revert_logs = self.rollback_changes(
-                        added_suite_id=added_suite_id,
-                        added_sections=added_sections,
-                        added_test_cases=added_test_cases,
-                    )
-                    self.environment.log("\n".join(revert_logs))
-                    exit(1)
-            if not self.environment.run_id:
-                self.environment.log(f"Creating test run. ", new_line=False)
-                added_run, error_message = self.api_request_handler.add_run(
-                    self.project.project_id, self.run_name, self.environment.milestone_id
-                )
-                if error_message:
-                    self.environment.elog("\n" + error_message)
-                    revert_logs = self.rollback_changes(
-                        added_suite_id=added_suite_id,
-                        added_sections=added_sections,
-                        added_test_cases=added_test_cases,
-                    )
-                    self.environment.log("\n".join(revert_logs))
-                    exit(1)
-                run_id = added_run
-                self.environment.log(f"Run created: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+            if missing_test_cases:
+                added_test_cases, result_code = self.add_missing_test_cases()
             else:
-                run_id = self.environment.run_id
-                self.environment.log(f"Updating run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
-            (
-                added_results,
-                error_message,
-                results_amount,
-            ) = self.api_request_handler.add_results(run_id)
-            if error_message:
-                self.environment.elog(error_message)
+                result_code = 1
+            if result_code == -1:
                 revert_logs = self.rollback_changes(
                     added_suite_id=added_suite_id,
                     added_sections=added_sections,
                     added_test_cases=added_test_cases,
-                    run_id=0 if run_id == self.environment.run_id else run_id,
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
-            if self.environment.close_run:
-                self.environment.log("Closing test run. ", new_line=False)
-                response, error_message = self.api_request_handler.close_run(run_id)
+
+        # Create/update test run
+        if not self.environment.run_id:
+            self.environment.log(f"Creating test run. ", new_line=False)
+            added_run, error_message = self.api_request_handler.add_run(
+                self.project.project_id, self.run_name, self.environment.milestone_id
+            )
             if error_message:
                 self.environment.elog("\n" + error_message)
+                revert_logs = self.rollback_changes(
+                    added_suite_id=added_suite_id,
+                    added_sections=added_sections,
+                    added_test_cases=added_test_cases,
+                )
+                self.environment.log("\n".join(revert_logs))
                 exit(1)
+            run_id = added_run
+            self.environment.log(f"Run created: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+        else:
+            run_id = self.environment.run_id
+            self.environment.log(f"Updating run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+        added_results, error_message, results_amount = self.api_request_handler.add_results(run_id)
+        if error_message:
+            self.environment.elog(error_message)
+            revert_logs = self.rollback_changes(
+                added_suite_id=added_suite_id,
+                added_sections=added_sections,
+                added_test_cases=added_test_cases,
+                run_id=0 if run_id == self.environment.run_id else run_id,
+            )
+            self.environment.log("\n".join(revert_logs))
+            exit(1)
+        if self.environment.close_run:
+            self.environment.log("Closing test run. ", new_line=False)
+            response, error_message = self.api_request_handler.close_run(run_id)
+        if error_message:
+            self.environment.elog("\n" + error_message)
+            exit(1)
+
+        # Terminate upload
         stop = time.time()
         if results_amount:
             self.environment.log(f"Submitted {results_amount} test results in {stop - start:.1f} secs.")
@@ -404,3 +390,25 @@ class ResultsUploader:
             else:
                 returned_log.append(RevertMessages.suite_deleted)
         return returned_log
+
+
+    def _validate_project_id(self):
+        if self.project.project_id == ProjectErrors.not_existing_project:
+            self.environment.elog("\n" + self.project.error_message)
+            exit(1)
+        elif self.project.project_id == ProjectErrors.other_error:
+            self.environment.elog(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
+                    error_message=self.project.error_message
+                )
+            )
+            exit(1)
+        elif self.project.project_id == ProjectErrors.multiple_project_same_name:
+            self.environment.elog(
+                "\n"
+                + FAULT_MAPPING["error_checking_project"].format(
+                    error_message=self.project.error_message
+                )
+            )
+            exit(1)
