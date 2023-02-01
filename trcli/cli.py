@@ -55,6 +55,7 @@ class Environment:
         self.special_parser = None
         self._case_fields = None
         self._result_fields = None
+        self.allow_ms = False
 
     @property
     def case_fields(self):

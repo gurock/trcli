@@ -1,7 +1,8 @@
-from pprint import pprint
 from typing import List
-from trcli.data_classes.dataclass_testrail import TestRailSuite
+
 from serde.json import to_dict
+
+from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
 class ApiDataProvider:

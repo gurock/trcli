@@ -1,11 +1,10 @@
-import ast
 from pathlib import Path
 from typing import Union
-from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
 from xml.etree import ElementTree as etree
 
+from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
+
 from trcli.data_classes.data_parsers import MatchersParser, ResultFieldsParser
-from trcli.readers.file_parser import FileParser
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -13,6 +12,7 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailProperty,
     TestRailResult,
 )
+from trcli.readers.file_parser import FileParser
 
 TestCase.id = IntAttr("id")
 TestSuite.id = IntAttr("id")
@@ -27,10 +27,6 @@ class Property(Element):
     _tag = "property"
     name = Attr()
     value = Attr()
-
-    def __eq__(self, other):
-        print("CHECKING EQUALITY")
-        return str(self) == str(other)
 
 
 class JunitParser(FileParser):
@@ -186,6 +182,6 @@ class JunitParser(FileParser):
                     case_prop.value = session_url
                     case_props.append(case_prop)
 
-        print(f"Found {len(subsuites)} SauceLabs suites.")
+        self.env.log(f"Found {len(subsuites)} SauceLabs suites.")
 
         return [v for k, v in subsuites.items()]

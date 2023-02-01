@@ -2,6 +2,7 @@ from xml.etree.ElementTree import ParseError
 
 import click
 from junitparser import JUnitXmlError
+from trcli import settings
 
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
@@ -73,14 +74,16 @@ def print_config(env: Environment):
     metavar="",
     default="junit",
     type=click.Choice(["junit", "saucectl"], case_sensitive=False),
-    help="Optional special parser option for specialized JUnit reports"
+    help="Optional special parser option for specialized JUnit reports."
 )
+@click.option("--allow-ms", is_flag=True, help="Allows using milliseconds for elapsed times.")
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Parse report files and upload results to TestRail"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
+    settings.ALLOW_ELAPSED_MS = environment.allow_ms
     print_config(environment)
     try:
         parsed_suites = JunitParser(environment).parse_file()
