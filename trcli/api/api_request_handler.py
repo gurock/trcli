@@ -74,13 +74,8 @@ class ApiRequestHandler:
         :project_name: Project name
         :returns: ProjectData
         """
-        response = self.client.send_get("get_projects")
-        if not response.error_message:
-            if isinstance(response.response_text, dict):  # Endpoints with pagination
-                projects_data = response.response_text["projects"]
-            else:  # Endpoints without pagination (legacy)
-                projects_data = response.response_text
-
+        projects_data, error = self.__get_all_projects()
+        if not error:
             available_projects = [
                 project
                 for project in projects_data
@@ -91,7 +86,7 @@ class ApiRequestHandler:
                 return ProjectData(
                     project_id=int(available_projects[0]["id"]),
                     suite_mode=int(available_projects[0]["suite_mode"]),
-                    error_message=response.error_message,
+                    error_message=error,
                 )
             elif len(available_projects) > 1:
                 if project_id in [project["id"] for project in available_projects]:
@@ -103,7 +98,7 @@ class ApiRequestHandler:
                     return ProjectData(
                         project_id=int(available_projects[project_index]["id"]),
                         suite_mode=int(available_projects[project_index]["suite_mode"]),
-                        error_message=response.error_message,
+                        error_message=error,
                     )
                 else:
                     return ProjectData(
@@ -121,7 +116,7 @@ class ApiRequestHandler:
             return ProjectData(
                 project_id=ProjectErrors.other_error,
                 suite_mode=-1,
-                error_message=response.error_message,
+                error_message=error,
             )
 
     def check_suite_id(self, project_id: int) -> (bool, str):
@@ -597,6 +592,12 @@ class ApiRequestHandler:
         Get all tests from all pages
         """
         return self.__get_all_entities('tests', f"get_tests/{run_id}")
+
+    def __get_all_projects(self) -> (List[dict], str):
+        """
+        Get all cases from all pages
+        """
+        return self.__get_all_entities('projects', f"get_projects")
 
     def __get_all_entities(self, entity: str, link=None, entities=[]) -> (List[dict], str):
         """
