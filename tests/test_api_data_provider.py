@@ -37,10 +37,10 @@ class TestApiDataProvider:
         missing_sections = 2
         missing_cases = 1
         assert (
-            len(post_data_provider.add_sections_data()["bodies"]) == missing_sections
+            len(post_data_provider.add_sections_data()) == missing_sections
         ), f"Adding suite data doesn't match expected {missing_sections}"
         assert (
-            len(post_data_provider.add_cases()["bodies"]) == missing_cases
+            len(post_data_provider.add_cases()) == missing_cases
         ), f"Adding cases data doesn't match expected {missing_cases}"
 
     @pytest.mark.data_provider
@@ -64,8 +64,9 @@ class TestApiDataProvider:
             {"name": "Passed test", "section_id": 12345},
         ]
         post_data_provider.update_data(section_data=section_updater)
+        cases = [case.to_dict() for case in post_data_provider.add_cases()]
         assert (
-            post_data_provider.add_cases() == post_cases_bodies
+            cases == post_cases_bodies
         ), "Adding cases data doesn't match expected body"
 
     @pytest.mark.data_provider
@@ -103,11 +104,11 @@ class TestApiDataProvider:
         all_sections = 3
         all_cases = 3
         assert (
-            len(post_data_provider.add_sections_data(return_all_items=True)["bodies"])
+            len(post_data_provider.add_sections_data(return_all_items=True))
             == all_sections
         ), f"Adding cases with return_all_items flag should match {all_sections}"
         assert (
-            len(post_data_provider.add_cases(return_all_items=True)["bodies"])
+            len(post_data_provider.add_cases(return_all_items=True))
             == all_cases
         ), f"Adding cases with return_all_items flag should match {all_cases}"
 
