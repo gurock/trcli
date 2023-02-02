@@ -79,7 +79,7 @@ Options:
   --run-id            Run ID for the results they are reporting (otherwise the
                       tool will attempt to create a new run).  [x>=1]
   --milestone-id      Milestone ID to which the Test Run should be associated
-                      to.  [x>=1] 
+                      to.  [x>=1]
   --run-description   Summary text to be added to the test run.
   --case-fields       List of case fields and values for new test cases
                       creation. Usage: --case-fields type_id:1 --case-fields
@@ -88,7 +88,8 @@ Options:
                       creation. Usage: --result-fields custom_field_a:value1
                       --result-fields custom_field_b:3
   --special-parser    Optional special parser option for specialized JUnit
-                      reports
+                      reports.
+  --allow-ms          Allows using milliseconds for elapsed times.
   --help              Show this message and exit.
 ```
 
