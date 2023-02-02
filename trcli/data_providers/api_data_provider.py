@@ -16,25 +16,21 @@ class ApiDataProvider:
         self.run_description = run_description
         self.result_fields = result_fields
 
-    def add_suites_data(self):
+    def add_suites_data(self) -> list:
         """Return list of bodies for adding suites"""
-        return {
-            "bodies": [to_dict(self.suites_input)],
-        }
+        return [to_dict(self.suites_input)]
 
-    def add_sections_data(self, return_all_items=False):
+    def add_sections_data(self, return_all_items=False) -> list:
         """Return list of bodies for adding sections.
         The ID of the test suite (ignored if the project is operating in single suite mode, required otherwise)
         """
-        return {
-            "bodies": [
-                to_dict(section)
-                for section in self.suites_input.testsections
-                if section.section_id is None or return_all_items
-            ],
-        }
+        return [
+            to_dict(section)
+            for section in self.suites_input.testsections
+            if section.section_id is None or return_all_items
+        ]
 
-    def add_cases(self, return_all_items=False):
+    def add_cases(self, return_all_items=False) -> list:
         """Return list of bodies for adding test cases."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         bodies = []
@@ -42,8 +38,19 @@ class ApiDataProvider:
             for case in sublist:
                 if case.case_id is None or return_all_items:
                     case.add_global_case_fields(self.case_fields)
-                    bodies.append(case.to_dict())
-        return {"bodies": bodies}
+                    bodies.append(case)
+        return bodies
+
+    def existing_cases(self):
+        """Return list of bodies for existing test cases."""
+        testcases = [sections.testcases for sections in self.suites_input.testsections]
+        bodies = []
+        for sublist in testcases:
+            for case in sublist:
+                if case.case_id is not None:
+                    case.add_global_case_fields(self.case_fields)
+                    bodies.append(case)
+        return bodies
 
     def add_run(self, run_name: str, case_ids=None, milestone_id=None):
         """Return body for adding a run."""

@@ -5,7 +5,7 @@ from pprint import pprint
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
-from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.constants import (
@@ -56,11 +56,15 @@ class ApiRequestHandler:
                 None
             )
             if automation_id_field:
+                if automation_id_field["is_active"] is False:
+                    return FAULT_MAPPING["automation_id_unavailable"]
                 for config in automation_id_field["configs"]:
                     context = config["context"]
                     if context["is_global"] or project_id in context["project_ids"]:
                         return None
-            return FAULT_MAPPING["automation_id_unavailable"]
+                return FAULT_MAPPING["automation_id_unavailable"]
+            else:
+                return FAULT_MAPPING["automation_id_unavailable"]
         else:
             return response.error_message
 
@@ -194,7 +198,7 @@ class ApiRequestHandler:
         add_suite_data = self.data_provider.add_suites_data()
         responses = []
         error_message = ""
-        for body in add_suite_data["bodies"]:
+        for body in add_suite_data:
             response = self.client.send_post(f"add_suite/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
@@ -257,7 +261,7 @@ class ApiRequestHandler:
         add_sections_data = self.data_provider.add_sections_data()
         responses = []
         error_message = ""
-        for body in add_sections_data["bodies"]:
+        for body in add_sections_data:
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
@@ -340,22 +344,18 @@ class ApiRequestHandler:
         :returns: Tuple with list of dict created resources and error string.
         """
         add_case_data = self.data_provider.add_cases()
-        if self.environment.case_matcher != MatchersParser.AUTO:
-            for case in add_case_data["bodies"]:
-                case.pop("custom_automation_id")
         responses = []
         error_message = ""
         with self.environment.get_progress_bar(
-            results_amount=len(add_case_data["bodies"]), prefix="Adding test cases"
+            results_amount=len(add_case_data), prefix="Adding test cases"
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_CASE) as executor:
                 futures = {
                     executor.submit(
-                        self.client.send_post,
-                        f"add_case/{body.pop('section_id')}",
+                        self._add_case_and_update_data,
                         body,
                     ): body
-                    for body in add_case_data["bodies"]
+                    for body in add_case_data
                 }
                 responses, error_message = self.handle_futures(
                     futures=futures, action_string="add_case", progress_bar=progress_bar
@@ -368,14 +368,10 @@ class ApiRequestHandler:
             {
                 "case_id": response.response_text["id"],
                 "section_id": response.response_text["section_id"],
-                "title": response.response_text["title"],
-                "custom_automation_id": response.response_text["custom_automation_id"]
+                "title": response.response_text["title"]
             }
             for response in responses
         ]
-        self.data_provider.update_data(case_data=returned_resources) if len(
-            returned_resources
-        ) > 0 else "Update skipped"
         return returned_resources, error_message
 
     def add_run(self, project_id: int, run_name: str, milestone_id: int = None) -> (List[dict], str):
@@ -474,6 +470,9 @@ class ApiRequestHandler:
                     if action_string == "add_results":
                         progress_bar.update(len(arguments["results"]))
                     else:
+                        if action_string == "add_case":
+                            arguments = arguments.to_dict()
+                            arguments.pop("case_id")
                         if not self.response_verifier.verify_returned_data(
                             arguments, response.response_text
                         ):
@@ -562,6 +561,17 @@ class ApiRequestHandler:
                 if not response.error_message:
                     responses.append(response)
         return responses
+
+    def _add_case_and_update_data(self, case: TestRailCase):
+        case_body = case.to_dict()
+        if self.environment.case_matcher != MatchersParser.AUTO:
+            case_body.pop("custom_automation_id")
+        response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
+        if response.status_code == 200:
+            case.case_id = response.response_text["id"]
+            case.result.case_id = response.response_text["id"]
+            case.section_id = response.response_text["section_id"]
+        return response
 
     def __cancel_running_futures(self, futures, action_string):
         self.environment.log(

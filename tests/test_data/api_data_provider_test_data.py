@@ -24,18 +24,16 @@ json_string = json.dumps(json.load(file_json))
 test_input_duplicated_case_names = from_json(TestRailSuite, json_string)
 
 
-post_suite_bodies = {"bodies": [{"name": "Suite1"}]}
+post_suite_bodies = [{"name": "Suite1"}]
 
-post_section_bodies = {
-    "bodies": [
-        {"name": "Skipped test", "suite_id": 123},
-        {"name": "Passed test", "suite_id": 123},
-    ]
-}
+post_section_bodies = [
+    {"name": "Skipped test", "suite_id": 123},
+    {"name": "Passed test", "suite_id": 123},
+]
 
-post_cases_bodies = {"bodies": [
+post_cases_bodies = [
     {"section_id": 12345, "title": "testCase2", "custom_automation_id": "className.testCase2abc"}
-]}
+]
 
 post_run_bodies = {
     "description": "logging: True\ndebug: False",
