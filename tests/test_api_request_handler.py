@@ -61,6 +61,13 @@ class TestApiRequestHandler:
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
         mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {
+                "next": None,
+                "prev": None,
+            },
             "projects": [
                 {"id": 1, "name": "DataHub", "suite_mode": 1},
                 {"id": 2, "name": "Test Project", "suite_mode": 1},
