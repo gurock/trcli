@@ -203,8 +203,14 @@ From an implementation perspective, you can do this in one of two ways:
 For more details, please refer to the [Automation workflows - Specification first](https://support.gurock.com/hc/en-us/articles/12609869124116)
 documentation.
 
-SauceLabs saucectl reports
---------------------------
+Exploring other features
+------------------------
+
+### General features
+Please refer to the [Usage examples](https://support.gurock.com/hc/en-us/articles/12908548726804) documentation page to see how you
+can leverage all the functionalities provided by the TestRail CLI.
+
+### SauceLabs saucectl reports
 If you are using `saucectl` from SauceLabs to execute your automation projects, the TestRail CLI has an enhanced parser 
 that fetches session information and adds it to your test runs. You can enable this functionality by using 
 the `--special-parser saucectl` command line option.
