@@ -1,3 +1,4 @@
+import re
 from typing import Union
 
 
@@ -8,14 +9,18 @@ class MatchersParser:
     PROPERTY = "property"
 
     @staticmethod
-    def parse_name_with_id(case_name: str) -> (str, str):
-        if case_name.lower().startswith("[c"):
-            close_idx = case_name.find("]")
-            case_id = int(case_name[2:close_idx])
-            case_name = case_name[close_idx + 1:].lstrip()
-            return case_id, case_name
-        else:
-            return None, case_name
+    def parse_name_with_id(case_name: str) -> (int, str):
+        m = re.findall(r"\[(.*?)\]", case_name)
+        for res in m:
+            if res.lower().startswith("c"):
+                case_id = res[1:]
+                if case_id.isnumeric():
+                    id_tag = f"[{res}]"
+                    tag_idx = case_name.find(id_tag)
+                    case_name = f"{case_name[0:tag_idx].strip()} {case_name[tag_idx + len(id_tag):].strip()}".strip()
+                    return int(case_id), case_name
+
+        return None, case_name
 
 
 class FieldsParser:
@@ -28,6 +33,11 @@ class FieldsParser:
             if isinstance(fields, list) or isinstance(fields, tuple):
                 for field in fields:
                     field, value = field.split(":", maxsplit=1)
+                    if value.startswith("["):
+                        try:
+                            value = eval(value)
+                        except Exception:
+                            pass
                     fields_dictionary[field] = value
             elif isinstance(fields, dict):
                 fields_dictionary = fields

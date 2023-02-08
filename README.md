@@ -137,8 +137,8 @@ There are 2 mechanisms to match test cases:
 1. Using Automation ID
 2. Using Case ID (in test case `name` or `property`)
 
-The first mechanism allows to automatically match test cases, meaning you can take an automation-first approach,
-while the second one is suited for a specification first approach, where you write your test cases in TestRail and add the case ID to your automated tests.
+The first mechanism allows to automatically match test cases, meaning you can take a code-first approach,
+while the second one is suited for a specification-first approach, where you write your test cases in TestRail and add the case ID to your automated tests.
 
 > **Notes:**
 > 1. The TestRail CLI has a prompt mechanism that allows you to choose whether you want test cases to be automatically created: 
@@ -168,7 +168,7 @@ Example:
 > 2. If you change the test name in your automation suite later, that will create a new test case in TestRail, unless you also update the `automation_id` field for the test case in TestRail
 > 3. If you are using the CLI tool in a CI context, we recommend using the `-y` option to automatically accept test case creation prompts
 
-For more detail, please refer to the [Automation workflows - Code first](https://support.gurock.com/hc/en-us/articles/12609674354068)
+For more detail, please refer to the [Automation workflows - Code-first](https://support.gurock.com/hc/en-us/articles/12609674354068)
 documentation.
 
 ### 2. Using Case ID
@@ -200,7 +200,7 @@ From an implementation perspective, you can do this in one of two ways:
 > **Important usage notes:**
 > - We recommend using the `-n` option to skip creating new test cases due to the potential risk of duplication 
 
-For more details, please refer to the [Automation workflows - Specification first](https://support.gurock.com/hc/en-us/articles/12609869124116)
+For more details, please refer to the [Automation workflows - Specification-first](https://support.gurock.com/hc/en-us/articles/12609869124116)
 documentation.
 
 Exploring other features
