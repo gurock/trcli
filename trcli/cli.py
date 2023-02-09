@@ -13,8 +13,9 @@ from tqdm import tqdm
 
 from trcli.constants import (
     FAULT_MAPPING,
-    TOOL_VERSION_AND_USAGE,
     MISSING_COMMAND_SLOGAN,
+    TOOL_USAGE,
+    TOOL_VERSION,
 )
 from trcli.data_classes.data_parsers import FieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
@@ -207,6 +208,7 @@ class TRCLI(click.MultiCommand):
     def __init__(self, *args, **kwargs):
         # Use invoke_without_command=True to be able to print
         # short tool description when starting without parameters
+        print(TOOL_VERSION)
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
     def list_commands(self, context: click.Context):
@@ -301,7 +303,7 @@ class TRCLI(click.MultiCommand):
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
     if not sys.argv[1:]:
-        click.echo(TOOL_VERSION_AND_USAGE)
+        click.echo(TOOL_USAGE)
         exit(0)
 
     # This check is due to usage of invoke_without_command=True in TRCLI class.

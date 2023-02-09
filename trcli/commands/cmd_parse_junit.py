@@ -2,7 +2,7 @@ from xml.etree.ElementTree import ParseError
 
 import click
 from junitparser import JUnitXmlError
-from trcli import settings
+from trcli import settings, __version__
 
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
@@ -12,7 +12,7 @@ from trcli.readers.junit_xml import JunitParser
 
 
 def print_config(env: Environment):
-    env.log(f"TestRail CLI - Execution Parameters"
+    env.log(f"Parse JUnit Execution Parameters"
             f"\n> Report file: {env.file}"
             f"\n> Config file: {env.config}"
             f"\n> TestRail instance: {env.host} (user: {env.username})"

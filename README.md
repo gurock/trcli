@@ -24,7 +24,7 @@ $ pip install trcli
 To verify the installation was successful, you can run the `trcli` command.
 ```
 $ trcli
-TestRail Connect v1.4.0 
+TestRail CLI v1.4.0 
 Copyright 2021 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules: 
 - junit: JUnit XML Files (& Similar) 

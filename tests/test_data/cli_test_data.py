@@ -68,9 +68,7 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
     "key": "key_from_custom_config",
 }
 
-trcli_description = f"TestRail Connect v{__version__}\n\
-Copyright 2021 Gurock Software GmbH - www.gurock.com\n\
-Supported and loaded modules:\n\
-    - junit: JUnit XML Files (& Similar)\n"
+trcli_description = ('Supported and loaded modules:\n'
+                     '    - parse_junit: JUnit XML Files (& Similar)\n')
 
 trcli_help_description = "TestRail CLI"
