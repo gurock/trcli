@@ -146,9 +146,9 @@ class TestRailCase:
         """
         if not case_fields:
             return
-        new_results_fields = case_fields.copy()
-        new_results_fields.update(self.result_fields)
-        self.case_fields = new_results_fields
+        new_case_fields = case_fields.copy()
+        new_case_fields.update(self.case_fields)
+        self.case_fields = new_case_fields
 
     def to_dict(self) -> dict:
         case_dict = to_dict(self)
