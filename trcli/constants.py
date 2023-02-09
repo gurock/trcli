@@ -62,10 +62,10 @@ PROMPT_MESSAGES = dict(
     "Would you like to create missing test cases under project: '{project_name}'?",
 )
 
-TOOL_VERSION_AND_USAGE = f"""TestRail Connect v{trcli.__version__}
-Copyright 2021 Gurock Software GmbH - www.gurock.com
-Supported and loaded modules:
-    - junit: JUnit XML Files (& Similar)"""
+TOOL_VERSION = f"""TestRail CLI v{trcli.__version__}
+Copyright 2021 Gurock Software GmbH - www.gurock.com"""
+TOOL_USAGE = f"""Supported and loaded modules:
+    - parse_junit: JUnit XML Files (& Similar)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
