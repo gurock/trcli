@@ -58,6 +58,8 @@ class ApiRequestHandler:
             if automation_id_field:
                 if automation_id_field["is_active"] is False:
                     return FAULT_MAPPING["automation_id_unavailable"]
+                if not automation_id_field["configs"]:
+                    return None
                 for config in automation_id_field["configs"]:
                     context = config["context"]
                     if context["is_global"] or project_id in context["project_ids"]:
