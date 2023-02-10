@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import requests
@@ -109,7 +110,7 @@ class APIClient:
                     )
                 else:
                     response = requests.get(
-                        url=url, auth=auth, json=payload, timeout=self.timeout, verify=self.verify,
+                        url=url, auth=auth, json=payload, timeout=self.timeout, verify=self.verify, headers=headers
                     )
             except Timeout:
                 error_message = FAULT_MAPPING["no_response_from_host"]
