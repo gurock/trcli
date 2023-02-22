@@ -61,7 +61,8 @@ class JunitParser(FileParser):
         testrail_suites = []
 
         for suite in suites:
-            self.env.log(f"Processing suite - {suite.name}")
+            if suite.name:
+                self.env.log(f"Processing suite - {suite.name}")
             cases_count = 0
             test_sections = []
             processed_section_properties = []
