@@ -141,7 +141,6 @@ class JunitParser(FileParser):
             testrail_suites.append(
                 TestRailSuite(
                     suite.name,
-                    suite_id=suite.id,
                     time=suite.time,
                     testsections=test_sections,
                     source=self.filename,
