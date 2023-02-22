@@ -179,7 +179,7 @@ class TestRailSection:
     """Class for creating Test Rail test section"""
 
     name: str
-    suite_id: int
+    suite_id: int = field(default=None, skip_if_default=True)
     time: str = field(default=None, metadata={"serde_skip": True})
     parent_id: int = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)

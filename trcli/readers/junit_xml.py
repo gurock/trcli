@@ -132,9 +132,7 @@ class JunitParser(FileParser):
                 test_sections.append(
                     TestRailSection(
                         section.name,
-                        suite.id,
                         time=section.time,
-                        section_id=section.id,
                         testcases=test_cases,
                         properties=properties,
                     )
