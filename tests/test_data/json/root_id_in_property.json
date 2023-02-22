@@ -2,7 +2,7 @@
   "description": null,
   "name": "test suites root",
   "source": "root_id_in_property.xml",
-  "suite_id": 123,
+  "suite_id": null,
   "testsections": [
     {
       "description": null,
@@ -15,8 +15,8 @@
           "value": "True"
         }
       ],
-      "section_id": 321,
-      "suite_id": 123,
+      "section_id": null,
+      "suite_id": null,
       "testcases": [
         {
           "case_id": 100,
