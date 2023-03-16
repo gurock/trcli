@@ -3,22 +3,22 @@
     "name": "Suite1",
     "suite_id": 4,
     "testsections": [
-      {
-        "name": "Skipped test",
-        "suite_id": 4,
-        "section_id": 1234,
-        "testcases": [
-          {
+        {
+            "name": "Skipped test",
+            "suite_id": 4,
             "section_id": 1234,
-            "title": "testCase1",
-            "case_id": 10,
-            "result": {
-              "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
-              "status_id": 4,
-              "case_id": 10
-            }
-          }
-        ]
-      }
+            "testcases": [
+                {
+                    "section_id": 1234,
+                    "title": "testCase1",
+                    "case_id": 10,
+                    "result": {
+                        "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                        "status_id": 4,
+                        "case_id": 10
+                    }
+                }
+            ]
+        }
     ]
 }
