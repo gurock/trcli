@@ -7,7 +7,6 @@
             "name": "Skipped test",
             "suite_id": 4,
             "section_id": 1234,
-
             "testcases": [
                 {
                     "section_id": 1234,
@@ -18,7 +17,10 @@
                         "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
                         "status_id": 4,
                         "case_id": 1,
-                        "attachments": ["./path1", "./path2"]
+                        "attachments": [
+                            "./path1",
+                            "./path2"
+                        ]
                     }
                 },
                 {
@@ -27,12 +29,24 @@
                     "custom_automation_id": "Skipped test.testCase2",
                     "estimate": "30s",
                     "case_id": null,
-                    "result": {"comment": "Comment testCase2", "status_id": 1, "case_id": null}
+                    "result": {
+                        "comment": "Comment testCase2",
+                        "status_id": 1,
+                        "case_id": null
+                    }
                 }
             ],
-                      "properties": [
-                {"description": "logging: True", "name": "logging", "value": "True"},
-                        {"description": "debug: False", "name": "debug", "value": "False"}
+            "properties": [
+                {
+                    "description": "logging: True",
+                    "name": "logging",
+                    "value": "True"
+                },
+                {
+                    "description": "debug: False",
+                    "name": "debug",
+                    "value": "False"
+                }
             ]
         },
         {
@@ -45,7 +59,11 @@
                     "title": "testCase3",
                     "custom_automation_id": "Passed test.testCase3",
                     "case_id": null,
-                    "result": {"comment": "Comment testCase3", "status_id": 1, "case_id": null}
+                    "result": {
+                        "comment": "Comment testCase3",
+                        "status_id": 1,
+                        "case_id": null
+                    }
                 }
             ]
         }

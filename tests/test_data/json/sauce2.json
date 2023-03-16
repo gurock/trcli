@@ -1,13 +1,11 @@
 {
     "name": "Chrome",
     "suite_id": null,
-    "time": 1.507,
     "description": null,
     "testsections": [
         {
             "name": "test_suite_1.cy.js",
             "suite_id": null,
-            "time": 0.75,
             "parent_id": null,
             "description": null,
             "section_id": null,
@@ -53,7 +51,6 @@
         {
             "name": "test_suite_2.cy.js",
             "suite_id": null,
-            "time": 0.757,
             "parent_id": null,
             "description": null,
             "section_id": null,

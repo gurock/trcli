@@ -7,7 +7,6 @@
             "name": "Skipped test",
             "suite_id": null,
             "section_id": null,
-
             "testcases": [
                 {
                     "section_id": null,
@@ -20,9 +19,17 @@
                     }
                 }
             ],
-                      "properties": [
-                {"description": "logging: True", "name": "logging", "value": "True"},
-                        {"description": "debug: False", "name": "debug", "value": "False"}
+            "properties": [
+                {
+                    "description": "logging: True",
+                    "name": "logging",
+                    "value": "True"
+                },
+                {
+                    "description": "debug: False",
+                    "name": "debug",
+                    "value": "False"
+                }
             ]
         },
         {
@@ -35,7 +42,11 @@
                     "title": "testCase2",
                     "case_id": null,
                     "time": 400,
-                    "result": {"comment": "", "status_id": 1, "case_id": null}
+                    "result": {
+                        "comment": "",
+                        "status_id": 1,
+                        "case_id": null
+                    }
                 }
             ]
         },
@@ -48,7 +59,11 @@
                     "section_id": 2,
                     "title": "testCase2",
                     "case_id": 4,
-                    "result": {"comment": "", "status_id": 1, "case_id": 4}
+                    "result": {
+                        "comment": "",
+                        "status_id": 1,
+                        "case_id": 4
+                    }
                 }
             ]
         }

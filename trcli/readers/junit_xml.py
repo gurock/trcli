@@ -1,8 +1,9 @@
 from pathlib import Path
 from typing import Union
+from unittest import TestCase, TestSuite
 from xml.etree import ElementTree as etree
 
-from junitparser import TestCase, TestSuite, JUnitXml, IntAttr, JUnitXmlError, Element, Attr
+from junitparser import JUnitXml, JUnitXmlError, Element, Attr
 
 from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
 from trcli.data_classes.dataclass_testrail import (
@@ -14,9 +15,9 @@ from trcli.data_classes.dataclass_testrail import (
 )
 from trcli.readers.file_parser import FileParser
 
-TestCase.id = IntAttr("id")
-TestSuite.id = IntAttr("id")
-JUnitXml.id = IntAttr("id")
+TestCase.id = Attr("id")
+TestSuite.id = Attr("id")
+JUnitXml.id = Attr("id")
 
 
 class Properties(Element):
@@ -122,9 +123,8 @@ class JunitParser(FileParser):
                         result.prepend_comment(f"SauceLabs session: {sauce_session}")
                     test_cases.append(
                         TestRailCase(
-                            section.id,
-                            case_name,
-                            case_id,
+                            title=case_name,
+                            case_id=case_id,
                             result=result,
                             custom_automation_id=automation_id,
                             case_fields=case_fields_dict
@@ -133,7 +133,6 @@ class JunitParser(FileParser):
                 test_sections.append(
                     TestRailSection(
                         section.name,
-                        time=section.time,
                         testcases=test_cases,
                         properties=properties,
                     )
@@ -142,7 +141,6 @@ class JunitParser(FileParser):
             testrail_suites.append(
                 TestRailSuite(
                     suite.name,
-                    time=suite.time,
                     testsections=test_sections,
                     source=self.filename,
                 )

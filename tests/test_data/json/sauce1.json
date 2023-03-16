@@ -1,13 +1,11 @@
 {
     "name": "Firefox",
     "suite_id": null,
-    "time": 1.912,
     "description": null,
     "testsections": [
         {
             "name": "test_suite_1.cy.js",
             "suite_id": null,
-            "time": 0.945,
             "parent_id": null,
             "description": null,
             "section_id": null,
@@ -33,7 +31,7 @@
                         "attachments": [],
                         "junit_result_unparsed": [],
                         "result_fields": {}
-                },
+                    },
                     "custom_automation_id": "Verify page structure.Component 1 Verify page structure"
                 }
             ],
@@ -53,7 +51,6 @@
         {
             "name": "test_suite_2.cy.js",
             "suite_id": null,
-            "time": 0.967,
             "parent_id": null,
             "description": null,
             "section_id": null,

@@ -110,8 +110,8 @@ class TestRailResult:
 class TestRailCase:
     """Class for creating Test Rail test case"""
 
-    section_id: int
     title: str
+    section_id: int = field(default=None, skip_if_default=True)
     case_id: int = field(default=None, skip_if_default=True)
     estimate: str = field(default=None, skip_if_default=True)
     template_id: int = field(default=None, skip_if_default=True)
@@ -180,7 +180,6 @@ class TestRailSection:
 
     name: str
     suite_id: int = field(default=None, skip_if_default=True)
-    time: str = field(default=None, metadata={"serde_skip": True})
     parent_id: int = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
     section_id: int = field(default=None, metadata={"serde_skip": True})
@@ -211,7 +210,6 @@ class TestRailSuite:
 
     name: str
     suite_id: int = field(default=None, skip_if_default=True)
-    time: str = field(default=None, metadata={"serde_skip": True})
     description: str = field(default=None, skip_if_default=True)
     testsections: List[TestRailSection] = field(
         default_factory=list, metadata={"serde_skip": True}
