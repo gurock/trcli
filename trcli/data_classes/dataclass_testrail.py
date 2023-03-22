@@ -1,10 +1,10 @@
 from dataclasses import dataclass
-from typing import List, Optional
-from serde import field, serialize, deserialize, to_dict
 from time import gmtime, strftime
+from typing import List, Optional
+
+from serde import field, serialize, deserialize, to_dict
 
 from trcli import settings
-
 from trcli.data_classes.validation_exception import ValidationException
 
 
@@ -14,7 +14,7 @@ from trcli.data_classes.validation_exception import ValidationException
 class TestRailResult:
     """Class for creating Test Rail result for cases"""
 
-    case_id: int
+    case_id: int = field(default=None, skip_if_default=True)
     status_id: int = field(default=None, skip_if_default=True)
     comment: str = field(default=None, skip_if_default=True)
     version: str = field(default=None, skip_if_default=True)
@@ -35,7 +35,6 @@ class TestRailResult:
             )
         if self.elapsed is not None:
             self.elapsed = self.proper_format_for_elapsed(self.elapsed)
-
 
     @staticmethod
     def calculate_status_id_from_junit_element(junit_result: list) -> int:
@@ -104,14 +103,15 @@ class TestRailResult:
         result_dict.update(self.result_fields)
         return result_dict
 
+
 @serialize
 @deserialize
 @dataclass
 class TestRailCase:
     """Class for creating Test Rail test case"""
 
-    section_id: int
     title: str
+    section_id: int = field(default=None, skip_if_default=True)
     case_id: int = field(default=None, skip_if_default=True)
     estimate: str = field(default=None, skip_if_default=True)
     template_id: int = field(default=None, skip_if_default=True)
@@ -154,6 +154,7 @@ class TestRailCase:
         case_dict = to_dict(self)
         case_dict.update(self.case_fields)
         return case_dict
+
 
 @serialize
 @deserialize
@@ -221,3 +222,10 @@ class TestRailSuite:
     def __post_init__(self):
         current_time = strftime("%d-%m-%y %H:%M:%S", gmtime())
         self.name = f"{self.source} {current_time}" if self.name is None else self.name
+
+
+@dataclass
+class ProjectData:
+    project_id: int
+    suite_mode: int
+    error_message: str
