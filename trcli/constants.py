@@ -1,13 +1,15 @@
 import trcli
 import enum
 
+PARSE_JUNIT_FAULT_MAPPING = dict(
+    missing_title="Please give your Test Run a title using the --title argument."
+)
 
 FAULT_MAPPING = dict(
     missing_file="Please provide a valid path to your results file with the -f argument.",
-    invalid_file="Provided file is not a valid XML file.",
+    invalid_file="Provided file is not a valid file.",
     missing_host="Please provide a TestRail server address with the -h argument.",
     missing_project="Please specify the project name using the --project argument.",
-    missing_title="Please give your Test Run a title using the --title argument.",
     missing_username="Please provide a valid TestRail username using the -u argument.",
     more_than_one_project="Given project name matches more than one result."
     "Please specify which should be used using the --project-id argument",
