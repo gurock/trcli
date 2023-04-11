@@ -1,13 +1,15 @@
 import trcli
 import enum
 
+PARSE_JUNIT_FAULT_MAPPING = dict(
+    missing_title="Please give your Test Run a title using the --title argument."
+)
 
 FAULT_MAPPING = dict(
     missing_file="Please provide a valid path to your results file with the -f argument.",
-    invalid_file="Provided file is not a valid XML file.",
+    invalid_file="Provided file is not a valid file.",
     missing_host="Please provide a TestRail server address with the -h argument.",
     missing_project="Please specify the project name using the --project argument.",
-    missing_title="Please give your Test Run a title using the --title argument.",
     missing_username="Please provide a valid TestRail username using the -u argument.",
     more_than_one_project="Given project name matches more than one result."
     "Please specify which should be used using the --project-id argument",
@@ -65,7 +67,8 @@ PROMPT_MESSAGES = dict(
 TOOL_VERSION = f"""TestRail CLI v{trcli.__version__}
 Copyright 2021 Gurock Software GmbH - www.gurock.com"""
 TOOL_USAGE = f"""Supported and loaded modules:
-    - parse_junit: JUnit XML Files (& Similar)"""
+    - parse_junit: JUnit XML Files (& Similar)
+    - parse_openapi: OpenAPI YML Files"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
