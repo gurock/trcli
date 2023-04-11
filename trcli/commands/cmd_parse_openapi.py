@@ -39,7 +39,7 @@ def print_config(env: Environment):
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
-    """Parse report files and upload results to TestRail"""
+    """Parse OpenAPI spec and create cases in TestRail"""
     environment.cmd = "parse_openapi"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
