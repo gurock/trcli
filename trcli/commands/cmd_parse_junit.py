@@ -80,7 +80,7 @@ def print_config(env: Environment):
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
-    """Parse report files and upload results to TestRail"""
+    """Parse JUnit report and upload results to TestRail"""
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     settings.ALLOW_ELAPSED_MS = environment.allow_ms
