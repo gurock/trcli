@@ -15,6 +15,7 @@ class ApiDataProvider:
         self.case_fields = case_fields
         self.run_description = run_description
         self.result_fields = result_fields
+        self.update_data([{"suite_id": self.suites_input.suite_id}])
 
     def add_suites_data(self) -> list:
         """Return list of bodies for adding suites"""

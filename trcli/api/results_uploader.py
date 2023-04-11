@@ -16,25 +16,21 @@ class ResultsUploader:
     Initialized with environment object and result file parser object (any parser derived from FileParser).
     """
 
-    def __init__(self, environment: Environment, suite: TestRailSuite):
+    def __init__(self, environment: Environment, suite: TestRailSuite, skip_run: bool = False):
         self.project = None
         self.environment = environment
-        self.parsed_data = suite
+        self.skip_run = skip_run
         self.run_name = self.environment.title
         if self.environment.special_parser == "saucectl":
-            self.run_name += f" ({self.parsed_data.name})"
+            self.run_name += f" ({suite.name})"
         if self.environment.suite_id:
-            self.parsed_data.suite_id = self.environment.suite_id
+            suite.suite_id = self.environment.suite_id
         self.api_request_handler = ApiRequestHandler(
             api_client=self.instantiate_api_client(),
             environment=self.environment,
-            suites_data=self.parsed_data,
+            suites_data=suite,
             verify=self.environment.verify,
         )
-        if self.environment.suite_id:
-            self.api_request_handler.data_provider.update_data(
-                [{"suite_id": self.environment.suite_id}]
-            )
 
     def upload_results(self):
         """
@@ -102,6 +98,12 @@ class ResultsUploader:
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
+
+        if self.skip_run:
+            stop = time.time()
+            if added_test_cases:
+                self.environment.log(f"Submitted {len(added_test_cases)} test cases in {stop - start:.1f} secs.")
+            return
 
         # Create/update test run
         if not self.environment.run_id:

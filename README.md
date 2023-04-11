@@ -2,13 +2,15 @@
 
 trcli - The TestRail CLI
 ================================
-The TestRail CLI (trcli) is a command line tool for interacting with TestRail and uploading test automation results.
+The TestRail CLI (trcli) is a command line tool for interacting with TestRail. 
+It integrates directly with the TestRail API and provides abstractions to easily 
+create test cases and upload automated test results.
 
-- Install the CLI tool on your system and run it as part of your build pipeline
-- Automatically generate new test runs and upload results from automated tests
-- Optionally create new test cases in TestRail for test cases scripted in your test automation suite
+The TestRail CLI currently supports:
+- **Uploading automated test results from JUnit reports**
+- **Auto-generating test cases from OpenAPI specifications**
 
-To see more documentation about the TestRail CLI, please refer to the 
+To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
 on the TestRail help center.
 
@@ -24,16 +26,18 @@ $ pip install trcli
 To verify the installation was successful, you can run the `trcli` command.
 ```
 $ trcli
-TestRail CLI v1.4.0 
+TestRail CLI v1.5.0                                 
 Copyright 2021 Gurock Software GmbH - www.gurock.com
-Supported and loaded modules: 
-- junit: JUnit XML Files (& Similar) 
+Supported and loaded modules:                 
+    - parse_junit: JUnit XML Files (& Similar)
 ```
 
 CLI general reference
 --------
-```
+```shell
 $ trcli --help
+TestRail CLI v1.5.0
+Copyright 2021 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
   TestRail CLI
@@ -59,12 +63,21 @@ Options:
   --help             Show this message and exit.
 
 Commands:
-  parse_junit  Parse report files and upload results to TestRail
+  parse_junit    Parse JUnit report and upload results to TestRail
+  parse_openapi  Parse OpenAPI spec and create cases in TestRail
 ```
 
-Parse JUnit Reference (Upload Results)
+Uploading automated test results
 --------
-```
+
+The `parse_junit` command allows you to upload automated test results, provided that you are using
+a framework that supports generating JUnit XML report files.
+
+In the next sections you will find information on how to use the TestRail CLI for **code-first** and
+**specification-first** approaches to test automation.
+
+### Reference
+```shell
 $ trcli parse_junit --help
 Usage: trcli parse_junit [OPTIONS]
 
@@ -94,8 +107,7 @@ Options:
   --help              Show this message and exit.
 ```
 
-JUnit XML report example
---------
+### JUnit XML report example
 ```xml
 <testsuites name="test suites root">
   <testsuite failures="0" errors="0" skipped="1" tests="1" time="3049" name="tests.LoginTests">
@@ -129,9 +141,7 @@ JUnit XML report example
 For further detail, please refer to the 
 [JUnit to TestRail mapping](https://support.gurock.com/hc/en-us/articles/12989737200276) documentation.
 
-Uploading test results
---------
-
+### Uploading test results
 To submit test case results, the TestRail CLI will attempt to match the test cases in your automation suite to test cases in TestRail.
 There are 2 mechanisms to match test cases:
 1. Using Automation ID
@@ -148,7 +158,7 @@ while the second one is suited for a specification-first approach, where you wri
 >   you want the cases to be created in using the `--suite-id` command line option, 
 >   otherwise the CLI tool will attempt to find the suite on TestRail or create it.
 
-### 1. Using Automation ID
+#### 1. Using Automation ID (code-first approach)
 To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
 of type `String` with system name `automation_id`.
 
@@ -171,7 +181,7 @@ Example:
 For more detail, please refer to the [Automation workflows - Code-first](https://support.gurock.com/hc/en-us/articles/12609674354068)
 documentation.
 
-### 2. Using Case ID
+#### 2. Using Case ID (specification-first approach)
 
 You can use the Case ID mechanism if you want to manually match your automated test cases to case IDs in TestRail.
 From an implementation perspective, you can do this in one of two ways:
@@ -203,20 +213,119 @@ From an implementation perspective, you can do this in one of two ways:
 For more details, please refer to the [Automation workflows - Specification-first](https://support.gurock.com/hc/en-us/articles/12609869124116)
 documentation.
 
-Exploring other features
-------------------------
+### Exploring other features
 
-### General features
+#### General features
 Please refer to the [Usage examples](https://support.gurock.com/hc/en-us/articles/12908548726804) documentation page to see how you
 can leverage all the functionalities provided by the TestRail CLI.
 
-### SauceLabs saucectl reports
+#### SauceLabs saucectl reports
 If you are using `saucectl` from SauceLabs to execute your automation projects, the TestRail CLI has an enhanced parser 
 that fetches session information and adds it to your test runs. You can enable this functionality by using 
 the `--special-parser saucectl` command line option.
 
 Please refer to the [SauceLabs and saucectl reports](https://support.gurock.com/hc/en-us/articles/12719558686484)
 documentation for further information.
+
+Generating test cases from OpenAPI specs
+-----------------
+
+The `parse_openapi` command allows you to automatically generate and upload test cases to TestRail based on an
+OpenAPI specification. This feature is intended to be used once to quickly bootstrap your test case design,
+providing you with a solid base of test cases, which you can further expand on TestRail.
+
+### Reference
+```shell
+$ trcli parse_openapi --help
+TestRail CLI v1.5.0
+Copyright 2021 Gurock Software GmbH - www.gurock.com
+Usage: trcli parse_openapi [OPTIONS]
+
+  Parse OpenAPI spec and create cases in TestRail
+
+Options:
+  -f, --file      Filename and path.
+  --suite-id      Suite ID to create the tests in (if project is multi-suite).
+                  [x>=1]
+  --case-fields   List of case fields and values for new test cases creation.
+                  Usage: --case-fields type_id:1 --case-fields priority_id:3
+  --help          Show this message and exit.
+```
+
+### OpenAPI specification example
+```yaml
+openapi: 3.0.0
+info:
+  description: This is a sample API.
+  version: 1.0.0
+  title: My API
+paths:
+  /pet:
+    post:
+      summary: Add a new pet to the store
+      description: Add new pet to the store inventory.
+      operationId: addPet
+      responses:
+        '200':
+          description: Pet created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        '400':
+          description: Invalid request
+      requestBody:
+        $ref: '#/components/schemas/Pet'
+  '/pet/{petId}':
+    get:
+      summary: Find pet by ID
+      description: Returns a single pet
+      operationId: getPetById
+      parameters:
+        - name: petId
+          in: path
+          description: ID of pet to return
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        '400':
+          description: Invalid request
+        '404':
+          description: Pet not found
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        name:
+          description: The name given to a pet
+          type: string
+          example: Guru
+```
+
+### Generating test cases
+
+The test cases are generated based on the OpenAPI specification paths, operation verbs and possible response
+status codes, which provides a good basic test coverage for an API, although we recommend you further
+expand your test cases to cover specific business logic and workflows.
+
+| Pattern                               | Test case title example                           |
+|---------------------------------------|---------------------------------------------------|
+| `VERB /path -> status_code (summary)` | `GET /pet/{petId} -> 200 (Successful operation) ` |
 
 Parameter sources
 -----------------

@@ -14,7 +14,17 @@ setup(
         "trcli.api",
     ],
     include_package_data=True,
-    install_requires=["click", "pyyaml", "junitparser", "pyserde", "requests", "tqdm", "humanfriendly"],
+    install_requires=[
+        "click",
+        "pyyaml",
+        "junitparser",
+        "pyserde",
+        "requests",
+        "tqdm",
+        "humanfriendly",
+        "prance",
+        "openapi-spec-validator"
+    ],
     entry_points="""
         [console_scripts]
         trcli=trcli.cli:cli

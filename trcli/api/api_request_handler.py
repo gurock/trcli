@@ -1,28 +1,18 @@
 import html
-import json
-from pprint import pprint
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import List, Union, Tuple
 
 from trcli.api.api_client import APIClient, APIClientResult
-from trcli.cli import Environment
 from trcli.api.api_response_verify import ApiResponseVerify
-from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase
-from trcli.data_classes.data_parsers import MatchersParser
-from trcli.data_providers.api_data_provider import ApiDataProvider
+from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
     FAULT_MAPPING,
 )
+from trcli.data_classes.data_parsers import MatchersParser
+from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
+from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from typing import List, Union
-from dataclasses import dataclass
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-
-@dataclass
-class ProjectData:
-    project_id: int
-    suite_mode: int
-    error_message: str
 
 
 class ApiRequestHandler:
@@ -139,7 +129,7 @@ class ApiRequestHandler:
         else:
             return None, response.error_message
 
-    def resolve_suite_id_using_name(self, project_id: int) -> (int, str):
+    def resolve_suite_id_using_name(self, project_id: int) -> Tuple[int, str]:
         """Get suite ID matching suite name on data provider or returns -1 if unable to match any suite.
         :arg project_id: project id
         :returns: tuple with id of the suite and error message"""
@@ -160,7 +150,7 @@ class ApiRequestHandler:
 
         return suite_id, error_message
 
-    def get_suite_ids(self, project_id: int) -> (List[int], str):
+    def get_suite_ids(self, project_id: int) -> Tuple[List[int], str]:
         """Get suite IDs for requested project_id.
         : project_id: project id
         : returns: tuple with list of suite ids and error string"""
@@ -170,7 +160,7 @@ class ApiRequestHandler:
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
             for suite in response.response_text:
-                available_suites.append(suite["id"])
+                available_suites.append(int(suite["id"]))
                 returned_resources.append(
                     {
                         "suite_id": suite["id"],
@@ -185,7 +175,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return available_suites, error_message
 
-    def add_suites(self, project_id: int) -> (List[dict], str):
+    def add_suites(self, project_id: int) -> Tuple[List[dict], str]:
         """
         Adds suites that doesn't have ID's in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -221,7 +211,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def check_missing_section_ids(self, project_id: int) -> (List[int], str):
+    def check_missing_section_ids(self, project_id: int) -> Tuple[bool, str]:
         """
         Check what section id's are missing in DataProvider.
         :project_id: project_id
@@ -248,7 +238,7 @@ class ApiRequestHandler:
         else:
             return False, error_message
 
-    def add_sections(self, project_id: int) -> (List[dict], str):
+    def add_sections(self, project_id: int) -> Tuple[List[dict], str]:
         """
         Add sections that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -284,7 +274,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def check_missing_test_cases_ids(self, project_id: int) -> (bool, str):
+    def check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
         """
         Check what test cases id's are missing in DataProvider.
         :project_id: project_id
@@ -334,7 +324,7 @@ class ApiRequestHandler:
 
         return missing_cases_number > 0, ""
 
-    def add_cases(self) -> (List[dict], str):
+    def add_cases(self) -> Tuple[List[dict], str]:
         """
         Add cases that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -371,7 +361,7 @@ class ApiRequestHandler:
         ]
         return returned_resources, error_message
 
-    def add_run(self, project_id: int, run_name: str, milestone_id: int = None) -> (List[dict], str):
+    def add_run(self, project_id: int, run_name: str, milestone_id: int = None) -> Tuple[int, str]:
         """
         Creates a new test run.
         :project_id: project_id
@@ -399,7 +389,7 @@ class ApiRequestHandler:
         else:
             self.environment.elog(f"Unable to upload attachments due to API request error: {error}")
 
-    def add_results(self, run_id: int) -> (dict, str):
+    def add_results(self, run_id: int) -> Tuple[list, str, int]:
         """
         Adds one or more new test results.
         :run_id: run id
@@ -455,7 +445,7 @@ class ApiRequestHandler:
             self.environment.log(f"No attachments found to upload.")
         return responses, error_message, progress_bar.n
 
-    def handle_futures(self, futures, action_string, progress_bar):
+    def handle_futures(self, futures, action_string, progress_bar) -> Tuple[list, str]:
         responses = []
         error_message = ""
         try:
@@ -492,7 +482,7 @@ class ApiRequestHandler:
             raise KeyboardInterrupt
         return responses, error_message
 
-    def close_run(self, run_id: int) -> (dict, str):
+    def close_run(self, run_id: int) -> Tuple[dict, str]:
         """
         Closes an existing test run and archives its tests & results.
         :run_id: run id
@@ -502,7 +492,7 @@ class ApiRequestHandler:
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
 
-    def delete_suite(self, suite_id: int) -> (dict, str):
+    def delete_suite(self, suite_id: int) -> Tuple[dict, str]:
         """
         Delete suite given suite id
         :suite_id: suite id
@@ -511,7 +501,7 @@ class ApiRequestHandler:
         response = self.client.send_post(f"delete_suite/{suite_id}", payload={})
         return response.response_text, response.error_message
 
-    def delete_sections(self, added_sections: List[dict]) -> (dict, str):
+    def delete_sections(self, added_sections: List[dict]) -> Tuple[list, str]:
         """
         Delete section given add_sections response
         :suite_id: section id
@@ -530,7 +520,7 @@ class ApiRequestHandler:
                 break
         return responses, error_message
 
-    def delete_cases(self, suite_id: int, added_cases: List[dict]) -> (dict, str):
+    def delete_cases(self, suite_id: int, added_cases: List[dict]) -> Tuple[dict, str]:
         """
         Delete cases given add_cases response
         :suite_id: section id
@@ -540,7 +530,7 @@ class ApiRequestHandler:
         response = self.client.send_post(f"delete_cases/{suite_id}", payload=body)
         return response.response_text, response.error_message
 
-    def delete_run(self, run_id) -> (dict, str):
+    def delete_run(self, run_id) -> Tuple[dict, str]:
         """
         Delete run given add_run response
         :suite_id: section id
@@ -550,7 +540,7 @@ class ApiRequestHandler:
         return response.response_text, response.error_message
 
     @staticmethod
-    def retrieve_results_after_cancelling(futures):
+    def retrieve_results_after_cancelling(futures) -> list:
         responses = []
         for future in as_completed(futures):
             if not future.cancelled():
@@ -559,9 +549,9 @@ class ApiRequestHandler:
                     responses.append(response)
         return responses
 
-    def _add_case_and_update_data(self, case: TestRailCase):
+    def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
-        if self.environment.case_matcher != MatchersParser.AUTO:
+        if self.environment.case_matcher != MatchersParser.AUTO and "custom_automation_id" in case_body:
             case_body.pop("custom_automation_id")
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
         if response.status_code == 200:
@@ -577,31 +567,31 @@ class ApiRequestHandler:
         for future in futures:
             future.cancel()
 
-    def __get_all_cases(self, project_id=None, suite_id=None) -> (List[dict], str):
+    def __get_all_cases(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
         Get all cases from all pages
         """
         return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
 
-    def __get_all_sections(self, project_id=None, suite_id=None) -> (List[dict], str):
+    def __get_all_sections(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
         Get all sections from all pages
         """
         return self.__get_all_entities('sections', f"get_sections/{project_id}&suite_id={suite_id}")
 
-    def __get_all_tests_in_run(self, run_id=None) -> (List[dict], str):
+    def __get_all_tests_in_run(self, run_id=None) -> Tuple[List[dict], str]:
         """
         Get all tests from all pages
         """
         return self.__get_all_entities('tests', f"get_tests/{run_id}")
 
-    def __get_all_projects(self) -> (List[dict], str):
+    def __get_all_projects(self) -> Tuple[List[dict], str]:
         """
         Get all cases from all pages
         """
         return self.__get_all_entities('projects', f"get_projects")
 
-    def __get_all_entities(self, entity: str, link=None, entities=[]) -> (List[dict], str):
+    def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[dict], str]:
         """
         Get all entities from all pages if number of entities is too big to return in single response.
         Function using next page field in API response.

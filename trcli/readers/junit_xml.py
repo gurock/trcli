@@ -5,6 +5,7 @@ from xml.etree import ElementTree as etree
 
 from junitparser import JUnitXml, JUnitXmlError, Element, Attr
 
+from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -31,6 +32,12 @@ class Property(Element):
 
 
 class JunitParser(FileParser):
+
+    def __init__(self, environment: Environment):
+        super().__init__(environment)
+        self.case_matcher = environment.case_matcher
+        self.special = environment.special_parser
+
     @classmethod
     def _add_root_element_to_tree(cls, filepath: Union[str, Path]) -> etree:
         """
