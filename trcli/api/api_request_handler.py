@@ -308,6 +308,7 @@ class ApiRequestHandler:
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases not matching any TestRail case.")
         else:
+            global nonexistent_ids #TODO
             nonexistent_ids = []
             all_case_ids = [case["id"] for case in returned_cases]
             for section in self.suites_data_from_provider.testsections:
@@ -320,7 +321,7 @@ class ApiRequestHandler:
                 self.environment.log(f"Found {missing_cases_number} test cases without case ID in the report file.")
             if nonexistent_ids:
                 self.environment.elog(f"Nonexistent case IDs found in the report file: {nonexistent_ids}")
-                return False, "Case IDs not in TestRail project or suite were detected in the report file."
+                #return False, "Case IDs not in TestRail project or suite were detected in the report file." #TODO
 
         return missing_cases_number > 0, ""
 
@@ -400,9 +401,23 @@ class ApiRequestHandler:
         add_results_data_chunks = self.data_provider.add_results_for_cases(
             self.environment.batch_size
         )
-        results_amount = sum(
-            [len(results["results"]) for results in add_results_data_chunks]
-        )
+        # results_amount = sum(
+        #     [len(results["results"]) for results in add_results_data_chunks]
+        # )
+
+        # TODO
+        if nonexistent_ids and len(nonexistent_ids) > 0:
+            add_results_data_chunks = [{'results': [result for result in chunk['results'] if result['case_id'] not in nonexistent_ids]} for chunk in add_results_data_chunks]
+        
+            results_amount = sum(
+                [len(results["results"]) for results in add_results_data_chunks]
+            )
+        
+        else:
+            results_amount = sum(
+                [len(results["results"]) for results in add_results_data_chunks]
+            )
+        # TODO
 
         with self.environment.get_progress_bar(
             results_amount=results_amount, prefix="Adding results"
