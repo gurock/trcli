@@ -7,6 +7,7 @@ class MatchersParser:
     AUTO = "auto"
     NAME = "name"
     PROPERTY = "property"
+    NAME_SKIP_UNKNOWN = "name_skip_unknown"
 
     @staticmethod
     def parse_name_with_id(case_name: str) -> (int, str):
