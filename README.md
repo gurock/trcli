@@ -207,6 +207,15 @@ From an implementation perspective, you can do this in one of two ways:
   </testsuite>
 </testsuites>
 ```
+
+3. Map by setting the case title in the test case name, using case-matcher `name_skip_unknown`:
+```xml
+<testsuites name="test suites root">
+  <testsuite failures="0" errors="0" skipped="1" tests="1" time="3049" name="tests.LoginTests">
+    <testcase classname="tests.LoginTests" name="test_case_1" time="650" />
+  </testsuite>
+</testsuites>
+```
 > **Important usage notes:**
 > - We recommend using the `-n` option to skip creating new test cases due to the potential risk of duplication 
 
