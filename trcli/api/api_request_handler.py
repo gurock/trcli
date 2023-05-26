@@ -307,6 +307,28 @@ class ApiRequestHandler:
             self.data_provider.update_data(case_data=test_case_data)
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases not matching any TestRail case.")
+        elif self.environment.case_matcher == MatchersParser.NAME_SKIP_UNKNOWN:
+            test_cases_by_case_title = {}
+            for case in returned_cases:
+                case_title = case["title"]
+                case_title = case_title if not case_title else html.unescape(case["title"])
+                test_cases_by_case_title[case_title] = case
+            test_case_data = []
+            for section in self.suites_data_from_provider.testsections:
+                for test_case in section.testcases:
+                    if test_case.title in test_cases_by_case_title.keys():
+                        case = test_cases_by_case_title[test_case.title]
+                        test_case_data.append({
+                            "case_id": case["id"],
+                            "section_id": case["section_id"],
+                            "title": case["title"],
+                            "custom_automation_id": test_case.custom_automation_id
+                        })
+                    else:
+                        missing_cases_number += 1
+            self.data_provider.update_data(case_data=test_case_data)
+            if missing_cases_number:
+                self.environment.log(f"Found {missing_cases_number} unknown test cases to skip.")
         else:
             nonexistent_ids = []
             all_case_ids = [case["id"] for case in returned_cases]
@@ -403,7 +425,6 @@ class ApiRequestHandler:
         results_amount = sum(
             [len(results["results"]) for results in add_results_data_chunks]
         )
-
         with self.environment.get_progress_bar(
             results_amount=results_amount, prefix="Adding results"
         ) as progress_bar:
