@@ -311,6 +311,7 @@ class ApiRequestHandler:
             test_cases_by_case_title = {}
             for case in returned_cases:
                 case_title = case["title"]
+                case_title = case_title if not case_title else html.unescape(case["title"])
                 test_cases_by_case_title[case_title] = case
             test_case_data = []
             for section in self.suites_data_from_provider.testsections:
