@@ -422,6 +422,14 @@ class ApiRequestHandler:
         add_results_data_chunks = self.data_provider.add_results_for_cases(
             self.environment.batch_size
         )
+        if self.environment.case_matcher == MatchersParser.NAME_SKIP_UNKNOWN:
+            tests_in_run, error_message = self.__get_all_tests_in_run(run_id)
+            if error_message:
+                return error_message
+            result_data_chunks = add_results_data_chunks[0]['results']
+            case_ids = [case['case_id'] for case in tests_in_run]
+            actual_result = [case for case in result_data_chunks if case['case_id'] in case_ids]
+            add_results_data_chunks = [{'results': actual_result}]
         results_amount = sum(
             [len(results["results"]) for results in add_results_data_chunks]
         )
