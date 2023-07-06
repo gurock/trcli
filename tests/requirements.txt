@@ -1,4 +1,6 @@
 pytest
+pytest-md-report
+coverage
 allure-pytest
 pytest-freezegun
 pytest-mock
