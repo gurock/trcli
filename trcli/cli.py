@@ -230,6 +230,10 @@ class TRCLI(click.MultiCommand):
             return
         return mod.cli
 
+    def main(self, *args, **kwargs):
+        """Overriding to disable automatic glob patterns expansion"""
+        return super().main(windows_expand_args=False, *args, **kwargs)
+
 
 @click.command(cls=TRCLI, context_settings=CONTEXT_SETTINGS)
 @click.pass_context

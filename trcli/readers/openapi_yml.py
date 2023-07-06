@@ -190,7 +190,7 @@ class OpenApiParser(FileParser):
         return [test_suite]
 
     def resolve_openapi_spec(self) -> dict:
-        spec_path = Path(self.filepath)
+        spec_path = self.filepath
         unresolved_spec_dict, spec_url = read_from_filename(str(spec_path.absolute()))
         parser = ResolvingParser(spec_string=json.dumps(unresolved_spec_dict), backend='openapi-spec-validator')
         spec_dictionary = parser.specification
