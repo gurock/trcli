@@ -12,16 +12,16 @@ class FileParser:
     """
 
     def __init__(self, environment: Environment):
-        filepath = environment.file
-        self.filepath = filepath
-        self.check_file(filepath)
-        self.filename = Path(filepath).name
+        self.filepath = self.check_file(environment.file)
+        self.filename = self.filepath.name
         self.env = environment
 
     @staticmethod
-    def check_file(filepath: Union[str, Path]):
-        if not Path(filepath).is_file():
+    def check_file(filepath: Union[str, Path]) -> Path:
+        filepath = Path(filepath)
+        if not filepath.is_file():
             raise FileNotFoundError("File not found.")
+        return filepath
 
     @abstractmethod
     def parse_file(self) -> list[TestRailSuite]:

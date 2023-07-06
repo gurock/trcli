@@ -6,9 +6,11 @@ name: build
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
   pull_request:
-    branches: [ main ]
+    branches:
+      - '*'
 
 permissions:
   contents: read
@@ -30,4 +32,21 @@ jobs:
         pip install -r tests/requirements.txt
     - name: Test with pytest
       run: |
-        pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning
+        coverage run -m pytest \
+          -c ./tests/pytest.ini \
+          -W ignore::pytest.PytestCollectionWarning \
+          --md-report --md-report-output=report.md --md-report-color=never \
+          tests || pytest_exit_code=$?
+        echo "## :clipboard: Test Results" >> $GITHUB_STEP_SUMMARY
+        cat report.md >> $GITHUB_STEP_SUMMARY
+        echo "## :bar_chart: Code coverage" >> $GITHUB_STEP_SUMMARY
+        coverage report --format markdown >> $GITHUB_STEP_SUMMARY
+        if [[ "$(coverage report --format total)" -lt 80 ]]
+        then
+          echo "::error::Code coverage is less than 80%" && exit_code=1
+        fi
+        if [[ $pytest_exit_code -gt 0 ]]
+        then
+          echo "::error::Unit tests failed" && exit_code=1
+        fi
+        exit $exit_code

@@ -1,3 +1,4 @@
+import glob
 from pathlib import Path
 from typing import Union
 from unittest import TestCase, TestSuite
@@ -54,6 +55,25 @@ class JunitParser(FileParser):
             return etree.ElementTree(new_root)
         else:
             raise JUnitXmlError("Invalid format.")
+
+    @staticmethod
+    def check_file(filepath: Union[str, Path]) -> Path:
+        filepath = Path(filepath)
+        files = glob.glob(str(filepath))
+        if not files:
+            raise FileNotFoundError("File not found.")
+        elif len(files) == 1:
+            return filepath
+        sub_suites = []
+        for file in files:
+            suite = JUnitXml.fromfile(file)
+            sub_suites.append(suite)
+        suite = sub_suites.pop(0)
+        for sub_suite in sub_suites:
+            suite += sub_suite
+        merged_report_path = Path().cwd().joinpath("Merged-JUnit-report.xml")
+        suite.write(merged_report_path)
+        return merged_report_path
 
     def parse_file(self) -> list[TestRailSuite]:
         self.env.log(f"Parsing JUnit report.")
