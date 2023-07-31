@@ -28,7 +28,8 @@
                         "status_id": 1,
                         "version": null,
                         "attachments": [],
-                        "result_fields": {}
+                        "result_fields": {},
+                        "custom_step_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -52,7 +53,8 @@
                         "status_id": 5,
                         "version": null,
                         "attachments": [],
-                        "result_fields": {}
+                        "result_fields": {},
+                        "custom_step_results": []
                     },
                     "section_id": null,
                     "template_id": null,

@@ -167,7 +167,7 @@ class JunitParser(FileParser):
             self.env.log(f"Processed {cases_count} test cases in {len(test_sections)} sections.")
             testrail_suites.append(
                 TestRailSuite(
-                    suite.name,
+                    self.env.suite_name if self.env.suite_name else suite.name,
                     testsections=test_sections,
                     source=self.filename,
                 )

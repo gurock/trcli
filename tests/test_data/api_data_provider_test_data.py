@@ -52,9 +52,10 @@ post_results_for_cases_body = [
                 "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
                 "attachments": [],
                 "status_id": 4,
+                'custom_step_results': []
             },
-            {"case_id": 1234567, "comment": "", "attachments": [], "status_id": 1},
-            {"case_id": 4, "comment": "", "attachments": [], "status_id": 1},
+            {"case_id": 1234567, "comment": "", "attachments": [], "status_id": 1, 'custom_step_results': []},
+            {"case_id": 4, "comment": "", "attachments": [], "status_id": 1, 'custom_step_results': []},
         ]
     }
 ]

@@ -70,6 +70,7 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
 
 trcli_description = ('Supported and loaded modules:\n'
                      '    - parse_junit: JUnit XML Files (& Similar)\n'
+                     '    - parse_robot: Robot Framework XML Files\n'
                      '    - parse_openapi: OpenAPI YML Files\n')
 
 trcli_help_description = "TestRail CLI"
