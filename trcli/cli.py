@@ -45,6 +45,7 @@ class Environment:
         self.batch_size = None
         self.timeout = None
         self.suite_id = None
+        self.suite_name = None
         self.run_id = None
         self.milestone_id = None
         self.auto_creation_response = None

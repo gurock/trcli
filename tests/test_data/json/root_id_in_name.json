@@ -34,7 +34,8 @@
                         "case_id": 100,
                         "version": null,
                         "attachments": [],
-                        "result_fields": {}
+                        "result_fields": {},
+                        "custom_step_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -61,7 +62,8 @@
                             "/first.file",
                             "second.file"
                         ],
-                        "result_fields": {}
+                        "result_fields": {},
+                        "custom_step_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -85,7 +87,8 @@
                         "case_id": null,
                         "version": null,
                         "attachments": [],
-                        "result_fields": {}
+                        "result_fields": {},
+                        "custom_step_results": []
                     },
                     "section_id": null,
                     "template_id": null,

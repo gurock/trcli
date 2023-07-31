@@ -51,6 +51,7 @@ class TestJunitParser:
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
+        print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert DeepDiff(parsing_result_json, expected_json) == {}, \

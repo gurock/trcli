@@ -167,6 +167,7 @@ class ResultsUploader:
                 suite_id, error_msg = self.api_request_handler.resolve_suite_id_using_name(project_id)
                 if suite_id != -1:
                     self.api_request_handler.suites_data_from_provider.suite_id = suite_id
+                    return suite_id, 1
             if suite_mode == SuiteModes.multiple_suites:
                 prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
                     suite_name=self.api_request_handler.suites_data_from_provider.name,

@@ -68,6 +68,7 @@ TOOL_VERSION = f"""TestRail CLI v{trcli.__version__}
 Copyright 2021 Gurock Software GmbH - www.gurock.com"""
 TOOL_USAGE = f"""Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
+    - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.

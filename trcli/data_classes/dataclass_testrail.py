@@ -11,6 +11,19 @@ from trcli.data_classes.validation_exception import ValidationException
 @serialize
 @deserialize
 @dataclass
+class TestRailSeparatedStep:
+    """Class to store steps using the separated steps template"""
+
+    content: str
+    status_id: int = field(default=None, skip_if_default=True)
+
+    def __init__(self, content: str):
+        self.content = content
+
+
+@serialize
+@deserialize
+@dataclass
 class TestRailResult:
     """Class for creating Test Rail result for cases"""
 
@@ -24,6 +37,7 @@ class TestRailResult:
     attachments: Optional[List[str]] = field(default_factory=list, skip_if_default=True)
     result_fields: Optional[dict] = field(default_factory=dict, skip=True)
     junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
+    custom_step_results: list[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
     def __post_init__(self):
         if self.junit_result_unparsed is not None:
@@ -121,6 +135,8 @@ class TestRailCase:
     case_fields: Optional[dict] = field(default_factory=dict, skip=True)
     result: TestRailResult = field(default=None, metadata={"serde_skip": True})
     custom_automation_id: str = field(default=None, skip_if_default=True)
+    # Uncomment if we want to support separated steps in cases in the future
+    # custom_steps_separated: list[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
     def __int__(self):
         return int(self.case_id) if self.case_id is not None else -1
