@@ -31,7 +31,7 @@ def print_config(env: Environment):
     "--case-matcher",
     metavar="",
     default="auto",
-    type=click.Choice(["auto", "name", "property"], case_sensitive=False),
+    type=click.Choice(["auto", "name", "property", "name_skip_unknown"], case_sensitive=False),
     help="Mechanism to match cases between the JUnit report and TestRail."
 )
 @click.option(

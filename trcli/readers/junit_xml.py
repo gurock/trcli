@@ -115,6 +115,8 @@ class JunitParser(FileParser):
                     automation_id = f"{case.classname}.{case_name}"
                     if self.case_matcher == MatchersParser.NAME:
                         case_id, case_name = MatchersParser.parse_name_with_id(case_name)
+                    elif self.case_matcher == MatchersParser.NAME_SKIP_UNKNOWN:
+                        _, case_name = MatchersParser.parse_name_with_id(case_name)
                     for case_props in case.iterchildren(Properties):
                         for prop in case_props.iterchildren(Property):
                             if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
