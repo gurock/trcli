@@ -11,6 +11,7 @@ def upload_results_inner_functions_mocker(
         check_for_missing_sections_and_add_mocker,
         check_for_missing_test_cases_and_add_mocker,
         add_run_mocker,
+        update_run_mocker,
         add_results_mocker,
         close_run_mocker,
     ]
@@ -106,6 +107,15 @@ def add_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False
     else:
         results_uploader.api_request_handler.add_run.return_value = (100, "")
 
+
+def update_run_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
+    if failing:
+        results_uploader.api_request_handler.add_run.return_value = (
+            [],
+            "Failed to add run.",
+        )
+    else:
+        results_uploader.api_request_handler.update_run.return_value = (101, "")
 
 def add_results_mocker(results_uploader: ResultsUploader, mocker=None, failing=False):
     if failing:
