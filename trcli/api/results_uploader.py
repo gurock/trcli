@@ -111,20 +111,26 @@ class ResultsUploader:
             added_run, error_message = self.api_request_handler.add_run(
                 self.project.project_id, self.run_name, self.environment.milestone_id
             )
-            if error_message:
-                self.environment.elog("\n" + error_message)
-                revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id,
-                    added_sections=added_sections,
-                    added_test_cases=added_test_cases,
-                )
-                self.environment.log("\n".join(revert_logs))
-                exit(1)
             run_id = added_run
-            self.environment.log(f"Run created: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
         else:
+            self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
-            self.environment.log(f"Updating run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+            updated_run, error_message = self.api_request_handler.update_run(
+                run_id, self.run_name, self.environment.milestone_id
+            )
+            run_id = updated_run
+        if error_message:
+            self.environment.elog("\n" + error_message)
+            revert_logs = self.rollback_changes(
+                added_suite_id=added_suite_id,
+                added_sections=added_sections,
+                added_test_cases=added_test_cases,
+            )
+            self.environment.log("\n".join(revert_logs))
+            exit(1)
+        else:
+            self.environment.log(f"Test run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+
         added_results, error_message, results_amount = self.api_request_handler.add_results(run_id)
         if error_message:
             self.environment.elog(error_message)

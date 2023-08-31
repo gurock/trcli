@@ -209,13 +209,14 @@ class TestResultsUploader:
         if not run_id:
             calls = {
                 2: mocker.call("Creating test run. ", new_line=False),
-                3: mocker.call("Run created: https://fake_host.com/index.php?/runs/view/100"),
+                3: mocker.call("Test run: https://fake_host.com/index.php?/runs/view/100"),
                 4: mocker.call("Closing test run. ", new_line=False),
             }
         else:
             calls = {
-                2: mocker.call("Updating run: https://fake_host.com/index.php?/runs/view/10"),
-                3: mocker.call("Closing test run. ", new_line=False),
+                2: mocker.call("Updating test run. ", new_line=False),
+                3: mocker.call("Test run: https://fake_host.com/index.php?/runs/view/101"),
+                4: mocker.call("Closing test run. ", new_line=False),
             }
 
         results_uploader.upload_results()
