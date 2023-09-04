@@ -48,6 +48,7 @@ class Environment:
         self.suite_name = None
         self.run_id = None
         self.milestone_id = None
+        self.section_id = None
         self.auto_creation_response = None
         self.silent = None
         self.close_run = None
