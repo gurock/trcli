@@ -54,9 +54,7 @@ class RobotParser(FileParser):
                 comments = []
                 documentation = test.find("doc")
                 if self.case_matcher == MatchersParser.NAME:
-                    print("NAME!!!")
                     case_id, case_name = MatchersParser.parse_name_with_id(case_name)
-                    print(case_id)
                 if documentation is not None:
                     lines = [line.strip() for line in documentation.text.splitlines()]
                     for line in lines:

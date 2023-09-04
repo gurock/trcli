@@ -71,7 +71,8 @@ Uploading automated test results
 --------
 
 The `parse_junit` command allows you to upload automated test results, provided that you are using
-a framework that supports generating JUnit XML report files.
+a framework that supports generating JUnit XML report files, such as Cypress, Playwright, JUnit5, TestNG, and Pytest. 
+In case you are using Robot Framework, you can use the `parse_robot` command using the same parameters. 
 
 In the next sections you will find information on how to use the TestRail CLI for **code-first** and
 **specification-first** approaches to test automation.
@@ -90,10 +91,13 @@ Options:
   --case-matcher      Mechanism to match cases between the JUnit report and
                       TestRail.
   --suite-id          Suite ID for the results they are reporting.  [x>=1]
+  --suite-name        Suite name to submit results to.
   --run-id            Run ID for the results they are reporting (otherwise the
                       tool will attempt to create a new run).  [x>=1]
   --milestone-id      Milestone ID to which the Test Run should be associated
                       to.  [x>=1]
+  --section-id        Section ID to create new sections with test cases under
+                      (optional).  [x>=1]
   --run-description   Summary text to be added to the test run.
   --case-fields       List of case fields and values for new test cases
                       creation. Usage: --case-fields type_id:1 --case-fields
@@ -160,7 +164,7 @@ while the second one is suited for a specification-first approach, where you wri
 
 #### 1. Using Automation ID (code-first approach)
 To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
-of type `String` with system name `automation_id`.
+of type `Text` with system name `automation_id`.
 
 The TestRail CLI will use the unique combination of your automation test case’s `classname` and `name` 
 (expressed as `classname.name`) to compare against values of the `automation_id` field in your TestRail test case repository.

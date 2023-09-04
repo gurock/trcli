@@ -51,6 +51,12 @@ def results_parser_options(f):
         metavar="",
         help="Milestone ID to which the Test Run should be associated to.",
     )
+    @click.option(
+        "--section-id",
+        type=click.IntRange(min=1),
+        metavar="",
+        help="Section ID to create new sections with test cases under (optional).",
+    )
     @click.option("--run-description", metavar="", default="", help="Summary text to be added to the test run.")
     @click.option(
         "--case-fields",

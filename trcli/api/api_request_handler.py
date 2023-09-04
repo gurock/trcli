@@ -28,7 +28,13 @@ class ApiRequestHandler:
         self.environment = environment
         self.client = api_client
         self.suffix = api_client.VERSION
-        self.data_provider = ApiDataProvider(suites_data, environment.case_fields, environment.run_description, environment.result_fields)
+        self.data_provider = ApiDataProvider(
+            suites_data,
+            environment.case_fields,
+            environment.run_description,
+            environment.result_fields,
+            environment.section_id
+        )
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
 

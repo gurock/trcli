@@ -10,12 +10,20 @@ class ApiDataProvider:
     ApiPostProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
     """
 
-    def __init__(self, suites_input: TestRailSuite, case_fields: dict = None, run_description: str = None, result_fields: dict = None):
+    def __init__(
+        self,
+        suites_input: TestRailSuite,
+        case_fields: dict = None,
+        run_description: str = None,
+        result_fields: dict = None,
+        parent_section_id: int = None
+    ):
         self.suites_input = suites_input
         self.case_fields = case_fields
         self.run_description = run_description
         self.result_fields = result_fields
         self.update_data([{"suite_id": self.suites_input.suite_id}])
+        self.__update_parent_section(parent_section_id)
 
     def add_suites_data(self) -> list:
         """Return list of bodies for adding suites"""
@@ -158,6 +166,10 @@ class ApiDataProvider:
                 matched_section.section_id = section_updater["section_id"]
                 for case in matched_section.testcases:
                     case.section_id = section_updater["section_id"]
+
+    def __update_parent_section(self, parent_section_id: int):
+        for section in self.suites_input.testsections:
+            section.parent_id = parent_section_id
 
     def __update_case_data(self, case_data: List[dict]):
         """case_data comes from add_case API response
