@@ -15,15 +15,15 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "click",
-        "pyyaml",
-        "junitparser",
-        "pyserde",
-        "requests",
-        "tqdm",
-        "humanfriendly",
-        "prance",
-        "openapi-spec-validator"
+        "click==8.0.*",
+        "pyyaml==6.0.*",
+        "junitparser==3.1.*",
+        "pyserde==0.12.*",
+        "requests==2.31.*",
+        "tqdm==4.65.*",
+        "humanfriendly==10.0.*",
+        "openapi-spec-validator==0.5.*",
+        "prance"  # Does not use semantic versioning
     ],
     entry_points="""
         [console_scripts]
