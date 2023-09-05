@@ -13,7 +13,7 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailSuite,
     TestRailSection,
     TestRailProperty,
-    TestRailResult,
+    TestRailResult, TestRailSeparatedStep,
 )
 from trcli.readers.file_parser import FileParser
 
@@ -111,6 +111,7 @@ class JunitParser(FileParser):
                     result_fields = []
                     case_fields = []
                     comments = []
+                    result_steps = []
                     sauce_session = None
                     automation_id = f"{case.classname}.{case_name}"
                     if self.case_matcher == MatchersParser.NAME:
@@ -119,6 +120,17 @@ class JunitParser(FileParser):
                         for prop in case_props.iterchildren(Property):
                             if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
                                 case_id = int(prop.value.lower().replace("c", ""))
+                            if prop.name and prop.name.startswith("testrail_result_step"):
+                                status, step = prop.value.split(':', maxsplit=1)
+                                step = TestRailSeparatedStep(step.strip())
+                                status_dict = {
+                                    "pass": 1,
+                                    "not run": 3,
+                                    "skip": 4,
+                                    "fail": 5
+                                }
+                                step.status_id = status_dict[status]
+                                result_steps.append(step)
                             if prop.name and prop.name.startswith("testrail_attachment"):
                                 attachments.append(prop.value)
                             if prop.name and prop.name.startswith("testrail_result_field"):
@@ -142,7 +154,8 @@ class JunitParser(FileParser):
                         elapsed=case.time,
                         junit_result_unparsed=case.result,
                         attachments=attachments,
-                        result_fields=result_fields_dict
+                        result_fields=result_fields_dict,
+                        custom_step_results=result_steps
                     )
                     for comment in reversed(comments):
                         result.prepend_comment(comment)

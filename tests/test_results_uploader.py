@@ -179,7 +179,7 @@ class TestResultsUploader:
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
 
     @pytest.mark.parametrize(
-        "run_id", [None, 10], ids=["No run ID provided", "Run ID provided"]
+        "run_id", [None, 101], ids=["No run ID provided", "Run ID provided"]
     )
     @pytest.mark.results_uploader
     def test_upload_results_successful(
