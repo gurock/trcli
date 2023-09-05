@@ -367,7 +367,14 @@ class ApiRequestHandler:
         ]
         return returned_resources, error_message
 
-    def add_run(self, project_id: int, run_name: str, milestone_id: int = None) -> Tuple[int, str]:
+    def add_run(
+            self,
+            project_id: int,
+            run_name: str,
+            milestone_id: int = None,
+            plan_id: int = None,
+            config_ids: list[int] = None
+    ) -> Tuple[int, str]:
         """
         Creates a new test run.
         :project_id: project_id
@@ -375,15 +382,30 @@ class ApiRequestHandler:
         :returns: Tuple with run id and error string.
         """
         add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
-        response = self.client.send_post(f"add_run/{project_id}", add_run_data)
-        return response.response_text.get("id"), response.error_message
+        if not plan_id:
+            response = self.client.send_post(f"add_run/{project_id}", add_run_data)
+            run_id = response.response_text.get("id")
+        else:
+            if config_ids:
+                add_run_data["config_ids"] = config_ids
+                entry_data = {
+                    "name": add_run_data["name"],
+                    "suite_id": add_run_data["suite_id"],
+                    "config_ids": config_ids,
+                    "runs": [add_run_data]
+                }
+            else:
+                entry_data = add_run_data
+            response = self.client.send_post(f"add_plan_entry/{plan_id}", entry_data)
+            run_id = response.response_text["runs"][0]["id"]
+        return run_id, response.error_message
 
-    def update_run(self, run_id: int, run_name: str, milestone_id: int = None) -> Tuple[int, str]:
+    def update_run(self, run_id: int, run_name: str, milestone_id: int = None) -> Tuple[dict, str]:
         """
         Updates an existing run
         :run_id: run id
         :run_name: run name
-        :returns: Tuple with run id and error string.
+        :returns: Tuple with run and error string.
         """
         tests_response = self.client.send_get(f"get_tests/{run_id}")
         add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
@@ -392,8 +414,27 @@ class ApiRequestHandler:
         report_case_ids = add_run_data["case_ids"]
         joint_case_ids = list(set(report_case_ids + run_case_ids))
         add_run_data["case_ids"] = joint_case_ids
-        response = self.client.send_post(f"update_run/{run_id}", add_run_data)
-        return response.response_text.get("id"), response.error_message
+        run_response = self.client.send_get(f"get_run/{run_id}")
+        plan_id = run_response.response_text["plan_id"]
+        config_ids = run_response.response_text["config_ids"]
+        if not plan_id:
+            update_response = self.client.send_post(f"update_run/{run_id}", add_run_data)
+        elif plan_id and config_ids:
+            update_response = self.client.send_post(f"update_run_in_plan_entry/{run_id}", add_run_data)
+        else:
+            response = self.client.send_get(f"get_plan/{plan_id}")
+            entry_id = next(
+                (
+                    run["entry_id"]
+                    for entry in response.response_text["entries"]
+                    for run in entry["runs"]
+                    if run["id"] == run_id
+                ),
+                None,
+            )
+            update_response = self.client.send_post(f"update_plan_entry/{plan_id}/{entry_id}", add_run_data)
+        run_response = self.client.send_get(f"get_run/{run_id}")
+        return run_response.response_text, update_response.error_message
 
     def upload_attachments(self, report_results: [dict], results: list[dict], run_id: int):
         """ Getting test result id and upload attachments for it. """

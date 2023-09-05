@@ -109,16 +109,16 @@ class ResultsUploader:
         if not self.environment.run_id:
             self.environment.log(f"Creating test run. ", new_line=False)
             added_run, error_message = self.api_request_handler.add_run(
-                self.project.project_id, self.run_name, self.environment.milestone_id
+                self.project.project_id, self.run_name, self.environment.milestone_id, self.environment.plan_id,
+                self.environment.config_ids
             )
             run_id = added_run
         else:
             self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
-            updated_run, error_message = self.api_request_handler.update_run(
+            run, error_message = self.api_request_handler.update_run(
                 run_id, self.run_name, self.environment.milestone_id
             )
-            run_id = updated_run
         if error_message:
             self.environment.elog("\n" + error_message)
             revert_logs = self.rollback_changes(

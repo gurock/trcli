@@ -88,12 +88,16 @@ Options:
   -f, --file          Filename and path.
   --close-run         Close the newly created run
   --title             Title of Test Run to be created in TestRail.
-  --case-matcher      Mechanism to match cases between the JUnit report and
+  --case-matcher      Mechanism to match cases between the report and
                       TestRail.
-  --suite-id          Suite ID for the results they are reporting.  [x>=1]
+  --suite-id          Suite ID to submit results to.  [x>=1]
   --suite-name        Suite name to submit results to.
   --run-id            Run ID for the results they are reporting (otherwise the
                       tool will attempt to create a new run).  [x>=1]
+  --plan-id           Plan ID with which the Test Run will be associated.
+                      [x>=1]
+  --config-ids        Comma-separated configuration IDs to use along with Test
+                      Plans (i.e.: 34,52).
   --milestone-id      Milestone ID to which the Test Run should be associated
                       to.  [x>=1]
   --section-id        Section ID to create new sections with test cases under
@@ -105,9 +109,9 @@ Options:
   --result-fields     List of result fields and values for test results
                       creation. Usage: --result-fields custom_field_a:value1
                       --result-fields custom_field_b:3
+  --allow-ms          Allows using milliseconds for elapsed times.
   --special-parser    Optional special parser option for specialized JUnit
                       reports.
-  --allow-ms          Allows using milliseconds for elapsed times.
   --help              Show this message and exit.
 ```
 
