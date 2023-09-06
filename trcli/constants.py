@@ -48,7 +48,7 @@ FAULT_MAPPING = dict(
     f"Please configure it in the TestRail Administration under Customizations > Case Fields.\n"
     f"The field should have the following mandatory details:\n"
     f"  - System Name: automation_id\n"
-    f"  - Type: String\n"
+    f"  - Type: Text (or String)\n"
     f"  - Is Active: True"
 )
 

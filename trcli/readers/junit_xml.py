@@ -124,12 +124,12 @@ class JunitParser(FileParser):
                                 status, step = prop.value.split(':', maxsplit=1)
                                 step = TestRailSeparatedStep(step.strip())
                                 status_dict = {
-                                    "pass": 1,
-                                    "not run": 3,
-                                    "skip": 4,
-                                    "fail": 5
+                                    "passed": 1,
+                                    "untested": 3,
+                                    "skipped": 4,
+                                    "failed": 5
                                 }
-                                step.status_id = status_dict[status]
+                                step.status_id = status_dict[status.lower().strip()]
                                 result_steps.append(step)
                             if prop.name and prop.name.startswith("testrail_attachment"):
                                 attachments.append(prop.value)

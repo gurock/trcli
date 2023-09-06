@@ -41,7 +41,16 @@
                             "version": "1.1",
                             "custom_field": "custom_val"
                         },
-                        "custom_step_results": []
+                        "custom_step_results": [
+                            {
+                                "content": "Go to homepage",
+                                "status_id": 1
+                            },
+                            {
+                                "content": "Verify content",
+                                "status_id": 5
+                            }
+                        ]
                     },
                     "section_id": null,
                     "template_id": null,
