@@ -407,9 +407,8 @@ class ApiRequestHandler:
         :run_name: run name
         :returns: Tuple with run and error string.
         """
-        tests_response = self.client.send_get(f"get_tests/{run_id}")
         add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
-        run_tests: list = tests_response.response_text["tests"]
+        run_tests, error_message = self.__get_all_tests_in_run(run_id)
         run_case_ids = [test["case_id"] for test in run_tests]
         report_case_ids = add_run_data["case_ids"]
         joint_case_ids = list(set(report_case_ids + run_case_ids))
