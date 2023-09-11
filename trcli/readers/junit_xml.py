@@ -1,4 +1,5 @@
 import glob
+import copy
 from pathlib import Path
 from typing import Union
 from unittest import TestCase, TestSuite
@@ -94,6 +95,7 @@ class JunitParser(FileParser):
             cases_count = 0
             test_sections = []
             processed_section_properties = []
+            copies = []
             for section in suite:
                 if not len(section):
                     continue
@@ -119,7 +121,11 @@ class JunitParser(FileParser):
                     for case_props in case.iterchildren(Properties):
                         for prop in case_props.iterchildren(Property):
                             if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
-                                case_id = int(prop.value.lower().replace("c", ""))
+                                parsed_case_id = int(prop.value.lower().replace("c", "")) 
+                                if case_id is not None:
+                                   copies.append(parsed_case_id)
+                                   continue
+                                case_id = parsed_case_id 
                             if prop.name and prop.name.startswith("testrail_result_step"):
                                 status, step = prop.value.split(':', maxsplit=1)
                                 step = TestRailSeparatedStep(step.strip())
@@ -170,6 +176,10 @@ class JunitParser(FileParser):
                             case_fields=case_fields_dict
                         )
                     )
+
+
+                    self.copy_duplicate_test_cases(copies, test_cases)
+
                 test_sections.append(
                     TestRailSection(
                         section.name,
@@ -187,6 +197,14 @@ class JunitParser(FileParser):
             )
 
         return testrail_suites
+
+    def copy_duplicate_test_cases(self, copies, test_cases):
+        """Creates a deep copy of the current test case for each test_id present"""
+        for case_id in copies:
+            case = copy.deepcopy(test_cases[len(test_cases)-1])
+            case.case_id = case_id
+            case.result.case_id = case_id
+            test_cases.append(case)
 
     def split_sauce_report(self, suite) -> list[JUnitXml]:
         self.env.log(f"Processing SauceLabs report.")
