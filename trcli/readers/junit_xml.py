@@ -95,7 +95,6 @@ class JunitParser(FileParser):
             cases_count = 0
             test_sections = []
             processed_section_properties = []
-            copies = []
             for section in suite:
                 if not len(section):
                     continue
@@ -115,6 +114,7 @@ class JunitParser(FileParser):
                     comments = []
                     result_steps = []
                     sauce_session = None
+                    copies = []
                     automation_id = f"{case.classname}.{case_name}"
                     if self.case_matcher == MatchersParser.NAME:
                         case_id, case_name = MatchersParser.parse_name_with_id(case_name)
@@ -122,10 +122,10 @@ class JunitParser(FileParser):
                         for prop in case_props.iterchildren(Property):
                             if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
                                 parsed_case_id = int(prop.value.lower().replace("c", "")) 
-                                if case_id is not None:
-                                   copies.append(parsed_case_id)
-                                   continue
-                                case_id = parsed_case_id 
+                                if case_id is None:
+                                    case_id = parsed_case_id 
+                                else:
+                                    copies.append(parsed_case_id)
                             if prop.name and prop.name.startswith("testrail_result_step"):
                                 status, step = prop.value.split(':', maxsplit=1)
                                 step = TestRailSeparatedStep(step.strip())
