@@ -96,14 +96,31 @@ class ApiDataProvider:
         for sublist in testcases:
             for case in sublist:
                 if case.case_id is not None:
-                    case.result.add_global_result_fields(self.result_fields)
-                    bodies.append(case.result.to_dict())
-
+                    self.append_result_body(bodies, case)
+        
         result_bulks = ApiDataProvider.divide_list_into_bulks(
             bodies,
             bulk_size=bulk_size,
         )
         return [{"results": result_bulk} for result_bulk in result_bulks]
+
+    def append_result_body(self, bodies, case):
+        """Appends result to bodies. Overlapping case ids are ignored, unless a case has status of 5, in which case
+        it overwrites the body."""
+        case.result.add_global_result_fields(self.result_fields)
+
+        overlapping_case_index = next(iter([i for i, body in enumerate(bodies) if body['case_id'] == case.case_id]), None)
+        if overlapping_case_index is None:
+            bodies.append(case.result.to_dict())
+            return;
+
+        if self.takes_priority(case.result.status_id, bodies[overlapping_case_index]['status_id']):
+            bodies[overlapping_case_index] = case.result.to_dict();
+
+    def takes_priority(self, statusId1, statusId2):
+        """Determines if the first argument takes precendece in cases where an earlier result has failed (5).
+        """
+        return (statusId1 is 5 and statusId2 is not 5)
 
     def update_data(
         self,
