@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="test case with multiple test ids" id="123">
+    <testsuite id="333" failures="0" errors="0" skipped="0" tests="1" time="0.05"
+        name="Succesful run">
+        <properties>
+            <property name="setting1" value="True" />
+        </properties>
+        <testcase classname="tests.test_junit_to_dataclass" name="[c101] test_testrail 2" time="159">
+            <properties>
+                <property name="test_id" value="C576" />
+                <property name="test_id" value="C577" />
+                <property name="test_id" value="C566" />
+            </properties>
+        </testcase>
+    </testsuite>
+</testsuites>
