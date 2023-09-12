@@ -1,0 +1,23 @@
+<testsuites>
+	<testsuite name="[DUPLICATES] NewTest">
+		<!-- Increment this to trigger bug -->
+		<testcase name="Incrementing Test Number 07 " classname="[DUPLICATES] NewTest"/>
+	</testsuite>
+	<testsuite name="[DUPLICATES] Professional">
+		<testcase name="Test 1" classname="[DUPLICATES] Professional"/>
+		<testcase name="Test 2" classname="[DUPLICATES] Professional"/>
+		<testcase name="Test 3" classname="[DUPLICATES] Professional"/>
+	</testsuite>
+	<testsuite name="[DUPLICATES] Enterprise">
+		<!-- These are duplicated everytime 1 or more new tests are added -->
+		<testcase name="Test 1" classname="[DUPLICATES] Enterprise"/>
+		<testcase name="Test 2" classname="[DUPLICATES] Enterprise"/>
+		<testcase name="Test 3" classname="[DUPLICATES] Enterprise"/>
+	</testsuite>
+	<testsuite name="[DUPLICATES] Basic">
+		<!-- These are duplicated everytime 1 or more new tests are added -->
+		<testcase name="Test 1" classname="[DUPLICATES] Basic"/>
+		<testcase name="Test 2" classname="[DUPLICATES] Basic"/>
+		<testcase name="Test 3" classname="[DUPLICATES] Basic"/>
+	</testsuite>
+</testsuites>
