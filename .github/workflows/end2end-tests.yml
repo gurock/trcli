@@ -25,15 +25,14 @@ jobs:
         pip install -r tests_e2e/requirements.txt
     - name: Test with pytest
       run: |
-        coverage run -m pytest \
-          -c ./tests_e2e/pytest.ini \
-          -W ignore::pytest.PytestCollectionWarning \
+        cd tests_e2e
+        export TR_CLI_USERNAME="trcli@testrail.com"
+        export TR_CLI_PASSWORD="${{ secrets.TESTRAIL_USER_KEY }}"
+        pytest -c ./pytest.ini -W ignore::pytest.PytestCollectionWarning \
           --md-report --md-report-output=report.md --md-report-color=never \
-          tests_e2e || pytest_exit_code=$?
+          . || pytest_exit_code=$?
         echo "## :clipboard: Test Results" >> $GITHUB_STEP_SUMMARY
         cat report.md >> $GITHUB_STEP_SUMMARY
-        echo "## :bar_chart: Code coverage" >> $GITHUB_STEP_SUMMARY
-        coverage report --format markdown >> $GITHUB_STEP_SUMMARY
         if [[ $pytest_exit_code -gt 0 ]]
         then
           echo "::error::Unit tests failed" && exit_code=1
