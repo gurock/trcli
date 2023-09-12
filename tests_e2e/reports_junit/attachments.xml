@@ -1,0 +1,22 @@
+<testsuites name="test suites root">
+  <testsuite failures="0" errors="0" skipped="1" tests="1" time="0.05" name="[ATTACHMENTS] tests.LoginTests">
+    <properties><property name="setting1" value="True"/>
+    </properties>
+    <testcase classname="[ATTACHMENTS] tests.LoginTests" name="Successfully Login" time="159">
+    </testcase>
+    <testcase classname="[ATTACHMENTS] tests.LoginTests" name="Fail To Login With Invalid Email" time="159">
+      <failure type="pytest.failure" message="Fail due to...">failed due to...</failure>
+      <properties>
+        <property name="testrail_attachment" value="./attachments/testrail.jpg"/>
+        <property name="testrail_attachment_with_suffix" value="./attachments/evidence.json"/>
+      </properties>
+    </testcase>
+    <testcase classname="[ATTACHMENTS] tests.LoginTests" name="Fail To Login With Invalid Password" time="159">
+      <failure type="pytest.failure" message="Fail due to...">failed due to...</failure>
+      <properties>
+        <property name="testrail_attachment_file" value="./attachments/testrail.jpg"/>
+        <property name="testrail_attachment_file" value="./attachments/evidence.json"/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>

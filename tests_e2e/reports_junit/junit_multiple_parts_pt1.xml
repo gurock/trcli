@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="testsuites element from report 1" time="1.849" tests="1" failures="0">
+  <testsuite name="testsuite element 1A (without tests)" timestamp="2023-03-15T12:36:39" tests="0" file="cypress\todo_smoke.cy.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="[MULTIPART-REPORT-1] testsuite element 1B (with tests)" timestamp="2023-03-15T12:36:39" tests="1" time="1.826" failures="0">
+    <testcase name="[multipart_report_1] Test 1A" time="0.403" classname="class1A">
+    </testcase>
+  </testsuite>
+</testsuites>

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="testsuites element" time="7.408" tests="3" failures="1">
+  <testsuite name="testsuite element 2A (without tests)" timestamp="2023-03-15T12:36:28" tests="0" file="file.js" time="0.000" failures="0">
+  </testsuite>
+  <testsuite name="[MULTIPART-REPORT-2] testsuite element 2B (with tests)" timestamp="2023-03-15T12:36:28" tests="3" time="7.392" failures="1">
+    <testcase name="[multipart_report_2] Test 2A" time="0.886" classname="class2A">
+    </testcase>
+    <testcase name="[multipart_report_2] Test 2B" time="0.308" classname="class2B">
+    </testcase>
+    <testcase name="[multipart_report_2] Test 2C" time="0.000" classname="class2B">
+      <failure message="Some failure message" type="AssertionError"><![CDATA[AssertionError: Timed out
+      multiline error 1
+      multiline error 2
+      ]]></failure>
+    </testcase>
+  </testsuite>
+</testsuites>

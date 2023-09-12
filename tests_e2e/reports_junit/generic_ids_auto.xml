@@ -1,0 +1,29 @@
+<testsuites>
+	<properties>
+		<property name="Root Suite Property 1" value="Value 1"/>
+		<property name="Root Suite Property 2" value="Value 2"/>
+	</properties>
+	<testsuite name="[GENERIC-IDS-AUTO] Suite 1" id="123">
+		<testcase name="Test 1" classname="[GENERIC-IDS-AUTO] Suite 1"/>
+		<testcase name="Test 2" classname="[GENERIC-IDS-AUTO] Suite 1">
+	    	<failure type="pytest.failure" message="Fail due to...">failed due to...</failure>
+      		<properties>
+				<property name="testrail_case_field" value="custom_tags:['1', '3']"/>
+				<property name="testrail_result_field" value="version:1.1"/>
+        		<property name="testrail_attachment" value="./attachments/testrail.jpg"/>
+				<property name="testrail_result_comment" value="Found something more"/>
+				<property name="testrail_result_comment" value="Found something"/>
+				<property name="testrail_result_step" value="passed:Go to home page"/>
+				<property name="testrail_result_step" value="failed:Click login"/>
+				<property name="testrail_result_step" value="untested:Enter credentials"/>
+				<property name="testrail_result_step" value="untested:Click submit"/>
+      		</properties>
+		</testcase>
+		<testcase name="Test 3" classname="[GENERIC-IDS-AUTO] Suite 1"/>
+	</testsuite>
+	<testsuite name="[GENERIC-IDS-AUTO] Suite 2" id="abc-123-!$">
+		<testcase name="Test 1" classname="[GENERIC-IDS-AUTO] Suite 2"/>
+		<testcase name="Test 2" classname="[GENERIC-IDS-AUTO] Suite 2"/>
+		<testcase name="Test 3" classname="[GENERIC-IDS-AUTO] Suite 2"/>
+	</testsuite>
+</testsuites>
