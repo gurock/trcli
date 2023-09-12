@@ -22,6 +22,10 @@ def post_data_provider_single_result_without_id():
 def post_data_provider_duplicated_case_names():
     yield ApiDataProvider(test_input_duplicated_case_names)
 
+@pytest.fixture(scope="function")
+def post_data_provider_overlapping_case_ids_with_failure():
+    yield ApiDataProvider(test_overlapping_case_ids_with_failure)
+
 
 class TestApiDataProvider:
     @pytest.mark.data_provider
@@ -128,3 +132,12 @@ class TestApiDataProvider:
         assert (
             result == expected_result
         ), f"Expected: {expected_result} but got {result} instead."
+
+
+    @pytest.mark.data_provider
+    def test_failure_takes_precedence_when_case_ids_overlap(self, post_data_provider_overlapping_case_ids_with_failure):
+        result = post_data_provider_overlapping_case_ids_with_failure.add_results_for_cases(bulk_size=10)
+        expected_result_status = result[0]["results"][0]["status_id"]
+        assert (
+            expected_result_status == 5
+        ), f"Expected: status code 5 but got {expected_result_status} instead."
