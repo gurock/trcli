@@ -61,9 +61,9 @@ def get_suite_id_mocker(results_uploader: ResultsUploader, mocker, failing=False
     suite_id = 10
     results_uploader.get_suite_id = mocker.Mock()
     if failing:
-        results_uploader.get_suite_id.return_value = (suite_id, -1)
+        results_uploader.get_suite_id.return_value = (suite_id, -1, True)
     else:
-        results_uploader.get_suite_id.return_value = (suite_id, 1)
+        results_uploader.get_suite_id.return_value = (suite_id, 1, False)
 
 
 def check_for_missing_sections_and_add_mocker(

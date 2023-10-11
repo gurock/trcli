@@ -240,7 +240,7 @@ class TestResultsUploader:
             suite_id
         )
         results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
-        (result_suite_id, result_return_code,) = results_uploader.get_suite_id(
+        (result_suite_id, result_return_code, suite_added) = results_uploader.get_suite_id(
             project_id=project_id, suite_mode=SuiteModes.single_suite
         )
 
@@ -299,7 +299,7 @@ class TestResultsUploader:
         results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
         results_uploader.api_request_handler.suites_data_from_provider.name = suite_name
         environment.get_prompt_response_for_auto_creation.return_value = user_response
-        result_suite_id, result_code = results_uploader.get_suite_id(
+        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
             project_id, suite_mode
         )
         expected_elog_calls = []
@@ -369,7 +369,7 @@ class TestResultsUploader:
         expected_elog_calls = []
         if error_message:
             expected_elog_calls = [mocker.call(error_message)]
-        result_suite_id, result_code = results_uploader.get_suite_id(
+        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
@@ -414,7 +414,7 @@ class TestResultsUploader:
         expected_elog_calls = []
         if expected_error_message:
             expected_elog_calls = [mocker.call(expected_error_message)]
-        result_suite_id, result_code = results_uploader.get_suite_id(
+        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
@@ -447,7 +447,7 @@ class TestResultsUploader:
                 FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
             )
         ]
-        result_suite_id, result_code = results_uploader.get_suite_id(
+        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
             project_id, suite_mode
         )
 
