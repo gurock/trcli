@@ -57,16 +57,11 @@ class ResultsUploader:
         self.environment.log("Done.")
 
         # Resolve test suite
-        added_suite_id = 0
         suite_id, result_code, suite_added = self.get_suite_id(
             project_id=self.project.project_id, suite_mode=self.project.suite_mode
         )
         if result_code == -1:
             exit(1)
-
-        # if suite was created, keep its id for rolling back
-        if suite_added:
-            added_suite_id = suite_id
 
         # Resolve missing test cases and sections
         missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
@@ -86,7 +81,7 @@ class ResultsUploader:
             )
             if result_code == -1:
                 revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id, added_sections=added_sections
+                    suite_id=suite_id, suite_added=suite_added, added_sections=added_sections
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
@@ -97,7 +92,8 @@ class ResultsUploader:
                 result_code = 1
             if result_code == -1:
                 revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id,
+                    suite_id=suite_id,
+                    suite_added=suite_added,
                     added_sections=added_sections,
                     added_test_cases=added_test_cases,
                 )
@@ -127,7 +123,8 @@ class ResultsUploader:
         if error_message:
             self.environment.elog("\n" + error_message)
             revert_logs = self.rollback_changes(
-                added_suite_id=added_suite_id,
+                suite_id=suite_id,
+                suite_added=suite_added,
                 added_sections=added_sections,
                 added_test_cases=added_test_cases,
             )
@@ -140,7 +137,8 @@ class ResultsUploader:
         if error_message:
             self.environment.elog(error_message)
             revert_logs = self.rollback_changes(
-                added_suite_id=added_suite_id,
+                suite_id=suite_id,
+                suite_added=suite_added,
                 added_sections=added_sections,
                 added_test_cases=added_test_cases,
                 run_id=0 if run_id == self.environment.run_id else run_id,
@@ -360,7 +358,7 @@ class ResultsUploader:
         return api_client
 
     def rollback_changes(
-        self, added_suite_id=0, added_sections=None, added_test_cases=None, run_id=0
+        self, suite_id=0, suite_added=False, added_sections=None, added_test_cases=None, run_id=0
     ) -> List[str]:
         """
         Flow for rollback changes that was uploaded before error or user prompt.
@@ -381,7 +379,7 @@ class ResultsUploader:
                 returned_log.append(RevertMessages.run_deleted)
         if len(added_test_cases) > 0:
             _, error = self.api_request_handler.delete_cases(
-                added_suite_id, added_test_cases
+                suite_id, added_test_cases
             )
             if error:
                 returned_log.append(
@@ -397,8 +395,8 @@ class ResultsUploader:
                 )
             else:
                 returned_log.append(RevertMessages.section_deleted)
-        if self.project.suite_mode != SuiteModes.single_suite and added_suite_id > 0:
-            _, error = self.api_request_handler.delete_suite(added_suite_id)
+        if self.project.suite_mode != SuiteModes.single_suite and suite_added > 0:
+            _, error = self.api_request_handler.delete_suite(suite_id)
             if error:
                 returned_log.append(
                     RevertMessages.suite_not_deleted.format(error=error)

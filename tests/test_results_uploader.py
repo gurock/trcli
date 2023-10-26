@@ -20,6 +20,8 @@ from tests.test_data.results_provider_test_data import (
     TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
     TEST_REVERT_FUNCTIONS_AND_EXPECTED,
     TEST_REVERT_FUNCTIONS_IDS,
+    TEST_REVERT_FUNCTIONS_AND_EXPECTED_EXISTING_SUITE,
+    TEST_REVERT_FUNCTIONS_IDS_EXISTING_SUITE,
 )
 from trcli.api.api_request_handler import ProjectData
 from trcli.api.results_uploader import ResultsUploader
@@ -224,6 +226,7 @@ class TestResultsUploader:
             assert environment.log.call_args_list[index] == call
 
 
+    # TODO: review this test; shouldnt it use a suite_id > 0?
     @pytest.mark.results_uploader
     def test_get_suite_id_returns_valid_id(self, result_uploader_data_provider):
         """The purpose of this test is to check that get_suite_id function will
@@ -247,6 +250,9 @@ class TestResultsUploader:
         assert (
             result_suite_id == suite_id
         ), f"Expected suite_id: {suite_id} but got {result_suite_id} instead."
+        assert (
+            suite_added == False
+        ), f"Expected suite_added: {False} but got {suite_added} instead."
         assert (
             result_return_code == result_code
         ), f"Expected suite_id: {result_code} but got {result_return_code} instead."
@@ -794,5 +800,45 @@ class TestResultsUploader:
         )
 
         assert (
-            results_uploader.rollback_changes(1, [1, 2], [1, 2], 2) == expected_result
+            results_uploader.rollback_changes(1, True, [1, 2], [1, 2], 2) == expected_result
+        ), "Revert process not completed as expected in test."
+
+
+    @pytest.mark.results_uploader
+    @pytest.mark.parametrize(
+        "failing_function, expected_result",
+        TEST_REVERT_FUNCTIONS_AND_EXPECTED_EXISTING_SUITE,
+        ids=TEST_REVERT_FUNCTIONS_IDS_EXISTING_SUITE,
+    )
+    def test_rollback_changes_after_error_doesnt_delete_existing_suite(
+        self, result_uploader_data_provider, failing_function, expected_result, mocker
+    ):
+        """The purpose of this test is to check that if rollback behave properly
+        when the suite already exists and thus cannot be deleted"""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+
+        results_uploader.project = ProjectData(
+            project_id=1,
+            suite_mode=SuiteModes.multiple_suites,
+            error_message=""
+        )
+
+        suite_id = 1234
+        results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
+            suite_id
+        )
+        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
+
+        api_request_handler_delete_mocker(
+            results_uploader=results_uploader,
+            mocker=mocker,
+            failing_functions=[failing_function],
+        )
+
+        assert (
+            results_uploader.rollback_changes(suite_id, False, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
