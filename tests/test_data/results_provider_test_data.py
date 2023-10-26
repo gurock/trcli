@@ -160,3 +160,42 @@ TEST_REVERT_FUNCTIONS_IDS = [
     "unable_to_delete_cases",
     "unable_to_delete_run",
 ]
+
+TEST_REVERT_FUNCTIONS_AND_EXPECTED_EXISTING_SUITE = [
+    (   
+        "delete_sections",
+        [
+            RevertMessages.run_deleted,
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_not_deleted.format(
+                error="No permissions to delete sections."
+            ),
+        ],
+    ),
+    (
+        "delete_cases",
+        [
+            RevertMessages.run_deleted,
+            RevertMessages.test_cases_not_deleted.format(
+                error="No permissions to delete cases."
+            ),
+            RevertMessages.section_deleted,
+        ],
+    ),
+    (
+        "delete_run",
+        [
+            RevertMessages.run_not_deleted.format(
+                error="No permissions to delete run."
+            ),
+            RevertMessages.test_cases_deleted,
+            RevertMessages.section_deleted,
+        ],
+    ),
+]
+
+TEST_REVERT_FUNCTIONS_IDS_EXISTING_SUITE = [
+    "unable_to_delete_sections",
+    "unable_to_delete_cases",
+    "unable_to_delete_run",
+]

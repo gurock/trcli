@@ -57,7 +57,7 @@ class ResultsUploader:
         self.environment.log("Done.")
 
         # Resolve test suite
-        added_suite_id, result_code = self.get_suite_id(
+        suite_id, result_code, suite_added = self.get_suite_id(
             project_id=self.project.project_id, suite_mode=self.project.suite_mode
         )
         if result_code == -1:
@@ -81,7 +81,7 @@ class ResultsUploader:
             )
             if result_code == -1:
                 revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id, added_sections=added_sections
+                    suite_id=suite_id, suite_added=suite_added, added_sections=added_sections
                 )
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
@@ -92,7 +92,8 @@ class ResultsUploader:
                 result_code = 1
             if result_code == -1:
                 revert_logs = self.rollback_changes(
-                    added_suite_id=added_suite_id,
+                    suite_id=suite_id,
+                    suite_added=suite_added,
                     added_sections=added_sections,
                     added_test_cases=added_test_cases,
                 )
@@ -122,7 +123,8 @@ class ResultsUploader:
         if error_message:
             self.environment.elog("\n" + error_message)
             revert_logs = self.rollback_changes(
-                added_suite_id=added_suite_id,
+                suite_id=suite_id,
+                suite_added=suite_added,
                 added_sections=added_sections,
                 added_test_cases=added_test_cases,
             )
@@ -135,7 +137,8 @@ class ResultsUploader:
         if error_message:
             self.environment.elog(error_message)
             revert_logs = self.rollback_changes(
-                added_suite_id=added_suite_id,
+                suite_id=suite_id,
+                suite_added=suite_added,
                 added_sections=added_sections,
                 added_test_cases=added_test_cases,
                 run_id=0 if run_id == self.environment.run_id else run_id,
@@ -154,7 +157,7 @@ class ResultsUploader:
         if results_amount:
             self.environment.log(f"Submitted {results_amount} test results in {stop - start:.1f} secs.")
 
-    def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int]:
+    def get_suite_id(self, project_id: int, suite_mode: int) -> Tuple[int, int, bool]:
         """
         Gets and checks suite ID for specified project_id.
         Depending on the entry conditions (suite ID provided or not, suite mode, project ID)
@@ -162,18 +165,19 @@ class ResultsUploader:
             * check if specified suite ID exists and is correct
             * try to create missing suite ID
             * try to fetch suite ID from TestRail
-        Returns new suite ID if added or -1 in any other case. Proper information is printed
-        on failure.
+        Returns the suite ID if added/found or -1 in any other case, along with a return code, and a boolean
+        to identify is suite was created or not. Proper information is printed on failure.
         """
         suite_id = -1
         result_code = -1
+        suite_added = False
 
         if not self.api_request_handler.suites_data_from_provider.suite_id:
             if suite_mode in [SuiteModes.multiple_suites, SuiteModes.single_suite_baselines]:
                 suite_id, error_msg = self.api_request_handler.resolve_suite_id_using_name(project_id)
                 if suite_id != -1:
                     self.api_request_handler.suites_data_from_provider.suite_id = suite_id
-                    return suite_id, 1
+                    return suite_id, 1, False
             if suite_mode == SuiteModes.multiple_suites:
                 prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
                     suite_name=self.api_request_handler.suites_data_from_provider.name,
@@ -192,6 +196,7 @@ class ResultsUploader:
                 )
                 if added_suites:
                     suite_id = added_suites[0]["suite_id"]
+                    suite_added = True
             elif suite_mode == SuiteModes.single_suite_baselines:
                 suite_ids, error_message = self.api_request_handler.get_suite_ids(
                     project_id=project_id
@@ -222,7 +227,7 @@ class ResultsUploader:
                 )
         else:
             result_code = self.check_suite_id(project_id)
-        return suite_id, result_code
+        return suite_id, result_code, suite_added
 
     def check_suite_id(self, project_id: int) -> int:
         """
@@ -353,7 +358,7 @@ class ResultsUploader:
         return api_client
 
     def rollback_changes(
-        self, added_suite_id=0, added_sections=None, added_test_cases=None, run_id=0
+        self, suite_id=0, suite_added=False, added_sections=None, added_test_cases=None, run_id=0
     ) -> List[str]:
         """
         Flow for rollback changes that was uploaded before error or user prompt.
@@ -374,7 +379,7 @@ class ResultsUploader:
                 returned_log.append(RevertMessages.run_deleted)
         if len(added_test_cases) > 0:
             _, error = self.api_request_handler.delete_cases(
-                added_suite_id, added_test_cases
+                suite_id, added_test_cases
             )
             if error:
                 returned_log.append(
@@ -390,8 +395,8 @@ class ResultsUploader:
                 )
             else:
                 returned_log.append(RevertMessages.section_deleted)
-        if self.project.suite_mode != SuiteModes.single_suite and added_suite_id > 0:
-            _, error = self.api_request_handler.delete_suite(added_suite_id)
+        if self.project.suite_mode != SuiteModes.single_suite and suite_added > 0:
+            _, error = self.api_request_handler.delete_suite(suite_id)
             if error:
                 returned_log.append(
                     RevertMessages.suite_not_deleted.format(error=error)

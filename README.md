@@ -24,20 +24,23 @@ $ pip install trcli
 ```
 
 To verify the installation was successful, you can run the `trcli` command.
-```
+
+```shell
 $ trcli
-TestRail CLI v1.5.0                                 
-Copyright 2021 Gurock Software GmbH - www.gurock.com
-Supported and loaded modules:                 
+TestRail CLI v1.6.2
+Copyright 2023 Gurock Software GmbH - www.gurock.com
+Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
+    - parse_robot: Robot Framework XML Files
+    - parse_openapi: OpenAPI YML Files
 ```
 
 CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.5.0
-Copyright 2021 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.6.2
+Copyright 2023 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
   TestRail CLI
@@ -65,6 +68,7 @@ Options:
 Commands:
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
+  parse_robot    Parse Robot Framework report and upload results to TestRail
 ```
 
 Uploading automated test results

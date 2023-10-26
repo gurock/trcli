@@ -90,7 +90,7 @@ class JunitParser(FileParser):
 
         for suite in suites:
             if suite.name:
-                self.env.log(f"Processing suite - {suite.name}")
+                self.env.log(f"Processing JUnit suite - {suite.name}")
             cases_count = 0
             test_sections = []
             processed_section_properties = []
