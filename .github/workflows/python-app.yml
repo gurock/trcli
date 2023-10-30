@@ -21,7 +21,7 @@ jobs:
     strategy:
       matrix:
         python_version: ["3.10", "3.11", "3.12"]
-        os: [ubuntu-latest]
+        os: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -34,7 +34,8 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r tests/requirements.txt
-    - name: Test with pytest
+    - name: Test with pytest (Linux)
+      if: runner.os == 'Linux'
       run: |
         coverage run -m pytest \
           -c ./tests/pytest.ini \
@@ -53,4 +54,21 @@ jobs:
         then
           echo "::error::Unit tests failed" && exit_code=1
         fi
+        exit $exit_code
+    - name: Test with pytest (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        coverage run -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --md-report --md-report-output=report.md --md-report-color=never tests || pytest_exit_code=$?
+        echo "## :clipboard: Test Results" >> $GITHUB_STEP_SUMMARY
+        cat report.md >> $GITHUB_STEP_SUMMARY
+        echo "## :bar_chart: Code coverage" >> $GITHUB_STEP_SUMMARY
+        coverage report --format markdown >> $GITHUB_STEP_SUMMARY
+        if ( "$(coverage report --format total)" -lt 80 )
+        {
+          echo "::error::Code coverage is less than 80%" && exit_code=1
+        }
+        if ( $pytest_exit_code -gt 0 )
+        {
+          echo "::error::Unit tests failed" && exit_code=1
+        }
         exit $exit_code
