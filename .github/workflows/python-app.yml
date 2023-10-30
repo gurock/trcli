@@ -58,11 +58,7 @@ jobs:
     - name: Test with pytest (Windows)
       if: runner.os == 'Windows'
       run: |
-        coverage run -m pytest \
-          -c ./tests/pytest.ini \
-          -W ignore::pytest.PytestCollectionWarning \
-          --md-report --md-report-output=report.md --md-report-color=never \
-          tests || pytest_exit_code=$?
+        coverage run -m pytest -c ./tests/pytest.ini -W ignore::pytest.PytestCollectionWarning --md-report --md-report-output=report.md --md-report-color=never tests || pytest_exit_code=$?
         echo "## :clipboard: Test Results" >> $GITHUB_STEP_SUMMARY
         cat report.md >> $GITHUB_STEP_SUMMARY
         echo "## :bar_chart: Code coverage" >> $GITHUB_STEP_SUMMARY
