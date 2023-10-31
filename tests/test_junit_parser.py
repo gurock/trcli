@@ -165,3 +165,24 @@ class TestJunitParser:
             for case in section.testcases:
                 case.result.junit_result_unparsed = []
         return test_rail_suite
+
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_multiple_ids_in_test_cases_gets_copied(self):
+        env = Environment()
+        env.case_matcher = MatchersParser.PROPERTY
+        env.file = Path(__file__).parent / "test_data/XML/multiple_test_ids_in_test_case.xml"
+        file_reader = JunitParser(env)
+        parsed_file = file_reader.parse_file()
+        expected_count = 3 
+        exptected_ids = [576, 577, 566]
+        found_count = len(parsed_file[0].testsections[0].testcases)
+
+        assert (
+            found_count == expected_count
+        ), f"Expected: {expected_count} tests cases but got {found_count} instead."
+
+        found_ids = [test_case.case_id for test_case in parsed_file[0].testsections[0].testcases]
+        diff = [x for x in found_ids if x not in exptected_ids]
+        assert(
+            len(diff) == 0
+        ), f"Expected: Test case ids {exptected_ids} but got {found_ids}."
