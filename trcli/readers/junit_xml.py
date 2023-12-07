@@ -170,6 +170,7 @@ class JunitParser(FileParser):
                             case_fields=case_fields_dict
                         )
                     )
+                self.env.log("Processed {0} test cases in section {1}.".format(len(test_cases), section.name))
                 test_sections.append(
                     TestRailSection(
                         section.name,
@@ -177,7 +178,6 @@ class JunitParser(FileParser):
                         properties=properties,
                     )
                 )
-            self.env.log(f"Processed {cases_count} test cases in {len(test_sections)} sections.")
             testrail_suites.append(
                 TestRailSuite(
                     self.env.suite_name if self.env.suite_name else suite.name,

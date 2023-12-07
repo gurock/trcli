@@ -7,7 +7,7 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 class ApiDataProvider:
     """
-    ApiPostProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
+    ApiDataProvider is a place where you can convert TestRailSuite dataclass to bodies for API requests
     """
 
     def __init__(

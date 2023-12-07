@@ -105,6 +105,23 @@ class ResultsUploader:
             if added_test_cases:
                 self.environment.log(f"Submitted {len(added_test_cases)} test cases in {stop - start:.1f} secs.")
             return
+        
+        # remove empty, unused sections created earlier, based on the sections actually used by the new test cases
+        #  - iterate on added_sections and remove those that are not used by the new test cases
+        empty_sections = None
+        if added_sections:
+            if not added_test_cases:
+                empty_sections = added_sections
+            else:
+                empty_sections = [section for section in added_sections if section['section_id'] not in [case['section_id'] for case in added_test_cases]]
+            if len(empty_sections) > 0:
+                self.environment.log("Removing unnecessary empty sections that may have been created earlier. ", new_line=False)
+                _, error = self.api_request_handler.delete_sections(empty_sections)
+                if error:
+                    self.environment.elog("\n" + error)
+                    exit(1)
+                else:
+                    self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
         # Create/update test run
         if not self.environment.run_id:
