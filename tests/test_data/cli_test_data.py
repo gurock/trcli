@@ -17,17 +17,12 @@ CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_DATA = [
         1,
     ),
     (
-        ["title"],
-        "Please give your Test Run a title using the --title argument.\n",
-        1,
-    ),
-    (
         ["username"],
         "Please provide a valid TestRail username using the -u argument.\n",
         1,
     ),
     (
-        ["title"],
+        ["title", "run-id"],
         "Please give your Test Run a title using the --title argument.\n",
         1,
     ),
@@ -42,9 +37,8 @@ CHECK_ERROR_MESSAGE_FOR_REQUIRED_PARAMETERS_TEST_IDS = [
     "No file parameter provided",
     "No host parameter provided",
     "No project parameter provided",
-    "No title parameter provided",
     "No username parameter provided",
-    "No test run name parameter provided",
+    "No title or run-id parameter provided",
     "No password and API key parameter provided",
 ]
 

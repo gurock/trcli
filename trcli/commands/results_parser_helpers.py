@@ -29,7 +29,7 @@ def resolve_comma_separated_list(ctx, param, value):
 def results_parser_options(f):
     @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
     @click.option("--close-run", is_flag=True, help="Close the newly created run")
-    @click.option("--title", metavar="", help="Title of Test Run to be created in TestRail.")
+    @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
     @click.option(
         "--case-matcher",
         metavar="",

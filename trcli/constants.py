@@ -1,7 +1,7 @@
 import trcli
 import enum
 
-PARSE_JUNIT_FAULT_MAPPING = dict(
+PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING = dict(
     missing_title="Please give your Test Run a title using the --title argument."
 )
 
