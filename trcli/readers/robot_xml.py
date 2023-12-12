@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import List
 from xml.etree import ElementTree
 
+from trcli.backports import removeprefix
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
 from trcli.data_classes.dataclass_testrail import (
@@ -18,7 +20,7 @@ class RobotParser(FileParser):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
 
-    def parse_file(self) -> list[TestRailSuite]:
+    def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing Robot Framework report.")
         tree = ElementTree.parse(self.filepath)
         root = tree.getroot()
@@ -38,7 +40,7 @@ class RobotParser(FileParser):
 
         return testrail_suites
 
-    def _find_suites(self, suite_element, sections_list: list, namespace=""):
+    def _find_suites(self, suite_element, sections_list: List, namespace=""):
         name = suite_element.get("name")
         namespace += f".{name}" if namespace else name
         tests = suite_element.findall("test")
@@ -124,4 +126,4 @@ class RobotParser(FileParser):
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:
-        return text.strip().removeprefix(tr_prefix).strip()
+        return removeprefix(text, tr_prefix).strip()

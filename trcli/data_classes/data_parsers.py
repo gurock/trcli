@@ -1,5 +1,5 @@
 import re
-from typing import Union
+from typing import Union, List, Dict
 
 
 class MatchersParser:
@@ -49,7 +49,7 @@ class MatchersParser:
 class FieldsParser:
 
     @staticmethod
-    def resolve_fields(fields: Union[list[str], dict]) -> (dict, str):
+    def resolve_fields(fields: Union[List[str], Dict]) -> (Dict, str):
         error = None
         fields_dictionary = {}
         try:

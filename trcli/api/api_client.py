@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import requests
-from typing import Union, Callable
+from typing import Union, Callable, Dict, List
 from time import sleep
 
 import urllib3
@@ -22,7 +22,7 @@ class APIClientResult:
     error_message - custom error message when -1 was returned in status_code"""
 
     status_code: int
-    response_text: Union[dict, str, list]
+    response_text: Union[Dict, str, List]
     error_message: str
 
 

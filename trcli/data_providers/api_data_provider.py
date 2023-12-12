@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Dict
 
 from serde.json import to_dict
 
@@ -109,9 +109,9 @@ class ApiDataProvider:
 
     def update_data(
         self,
-        suite_data: List[dict] = None,
-        section_data: List[dict] = None,
-        case_data: List[dict] = None,
+        suite_data: List[Dict] = None,
+        section_data: List[Dict] = None,
+        case_data: List[Dict] = None,
     ):
         """Here you can provide responses from service after creating resources.
         This way TestRailSuite data will be updated by ID's of new created resources.
@@ -123,7 +123,7 @@ class ApiDataProvider:
         if case_data is not None:
             self.__update_case_data(case_data)
 
-    def __update_suite_data(self, suite_data: List[dict]):
+    def __update_suite_data(self, suite_data: List[Dict]):
         """suite_data comes from add_suite API response
         example:
             {
@@ -146,7 +146,7 @@ class ApiDataProvider:
         else:
             return True
 
-    def __update_section_data(self, section_data: List[dict]):
+    def __update_section_data(self, section_data: List[Dict]):
         """section_data comes from add_section API response
         example:
             {
@@ -173,7 +173,7 @@ class ApiDataProvider:
         for section in self.suites_input.testsections:
             section.parent_id = parent_section_id
 
-    def __update_case_data(self, case_data: List[dict]):
+    def __update_case_data(self, case_data: List[Dict]):
         """case_data comes from add_case API response
         example:
             {
