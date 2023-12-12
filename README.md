@@ -27,7 +27,7 @@ To verify the installation was successful, you can run the `trcli` command.
 
 ```shell
 $ trcli
-TestRail CLI v1.6.3
+TestRail CLI v1.7.0
 Copyright 2023 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -39,7 +39,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.6.3
+TestRail CLI v1.7.0
 Copyright 2023 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
