@@ -122,6 +122,21 @@ class TestApiRequestHandler:
         ), "Get project should return proper project data object"
 
     @pytest.mark.api_handler
+    def test_return_project_legacy_response_with_buggy_authentication_prefix(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        mocked_response = [
+            {"id": 1, "name": "DataHub", "suite_mode": 1},
+            {"id": 2, "name": "Test Project", "suite_mode": 1},
+            {"id": 3, "name": "DataHub", "suite_mode": 1},
+        ]
+
+        requests_mock.get(create_url("get_projects"), text=f"USER AUTHENTICATION SUCCESSFUL!\n"+json.dumps(mocked_response))
+        assert api_request_handler.get_project_data("Test Project") == ProjectData(
+            project_id=2, suite_mode=1, error_message=""
+        ), "Get project should return proper project data object"
+
+    @pytest.mark.api_handler
     def test_check_suite_exists(
         self, api_request_handler: ApiRequestHandler, requests_mock
     ):
