@@ -79,6 +79,7 @@ class TestCli:
             "Missing command." in result.output
         ), "'Missing command.' is not present in output when calling trcli without command parameter."
 
+
     @pytest.mark.cli
     @pytest.mark.parametrize(
         "missing_args, expected_output, expected_exit_code",

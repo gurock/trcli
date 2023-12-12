@@ -61,8 +61,8 @@ class ApiDataProvider:
                     bodies.append(case)
         return bodies
 
-    def add_run(self, run_name: str, case_ids=None, milestone_id=None):
-        """Return body for adding a run."""
+    def add_run(self, run_name: None, case_ids=None, milestone_id=None):
+        """Return body for adding or updating a run."""
         if case_ids is None:
             case_ids = [
                 int(case)
@@ -78,14 +78,16 @@ class ApiDataProvider:
         ]
         if self.run_description:
             properties.insert(0, f"{self.run_description}\n")
-        return {
-            "name": run_name,
+        body = {
             "suite_id": self.suites_input.suite_id,
-            "description": '\n'.join(properties),
+            "description": "\n".join(properties),
             "milestone_id": milestone_id,
             "include_all": False,
             "case_ids": case_ids
         }
+        if run_name is not None:
+            body["name"] = run_name
+        return body
 
     def add_results_for_cases(self, bulk_size):
         """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
