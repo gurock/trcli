@@ -36,8 +36,8 @@ class TestRailResult:
     assignedto_id: int = field(default=None, skip_if_default=True)
     attachments: Optional[List[str]] = field(default_factory=list, skip_if_default=True)
     result_fields: Optional[dict] = field(default_factory=dict, skip=True)
-    junit_result_unparsed: list = field(default=None, metadata={"serde_skip": True})
-    custom_step_results: list[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
+    junit_result_unparsed: List = field(default=None, metadata={"serde_skip": True})
+    custom_step_results: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
     def __post_init__(self):
         if self.junit_result_unparsed is not None:
@@ -51,7 +51,7 @@ class TestRailResult:
             self.elapsed = self.proper_format_for_elapsed(self.elapsed)
 
     @staticmethod
-    def calculate_status_id_from_junit_element(junit_result: list) -> int:
+    def calculate_status_id_from_junit_element(junit_result: List) -> int:
         """
          Calculate id for first result. In junit no result mean pass
         1 - Passed
@@ -68,7 +68,7 @@ class TestRailResult:
             return 5
 
     @staticmethod
-    def get_comment_from_junit_element(junit_result: list) -> str:
+    def get_comment_from_junit_element(junit_result: List) -> str:
         if len(junit_result) == 0:
             return ""
         elif not any(
@@ -136,7 +136,7 @@ class TestRailCase:
     result: TestRailResult = field(default=None, metadata={"serde_skip": True})
     custom_automation_id: str = field(default=None, skip_if_default=True)
     # Uncomment if we want to support separated steps in cases in the future
-    # custom_steps_separated: list[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
+    # custom_steps_separated: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
     def __int__(self):
         return int(self.case_id) if self.case_id is not None else -1

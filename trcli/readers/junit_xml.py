@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 from unittest import TestCase, TestSuite
 from xml.etree import ElementTree as etree
 
@@ -75,7 +75,7 @@ class JunitParser(FileParser):
         suite.write(merged_report_path)
         return merged_report_path
 
-    def parse_file(self) -> list[TestRailSuite]:
+    def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing JUnit report.")
         suite = JUnitXml.fromfile(
             self.filepath, parse_func=self._add_root_element_to_tree
@@ -188,7 +188,7 @@ class JunitParser(FileParser):
 
         return testrail_suites
 
-    def split_sauce_report(self, suite) -> list[JUnitXml]:
+    def split_sauce_report(self, suite) -> List[JUnitXml]:
         self.env.log(f"Processing SauceLabs report.")
         subsuites = {}
         for section in suite:

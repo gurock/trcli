@@ -1,6 +1,6 @@
 import html
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Union, Tuple
+from typing import List, Union, Tuple, Dict
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.api.api_response_verify import ApiResponseVerify
@@ -46,7 +46,7 @@ class ApiRequestHandler:
         """
         response = self.client.send_get("get_case_fields")
         if not response.error_message:
-            fields: list = response.response_text
+            fields: List = response.response_text
             automation_id_field = next(
                 filter(lambda x: x["system_name"] == "custom_automation_id", fields),
                 None
@@ -181,7 +181,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return available_suites, error_message
 
-    def add_suites(self, project_id: int) -> Tuple[List[dict], str]:
+    def add_suites(self, project_id: int) -> Tuple[List[Dict], str]:
         """
         Adds suites that doesn't have ID's in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -244,7 +244,7 @@ class ApiRequestHandler:
         else:
             return False, error_message
 
-    def add_sections(self, project_id: int) -> Tuple[List[dict], str]:
+    def add_sections(self, project_id: int) -> Tuple[List[Dict], str]:
         """
         Add sections that doesn't have ID in DataProvider.
         Runs update_data in data_provider for successfully created resources.
@@ -373,7 +373,7 @@ class ApiRequestHandler:
             run_name: str,
             milestone_id: int = None,
             plan_id: int = None,
-            config_ids: list[int] = None
+            config_ids: List[int] = None
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
@@ -435,7 +435,7 @@ class ApiRequestHandler:
         run_response = self.client.send_get(f"get_run/{run_id}")
         return run_response.response_text, update_response.error_message
 
-    def upload_attachments(self, report_results: [dict], results: list[dict], run_id: int):
+    def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
         """ Getting test result id and upload attachments for it. """
         tests_in_run, error = self.__get_all_tests_in_run(run_id)
         if not error:
@@ -452,7 +452,7 @@ class ApiRequestHandler:
         else:
             self.environment.elog(f"Unable to upload attachments due to API request error: {error}")
 
-    def add_results(self, run_id: int) -> Tuple[list, str, int]:
+    def add_results(self, run_id: int) -> Tuple[List, str, int]:
         """
         Adds one or more new test results.
         :run_id: run id
@@ -564,7 +564,7 @@ class ApiRequestHandler:
         response = self.client.send_post(f"delete_suite/{suite_id}", payload={})
         return response.response_text, response.error_message
 
-    def delete_sections(self, added_sections: List[dict]) -> Tuple[list, str]:
+    def delete_sections(self, added_sections: List[Dict]) -> Tuple[List, str]:
         """
         Delete section given add_sections response
         :suite_id: section id
@@ -583,7 +583,7 @@ class ApiRequestHandler:
                 break
         return responses, error_message
 
-    def delete_cases(self, suite_id: int, added_cases: List[dict]) -> Tuple[dict, str]:
+    def delete_cases(self, suite_id: int, added_cases: List[Dict]) -> Tuple[Dict, str]:
         """
         Delete cases given add_cases response
         :suite_id: section id
@@ -654,7 +654,7 @@ class ApiRequestHandler:
         """
         return self.__get_all_entities('projects', f"get_projects")
 
-    def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[dict], str]:
+    def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[Dict], str]:
         """
         Get all entities from all pages if number of entities is too big to return in single response.
         Function using next page field in API response.

@@ -262,7 +262,7 @@ class ResultsUploader:
             self.environment.elog(error_message)
         return result_code
 
-    def add_missing_sections(self, project_id: int) -> Tuple[list, int]:
+    def add_missing_sections(self, project_id: int) -> Tuple[List, int]:
         """
         Checks for missing sections in specified project. Add missing sections if user agrees to
         do so. Returns list of added section IDs if succeeds or empty list with result_code set to

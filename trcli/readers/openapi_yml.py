@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+from typing import List
 
 import yaml
 
@@ -133,7 +134,7 @@ Response code
 
 class OpenApiParser(FileParser):
 
-    def parse_file(self) -> list[TestRailSuite]:
+    def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing OpenAPI specification.")
         spec = self.resolve_openapi_spec()
         sections = {

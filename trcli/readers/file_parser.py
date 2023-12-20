@@ -1,6 +1,6 @@
 from pathlib import Path
 from abc import abstractmethod
-from typing import Union
+from typing import Union, List
 
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
@@ -24,5 +24,5 @@ class FileParser:
         return filepath
 
     @abstractmethod
-    def parse_file(self) -> list[TestRailSuite]:
+    def parse_file(self) -> List[TestRailSuite]:
         raise NotImplementedError

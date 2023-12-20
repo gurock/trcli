@@ -8,6 +8,7 @@ from click.testing import CliRunner
 import trcli.cli
 from shutil import copyfile
 from trcli.cli import cli
+from trcli.backports import removeprefix
 from trcli.constants import FAULT_MAPPING
 from tests.helpers.cli_helpers import CLIParametersHelper
 
@@ -241,7 +242,7 @@ class TestCli:
 
         for arg_name, arg_value in ENVIRONMENT_VARIABLES.items():
             setattr_mock.assert_any_call(
-                mocker.ANY, arg_name.removeprefix("TR_CLI_").lower(), arg_value
+                mocker.ANY, removeprefix(arg_name, "TR_CLI_").lower(), arg_value
             )
 
     @pytest.mark.cli
