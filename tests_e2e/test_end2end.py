@@ -46,14 +46,33 @@ class TestsEndToEnd:
     def install_trcli(self):
         _run_cmd("cd .. && pip install .")
 
-    def test_cli_robot_report(self):
+    def test_cli_robot_report_RF50(self):
         output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   parse_robot \\
   --title "[CLI-E2E-Tests] ROBOT FRAMEWORK PARSER" \\
-  -f "reports_robot/simple_report.xml"
+  -f "reports_robot/simple_report_RF50.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Processed 5 test cases in 2 sections.",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Uploading 1 attachments for 1 test results.",
+                "Submitted 5 test results in"
+            ]
+        )
+
+    def test_cli_robot_report_RF70(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_robot \\
+  --title "[CLI-E2E-Tests] ROBOT FRAMEWORK PARSER" \\
+  -f "reports_robot/simple_report_RF70.xml"
         """)
         _assert_contains(
             output,

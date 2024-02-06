@@ -18,23 +18,41 @@ class TestRobotParser:
     @pytest.mark.parametrize(
         "matcher, input_xml_path, expected_path",
         [
+            # RF 5.0 format
             (
                     MatchersParser.AUTO,
-                    Path(__file__).parent / "test_data/XML/robotframework_simple.xml",
-                    Path(__file__).parent / "test_data/json/robotframework_simple.json",
+                    Path(__file__).parent / "test_data/XML/robotframework_simple_RF50.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_simple_RF50.json",
             ),
             (
                     MatchersParser.NAME,
-                    Path(__file__).parent / "test_data/XML/robotframework_id_in_name.xml",
-                    Path(__file__).parent / "test_data/json/robotframework_id_in_name.json",
+                    Path(__file__).parent / "test_data/XML/robotframework_id_in_name_RF50.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_id_in_name_RF50.json",
             ),
             (
                     MatchersParser.PROPERTY,
-                    Path(__file__).parent / "test_data/XML/robotframework_id_in_property.xml",
-                    Path(__file__).parent / "test_data/json/robotframework_id_in_property.json",
+                    Path(__file__).parent / "test_data/XML/robotframework_id_in_property_RF50.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_id_in_property_RF50.json",
+            ),
+
+            # RF 7.0 format
+            (
+                    MatchersParser.AUTO,
+                    Path(__file__).parent / "test_data/XML/robotframework_simple_RF70.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_simple_RF70.json",
+            ),
+            (
+                    MatchersParser.NAME,
+                    Path(__file__).parent / "test_data/XML/robotframework_id_in_name_RF70.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_id_in_name_RF70.json",
+            ),
+            (
+                    MatchersParser.PROPERTY,
+                    Path(__file__).parent / "test_data/XML/robotframework_id_in_property_RF70.xml",
+                    Path(__file__).parent / "test_data/json/robotframework_id_in_property_RF70.json",
             )
         ],
-        ids=["Case Matcher Auto", "Case Matcher Name", "Case Matcher Property"],
+        ids=["Case Matcher Auto", "Case Matcher Name", "Case Matcher Property", "Case Matcher Auto", "Case Matcher Name", "Case Matcher Property"],
     )
     @pytest.mark.parse_robot
     def test_junit_xml_parser_id_matcher_name(
