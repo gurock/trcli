@@ -27,8 +27,8 @@ To verify the installation was successful, you can run the `trcli` command.
 
 ```shell
 $ trcli
-TestRail CLI v1.8.0
-Copyright 2023 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.0
+Copyright 2024 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
     - parse_robot: Robot Framework XML Files
@@ -39,8 +39,8 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.8.0
-Copyright 2023 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.0
+Copyright 2024 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
   TestRail CLI
@@ -249,8 +249,8 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.5.0
-Copyright 2021 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.0
+Copyright 2024 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
   Parse OpenAPI spec and create cases in TestRail
