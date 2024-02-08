@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 from xml.etree import ElementTree
 
@@ -79,7 +79,13 @@ class RobotParser(FileParser):
                     "fail": 5
                 }
                 status_id = status_dict[status.get("status").lower()]
-                elapsed_time = self._parse_rf_time(status.get("endtime")) - self._parse_rf_time(status.get("starttime"))
+
+                # if status contains "elapsed" then obtain it, otherwise calculate it from starttime and endtime
+                if "elapsed" in status.attrib:
+                     elapsed_time = self._parse_rf70_elapsed_time(status.get("elapsed"))
+                else:
+                    elapsed_time = self._parse_rf50_time(status.get("endtime")) - self._parse_rf50_time(status.get("starttime"))
+
                 error_msg = status.text
                 keywords = test.findall("kw")
                 step_keywords = []
@@ -121,8 +127,19 @@ class RobotParser(FileParser):
             self._find_suites(sub_suite_element, sections_list, namespace=namespace)
 
     @staticmethod
-    def _parse_rf_time(time_str: str) -> datetime:
+    def _parse_rf50_time(time_str: str) -> datetime:
+        # "20230712 22:32:12.951"
         return datetime.strptime(time_str, '%Y%m%d %H:%M:%S.%f')
+    
+    @staticmethod
+    def _parse_rf70_time(time_str: str) -> datetime:
+        # "2023-07-12T22:32:12.951000"
+        return datetime.strptime(time_str, '%Y-%m-%dT%H:%M:%S.%f')
+    
+    @staticmethod
+    def _parse_rf70_elapsed_time(timedelta_str: str) -> timedelta:
+        # "0.001000"
+        return timedelta(seconds=float(timedelta_str))
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:

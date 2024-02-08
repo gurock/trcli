@@ -1,0 +1,160 @@
+{
+    "name": "robotframework_simple_RF70",
+    "suite_id": null,
+    "description": null,
+    "testsections": [
+        {
+            "name": "Sub-Tests.Subtests 1",
+            "suite_id": null,
+            "parent_id": null,
+            "description": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "title": "Subtest 1a",
+                    "section_id": null,
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "case_fields": {
+                        "refs": "TR-1",
+                        "priority_id": "2"
+                    },
+                    "result": {
+                        "case_id": null,
+                        "status_id": 1,
+                        "comment": "Notes for the result\n\nCustom test message\n                ",
+                        "version": null,
+                        "elapsed": null,
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [
+                            "/reports/screenshot.png"
+                        ],
+                        "result_fields": {
+                            "custom_environment": "qa",
+                            "custom_dropdown_1": "3"
+                        },
+                        "junit_result_unparsed": null,
+                        "custom_step_results": [
+                            {
+                                "content": "Log",
+                                "status_id": 1
+                            },
+                            {
+                                "content": "Set Test Message",
+                                "status_id": 1
+                            }
+                        ]
+                    },
+                    "custom_automation_id": "Sub-Tests.Subtests 1.Subtest 1a"
+                },
+                {
+                    "title": "Subtest 1b",
+                    "section_id": null,
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "case_fields": {},
+                    "result": {
+                        "case_id": null,
+                        "status_id": 5,
+                        "comment": "NOK",
+                        "version": null,
+                        "elapsed": null,
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [],
+                        "result_fields": {},
+                        "junit_result_unparsed": null,
+                        "custom_step_results": [
+                            {
+                                "content": "Fail",
+                                "status_id": 5
+                            }
+                        ]
+                    },
+                    "custom_automation_id": "Sub-Tests.Subtests 1.Subtest 1b"
+                }
+            ],
+            "properties": []
+        },
+        {
+            "name": "Sub-Tests.Subtests 2",
+            "suite_id": null,
+            "parent_id": null,
+            "description": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "title": "Subtest 2a",
+                    "section_id": null,
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "case_fields": {},
+                    "result": {
+                        "case_id": null,
+                        "status_id": 1,
+                        "comment": null,
+                        "version": null,
+                        "elapsed": null,
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [],
+                        "result_fields": {},
+                        "junit_result_unparsed": null,
+                        "custom_step_results": [
+                            {
+                                "content": "Log",
+                                "status_id": 1
+                            }
+                        ]
+                    },
+                    "custom_automation_id": "Sub-Tests.Subtests 2.Subtest 2a"
+                },
+                {
+                    "title": "Subtest 2b",
+                    "section_id": null,
+                    "case_id": null,
+                    "estimate": null,
+                    "template_id": null,
+                    "type_id": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "case_fields": {},
+                    "result": {
+                        "case_id": null,
+                        "status_id": 1,
+                        "comment": null,
+                        "version": null,
+                        "elapsed": null,
+                        "defects": null,
+                        "assignedto_id": null,
+                        "attachments": [],
+                        "result_fields": {},
+                        "junit_result_unparsed": null,
+                        "custom_step_results": [
+                            {
+                                "content": "Log",
+                                "status_id": 1
+                            }
+                        ]
+                    },
+                    "custom_automation_id": "Sub-Tests.Subtests 2.Subtest 2b"
+                }
+            ],
+            "properties": []
+        }
+    ],
+    "source": "robotframework_simple_RF70.xml"
+}

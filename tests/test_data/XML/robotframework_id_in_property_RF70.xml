@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Rebot 7.0 (Python 3.10.13 on darwin)" generated="2024-02-06T11:15:19.930953" rpa="false" schemaversion="5">
+<suite id="s1" name="Sub-Tests" source="rf\tests-basic\sub-tests">
+<suite id="s1-s1" name="Subtests 1" source="rf\tests-basic\sub-tests\subtests 1.robot">
+<kw name="Log" owner="BuiltIn" type="SETUP">
+<msg time="2023-07-12T22:32:12.951000" level="INFO">SETUP</msg>
+<arg>SETUP</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2023-07-12T22:32:12.950000" elapsed="0.001000"/>
+</kw>
+<test id="s1-s1-t1" name="Subtest 1a" line="5">
+<kw name="Log" owner="BuiltIn">
+<msg time="2023-07-12T22:32:12.952000" level="INFO">OK</msg>
+<arg>OK</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2023-07-12T22:32:12.951000" elapsed="0.001000"/>
+</kw>
+<kw name="Set Test Message" owner="BuiltIn">
+<msg time="2023-07-12T22:32:12.952000" level="INFO">Set test message to:
+                        Custom test message
+                    </msg>
+<arg>Custom test message</arg>
+<doc>Sets message for the current test case.</doc>
+<status status="PASS" start="2023-07-12T22:32:12.952000" elapsed="0.000000"/>
+</kw>
+<doc>Some documentation about my test Cases
+                    Nothing to see here
+
+                    - testrail_case_id: C1
+                    - testrail_case_field: refs:TR-1
+                    - testrail_case_field: priority_id:2
+                    - testrail_result_field: custom_environment:qa
+                    - testrail_result_field: custom_dropdown_1:3
+                    - testrail_result_comment: Notes for the result
+                    - testrail_attachment: /reports/screenshot.png
+                </doc>
+<status status="PASS" start="2023-07-12T22:32:12.951000" elapsed="0.001000">Custom test message
+                </status>
+</test>
+<test id="s1-s1-t2" name="Subtest 1b" line="15">
+<kw name="Fail" owner="BuiltIn">
+<msg time="2023-07-12T22:32:12.955000" level="FAIL">NOK</msg>
+<arg>NOK</arg>
+<doc>Fails the test with the given message and optionally alters its tags.</doc>
+<status status="FAIL" start="2023-07-12T22:32:12.954000" elapsed="0.001000"/>
+</kw>
+<doc>- testrail_case_id: c2</doc>
+<status status="FAIL" start="2023-07-12T22:32:12.953000" elapsed="0.003000">NOK</status>
+</test>
+<status status="FAIL" start="2023-07-12T22:32:12.943000" elapsed="0.014000"/>
+</suite>
+<suite id="s1-s2" name="Subtests 2" source="rf\tests-basic\sub-tests\subtests 2.robot">
+<test id="s1-s2-t1" name="Subtest 2a" line="5">
+<kw name="Log" owner="BuiltIn">
+<msg time="2023-07-12T22:32:12.963000" level="INFO">OK</msg>
+<arg>OK</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2023-07-12T22:32:12.963000" elapsed="0.000000"/>
+</kw>
+<doc>- testrail_case_id: 3</doc>
+<status status="PASS" start="2023-07-12T22:32:12.962000" elapsed="0.001000"/>
+</test>
+<test id="s1-s2-t2" name="Subtest 2b" line="8">
+<kw name="Log" owner="BuiltIn">
+<msg time="2023-07-12T22:32:12.965000" level="INFO">OK</msg>
+<arg>OK</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2023-07-12T22:32:12.965000" elapsed="2.000000"/>
+</kw>
+<doc>- testrail_case_id: 4 </doc>
+<status status="PASS" start="2023-07-12T22:32:12.964000" elapsed="3.001000"/>
+</test>
+<doc>Simple homepage links tests</doc>
+<status status="PASS" start="2023-07-12T22:32:12.960000" elapsed="4.006000"/>
+</suite>
+<status status="FAIL" start="2023-07-12T22:32:12.928000" elapsed="6.040000"/>
+</suite>
+<statistics>
+<total>
+<stat pass="3" fail="1" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="3" fail="1" skip="0" id="s1" name="Sub-Tests">Sub-Tests</stat>
+<stat pass="1" fail="1" skip="0" id="s1-s1" name="Subtests 1">Sub-Tests.Subtests 1</stat>
+<stat pass="2" fail="0" skip="0" id="s1-s2" name="Subtests 2">Sub-Tests.Subtests 2</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

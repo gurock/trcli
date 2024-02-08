@@ -1,5 +1,5 @@
 {
-    "name": "robotframework_id_in_name",
+    "name": "robotframework_simple_RF50",
     "suite_id": null,
     "description": null,
     "testsections": [
@@ -13,7 +13,7 @@
                 {
                     "title": "Subtest 1a",
                     "section_id": null,
-                    "case_id": 1,
+                    "case_id": null,
                     "estimate": null,
                     "template_id": null,
                     "type_id": null,
@@ -24,7 +24,7 @@
                         "priority_id": "2"
                     },
                     "result": {
-                        "case_id": 1,
+                        "case_id": null,
                         "status_id": 1,
                         "comment": "Notes for the result\n\nCustom test message\n                ",
                         "version": null,
@@ -55,7 +55,7 @@
                 {
                     "title": "Subtest 1b",
                     "section_id": null,
-                    "case_id": 2,
+                    "case_id": null,
                     "estimate": null,
                     "template_id": null,
                     "type_id": null,
@@ -63,7 +63,7 @@
                     "refs": null,
                     "case_fields": {},
                     "result": {
-                        "case_id": 2,
+                        "case_id": null,
                         "status_id": 5,
                         "comment": "NOK",
                         "version": null,
@@ -95,7 +95,7 @@
                 {
                     "title": "Subtest 2a",
                     "section_id": null,
-                    "case_id": 3,
+                    "case_id": null,
                     "estimate": null,
                     "template_id": null,
                     "type_id": null,
@@ -103,7 +103,7 @@
                     "refs": null,
                     "case_fields": {},
                     "result": {
-                        "case_id": 3,
+                        "case_id": null,
                         "status_id": 1,
                         "comment": null,
                         "version": null,
@@ -125,7 +125,7 @@
                 {
                     "title": "Subtest 2b",
                     "section_id": null,
-                    "case_id": 4,
+                    "case_id": null,
                     "estimate": null,
                     "template_id": null,
                     "type_id": null,
@@ -133,7 +133,7 @@
                     "refs": null,
                     "case_fields": {},
                     "result": {
-                        "case_id": 4,
+                        "case_id": null,
                         "status_id": 1,
                         "comment": null,
                         "version": null,
@@ -156,5 +156,5 @@
             "properties": []
         }
     ],
-    "source": "robotframework_id_in_name.xml"
+    "source": "robotframework_simple_RF50.xml"
 }

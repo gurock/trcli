@@ -1,5 +1,5 @@
 {
-    "name": "robotframework_id_in_property",
+    "name": "robotframework_id_in_name_RF70",
     "suite_id": null,
     "description": null,
     "testsections": [
@@ -156,5 +156,5 @@
             "properties": []
         }
     ],
-    "source": "robotframework_id_in_property.xml"
+    "source": "robotframework_id_in_name_RF70.xml"
 }
