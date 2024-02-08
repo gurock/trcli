@@ -20,13 +20,16 @@ Installation
 If you already have [Python](https://www.python.org/) and [pip](https://pip.pypa.io) installed,
 you can simply run the command below in your terminal. We recommend using **Python 3.10** or newer.
 ```
-$ pip install trcli
+pip install trcli
 ```
 
 To verify the installation was successful, you can run the `trcli` command.
 
 ```shell
-$ trcli
+trcli
+```
+You should get something like this:
+```
 TestRail CLI v1.9.0
 Copyright 2024 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
@@ -83,7 +86,9 @@ In the next sections you will find information on how to use the TestRail CLI fo
 
 ### Reference
 ```shell
-$ trcli parse_junit --help
+trcli parse_junit --help
+```
+```shell
 Usage: trcli parse_junit [OPTIONS]
 
   Parse report files and upload results to TestRail
