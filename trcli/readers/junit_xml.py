@@ -1,6 +1,6 @@
 import glob
 from pathlib import Path
-from typing import Union, List
+from beartype.typing import Union, List
 from unittest import TestCase, TestSuite
 from xml.etree import ElementTree as etree
 

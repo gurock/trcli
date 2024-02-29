@@ -1,6 +1,6 @@
 from pathlib import Path
 from abc import abstractmethod
-from typing import Union, List
+from beartype.typing import Union, List
 
 from trcli.cli import Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite

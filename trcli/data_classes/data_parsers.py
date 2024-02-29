@@ -1,6 +1,5 @@
 import re
-import hashlib
-from typing import Union, List, Dict
+from beartype.typing import Union, List, Dict
 
 
 class MatchersParser:

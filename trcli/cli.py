@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import List, Union
+from beartype.typing import List, Union
 
 import click
 import yaml

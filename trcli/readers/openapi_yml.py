@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import List
+from beartype.typing import List
 
 import yaml
 from trcli.data_classes.data_parsers import TestRailCaseFieldsOptimizer

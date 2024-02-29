@@ -1,5 +1,5 @@
 from serde.json import to_dict
-from typing import List, Union, Any, Callable
+from beartype.typing import List, Union, Any, Callable
 from humanfriendly import parse_timespan
 
 

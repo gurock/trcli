@@ -1,6 +1,6 @@
 import html
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from typing import List, Union, Tuple, Dict
+from beartype.typing import List, Union, Tuple, Dict
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.api.api_response_verify import ApiResponseVerify

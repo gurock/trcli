@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import List
+from beartype.typing import List
 from xml.etree import ElementTree
 
 from trcli.backports import removeprefix

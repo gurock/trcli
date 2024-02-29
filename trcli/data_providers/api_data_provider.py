@@ -1,4 +1,4 @@
-from typing import List, Dict
+from beartype.typing import List, Dict
 
 from serde.json import to_dict
 
