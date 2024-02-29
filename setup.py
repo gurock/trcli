@@ -23,6 +23,7 @@ setup(
         "tqdm==4.65.*",
         "humanfriendly==10.0.*",
         "openapi-spec-validator==0.5.*",
+        "beartype==0.7.*",
         "prance"  # Does not use semantic versioning
     ],
     entry_points="""
