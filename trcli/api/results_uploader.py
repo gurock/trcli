@@ -1,5 +1,5 @@
 import time
-from typing import Tuple, Callable, List
+from beartype.typing import Tuple, Callable, List
 
 from trcli.api.api_client import APIClient
 from trcli.api.api_request_handler import ApiRequestHandler

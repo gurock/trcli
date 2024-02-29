@@ -1,3 +1,4 @@
 pytest
 pytest-md-report
 coverage
+beartype

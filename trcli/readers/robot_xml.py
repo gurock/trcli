@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
-from typing import List
+from beartype.typing import List
 from xml.etree import ElementTree
 
 from trcli.backports import removeprefix
 from trcli.cli import Environment
-from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
+from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -115,7 +115,7 @@ class RobotParser(FileParser):
                 for comment in reversed(comments):
                     result.prepend_comment(comment)
                 tr_test = TestRailCase(
-                    title=case_name,
+                    title=TestRailCaseFieldsOptimizer.extract_last_words(case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
                     case_id=case_id,
                     result=result,
                     custom_automation_id=f"{namespace}.{case_name}",

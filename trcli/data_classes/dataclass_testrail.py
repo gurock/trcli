@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from time import gmtime, strftime
-from typing import List, Optional
+from beartype.typing import List, Optional
 
 from serde import field, serialize, deserialize, to_dict
 

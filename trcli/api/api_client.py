@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 import requests
-from typing import Union, Callable, Dict, List
+from beartype.typing import Union, Callable, Dict, List
 from time import sleep
 
 import urllib3
