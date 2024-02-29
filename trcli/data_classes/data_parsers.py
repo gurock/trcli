@@ -104,14 +104,3 @@ class TestRailCaseFieldsOptimizer:
         result = ' '.join(reversed(extracted_words))
 
         return result
-
-    @staticmethod
-    def generate_optimized_automation_id(automation_id: str) -> str:
-        if automation_id is None:
-            return None
-        if automation_id.__len__() > 100:
-            h = hashlib.sha3_512() # Python 3.6+
-            h.update(automation_id.encode("utf-8"))
-            return h.hexdigest()
-        else:
-            return automation_id
