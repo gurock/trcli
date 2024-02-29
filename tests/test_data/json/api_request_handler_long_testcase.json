@@ -1,0 +1,71 @@
+{
+    "description": null,
+    "name": "Suite1",
+    "suite_id": 4,
+    "testsections": [
+        {
+            "name": "Skipped test",
+            "suite_id": 4,
+            "section_id": 1234,
+            "testcases": [
+                {
+                    "section_id": 1234,
+                    "title": "testCase1",
+                    "custom_automation_id": "Skipped test.testCase1",
+                    "case_id": 1,
+                    "result": {
+                        "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                        "status_id": 4,
+                        "case_id": 1,
+                        "attachments": [
+                            "./path1",
+                            "./path2"
+                        ]
+                    }
+                },
+                {
+                    "section_id": 1234,
+                    "title": "Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim.",
+                    "custom_automation_id": "Skipped test.testCase2",
+                    "estimate": "30s",
+                    "case_id": null,
+                    "result": {
+                        "comment": "Comment testCase2",
+                        "status_id": 1,
+                        "case_id": null
+                    }
+                }
+            ],
+            "properties": [
+                {
+                    "description": "logging: True",
+                    "name": "logging",
+                    "value": "True"
+                },
+                {
+                    "description": "debug: False",
+                    "name": "debug",
+                    "value": "False"
+                }
+            ]
+        },
+        {
+            "name": "Passed test",
+            "suite_id": 4,
+            "section_id": null,
+            "testcases": [
+                {
+                    "section_id": 2,
+                    "title": "testCase3",
+                    "custom_automation_id": "Passed test.testCase3",
+                    "case_id": null,
+                    "result": {
+                        "comment": "Comment testCase3",
+                        "status_id": 1,
+                        "case_id": null
+                    }
+                }
+            ]
+        }
+    ]
+}

@@ -59,6 +59,32 @@
                         "custom_case_field": "custom_case_val"
                     },
                     "type_id": null
+                },
+                {
+                    "case_id": null,
+                    "custom_automation_id": "The quick, brown fox jumps over a lazy dog. DJs flock by when MTV ax quiz prog. Junk MTV quiz graced by fox whelps. Bawds jog, flick quartz, vex nymphs. Waltz, bad nymph, for quick jigs vex! Fox nymph.Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec.",
+                    "estimate": null,
+                    "milestone_id": null,
+                    "refs": null,
+                    "case_fields": {
+                    },
+                    "result": {
+                        "assignedto_id": null,
+                        "defects": null,
+                        "elapsed": "160s",
+                        "junit_result_unparsed": [],
+                        "status_id": 1,
+                        "case_id": null,
+                        "version": null,
+                        "custom_step_results": [],
+                        "result_fields": {},
+                        "attachments": [],
+                        "comment": ""
+                    },
+                    "section_id": null,
+                    "template_id": null,
+                    "title": "quam felis, ultricies nec, pellentesque eu, pretium quis, sem Nulla consequat massa quis enim Donec",
+                    "type_id": null
                 }
             ]
         }

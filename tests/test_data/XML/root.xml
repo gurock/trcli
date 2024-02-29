@@ -15,6 +15,9 @@
     <property name="testrail_result_step" value="passed:Go to homepage"/>
     <property name="testrail_result_step" value="failed:Verify content"/>
 </properties>
-<skipped type="pytest.skip" message="Please skip">skipped by user</skipped></testcase>
+<skipped type="pytest.skip" message="Please skip">skipped by user</skipped>
+</testcase>
+<testcase classname="The quick, brown fox jumps over a lazy dog. DJs flock by when MTV ax quiz prog. Junk MTV quiz graced by fox whelps. Bawds jog, flick quartz, vex nymphs. Waltz, bad nymph, for quick jigs vex! Fox nymph" name="Lorem ipsum dolor sit amet, consectetuer adipiscing elit. Aenean commodo ligula eget dolor. Aenean massa. Cum sociis natoque penatibus et magnis dis parturient montes, nascetur ridiculus mus. Donec quam felis, ultricies nec, pellentesque eu, pretium quis, sem. Nulla consequat massa quis enim. Donec." time="160"> 
+</testcase>
 </testsuite>
 </testsuites>

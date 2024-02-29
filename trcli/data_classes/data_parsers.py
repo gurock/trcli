@@ -1,4 +1,5 @@
 import re
+import hashlib
 from typing import Union, List, Dict
 
 
@@ -69,3 +70,48 @@ class FieldsParser:
             return fields_dictionary, error
         except Exception as ex:
             return fields_dictionary, f"Error parsing fields: {ex}"
+
+class TestRailCaseFieldsOptimizer:
+
+    MAX_TESTCASE_TITLE_LENGTH = 100
+
+    @staticmethod
+    def extract_last_words(input_string, max_characters=100):
+        if input_string is None:
+            return None
+
+        # Define delimiters for splitting words
+        delimiters = [' ', '\t', ';', ':', '>', '/', '.']
+
+        # Replace multiple consecutive delimiters with a single space
+        regex_pattern = '|'.join(map(re.escape, delimiters))
+        cleaned_string = re.sub(f'[{regex_pattern}]+', ' ', input_string.strip())
+
+        # Split the cleaned string into words
+        words = cleaned_string.split()
+
+        # Extract the last words up to the maximum character limit
+        extracted_words = []
+        current_length = 0
+        for word in reversed(words):
+            if current_length + len(word) <= max_characters:
+                extracted_words.append(word)
+                current_length += len(word) + 1  # Add 1 for the space between words
+            else:
+                break
+
+        # Reverse the extracted words to maintain the original order
+        result = ' '.join(reversed(extracted_words))
+
+        return result
+
+    @staticmethod
+    def generate_optimized_automation_id(automation_id: str) -> str:
+        if automation_id is None:
+            return None
+        if automation_id.__len__() > 100:
+            h = hashlib.sha3_512() # Python 3.6+
+            h.update(automation_id.encode("utf-8"))
+            return h.hexdigest()
+        else:
+            return automation_id

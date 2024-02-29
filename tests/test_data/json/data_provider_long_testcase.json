@@ -1,0 +1,72 @@
+{
+    "description": null,
+    "name": "Suite1",
+    "suite_id": null,
+    "testsections": [
+        {
+            "name": "Skipped test",
+            "suite_id": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "section_id": null,
+                    "title": "testCase1",
+                    "case_id": 60,
+                    "result": {
+                        "comment": "Type: pytest.skip\\nMessage: Please skip\\nText: skipped by user",
+                        "status_id": 4,
+                        "case_id": 60
+                    }
+                }
+            ],
+            "properties": [
+                {
+                    "description": "logging: True",
+                    "name": "logging",
+                    "value": "True"
+                },
+                {
+                    "description": "debug: False",
+                    "name": "debug",
+                    "value": "False"
+                }
+            ]
+        },
+        {
+            "name": "Passed test",
+            "suite_id": null,
+            "section_id": null,
+            "testcases": [
+                {
+                    "section_id": null,
+                    "title": "testCase2",
+                    "custom_automation_id": "className.testCase2abc",
+                    "case_id": null,
+                    "time": 400,
+                    "result": {
+                        "comment": "",
+                        "status_id": 1,
+                        "case_id": null
+                    }
+                }
+            ]
+        },
+        {
+            "name": "Filled test",
+            "suite_id": 1,
+            "section_id": 2,
+            "testcases": [
+                {
+                    "section_id": 2,
+                    "title": "testCase3",
+                    "case_id": 4,
+                    "result": {
+                        "comment": "",
+                        "status_id": 1,
+                        "case_id": 4
+                    }
+                }
+            ]
+        }
+    ]
+}

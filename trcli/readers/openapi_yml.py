@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import List
 
 import yaml
+from trcli.data_classes.data_parsers import TestRailCaseFieldsOptimizer
 
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -167,7 +168,7 @@ class OpenApiParser(FileParser):
                     section: TestRailSection = sections[tag]
                     section.testcases.append(
                         TestRailCase(
-                            openapi_test.name,
+                            TestRailCaseFieldsOptimizer.extract_last_words(openapi_test.name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
                             custom_automation_id=f"{openapi_test.unique_id}",
                             result=TestRailResult(),
                             case_fields={

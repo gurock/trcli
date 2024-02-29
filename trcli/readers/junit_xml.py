@@ -7,7 +7,7 @@ from xml.etree import ElementTree as etree
 from junitparser import JUnitXml, JUnitXmlError, Element, Attr
 
 from trcli.cli import Environment
-from trcli.data_classes.data_parsers import MatchersParser, FieldsParser
+from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -163,7 +163,7 @@ class JunitParser(FileParser):
                         result.prepend_comment(f"SauceLabs session: {sauce_session}")
                     test_cases.append(
                         TestRailCase(
-                            title=case_name,
+                            title=TestRailCaseFieldsOptimizer.extract_last_words(case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
                             case_id=case_id,
                             result=result,
                             custom_automation_id=automation_id,
