@@ -72,3 +72,9 @@ jobs:
           echo "::error::Unit tests failed" && exit_code=1
         }
         exit $exit_code
+    - name: Install the TR CLI on Linux (just to make sure it installs)
+      if: runner.os == 'Linux'
+      run: |
+        pip install build
+        python -m build
+        pip install $(ls dist/*.tar.gz| head -n 1)
