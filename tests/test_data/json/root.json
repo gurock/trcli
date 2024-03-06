@@ -26,7 +26,7 @@
                     "refs": null,
                     "result": {
                         "assignedto_id": null,
-                        "comment": "Finding 1\n\nFinding 2\n\nType: pytest.skip\nMessage: Please skip\nText: skipped by user",
+                        "comment": "Finding 1\n\nFinding 2\n\ntesting:&&qS55!T@\n\nType: pytest.skip\nMessage: Please skip\nText: skipped by user",
                         "defects": null,
                         "elapsed": "159s",
                         "junit_result_unparsed": [],
@@ -56,7 +56,8 @@
                     "template_id": null,
                     "title": "test_testrail_test_suite",
                     "case_fields": {
-                        "custom_case_field": "custom_case_val"
+                        "custom_case_field": "custom_case_val",
+                        "custom_steps": "1. First step\n2. Second step\n3. Third step"
                     },
                     "type_id": null
                 },
