@@ -138,7 +138,7 @@ class JunitParser(FileParser):
                             if prop.name and prop.name.startswith("testrail_result_comment"):
                                 comments.append(prop.value)
                             if prop.name and prop.name.startswith("testrail_case_field"):
-                                if prop._elem.text is not None:
+                                if prop._elem.text is not None and prop._elem.text.strip() != "":
                                     case_fields.append(prop._elem.text.strip())
                                 else:
                                     case_fields.append(prop.value)
