@@ -57,7 +57,8 @@
                     "title": "test_testrail_test_suite",
                     "case_fields": {
                         "custom_case_field": "custom_case_val",
-                        "custom_steps": "1. First step\n2. Second step\n3. Third step"
+                        "custom_steps": "1. First step\n2. Second step\n3. Third step",
+                        "test_empty_value": "another_case_val"
                     },
                     "type_id": null
                 },
