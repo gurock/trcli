@@ -102,4 +102,8 @@ class TestRailCaseFieldsOptimizer:
         # Reverse the extracted words to maintain the original order
         result = ' '.join(reversed(extracted_words))
 
+        # as fallback, return the last characters if the result is empty
+        if result.strip() == "":
+            result = input_string[-max_characters:]
+
         return result
