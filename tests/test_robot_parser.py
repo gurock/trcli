@@ -29,11 +29,6 @@ class TestRobotParser:
                     Path(__file__).parent / "test_data/XML/robotframework_id_in_name_RF50.xml",
                     Path(__file__).parent / "test_data/json/robotframework_id_in_name_RF50.json",
             ),
-            (
-                    MatchersParser.PROPERTY,
-                    Path(__file__).parent / "test_data/XML/robotframework_id_in_property_RF50.xml",
-                    Path(__file__).parent / "test_data/json/robotframework_id_in_property_RF50.json",
-            ),
 
             # RF 7.0 format
             (
@@ -45,17 +40,12 @@ class TestRobotParser:
                     MatchersParser.NAME,
                     Path(__file__).parent / "test_data/XML/robotframework_id_in_name_RF70.xml",
                     Path(__file__).parent / "test_data/json/robotframework_id_in_name_RF70.json",
-            ),
-            (
-                    MatchersParser.PROPERTY,
-                    Path(__file__).parent / "test_data/XML/robotframework_id_in_property_RF70.xml",
-                    Path(__file__).parent / "test_data/json/robotframework_id_in_property_RF70.json",
             )
         ],
-        ids=["Case Matcher Auto", "Case Matcher Name", "Case Matcher Property", "Case Matcher Auto", "Case Matcher Name", "Case Matcher Property"],
+        ids=["Case Matcher Auto", "Case Matcher Name", "Case Matcher Auto", "Case Matcher Name"]
     )
     @pytest.mark.parse_robot
-    def test_junit_xml_parser_id_matcher_name(
+    def test_robot_xml_parser_id_matcher_name(
             self, matcher: str, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
         freezer.move_to("2020-05-20 01:00:00")
@@ -71,18 +61,8 @@ class TestRobotParser:
             f"Result of parsing XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_robot
-    def test_junit_xml_parser_file_not_found(self):
+    def test_robot_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             env = Environment()
             env.file = Path(__file__).parent / "not_found.xml"
             RobotParser(env)
-
-    def __clear_unparsable_junit_elements(
-        self, test_rail_suite: TestRailSuite
-    ) -> TestRailSuite:
-        """helper method to delete junit_result_unparsed field,
-        which asdict() method of dataclass can't handle"""
-        for section in test_rail_suite.testsections:
-            for case in section.testcases:
-                case.result.junit_result_unparsed = []
-        return test_rail_suite

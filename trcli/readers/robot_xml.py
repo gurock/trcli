@@ -80,6 +80,7 @@ class RobotParser(FileParser):
                 }
                 status_id = status_dict[status.get("status").lower()]
 
+                elapsed_time = None
                 # if status contains "elapsed" then obtain it, otherwise calculate it from starttime and endtime
                 if "elapsed" in status.attrib:
                      elapsed_time = self._parse_rf70_elapsed_time(status.get("elapsed"))
@@ -105,7 +106,7 @@ class RobotParser(FileParser):
                     raise Exception(error)
                 result = TestRailResult(
                     case_id,
-                    elapsed=f"{elapsed_time}",
+                    elapsed=f"{elapsed_time.total_seconds()}",
                     status_id=status_id,
                     comment=error_msg,
                     attachments=attachments,

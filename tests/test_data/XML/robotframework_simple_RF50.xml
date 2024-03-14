@@ -36,7 +36,7 @@
                     - testrail_result_comment: Notes for the result
                     - testrail_attachment: /reports/screenshot.png
                 </doc>
-                <status status="PASS" starttime="20230712 22:32:12.951" endtime="20230712 22:32:12.952">Custom test message
+                <status status="PASS" starttime="20230712 22:32:12.951" endtime="20230712 22:32:14.952">Custom test message
                 </status>
             </test>
             <test id="s1-s1-t2" name="Subtest 1b" line="15">
