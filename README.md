@@ -8,6 +8,7 @@ create test cases and upload automated test results.
 
 The TestRail CLI currently supports:
 - **Uploading automated test results from JUnit reports**
+- **Uploading automated test results from Robot Framework reports**
 - **Auto-generating test cases from OpenAPI specifications**
 
 To see further documentation about the TestRail CLI, please refer to the 
