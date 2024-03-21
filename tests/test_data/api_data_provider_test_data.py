@@ -23,6 +23,12 @@ file_json = open(
 json_string = json.dumps(json.load(file_json))
 test_input_duplicated_case_names = from_json(TestRailSuite, json_string)
 
+file_json = open(
+    Path(__file__).parent / "json/overlapping_case_ids_with_failure.json"
+)
+json_string = json.dumps(json.load(file_json))
+test_overlapping_case_ids_with_failure = from_json(TestRailSuite, json_string)
+
 
 post_suite_bodies = [{"name": "Suite1"}]
 
