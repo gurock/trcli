@@ -72,10 +72,10 @@ class FieldsParser:
 
 class TestRailCaseFieldsOptimizer:
 
-    MAX_TESTCASE_TITLE_LENGTH = 100
+    MAX_TESTCASE_TITLE_LENGTH = 250
 
     @staticmethod
-    def extract_last_words(input_string, max_characters=100):
+    def extract_last_words(input_string, max_characters=MAX_TESTCASE_TITLE_LENGTH):
         if input_string is None:
             return None
 
@@ -101,5 +101,9 @@ class TestRailCaseFieldsOptimizer:
 
         # Reverse the extracted words to maintain the original order
         result = ' '.join(reversed(extracted_words))
+
+        # as fallback, return the last characters if the result is empty
+        if result.strip() == "":
+            result = input_string[-max_characters:]
 
         return result
