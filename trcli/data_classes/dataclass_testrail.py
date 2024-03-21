@@ -82,7 +82,7 @@ class TestRailResult:
     def proper_format_for_elapsed(elapsed):
         try:
             if settings.ALLOW_ELAPSED_MS:
-                return f"{round(elapsed, 3)}s" if float(elapsed) >= 0.001 else None
+                return f"{round(float(elapsed), 3)}s" if float(elapsed) >= 0.001 else None
             else:
                 elapsed = float(elapsed)
                 if elapsed > 1:
