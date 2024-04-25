@@ -153,6 +153,7 @@ class TestRailCase:
             )
         if self.custom_automation_id:
             self.custom_automation_id = self.custom_automation_id.strip()
+            self.custom_automation_id = self.custom_automation_id[:128]
 
     def add_global_case_fields(self, case_fields: dict) -> None:
         """Add global case fields without overriding the existing case-specific fields
