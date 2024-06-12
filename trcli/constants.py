@@ -1,12 +1,19 @@
 import trcli
 import enum
 
+PARSE_COMMON_FAULT_MAPPING = dict(
+    missing_file="Please provide a valid path to your results file with the -f argument.",
+)
+
 PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING = dict(
     missing_title="Please give your Test Run a title using the --title argument."
 )
 
+ADD_RUN_FAULT_MAPPING = dict(
+    missing_title="Please give your Test Run a title using the --title argument.",
+)
+
 FAULT_MAPPING = dict(
-    missing_file="Please provide a valid path to your results file with the -f argument.",
     invalid_file="Provided file is not a valid file.",
     missing_host="Please provide a TestRail server address with the -h argument.",
     missing_project="Please specify the project name using the --project argument.",
@@ -52,6 +59,13 @@ FAULT_MAPPING = dict(
     f"  - Is Active: True"
 )
 
+COMMAND_FAULT_MAPPING = dict(
+    add_run=dict(**FAULT_MAPPING, **ADD_RUN_FAULT_MAPPING),
+    parse_junit=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING, **PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING),
+    parse_openapi=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING),
+    parse_robot=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING, **PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING),
+)
+
 PROMPT_MESSAGES = dict(
     create_new_suite="Suite ID was not provided in either the result file or the command line.\n"
     "Would you like to create suite with name '{suite_name}' under project: "
@@ -69,7 +83,8 @@ Copyright 2024 Gurock Software GmbH - www.gurock.com"""
 TOOL_USAGE = f"""Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
     - parse_robot: Robot Framework XML Files
-    - parse_openapi: OpenAPI YML Files"""
+    - parse_openapi: OpenAPI YML Files
+    - add_run: Create a new test run"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""

@@ -1,4 +1,4 @@
-from beartype.typing import List, Dict
+from beartype.typing import List, Dict, Optional
 
 from serde.json import to_dict
 
@@ -61,7 +61,15 @@ class ApiDataProvider:
                     bodies.append(case)
         return bodies
 
-    def add_run(self, run_name: None, case_ids=None, milestone_id=None):
+    def add_run(
+            self,
+            run_name: Optional[str],
+            case_ids=None,
+            milestone_id=None,
+            assigned_to_id=None,
+            include_all=None,
+            refs=None,
+    ):
         """Return body for adding or updating a run."""
         if case_ids is None:
             case_ids = [
@@ -82,9 +90,14 @@ class ApiDataProvider:
             "suite_id": self.suites_input.suite_id,
             "description": "\n".join(properties),
             "milestone_id": milestone_id,
-            "include_all": False,
             "case_ids": case_ids
         }
+        if include_all is not None:
+            body["include_all"] = include_all
+        if assigned_to_id is not None:
+            body["assignedto_id"] = assigned_to_id
+        if refs is not None:
+            body["refs"] = refs
         if run_name is not None:
             body["name"] = run_name
         return body

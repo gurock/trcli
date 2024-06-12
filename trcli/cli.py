@@ -15,7 +15,7 @@ from trcli.constants import (
     MISSING_COMMAND_SLOGAN,
     TOOL_USAGE,
     TOOL_VERSION,
-    PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING,
+    COMMAND_FAULT_MAPPING,
 )
 from trcli.data_classes.data_parsers import FieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
@@ -62,6 +62,10 @@ class Environment:
         self._case_fields = None
         self._result_fields = None
         self.allow_ms = False
+        self.run_assigned_to_id = None
+        self.run_case_ids = None
+        self.run_include_all = None
+        self.run_refs = None
 
     @property
     def case_fields(self):
@@ -88,7 +92,7 @@ class Environment:
         self._result_fields = fields_dict
 
     def log(self, msg: str, new_line=True, *args):
-        """Logs a message to stdout only is silent mode is disabled."""
+        """Logs a message to stdout only if silent mode is disabled."""
         if not self.silent:
             if args:
                 msg %= args
@@ -142,25 +146,21 @@ class Environment:
     def check_for_required_parameters(self):
         """Checks that all required parameters were set. If not error message would be printed and
         program will exit with exit code 1"""
+        APPLIED_FAULT_MAPPING = COMMAND_FAULT_MAPPING[self.cmd]
         for param, value in vars(self).items():
-            if "missing_" + param in FAULT_MAPPING and not value:
-                self.elog(FAULT_MAPPING["missing_" + param])
+            if ("missing_" + param in APPLIED_FAULT_MAPPING and not value) and not (param == "title" and self.run_id):
+                self.elog(APPLIED_FAULT_MAPPING["missing_" + param])
                 exit(1)
-            if (self.cmd == "parse_junit" or self.cmd == "parse_robot") and "missing_" + param in PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING and not value:
-                # If we have empty title, check for run_id
-                if (param == "title" and not self.run_id):
-                    self.elog(PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING["missing_" + param])
-                    exit(1)
         # special case for password and key (both needs to be missing for the error message to show up)
         if not self.password and not self.key:
-            self.elog(FAULT_MAPPING["missing_password_and_key"])
+            self.elog(APPLIED_FAULT_MAPPING["missing_password_and_key"])
             exit(1)
         # validate host syntax
         try:
             request = PreparedRequest()
             request.prepare_url(self.host, params=None)
         except (InvalidURL, MissingSchema):
-            self.elog(FAULT_MAPPING["host_issues"])
+            self.elog(APPLIED_FAULT_MAPPING["host_issues"])
             exit(1)
 
     def parse_config_file(self, context: click.Context):

@@ -17,6 +17,7 @@ from trcli.readers.robot_xml import RobotParser
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Parse Robot Framework report and upload results to TestRail"""
+    environment.cmd = "parse_robot"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     settings.ALLOW_ELAPSED_MS = environment.allow_ms

@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 
 from tests.helpers.results_uploader_helper import (
@@ -10,14 +8,10 @@ from tests.helpers.results_uploader_helper import (
 from tests.test_data.results_provider_test_data import (
     TEST_UPLOAD_RESULTS_FLOW_TEST_DATA,
     TEST_UPLOAD_RESULTS_FLOW_IDS,
-    TEST_GET_SUITE_ID_PROMPTS_USER_TEST_DATA,
-    TEST_GET_SUITE_ID_PROMPTS_USER_IDS,
     TEST_ADD_MISSING_SECTIONS_PROMPTS_USER_TEST_DATA,
     TEST_ADD_MISSING_SECTIONS_PROMPTS_USER_IDS,
     TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_TEST_DATA,
     TEST_ADD_MISSING_TEST_CASES_PROMPTS_USER_IDS,
-    TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_TEST_DATA,
-    TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
     TEST_REVERT_FUNCTIONS_AND_EXPECTED,
     TEST_REVERT_FUNCTIONS_IDS,
     TEST_REVERT_FUNCTIONS_AND_EXPECTED_EXISTING_SUITE,
@@ -25,11 +19,10 @@ from tests.test_data.results_provider_test_data import (
 )
 from trcli.api.api_request_handler import ProjectData
 from trcli.api.results_uploader import ResultsUploader
-from trcli.cli import Environment
 from trcli.constants import FAULT_MAPPING, PROMPT_MESSAGES, SuiteModes
+from trcli.constants import ProjectErrors
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.readers.junit_xml import JunitParser
-from trcli.constants import ProjectErrors
 
 
 class TestResultsUploader:
@@ -38,6 +31,7 @@ class TestResultsUploader:
         environment = mocker.patch("trcli.api.results_uploader.Environment")
         environment.host = "https://fake_host.com/"
         environment.project = "Fake project name"
+        environment.project_id = 1
         environment.case_id = None
         environment.run_id = None
         environment.file = "results.xml"
@@ -45,7 +39,7 @@ class TestResultsUploader:
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(
-            "trcli.api.results_uploader.ApiRequestHandler"
+            "trcli.api.project_based_client.ApiRequestHandler"
         )
         results_uploader = ResultsUploader(
             environment=environment, suite=junit_file_parser
@@ -229,295 +223,6 @@ class TestResultsUploader:
         results_uploader.upload_results()
         for index, call in calls.items():
             assert environment.log.call_args_list[index] == call
-
-
-    # TODO: review this test; shouldnt it use a suite_id > 0?
-    @pytest.mark.results_uploader
-    def test_get_suite_id_returns_valid_id(self, result_uploader_data_provider):
-        """The purpose of this test is to check that get_suite_id function will
-        return suite_id if it exists in TestRail"""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        suite_id = -1
-        result_code = 1
-        project_id = 1
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
-            suite_id
-        )
-        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
-        (result_suite_id, result_return_code, suite_added) = results_uploader.get_suite_id(
-            project_id=project_id, suite_mode=SuiteModes.single_suite
-        )
-
-        assert (
-            result_suite_id == suite_id
-        ), f"Expected suite_id: {suite_id} but got {result_suite_id} instead."
-        assert (
-            suite_added == False
-        ), f"Expected suite_added: {False} but got {suite_added} instead."
-        assert (
-            result_return_code == result_code
-        ), f"Expected suite_id: {result_code} but got {result_return_code} instead."
-
-    @pytest.mark.results_uploader
-    @pytest.mark.parametrize(
-        "user_response, expected_suite_id, expected_result_code, expected_message, suite_add_error",
-        TEST_GET_SUITE_ID_PROMPTS_USER_TEST_DATA,
-        ids=TEST_GET_SUITE_ID_PROMPTS_USER_IDS,
-    )
-    def test_get_suite_id_multiple_suites_mode(
-        self,
-        user_response,
-        expected_suite_id,
-        expected_result_code,
-        expected_message,
-        suite_add_error,
-        result_uploader_data_provider,
-        mocker,
-    ):
-        """The purpose of this test is to check that user will be prompted to add suite is one is missing
-        in TestRail. Depending on user response either information about addition of missing suite or error message
-        should be printed."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        suite_name = "Fake suite name"
-        suite_mode = SuiteModes.multiple_suites
-        results_uploader.api_request_handler.resolve_suite_id_using_name.return_value = (-1, "Any Error")
-        if not suite_add_error:
-            results_uploader.api_request_handler.add_suites.return_value = (
-                [
-                    {
-                        "suite_id": expected_suite_id,
-                        "name": suite_name,
-                    }
-                ],
-                "",
-            )
-        else:
-            results_uploader.api_request_handler.add_suites.return_value = (
-                [{"suite_id": expected_suite_id, "name": suite_name}],
-                FAULT_MAPPING["error_while_adding_suite"].format(
-                    error_message="Failed to add suite."
-                ),
-            )
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
-        results_uploader.api_request_handler.suites_data_from_provider.name = suite_name
-        environment.get_prompt_response_for_auto_creation.return_value = user_response
-        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
-            project_id, suite_mode
-        )
-        expected_elog_calls = []
-        expected_log_calls = []
-        if "User did not agree to create" not in expected_message:
-            expected_log_calls = [mocker.call(expected_message)]
-        else:
-            expected_elog_calls.append(mocker.call(expected_message))
-
-        if suite_add_error:
-            expected_elog_calls.append(
-                mocker.call(
-                    FAULT_MAPPING["error_while_adding_suite"].format(
-                        error_message="Failed to add suite."
-                    )
-                )
-            )
-
-        assert (
-            expected_suite_id == result_suite_id
-        ), f"Expected suite_id: {expected_suite_id} but got {result_suite_id} instead."
-        assert (
-            expected_result_code == result_code
-        ), f"Expected suite_id: {expected_result_code} but got {result_code} instead."
-        environment.get_prompt_response_for_auto_creation.assert_called_with(
-            PROMPT_MESSAGES["create_new_suite"].format(
-                suite_name=suite_name,
-                project_name=environment.project,
-            )
-        )
-        if user_response:
-            results_uploader.api_request_handler.add_suites.assert_called_with(
-                project_id=project_id
-            )
-        environment.log.assert_has_calls(expected_log_calls)
-        environment.elog.assert_has_calls(expected_elog_calls)
-
-    @pytest.mark.results_uploader
-    @pytest.mark.parametrize(
-        "suite_ids, error_message, expected_suite_id, expected_result_code",
-        [([10], "", 10, 1), ([], "Could not get suites", -1, -1)],
-        ids=["get_suite_ids succeeds", "get_suite_ids fails"],
-    )
-    def test_get_suite_id_single_suite_mode(
-        self,
-        suite_ids,
-        error_message,
-        expected_suite_id,
-        expected_result_code,
-        result_uploader_data_provider,
-        mocker,
-    ):
-        """The purpose of this test is to check flow of get_suite_id_log_error function for single
-        suite mode."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        suite_mode = SuiteModes.single_suite
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
-        results_uploader.api_request_handler.get_suite_ids.return_value = (
-            suite_ids,
-            error_message,
-        )
-        expected_elog_calls = []
-        if error_message:
-            expected_elog_calls = [mocker.call(error_message)]
-        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
-            project_id, suite_mode
-        )
-
-        assert (
-            result_suite_id == expected_suite_id
-        ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
-        assert (
-            result_code == expected_result_code
-        ), f"Expected result code: {expected_result_code} but got {result_code} instead."
-        if error_message:
-            environment.elog.assert_has_calls(expected_elog_calls)
-
-    @pytest.mark.results_uploader
-    @pytest.mark.parametrize(
-        "get_suite_ids_result, expected_suite_id, expected_result_code, expected_error_message",
-        TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_TEST_DATA,
-        ids=TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
-    )
-    def test_get_suite_id_single_suite_mode_baselines(
-        self,
-        get_suite_ids_result,
-        expected_suite_id,
-        expected_result_code,
-        expected_error_message,
-        result_uploader_data_provider,
-        mocker,
-    ):
-        """The purpose of this test is to check flow of get_suite_id_log_error function for single
-        suite with baselines mode."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        suite_mode = SuiteModes.single_suite_baselines
-        results_uploader.api_request_handler.resolve_suite_id_using_name.return_value = (-1, "Any Error")
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
-        results_uploader.api_request_handler.get_suite_ids.return_value = (
-            get_suite_ids_result
-        )
-        expected_elog_calls = []
-        if expected_error_message:
-            expected_elog_calls = [mocker.call(expected_error_message)]
-        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
-            project_id, suite_mode
-        )
-
-        assert (
-            result_suite_id == expected_suite_id
-        ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
-        assert (
-            result_code == expected_result_code
-        ), f"Expected result code: {expected_result_code} but got {result_code} instead."
-        environment.elog.assert_has_calls(expected_elog_calls)
-
-    @pytest.mark.results_uploader
-    def test_get_suite_id_unknown_suite_mode(
-        self, result_uploader_data_provider, mocker
-    ):
-        """The purpose of this test is to check that get_suite_id will return -1 and print
-        proper message when unknown suite mode will be returned during execution."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        project_id = 1
-        suite_mode = 4
-        expected_result_code = -1
-        expected_suite_id = -1
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = None
-        expected_elog_calls = [
-            mocker.call(
-                FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
-            )
-        ]
-        result_suite_id, result_code, suite_added = results_uploader.get_suite_id(
-            project_id, suite_mode
-        )
-
-        assert (
-            result_suite_id == expected_suite_id
-        ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
-        assert (
-            result_code == expected_result_code
-        ), f"Expected result code: {expected_result_code} but got {result_code} instead."
-        environment.elog.assert_has_calls(expected_elog_calls)
-
-    @pytest.mark.results_uploader
-    def test_check_suite_id_returns_id(self, result_uploader_data_provider):
-        """The purpose of this test is to check that check_suite_id function will success,
-        when suite ID exists under specified project."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        expected_result_code = 1
-        suite_id = 1
-        project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
-
-        result_code = results_uploader.check_suite_id(project_id=project_id)
-
-        assert (
-            result_code == expected_result_code
-        ), f"Expected to get {result_code} as result code, but got {expected_result_code} instead."
-
-    @pytest.mark.results_uploader
-    def test_check_suite_id_prints_error_message(
-        self, result_uploader_data_provider, mocker
-    ):
-        """The purpose of this test is to check that proper message would be printed to the user
-        and program will quit when suite ID is not present in TestRail."""
-        (
-            environment,
-            api_request_handler,
-            results_uploader,
-        ) = result_uploader_data_provider
-        suite_id = 1
-        expected_result_code = -1
-        project_id = 2
-        results_uploader.api_request_handler.check_suite_id.return_value = (
-            False,
-            FAULT_MAPPING["missing_suite"].format(suite_id=suite_id),
-        )
-
-        result_code = results_uploader.check_suite_id(project_id=project_id)
-        expected_elog_calls = [
-            mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
-        ]
-
-        environment.elog.assert_has_calls(expected_elog_calls)
-        assert (
-            result_code == expected_result_code
-        ), f"Expected to get {expected_result_code} as result code, but got {result_code} instead."
 
     @pytest.mark.results_uploader
     def test_add_missing_sections_no_missing_sections(
@@ -718,44 +423,6 @@ class TestResultsUploader:
         """The purpose of this test is to check that proper warning will be printed when duplicated case
         names will be detected in result file."""
 
-    @pytest.mark.results_uploader
-    @pytest.mark.parametrize(
-        "timeout", [40, None], ids=["with_timeout", "without_timeout"]
-    )
-    def test_instantiate_api_client(
-        self, timeout, result_uploader_data_provider, mocker
-    ):
-        """The purpose of this test is to check that APIClient was instantiated properly and credential fields
-        were set es expected."""
-        (_, api_request_handler, _) = result_uploader_data_provider
-        junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
-        environment = Environment()
-        environment.host = "https://fake_host.com"
-        environment.username = "usermane@host.com"
-        environment.password = "test_password"
-        environment.key = "test_api_key"
-        if timeout:
-            environment.timeout = timeout
-        timeout_expected_result = 30 if not timeout else timeout
-        result_uploader = ResultsUploader(
-            environment=environment, suite=junit_file_parser
-        )
-
-        api_client = result_uploader.instantiate_api_client()
-
-        assert (
-            api_client.username == environment.username
-        ), f"Expected username to be set to: {environment.username}, but got: {api_client.username} instead."
-        assert (
-            api_client.password == environment.password
-        ), f"Expected password  to be set to: {environment.password}, but got: {api_client.password} instead."
-        assert (
-            api_client.api_key == environment.key
-        ), f"Expected api_key to be set to: {environment.key}, but got: {api_client.api_key} instead."
-        assert (
-            api_client.timeout == timeout_expected_result
-        ), f"Expected timeout to be set to: {timeout_expected_result}, but got: {api_client.timeout} instead."
-
     def test_rollback_changes_empty_changelist(self, result_uploader_data_provider):
         """The purpose of this test is to check that rollback
         will not give unexpected results on empty changelist"""
@@ -807,7 +474,6 @@ class TestResultsUploader:
         assert (
             results_uploader.rollback_changes(1, True, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
-
 
     @pytest.mark.results_uploader
     @pytest.mark.parametrize(
