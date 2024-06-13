@@ -1,4 +1,5 @@
 import click
+import yaml
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
@@ -17,6 +18,15 @@ def print_config(env: Environment):
             f"\n> Include All: {env.run_include_all}"
             f"\n> Case IDs: {env.run_case_ids}"
             f"\n> Refs: {env.run_refs}")
+
+
+def write_run_to_file(environment: Environment, run_id: int):
+    """Write the created run id and title to a yaml file that can be included in the configuration of later runs."""
+    environment.log(f"Writing test run name and id to file ({environment.file}). ", new_line=False)
+    data = dict(title=environment.title, run_id=run_id)
+    with open(environment.file, "w") as f:
+        f.write(yaml.dump(data, default_flow_style=False))
+    environment.log("Done.")
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -55,7 +65,7 @@ def print_config(env: Environment):
     metavar="",
     help="A comma-separated list of references/requirements"
 )
-@click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
+@click.option("-f", "--file", type=click.Path(), metavar="", help="Write run title and id to file.")
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
@@ -74,9 +84,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     if error_message:
         exit(1)
 
-    environment.log(f"Run id: {run_id}")
+    environment.run_id = run_id
+    environment.log(f"title: {environment.title}")
+    environment.log(f"run_id: {run_id}")
     if environment.file is not None:
-        environment.log(f"Writing test run name and id to file ({environment.file}). ", new_line=False)
-        with open(environment.file, "w") as f:
-            f.write(f"{environment.title}\n{run_id}\n")
-        environment.log("Done.")
+        write_run_to_file(environment, run_id)

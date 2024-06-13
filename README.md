@@ -38,6 +38,7 @@ Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
+    - add_run: Create a new empty test run
 ```
 
 CLI general reference
@@ -251,8 +252,8 @@ documentation for further information.
 
 When a test run MUST created before using one of the parse commands, use the `add_run` command. For example, if
 tests are run across parallel, independent test nodes, all nodes should report their results into the same test run.
-Use the `add_run` command to create a new run. Then pass the run title and id to each of the test nodes, which can then
-be used to upload all results into the same test run.
+First, use the `add_run` command to create a new run; then, pass the run title and id to each of the test nodes, which
+will be used to upload all results into the same test run.
 
 ### Reference
 ```shell
@@ -274,15 +275,17 @@ Options:
   --case-ids             Comma separated list of test case IDs to include in
                          the test run.
   --run-refs             A comma-separated list of references/requirements
-  -f, --file             Filename and path.
+  -f, --file             Write run title and id to file.
   --help                 Show this message and exit.
 ```
 
-If the file parameter is used, the run title and id are written to the file each on their own line. Example:
+If the file parameter is used, the run title and id are written to the file in yaml format. Example:
 ```text
-Run Title
-1
+title: Run Title
+run_id: 1
 ```
+
+This file can be used as the config file (or appended to an existing config file) in a later run.
 
 Generating test cases from OpenAPI specs
 -----------------
