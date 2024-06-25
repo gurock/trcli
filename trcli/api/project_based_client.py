@@ -198,13 +198,14 @@ class ProjectBasedClient:
         if not self.environment.run_id:
             self.environment.log(f"Creating test run. ", new_line=False)
             added_run, error_message = self.api_request_handler.add_run(
-                self.project.project_id,
-                self.run_name,
-                self.environment.milestone_id,
-                self.environment.plan_id,
-                self.environment.config_ids,
-                bool(self.environment.run_include_all),
-                self.environment.run_refs,
+                project_id=self.project.project_id,
+                run_name=self.run_name,
+                milestone_id=self.environment.milestone_id,
+                plan_id=self.environment.plan_id,
+                config_ids=self.environment.config_ids,
+                assigned_to_id=self.environment.run_assigned_to_id,
+                include_all=bool(self.environment.run_include_all),
+                refs=self.environment.run_refs,
             )
             run_id = added_run
         else:
