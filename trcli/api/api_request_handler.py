@@ -374,9 +374,9 @@ class ApiRequestHandler:
             milestone_id: int = None,
             plan_id: int = None,
             config_ids: List[int] = None,
-            assigned_to_id=None,
-            include_all=False,
-            refs=None,
+            assigned_to_id: int = None,
+            include_all: bool = False,
+            refs: str = None,
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
