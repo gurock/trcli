@@ -97,7 +97,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -118,7 +119,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -138,7 +140,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2.",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -158,7 +161,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2.",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -177,7 +181,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -198,7 +203,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-AUTO] Suite 2.",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
                 "Submitted 6 test results in"
@@ -217,7 +223,8 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 4 test cases in 2 sections.",
+                "Processed 3 test cases in section [MULTIPART-REPORT-2] testsuite element 2B (with tests).",
+                "Processed 1 test cases in section [MULTIPART-REPORT-1] testsuite element 1B (with tests).",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "No attachments found to upload.",
                 "Submitted 4 test results in"
@@ -237,7 +244,8 @@ trcli -n \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-NAME] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-NAME] Suite 2.",
                 "Found 3 test cases without case ID in the report file.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
@@ -258,7 +266,8 @@ trcli -n \\
         _assert_contains(
             output,
             [
-                "Processed 6 test cases in 2 sections.",
+                "Processed 3 test cases in section [GENERIC-IDS-PROP] Suite 1.",
+                "Processed 3 test cases in section [GENERIC-IDS-PROP] Suite 2.",
                 "Found 3 test cases without case ID in the report file.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 1 attachments for 1 test results.",
@@ -278,7 +287,7 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 3 test cases in 1 sections.",
+                "Processed 3 test cases in section [ATTACHMENTS] tests.LoginTests.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Uploading 4 attachments for 2 test results.",
                 "Submitted 3 test results in"
@@ -298,7 +307,10 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 10 test cases in 4 sections.",
+                "Processed 1 test cases in section [DUPLICATES] NewTest.",
+                "Processed 3 test cases in section [DUPLICATES] Professional.",
+                "Processed 3 test cases in section [DUPLICATES] Enterprise.",
+                "Processed 3 test cases in section [DUPLICATES] Basic.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "No attachments found to upload.",
                 "Submitted 10 test results in"
@@ -318,7 +330,10 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 10 test cases in 4 sections.",
+                "Processed 1 test cases in section [DUPLICATES] NewTest.",
+                "Processed 3 test cases in section [DUPLICATES] Professional.",
+                "Processed 3 test cases in section [DUPLICATES] Enterprise.",
+                "Processed 3 test cases in section [DUPLICATES] Basic.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "No attachments found to upload.",
                 "Submitted 10 test results in"
@@ -337,7 +352,10 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Processed 10 test cases in 4 sections.",
+                "Processed 1 test cases in section [DUPLICATES] NewTest.",
+                "Processed 3 test cases in section [DUPLICATES] Professional.",
+                "Processed 3 test cases in section [DUPLICATES] Enterprise.",
+                "Processed 3 test cases in section [DUPLICATES] Basic.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "No attachments found to upload.",
                 "Submitted 10 test results in"
@@ -358,9 +376,10 @@ trcli -y \\
             output,
             [
                 "Found 2 SauceLabs suites.",
-                "Processing suite - Firefox",
-                "Processing suite - Chrome",
-                "Processed 2 test cases in 2 sections.",
+                "Processing JUnit suite - Firefox",
+                "Processing JUnit suite - Chrome",
+                "Processed 1 test cases in section [SAUCELABS] test_suite_1.cy.js.",
+                "Processed 1 test cases in section [SAUCELABS] test_suite_2.cy.js.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view"
             ]
         )
