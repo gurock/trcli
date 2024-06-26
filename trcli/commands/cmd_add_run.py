@@ -22,9 +22,19 @@ def print_config(env: Environment):
 
 def write_run_to_file(environment: Environment, run_id: int):
     """Write the created run id and title to a yaml file that can be included in the configuration of later runs."""
-    environment.log(f"Writing test run name and id to file ({environment.file}). ", new_line=False)
+    environment.log(f"Writing test run data to file ({environment.file}). ", new_line=False)
     data = dict(title=environment.title, run_id=run_id)
-    with open(environment.file, "w") as f:
+    if environment.run_description:
+        data['run_description'] = environment.run_description
+    if environment.run_refs:
+        data['run_refs'] = environment.run_refs
+    if environment.run_include_all:
+        data['run_include_all'] = environment.run_include_all
+    if environment.run_case_ids:
+        data['run_case_ids'] = environment.run_case_ids
+    if environment.run_assigned_to_id:
+        data['run_assigned_to_id'] = environment.run_assigned_to_id
+    with open(environment.file, "a") as f:
         f.write(yaml.dump(data, default_flow_style=False))
     environment.log("Done.")
 
@@ -65,7 +75,7 @@ def write_run_to_file(environment: Environment, run_id: int):
     metavar="",
     help="A comma-separated list of references/requirements"
 )
-@click.option("-f", "--file", type=click.Path(), metavar="", help="Write run title and id to file.")
+@click.option("-f", "--file", type=click.Path(), metavar="", help="Write run data to file.")
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
