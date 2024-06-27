@@ -30,6 +30,10 @@ class TestJunitParser:
                 Path(__file__).parent / "test_data/json/root.json",
             ),
             (
+                    Path(__file__).parent / "test_data/XML/ro*t.xml",
+                    Path(__file__).parent / "test_data/json/root.json",
+            ),
+            (
                 Path(__file__).parent / "test_data/XML/required_only.xml",
                 Path(__file__).parent / "test_data/json/required_only.json",
             )
@@ -37,6 +41,7 @@ class TestJunitParser:
         ids=[
             "XML without testsuites root",
             "XML with testsuites root",
+            "XML with testsuites root, using a glob pattern",
             "XML with no data",
         ],
     )
