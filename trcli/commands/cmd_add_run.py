@@ -64,6 +64,7 @@ def write_run_to_file(environment: Environment, run_id: int):
     "--include-all",
     is_flag=True,
     default=False,
+    help="Use this option to include all test cases in this test run."
 )
 @click.option(
     "--case-ids",
@@ -79,6 +80,7 @@ def write_run_to_file(environment: Environment, run_id: int):
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
+    """Add a new test run in TestRail"""
     environment.cmd = "add_run"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
