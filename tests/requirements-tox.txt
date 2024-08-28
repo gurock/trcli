@@ -1,0 +1,8 @@
+pytest==8.0.*
+pytest-md-report
+coverage
+allure-pytest
+pytest-freezegun
+pytest-mock
+requests-mock
+deepdiff
