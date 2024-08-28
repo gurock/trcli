@@ -16,14 +16,14 @@ setup(
     include_package_data=True,
     install_requires=[
         "click==8.1.*",
-        "pyyaml==6.0.*",
-        "junitparser==3.1.*",
-        "pyserde==0.12.*",
+        "pyyaml>=6.0.0,<7.0.0",
+        "junitparser>=3.1.0,<4.0.0",
+        "pyserde>=0.12.0,<1.0.0",
         "requests==2.31.*",
-        "tqdm==4.65.*",
-        "humanfriendly==10.0.*",
-        "openapi-spec-validator==0.5.*",
-        "beartype==0.17.*",
+        "tqdm>=4.65.0,<5.0.0",
+        "humanfriendly>=10.0.0,<11.0.0",
+        "openapi-spec-validator>=0.5.0,<1.0.0",
+        "beartype>=0.17.0,<1.0.0",
         "prance"  # Does not use semantic versioning
     ],
     entry_points="""
