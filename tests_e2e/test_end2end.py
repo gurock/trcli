@@ -388,3 +388,40 @@ trcli -y \\
                 "Submitted 22 test cases"
             ]
         )
+
+    def test_cli_add_run(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Create run_config.yml" \\
+  -f "run_config.yml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Creating test run.",
+                f"Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "title: [CLI-E2E-Tests] ADD RUN TEST: Create run_config.yml",
+                "Writing test run data to file (run_config.yml). Done."
+            ]
+        )
+
+    def test_cli_add_run_upload_results(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  -c run_config.yml \\
+  parse_junit \\
+  -f "reports_junit/generic_ids_auto.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Uploading 1 attachments for 1 test results.",
+                "Submitted 6 test results"
+            ]
+        )
