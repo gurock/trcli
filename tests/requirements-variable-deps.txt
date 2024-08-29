@@ -1,0 +1,8 @@
+click==8.1.*
+pyyaml
+junitparser
+pyserde==0.12.*
+requests
+tqdm
+humanfriendly
+beartype
