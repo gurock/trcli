@@ -63,7 +63,7 @@ class JunitParser(FileParser):
         if not files:
             raise FileNotFoundError("File not found.")
         elif len(files) == 1:
-            return filepath
+            return Path().cwd().joinpath(files[0])
         sub_suites = []
         for file in files:
             suite = JUnitXml.fromfile(file)
