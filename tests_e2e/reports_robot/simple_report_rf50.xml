@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 6.1 (Python 3.10.5 on win32)" generated="20230912 10:52:39.727" rpa="false" schemaversion="4">
+  <suite id="s1" name="Tests" source="tests">
+    <suite id="s1-s1" name="Footer-Tests" source="tests\footer-tests.robot">
+      <test id="s1-s1-t1" name="Verify Presence Of Social Links" line="6">
+        (...)
+        <status status="PASS" starttime="20230912 10:52:39.958" endtime="20230912 10:52:47.980"/>
+      </test>
+      <status status="PASS" starttime="20230912 10:52:39.743" endtime="20230912 10:52:47.980"/>
+    </suite>
+    <suite id="s1-s2" name="Homepage-Tests" source="tests\homepage-tests.robot">
+      <test id="s1-s2-t1" name="Verify Presence Of Header Links" line="6">
+        (...)
+        <status status="PASS" starttime="20230912 10:52:47.994" endtime="20230912 10:52:52.521"/>
+      </test>
+      <test id="s1-s2-t2" name="Verify Presence Of Demo Link" line="15">
+        <kw name="Open TestRail Homepage" library="keywords">
+          <status status="PASS" starttime="20230912 10:52:52.521" endtime="20230912 10:52:54.445"/>
+        </kw>
+        <kw name="Verify Header Demo Link" library="keywords">
+          <status status="FAIL" starttime="20230912 10:52:54.446" endtime="20230912 10:52:59.946"/>
+        </kw>
+        <kw name="Click Demo Link" library="keywords">
+          <status status="NOT RUN" starttime="20230912 10:52:59.947" endtime="20230912 10:52:59.947"/>
+        </kw>
+        <kw name="Verify Demo Page URL" library="keywords">
+          <status status="NOT RUN" starttime="20230912 10:52:59.947" endtime="20230912 10:52:59.947"/>
+        </kw>
+        <kw name="Close Test Browser" library="keywords" type="TEARDOWN">
+          <status status="PASS" starttime="20230912 10:52:59.948" endtime="20230912 10:53:03.127"/>
+        </kw>
+        <doc>Verifies header contains link to request a demo - Intentionally failing
+- testrail_case_field: refs:TR-1
+- testrail_case_field: priority_id:2
+- testrail_result_field: custom_environment:qa
+
+- testrail_attachment: C:\Github\gurock\automation-frameworks-integration\samples\robotframework\robotframework-selenium\reports\failure-2.png</doc>
+        <status status="FAIL" starttime="20230912 10:52:52.521" endtime="20230912 10:53:03.127">Element 'css=.breakdance-menu-list [href*='/invalid/']' not visible after 5 seconds.</status>
+      </test>
+    </suite>
+  </suite>
+</robot>
