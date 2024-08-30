@@ -373,7 +373,10 @@ class ApiRequestHandler:
             run_name: str,
             milestone_id: int = None,
             plan_id: int = None,
-            config_ids: List[int] = None
+            config_ids: List[int] = None,
+            assigned_to_id: int = None,
+            include_all: bool = False,
+            refs: str = None,
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
@@ -381,7 +384,13 @@ class ApiRequestHandler:
         :run_name: run name
         :returns: Tuple with run id and error string.
         """
-        add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
+        add_run_data = self.data_provider.add_run(
+            run_name,
+            milestone_id=milestone_id,
+            assigned_to_id=assigned_to_id,
+            include_all=include_all,
+            refs=refs,
+        )
         if not plan_id:
             response = self.client.send_post(f"add_run/{project_id}", add_run_data)
             run_id = response.response_text.get("id")
