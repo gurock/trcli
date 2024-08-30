@@ -83,6 +83,24 @@ class TestApiDataProvider:
         ), "Adding run data doesn't match expected body"
 
     @pytest.mark.data_provider
+    def test_post_run_all_args(self, post_data_provider):
+        """Check body for adding run"""
+        suite_updater = [
+            {
+                "suite_id": 123,
+            }
+        ]
+        post_data_provider.update_data(suite_data=suite_updater)
+        assert (
+                post_data_provider.add_run(
+                    "test run",
+                    assigned_to_id=1,
+                    include_all=True,
+                    refs="SAN-1, SAN-2"
+                ) == post_run_full_body
+        ), "Adding run full data doesn't match expected body"
+
+    @pytest.mark.data_provider
     def test_post_results_for_cases(self, post_data_provider):
         """Check body for adding results"""
         case_updater = [

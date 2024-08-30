@@ -25,6 +25,7 @@ from trcli.readers.junit_xml import JunitParser
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Parse JUnit report and upload results to TestRail"""
+    environment.cmd = "parse_junit"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     settings.ALLOW_ELAPSED_MS = environment.allow_ms

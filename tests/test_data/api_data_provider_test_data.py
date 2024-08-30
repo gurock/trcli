@@ -40,8 +40,18 @@ post_run_bodies = {
     "name": "test run",
     "suite_id": 123,
     "case_ids": [60, 4],
-    "include_all": False,
     "milestone_id": None
+}
+
+post_run_full_body = {
+    "description": "logging: True\ndebug: False",
+    "name": "test run",
+    "suite_id": 123,
+    "case_ids": [60, 4],
+    "milestone_id": None,
+    "assignedto_id": 1,
+    "include_all": True,
+    "refs": "SAN-1, SAN-2"
 }
 
 post_results_for_cases_body = [

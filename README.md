@@ -10,6 +10,7 @@ The TestRail CLI currently supports:
 - **Uploading automated test results from JUnit reports**
 - **Uploading automated test results from Robot Framework reports**
 - **Auto-generating test cases from OpenAPI specifications**
+- **Creating new test runs for results to be uploaded to.**
 
 To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
@@ -37,6 +38,7 @@ Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
+    - add_run: Create a new empty test run
 ```
 
 CLI general reference
@@ -73,6 +75,7 @@ Commands:
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
+  add_run        Create a new test run (useful for CI/CD flows prior to parsing results)
 ```
 
 Uploading automated test results
@@ -244,6 +247,45 @@ the `--special-parser saucectl` command line option.
 
 Please refer to the [SauceLabs and saucectl reports](https://support.gurock.com/hc/en-us/articles/12719558686484)
 documentation for further information.
+
+#### Creating new test runs
+
+When a test run MUST created before using one of the parse commands, use the `add_run` command. For example, if
+tests are run across parallel, independent test nodes, all nodes should report their results into the same test run.
+First, use the `add_run` command to create a new run; then, pass the run title and id to each of the test nodes, which
+will be used to upload all results into the same test run.
+
+### Reference
+```shell
+$ trcli add_run --help
+TestRail CLI v1.9.5
+Copyright 2024 Gurock Software GmbH - www.gurock.com
+Usage: trcli add_run [OPTIONS]
+
+Options:
+  --title                Title of Test Run to be created or updated in
+                         TestRail.
+  --suite-id             Suite ID to submit results to.  [x>=1]
+  --run-description      Summary text to be added to the test run.
+  --milestone-id         Milestone ID to which the Test Run should be
+                         associated to.  [x>=1]
+  --run-assigned-to-id   The ID of the user the test run should be assigned
+                         to.  [x>=1]
+  --include-all
+  --case-ids             Comma separated list of test case IDs to include in
+                         the test run.
+  --run-refs             A comma-separated list of references/requirements
+  -f, --file             Write run title and id to file.
+  --help                 Show this message and exit.
+```
+
+If the file parameter is used, the run title and id are written to the file in yaml format. Example:
+```text
+title: Run Title
+run_id: 1
+```
+
+This file can be used as the config file (or appended to an existing config file) in a later run.
 
 Generating test cases from OpenAPI specs
 -----------------

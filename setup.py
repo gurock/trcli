@@ -19,7 +19,7 @@ setup(
         "pyyaml>=6.0.0,<7.0.0",
         "junitparser>=3.1.0,<4.0.0",
         "pyserde>=0.12.0,<1.0.0",
-        "requests==2.31.*",
+        "requests>=2.31.0,<3.0.0",
         "tqdm>=4.65.0,<5.0.0",
         "humanfriendly>=10.0.0,<11.0.0",
         "openapi-spec-validator>=0.5.0,<1.0.0",
