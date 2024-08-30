@@ -105,7 +105,7 @@ class TestCli:
         ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."
         assert (
             expected_output in result.output
-        ), f"Error message: '{expected_output}' expected.\nGot: {result.output} instead."
+        ), f"Error message: '{expected_output}' expected.\n Got: {result.output} with expected exit code {expected_exit_code}, actual exit code: {result.exit_code} instead."
 
     @pytest.mark.api_client
     @pytest.mark.parametrize(
