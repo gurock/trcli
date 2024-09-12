@@ -425,3 +425,23 @@ trcli -y \\
                 "Submitted 6 test results"
             ]
         )
+
+    def bug_test_cli_robot_description_bug(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_robot \\
+  --title "[CLI-E2E-Tests] RUN DESCRIPTION BUG" \\
+  -f "reports_robot/simple_report_RF50.xml" \\
+  --run-id 2332
+        """)
+        _assert_contains(
+            output,
+            [
+                "Processed 3 test cases in 2 sections.",
+                "Uploading 1 attachments for 1 test results.",
+                "Submitted 3 test results in"
+            ]
+        )
+    
