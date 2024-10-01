@@ -4,11 +4,13 @@ from pathlib import Path
 import requests
 from beartype.typing import Union, Callable, Dict, List
 from time import sleep
+from base64 import b64encode
 
 import urllib3
+from urllib.parse import urlparse
 from requests.auth import HTTPBasicAuth
 from json import JSONDecodeError
-from requests.exceptions import RequestException, Timeout, ConnectionError
+from requests.exceptions import RequestException, Timeout, ConnectionError, ProxyError, SSLError, InvalidProxyURL
 from trcli.constants import FAULT_MAPPING
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_API_CALL_RETRIES
 from dataclasses import dataclass
@@ -45,6 +47,9 @@ class APIClient:
         retries: int = DEFAULT_API_CALL_RETRIES,
         timeout: int = DEFAULT_API_CALL_TIMEOUT,
         verify: bool = True,
+        proxy: str = None, #added proxy params
+        proxy_user: str = None,
+        noproxy: str = None, 
     ):
         self.username = ""
         self.password = ""
@@ -55,6 +60,10 @@ class APIClient:
         self.verbose_logging_function = verbose_logging_function
         self.logging_function = logging_function
         self.__validate_and_set_timeout(timeout)
+        self.proxy = proxy
+        self.proxy_user = proxy_user
+        self.noproxy = noproxy.split(',') if noproxy else [] 
+        
         if not host_name.endswith("/"):
             host_name = host_name + "/"
         self.__url = host_name + self.SUFFIX_API_V2_VERSION
@@ -71,7 +80,7 @@ class APIClient:
         """
         return self.__send_request("GET", uri, None)
 
-    def send_post(self, uri: str, payload: dict = None, files: {str: Path} = None) -> APIClientResult:
+    def send_post(self, uri: str, payload: dict = None, files: Dict[str, Path] = None) -> APIClientResult:
         """
         Sends POST request to host specified by host_name.
         Handles retries taking into consideration retries parameter. Retry will occur when one of the following happens:
@@ -81,7 +90,7 @@ class APIClient:
         """
         return self.__send_request("POST", uri, payload, files)
 
-    def __send_request(self, method: str, uri: str, payload: dict, files: {str: Path} = None) -> APIClientResult:
+    def __send_request(self, method: str, uri: str, payload: dict, files: Dict[str, Path] = None) -> APIClientResult:
         status_code = -1
         response_text = ""
         error_message = ""
@@ -89,9 +98,11 @@ class APIClient:
         password = self.__get_password()
         auth = HTTPBasicAuth(username=self.username, password=password)
         headers = {"User-Agent": self.USER_AGENT}
+        headers.update(self.__get_proxy_headers())
         if files is None:
             headers["Content-Type"] = "application/json"
         verbose_log_message = ""
+        proxies = self._get_proxies_for_request(url)
         for i in range(self.retries + 1):
             error_message = ""
             try:
@@ -107,11 +118,30 @@ class APIClient:
                         headers=headers,
                         verify=self.verify,
                         files=files,
+                        proxies=proxies
                     )
                 else:
                     response = requests.get(
-                        url=url, auth=auth, json=payload, timeout=self.timeout, verify=self.verify, headers=headers
+                        url=url, 
+                        auth=auth, 
+                        json=payload, 
+                        timeout=self.timeout, 
+                        verify=self.verify, 
+                        headers=headers,
+                        proxies=proxies
                     )
+            except InvalidProxyURL:
+                error_message = FAULT_MAPPING["proxy_invalid_configuration"]
+                self.verbose_logging_function(verbose_log_message)
+                break
+            except ProxyError:
+                error_message = FAULT_MAPPING["proxy_connection_error"]
+                self.verbose_logging_function(verbose_log_message)
+                break
+            except SSLError:
+                error_message = FAULT_MAPPING["ssl_error_on_proxy"]
+                self.verbose_logging_function(verbose_log_message)
+                break
             except Timeout:
                 error_message = FAULT_MAPPING["no_response_from_host"]
                 self.verbose_logging_function(verbose_log_message)
@@ -157,6 +187,68 @@ class APIClient:
                 break
 
         return APIClientResult(status_code, response_text, error_message)
+
+    def __get_proxy_headers(self) -> Dict[str, str]:
+        """
+        Returns headers for proxy authentication using Basic Authentication if proxy_user is provided.
+        """
+        headers = {}
+        if self.proxy_user:
+            user_pass_encoded = b64encode(self.proxy_user.encode('utf-8')).decode('utf-8')
+
+            # Add Proxy-Authorization header
+            headers["Proxy-Authorization"] = f"Basic {user_pass_encoded}"
+            print(f"Proxy authentication header added: {headers['Proxy-Authorization']}")
+
+        return headers
+
+    def _get_proxies_for_request(self, url: str) -> Dict[str, str]:
+        """
+        Returns the appropriate proxy dictionary for a given request URL.
+        Will return None if the URL matches a proxy bypass host.
+        """
+        parsed_url = urlparse(url)
+        scheme = parsed_url.scheme  # The scheme of the target URL (http or https)
+        host = parsed_url.hostname
+
+        # If proxy or noproxy is None, return None, and requests will not use nor bypass a proxy server
+        if self.proxy is None:
+            return None
+
+        # Bypass the proxy if the host is in the noproxy list
+        if self.noproxy:
+        # Ensure noproxy is a list or tuple
+            if isinstance(self.noproxy, str):
+                self.noproxy = self.noproxy.split(',')
+            if host in self.noproxy:
+                print(f"Bypassing proxy for host: {host}")
+                return None
+
+        # Ensure proxy has a scheme (either http or https)
+        if self.proxy and not self.proxy.startswith("http://") and not self.proxy.startswith("https://"):
+            self.proxy = "http://" + self.proxy  # Default to http if scheme is missing
+
+        #print(f"Parsed URL: {url}, Proxy: {self.proxy} , NoProxy: {self.noproxy}")
+
+        # Define the proxy dictionary
+        proxy_dict = {}
+        if self.proxy:
+            # Use HTTP proxy for both HTTP and HTTPS traffic
+            if self.proxy.startswith("http://"):
+                proxy_dict = {
+                    "http": self.proxy,  # Use HTTP proxy for HTTP traffic
+                    "https": self.proxy  # Also use HTTP proxy for HTTPS traffic
+                }
+            else:
+                # If the proxy is HTTPS, route accordingly
+                proxy_dict = {
+                    scheme: self.proxy  # Match the proxy scheme with the target URL scheme
+                }
+
+            #print(f"Using proxy: {proxy_dict}")
+            return proxy_dict
+
+        return None
 
     def __get_password(self) -> str:
         """Based on what is set, choose to use api_key or password as authentication method"""
