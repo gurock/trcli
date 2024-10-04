@@ -416,13 +416,18 @@ class ApiRequestHandler:
         :run_name: run name
         :returns: Tuple with run and error string.
         """
+        run_response = self.client.send_get(f"get_run/{run_id}")
+        existing_description = run_response.response_text.get("description", "")
+
         add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
+        add_run_data["description"] = existing_description  # Retain the current description
+
         run_tests, error_message = self.__get_all_tests_in_run(run_id)
         run_case_ids = [test["case_id"] for test in run_tests]
         report_case_ids = add_run_data["case_ids"]
         joint_case_ids = list(set(report_case_ids + run_case_ids))
         add_run_data["case_ids"] = joint_case_ids
-        run_response = self.client.send_get(f"get_run/{run_id}")
+        
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
         if not plan_id:
