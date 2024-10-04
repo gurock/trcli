@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.9.8]
+
+_released 10-04-2024
+
+### Fixed
+ - Add Run description bug getting wiped; Fixes issue #250
+### Added
+ - NEW HTTP Proxy feature facility!
+
+## [1.9.7]
+
+_released 09-02-2024
+
+### Fixed
+- Fix a dependency issue on pyserde, reverted back to previous version in the 0.12.* series with less stricter type enforcement. Fixes #266 and #267.
+
 ## [1.9.6]
 
 _released 08-30-2024

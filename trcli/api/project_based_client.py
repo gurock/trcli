@@ -33,6 +33,9 @@ class ProjectBasedClient:
         """
         verbose_logging_function = self.environment.vlog
         logging_function = self.environment.log
+        proxy = self.environment.proxy  # Will be None if --proxy is not defined
+        noproxy = self.environment.noproxy  # Will be None if --noproxy is not defined
+        proxy_user = self.environment.proxy_user
         if self.environment.timeout:
             api_client = APIClient(
                 self.environment.host,
@@ -40,6 +43,9 @@ class ProjectBasedClient:
                 logging_function=logging_function,
                 timeout=self.environment.timeout,
                 verify=not self.environment.insecure,
+                proxy=proxy,
+                proxy_user=proxy_user,
+                noproxy=noproxy
             )
         else:
             api_client = APIClient(
@@ -47,10 +53,17 @@ class ProjectBasedClient:
                 logging_function=logging_function,
                 verbose_logging_function=verbose_logging_function,
                 verify=not self.environment.insecure,
+                proxy=proxy,
+                proxy_user=proxy_user,
+                noproxy=noproxy
             )
         api_client.username = self.environment.username
         api_client.password = self.environment.password
         api_client.api_key = self.environment.key
+        api_client.proxy = self.environment.proxy
+        api_client.proxy_user = self.environment.proxy_user
+        api_client.noproxy = self.environment.noproxy
+
         return api_client
 
     def resolve_project(self):

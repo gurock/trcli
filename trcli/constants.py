@@ -56,7 +56,14 @@ FAULT_MAPPING = dict(
     f"The field should have the following mandatory details:\n"
     f"  - System Name: automation_id\n"
     f"  - Type: Text (or String)\n"
-    f"  - Is Active: True"
+    f"  - Is Active: True",
+    proxy_connection_error= "Failed to connect to the proxy server. Please check the proxy settings and ensure the server is available.",
+    proxy_authentication_failed= "Proxy authentication failed for proxy. Please verify the username and password.",
+    proxy_timeout= "The connection to the proxy server timed out. Please try again later or check the proxy server's availability.",
+    proxy_bypass_error= "Failed to bypass the proxy for host. Please check the settings.",
+    proxy_invalid_configuration= "The provided proxy configuration is invalid. Please check the proxy URL and format.",
+    ssl_error_on_proxy= "SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
+    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy."
 )
 
 COMMAND_FAULT_MAPPING = dict(
