@@ -1,4 +1,4 @@
-import re
+import re, ast
 from beartype.typing import Union, List, Dict
 
 
@@ -58,7 +58,7 @@ class FieldsParser:
                     field, value = field.split(":", maxsplit=1)
                     if value.startswith("["):
                         try:
-                            value = eval(value)
+                            value = ast.literal_eval(value)
                         except Exception:
                             pass
                     fields_dictionary[field] = value
