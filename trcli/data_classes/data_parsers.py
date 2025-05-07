@@ -1,5 +1,5 @@
-import re
-from beartype.typing import Union, List, Dict
+import re, ast
+from beartype.typing import Union, List, Dict, Tuple
 
 
 class MatchersParser:
@@ -9,7 +9,7 @@ class MatchersParser:
     PROPERTY = "property"
 
     @staticmethod
-    def parse_name_with_id(case_name: str) -> (int, str):
+    def parse_name_with_id(case_name: str) -> Tuple[int, str]:
         """Parses case names expecting an ID following one of the following patterns:
         - "C123 my test case"
         - "my test case C123"
@@ -49,7 +49,7 @@ class MatchersParser:
 class FieldsParser:
 
     @staticmethod
-    def resolve_fields(fields: Union[List[str], Dict]) -> (Dict, str):
+    def resolve_fields(fields: Union[List[str], Dict]) -> Tuple[Dict, str]:
         error = None
         fields_dictionary = {}
         try:
@@ -58,7 +58,7 @@ class FieldsParser:
                     field, value = field.split(":", maxsplit=1)
                     if value.startswith("["):
                         try:
-                            value = eval(value)
+                            value = ast.literal_eval(value)
                         except Exception:
                             pass
                     fields_dictionary[field] = value

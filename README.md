@@ -32,8 +32,8 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.9.8
-Copyright 2024 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.9
+Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
     - parse_robot: Robot Framework XML Files
@@ -45,8 +45,8 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.9.8
-Copyright 2024 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.9
+Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
   TestRail CLI
@@ -264,8 +264,8 @@ will be used to upload all results into the same test run.
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.9.8
-Copyright 2024 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.9
+Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
 Options:
@@ -303,8 +303,8 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.9.8
-Copyright 2024 Gurock Software GmbH - www.gurock.com
+TestRail CLI v1.9.9
+Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
   Parse OpenAPI spec and create cases in TestRail
