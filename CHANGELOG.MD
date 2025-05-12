@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.9.10]
+
+_released 05-06-2025
+
+### Fixed
+ - Fixed an issue where automation id is not mapping correctly when uploading tests
+
 ## [1.9.9]
 
 _released 05-06-2025
