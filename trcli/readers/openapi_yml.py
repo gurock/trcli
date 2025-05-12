@@ -169,7 +169,9 @@ class OpenApiParser(FileParser):
                     section.testcases.append(
                         TestRailCase(
                             TestRailCaseFieldsOptimizer.extract_last_words(openapi_test.name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
-                            custom_automation_id=f"{openapi_test.unique_id}",
+                            custom_automation_id=f"{openapi_test.unique_id}"
+                            if not hasattr(openapi_test, "custom_case_automation_id")
+                            else openapi_test.custom_case_automation_id,
                             result=TestRailResult(),
                             case_fields={
                                 "template_id": 1,

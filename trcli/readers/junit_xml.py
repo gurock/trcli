@@ -114,6 +114,9 @@ class JunitParser(FileParser):
                     result_steps = []
                     sauce_session = None
                     automation_id = f"{case.classname}.{case_name}"
+                    if hasattr(case, "custom_case_automation_id") and case.custom_case_automation_id:
+                        automation_id = case.custom_case_automation_id
+                    
                     if self.case_matcher == MatchersParser.NAME:
                         case_id, case_name = MatchersParser.parse_name_with_id(case_name)
                     for case_props in case.iterchildren(Properties):

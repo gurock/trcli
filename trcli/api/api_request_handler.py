@@ -40,7 +40,7 @@ class ApiRequestHandler:
 
     def check_automation_id_field(self, project_id: int) -> Union[str, None]:
         """
-        Checks if the automation_id field (custom_automation_id) is available for the project
+        Checks if the automation_id field (custom_automation_id or custom_case_automation_id) is available for the project
         :param project_id: the id of the project
         :return: error message
         """
@@ -48,7 +48,10 @@ class ApiRequestHandler:
         if not response.error_message:
             fields: List = response.response_text
             automation_id_field = next(
-                filter(lambda x: x["system_name"] == "custom_automation_id", fields),
+                    filter(
+                    lambda x: x["system_name"] in ["custom_automation_id", "custom_case_automation_id"],
+                    fields
+                ),
                 None
             )
             if automation_id_field:

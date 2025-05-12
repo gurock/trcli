@@ -151,8 +151,11 @@ class TestRailCase:
                 class_name=self.__class__.__name__,
                 reason="Title is empty.",
             )
+        # Fallback logic for custom_case_automation_id via dynamic attribute assignment
         if self.custom_automation_id:
             self.custom_automation_id = self.custom_automation_id.strip()
+        elif hasattr(self, "custom_case_automation_id") and self.custom_case_automation_id:
+            self.custom_automation_id = self.custom_case_automation_id.strip()
 
     def add_global_case_fields(self, case_fields: dict) -> None:
         """Add global case fields without overriding the existing case-specific fields
