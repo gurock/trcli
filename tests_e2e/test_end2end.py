@@ -445,3 +445,22 @@ trcli -y \\
             ]
         )
     
+    def bug_test_automation_id(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  -c run_config.yml \\
+  parse_junit \\
+  --title "(DO NOT DELETE) [CLI-E2E-Tests] Test updated Automation ID" \\
+  -f "reports_junit/generic_ids_auto.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Uploading 1 attachments for 1 test results.",
+                "Submitted 6 test results"
+            ]
+        )
+    

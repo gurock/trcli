@@ -119,7 +119,9 @@ class RobotParser(FileParser):
                     title=TestRailCaseFieldsOptimizer.extract_last_words(case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
                     case_id=case_id,
                     result=result,
-                    custom_automation_id=f"{namespace}.{case_name}",
+                    custom_automation_id=f"{namespace}.{case_name}"
+                    if not hasattr(test, "custom_case_automation_id")
+                    else test.custom_case_automation_id,
                     case_fields=case_fields_dict
                 )
                 section.testcases.append(tr_test)

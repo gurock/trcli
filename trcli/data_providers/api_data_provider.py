@@ -193,7 +193,8 @@ class ApiDataProvider:
                 "case_id": 1,
                 "section_id": 1
                 "title": "testCase1",
-                "custom_automation_id": "className.testCase1"
+                "custom_automation_id": "className.testCase1",
+                "custom_case_automation_id": "className.testCase1"
             }
 
         """
@@ -208,6 +209,17 @@ class ApiDataProvider:
                 ),
                 None,
             )
+            if matched_case is None:
+                matched_case = next(
+                    (
+                        case
+                        for sublist in testcases
+                        for case in sublist
+                        if hasattr(case, "custom_case_automation_id")
+                        and case.custom_case_automation_id == case_updater.get("custom_case_automation_id")
+                    ),
+                    None,
+                )
             if matched_case is not None:
                 matched_case.case_id = case_updater["case_id"]
                 matched_case.result.case_id = case_updater["case_id"]
