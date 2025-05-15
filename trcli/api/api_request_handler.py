@@ -297,19 +297,21 @@ class ApiRequestHandler:
         if self.environment.case_matcher == MatchersParser.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
-                aut_case_id = case["custom_automation_id"]
-                aut_case_id = aut_case_id if not aut_case_id else html.unescape(case["custom_automation_id"])
-                test_cases_by_aut_id[aut_case_id] = case
+                aut_case_id = case.get("custom_automation_id") or case.get("custom_case_automation_id")
+                if aut_case_id:
+                    aut_case_id = html.unescape(aut_case_id)
+                    test_cases_by_aut_id[aut_case_id] = case
             test_case_data = []
             for section in self.suites_data_from_provider.testsections:
                 for test_case in section.testcases:
-                    if test_case.custom_automation_id in test_cases_by_aut_id.keys():
-                        case = test_cases_by_aut_id[test_case.custom_automation_id]
+                    aut_id = test_case.custom_automation_id
+                    if aut_id in test_cases_by_aut_id.keys():
+                        case = test_cases_by_aut_id[aut_id]
                         test_case_data.append({
                             "case_id": case["id"],
                             "section_id": case["section_id"],
                             "title": case["title"],
-                            "custom_automation_id": test_case.custom_automation_id
+                            "custom_automation_id": aut_id
                         })
                     else:
                         missing_cases_number += 1
@@ -631,6 +633,8 @@ class ApiRequestHandler:
 
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
+        if "custom_automation_id" not in case_body and "custom_case_automation_id" in case_body:
+            case_body["custom_automation_id"] = case_body.pop("custom_case_automation_id")
         if self.environment.case_matcher != MatchersParser.AUTO and "custom_automation_id" in case_body:
             case_body.pop("custom_automation_id")
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)

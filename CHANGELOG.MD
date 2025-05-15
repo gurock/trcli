@@ -8,10 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.9.10]
 
-_released 05-06-2025
+_released 05-15-2025
 
 ### Fixed
- - Fixed an issue where automation id is not mapping correctly when uploading tests
+ - Fixed an issue where automation id is not mapping correctly when uploading test results
 
 ## [1.9.9]
 
