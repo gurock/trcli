@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.9.11]
+
+_released 05-21-2025
+
+### Added
+ - Application build support for Python 3.13
+
+
 ## [1.9.10]
 
 _released 05-15-2025
