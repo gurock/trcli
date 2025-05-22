@@ -13,7 +13,7 @@ from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-
+from urllib.parse import urlparse
 
 class ApiRequestHandler:
     """Sends requests based on DataProvider bodies"""
@@ -691,7 +691,8 @@ class ApiRequestHandler:
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
-                return self.__get_all_entities(entity, link=response.response_text["_links"]["next"], entities=entities)
+                next_link = response.response_text["_links"]["next"].replace("limit=0", "limit=250")
+                return self.__get_all_entities(entity, link=next_link, entities=entities)
             else:
                 return entities, response.error_message
         else:
