@@ -13,7 +13,7 @@ from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
 from trcli.data_providers.api_data_provider import ApiDataProvider
 from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
-from urllib.parse import urlparse
+
 
 class ApiRequestHandler:
     """Sends requests based on DataProvider bodies"""
