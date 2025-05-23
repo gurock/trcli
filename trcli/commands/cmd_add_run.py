@@ -61,7 +61,7 @@ def write_run_to_file(environment: Environment, run_id: int):
     help="The ID of the user the test run should be assigned to."
 )
 @click.option(
-    "--include-all",
+    "--run-include-all",
     is_flag=True,
     default=False,
     help="Use this option to include all test cases in this test run."
