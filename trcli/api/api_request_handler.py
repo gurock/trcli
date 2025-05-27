@@ -7,7 +7,7 @@ from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
-    FAULT_MAPPING,
+    FAULT_MAPPING, SYSTEM_NAME_AUTOMATION_ID, WEIRED_SYSTEM_NAME_AUTOMATION_ID,
 )
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
@@ -49,7 +49,7 @@ class ApiRequestHandler:
             fields: List = response.response_text
             automation_id_field = next(
                     filter(
-                    lambda x: x["system_name"] in ["custom_automation_id", "custom_case_automation_id"],
+                    lambda x: x["system_name"] in [SYSTEM_NAME_AUTOMATION_ID, WEIRED_SYSTEM_NAME_AUTOMATION_ID],
                     fields
                 ),
                 None
@@ -283,7 +283,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
+    def   check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
         """
         Check what test cases id's are missing in DataProvider.
         :project_id: project_id
@@ -297,7 +297,7 @@ class ApiRequestHandler:
         if self.environment.case_matcher == MatchersParser.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
-                aut_case_id = case.get("custom_automation_id") or case.get("custom_case_automation_id")
+                aut_case_id = case.get(SYSTEM_NAME_AUTOMATION_ID) or case.get(WEIRED_SYSTEM_NAME_AUTOMATION_ID)
                 if aut_case_id:
                     aut_case_id = html.unescape(aut_case_id)
                     test_cases_by_aut_id[aut_case_id] = case
@@ -311,7 +311,7 @@ class ApiRequestHandler:
                             "case_id": case["id"],
                             "section_id": case["section_id"],
                             "title": case["title"],
-                            "custom_automation_id": aut_id
+                            SYSTEM_NAME_AUTOMATION_ID: aut_id
                         })
                     else:
                         missing_cases_number += 1
@@ -349,11 +349,7 @@ class ApiRequestHandler:
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_CASE) as executor:
                 futures = {
-                    executor.submit(
-                        self._add_case_and_update_data,
-                        body,
-                    ): body
-                    for body in add_case_data
+                    executor.submit( self._add_case_and_update_data,body,): body for body in add_case_data
                 }
                 responses, error_message = self.handle_futures(
                     futures=futures, action_string="add_case", progress_bar=progress_bar
@@ -633,10 +629,10 @@ class ApiRequestHandler:
 
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
-        if "custom_automation_id" not in case_body and "custom_case_automation_id" in case_body:
-            case_body["custom_automation_id"] = case_body.pop("custom_case_automation_id")
-        if self.environment.case_matcher != MatchersParser.AUTO and "custom_automation_id" in case_body:
-            case_body.pop("custom_automation_id")
+        if SYSTEM_NAME_AUTOMATION_ID not in case_body and WEIRED_SYSTEM_NAME_AUTOMATION_ID in case_body:
+            case_body[SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(WEIRED_SYSTEM_NAME_AUTOMATION_ID)
+        if self.environment.case_matcher != MatchersParser.AUTO and SYSTEM_NAME_AUTOMATION_ID in case_body:
+            case_body.pop(SYSTEM_NAME_AUTOMATION_ID)
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
         if response.status_code == 200:
             case.case_id = response.response_text["id"]
