@@ -118,3 +118,7 @@ class RevertMessages:
     test_cases_not_deleted = "Unable to delete created test cases: {error}"
     run_deleted = "Deleted created run"
     run_not_deleted = "Unable to delete created run: {error}"
+
+SYSTEM_NAME_AUTOMATION_ID = "custom_automation_id"
+# field name mismatch on testrail side (can not reproduce in cloud version TestRail v9.1.2)
+WEIRED_SYSTEM_NAME_AUTOMATION_ID = "custom_case_automation_id"
