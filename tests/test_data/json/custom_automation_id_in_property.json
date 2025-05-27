@@ -1,0 +1,99 @@
+{
+  "description": null,
+  "name": "test suites root",
+  "source": "custom_automation_id_in_property.xml",
+  "suite_id": null,
+  "testsections": [
+    {
+      "description": null,
+      "name": "custom_automation_id in property",
+      "suite_id": null,
+      "parent_id": null,
+      "section_id": null,
+      "testcases": [
+        {
+          "title": "test_testrail 1",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {
+            "template_id": "1"
+          },
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": "",
+            "version": null,
+            "elapsed": "159s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": [],
+            "custom_step_results": []
+          },
+          "custom_automation_id": "automation_id_1"
+        },
+        {
+          "title": "test_testrail 2",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {
+            "template_id": "1"
+          },
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": "",
+            "version": null,
+            "elapsed": "159s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": [],
+            "custom_step_results": []
+          },
+          "custom_automation_id": "automation_id_2"
+        },
+        {
+          "title": "test_testrail 3",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {
+            "template_id": "1"
+          },
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": "",
+            "version": null,
+            "elapsed": "159s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": [],
+            "custom_step_results": []
+          },
+          "custom_automation_id": "automation_id_3"
+        }
+      ],
+      "properties": []
+    }
+  ]
+}
