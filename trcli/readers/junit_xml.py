@@ -7,6 +7,7 @@ from xml.etree import ElementTree as etree
 from junitparser import JUnitXml, JUnitXmlError, Element, Attr
 
 from trcli.cli import Environment
+from trcli.constants import SYSTEM_NAME_AUTOMATION_ID
 from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -114,9 +115,6 @@ class JunitParser(FileParser):
                     result_steps = []
                     sauce_session = None
                     automation_id = f"{case.classname}.{case_name}"
-                    if hasattr(case, "custom_case_automation_id") and case.custom_case_automation_id:
-                        automation_id = case.custom_case_automation_id
-                    
                     if self.case_matcher == MatchersParser.NAME:
                         case_id, case_name = MatchersParser.parse_name_with_id(case_name)
                     for case_props in case.iterchildren(Properties):
@@ -152,6 +150,10 @@ class JunitParser(FileParser):
                         self.env.elog(error)
                         raise Exception(error)
                     case_fields_dict, error = FieldsParser.resolve_fields(case_fields)
+                    automation_id = (
+                            case_fields_dict.pop(SYSTEM_NAME_AUTOMATION_ID, None)
+                            or case._elem.get(SYSTEM_NAME_AUTOMATION_ID)
+                            or automation_id)
                     if error:
                         self.env.elog(error)
                         raise Exception(error)
@@ -233,3 +235,7 @@ class JunitParser(FileParser):
         self.env.log(f"Found {len(subsuites)} SauceLabs suites.")
 
         return [v for k, v in subsuites.items()]
+
+
+if __name__ == '__main__':
+    pass
