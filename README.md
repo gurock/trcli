@@ -60,7 +60,9 @@ Options:
                      be duplicated in TestRail  [x>=1]
   -u, --username     Username.
   -p, --password     Password.
-  -k, --key          API key.
+  -k, --key          API key used for authenticating with TestRail.
+                     This must be used in conjunction with --username.
+                     If provided, --password is not required.
   -v, --verbose      Output all API calls and their results.
   --verify           Verify the data was added correctly.
   --insecure         Allow insecure requests.
@@ -78,10 +80,10 @@ Options:
   --help             Show this message and exit.
 
 Commands:
+  add_run        Add a new test run in TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
-  add_run        Create a new test run (useful for CI/CD flows prior to parsing results)
 ```
 
 Uploading automated test results
