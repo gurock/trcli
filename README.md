@@ -277,7 +277,7 @@ Options:
                          associated to.  [x>=1]
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
-  --include-all
+  --run-include-all      Use this option to include all test cases in this test run.
   --case-ids             Comma separated list of test case IDs to include in
                          the test run.
   --run-refs             A comma-separated list of references/requirements
