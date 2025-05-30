@@ -407,6 +407,25 @@ trcli -y \\
                 "Writing test run data to file (run_config.yml). Done."
             ]
         )
+        
+    def test_cli_add_run_include_all(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run --run-include-all\\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Include All Cases" \\
+  -f "run_config.yml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Creating test run.",
+                f"Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "title: [CLI-E2E-Tests] ADD RUN TEST: Include All Cases",
+                "Writing test run data to file (run_config.yml). Done."
+            ]
+        )
 
     def test_cli_add_run_upload_results(self):
         output = _run_cmd(f"""
