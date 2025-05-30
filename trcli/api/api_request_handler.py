@@ -58,10 +58,12 @@ class ApiRequestHandler:
                 if automation_id_field["is_active"] is False:
                     return FAULT_MAPPING["automation_id_unavailable"]
                 if not automation_id_field["configs"]:
+                    self._active_automation_id_field = automation_id_field["system_name"]
                     return None
                 for config in automation_id_field["configs"]:
                     context = config["context"]
                     if context["is_global"] or project_id in context["project_ids"]:
+                        self._active_automation_id_field = automation_id_field["system_name"]
                         return None
                 return FAULT_MAPPING["automation_id_unavailable"]
             else:
@@ -633,8 +635,9 @@ class ApiRequestHandler:
 
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
-        if "custom_automation_id" not in case_body and "custom_case_automation_id" in case_body:
-            case_body["custom_automation_id"] = case_body.pop("custom_case_automation_id")
+        active_field = getattr(self, "_active_automation_id_field", None)
+        if active_field == "custom_case_automation_id" and "custom_automation_id" in case_body:
+            case_body["custom_case_automation_id"] = case_body.pop("custom_automation_id")
         if self.environment.case_matcher != MatchersParser.AUTO and "custom_automation_id" in case_body:
             case_body.pop("custom_automation_id")
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
