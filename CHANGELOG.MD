@@ -8,10 +8,12 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.9.12]
 
-_released 05-26-2025
+_released 05-30-2025
 
 ### Fixed
  - Corrected CLI parameter for --include-all
+ - Improved help output for using --key parameter
+ - Fixed an issue where automation id is not detected correctly during uploads
 
 ## [1.9.11]
 
