@@ -32,7 +32,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.9.11
+TestRail CLI v1.9.12
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -45,7 +45,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.9.11
+TestRail CLI v1.9.12
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -60,7 +60,9 @@ Options:
                      be duplicated in TestRail  [x>=1]
   -u, --username     Username.
   -p, --password     Password.
-  -k, --key          API key.
+  -k, --key          API key used for authenticating with TestRail.
+                     This must be used in conjunction with --username.
+                     If provided, --password is not required.
   -v, --verbose      Output all API calls and their results.
   --verify           Verify the data was added correctly.
   --insecure         Allow insecure requests.
@@ -78,10 +80,10 @@ Options:
   --help             Show this message and exit.
 
 Commands:
+  add_run        Add a new test run in TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
-  add_run        Create a new test run (useful for CI/CD flows prior to parsing results)
 ```
 
 Uploading automated test results
@@ -264,7 +266,7 @@ will be used to upload all results into the same test run.
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.9.11
+TestRail CLI v1.9.12
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -277,7 +279,7 @@ Options:
                          associated to.  [x>=1]
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
-  --include-all
+  --run-include-all      Use this option to include all test cases in this test run.
   --case-ids             Comma separated list of test case IDs to include in
                          the test run.
   --run-refs             A comma-separated list of references/requirements
@@ -303,7 +305,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.9.11
+TestRail CLI v1.9.12
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

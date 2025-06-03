@@ -272,7 +272,7 @@ class TRCLI(click.MultiCommand):
 )
 @click.option("-u", "--username", type=click.STRING, metavar="", help="Username.")
 @click.option("-p", "--password", type=click.STRING, metavar="", help="Password.")
-@click.option("-k", "--key", metavar="", help="API key.")
+@click.option("-k", "--key", metavar="", help="API key used for authenticating with TestRail. This must be used in conjunction with --username. If provided, --password is not required.")
 @click.option(
     "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
 )

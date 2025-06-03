@@ -283,7 +283,7 @@ class ApiRequestHandler:
         ) > 0 else "Update skipped"
         return returned_resources, error_message
 
-    def   check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
+    def check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
         """
         Check what test cases id's are missing in DataProvider.
         :project_id: project_id
@@ -349,7 +349,11 @@ class ApiRequestHandler:
         ) as progress_bar:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_CASE) as executor:
                 futures = {
-                    executor.submit( self._add_case_and_update_data,body,): body for body in add_case_data
+                    executor.submit(
+                        self._add_case_and_update_data,
+                        body,
+                    ): body
+                    for body in add_case_data
                 }
                 responses, error_message = self.handle_futures(
                     futures=futures, action_string="add_case", progress_bar=progress_bar
@@ -629,8 +633,9 @@ class ApiRequestHandler:
 
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
-        if SYSTEM_NAME_AUTOMATION_ID not in case_body and WEIRED_SYSTEM_NAME_AUTOMATION_ID in case_body:
-            case_body[SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(WEIRED_SYSTEM_NAME_AUTOMATION_ID)
+        active_field = getattr(self, "_active_automation_id_field", None)
+        if active_field == WEIRED_SYSTEM_NAME_AUTOMATION_ID and SYSTEM_NAME_AUTOMATION_ID in case_body:
+            case_body[WEIRED_SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(SYSTEM_NAME_AUTOMATION_ID)
         if self.environment.case_matcher != MatchersParser.AUTO and SYSTEM_NAME_AUTOMATION_ID in case_body:
             case_body.pop(SYSTEM_NAME_AUTOMATION_ID)
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
