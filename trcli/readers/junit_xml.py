@@ -7,7 +7,7 @@ from xml.etree import ElementTree as etree
 from junitparser import JUnitXml, JUnitXmlError, Element, Attr
 
 from trcli.cli import Environment
-from trcli.constants import SYSTEM_NAME_AUTOMATION_ID
+from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID
 from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
@@ -151,8 +151,8 @@ class JunitParser(FileParser):
                         raise Exception(error)
                     case_fields_dict, error = FieldsParser.resolve_fields(case_fields)
                     automation_id = (
-                            case_fields_dict.pop(SYSTEM_NAME_AUTOMATION_ID, None)
-                            or case._elem.get(SYSTEM_NAME_AUTOMATION_ID)
+                            case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
+                            or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID)
                             or automation_id)
                     if error:
                         self.env.elog(error)
