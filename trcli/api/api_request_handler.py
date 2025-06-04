@@ -694,7 +694,8 @@ class ApiRequestHandler:
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
-                return self.__get_all_entities(entity, link=response.response_text["_links"]["next"], entities=entities)
+                next_link = response.response_text["_links"]["next"].replace("limit=0", "limit=250")
+                return self.__get_all_entities(entity, link=next_link, entities=entities)
             else:
                 return entities, response.error_message
         else:
