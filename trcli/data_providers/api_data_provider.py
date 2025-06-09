@@ -2,6 +2,7 @@ from beartype.typing import List, Dict, Optional
 
 from serde.json import to_dict
 
+from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
@@ -205,7 +206,7 @@ class ApiDataProvider:
                     case
                     for sublist in testcases
                     for case in sublist
-                    if case.custom_automation_id == case_updater["custom_automation_id"]
+                    if case.custom_automation_id == case_updater[OLD_SYSTEM_NAME_AUTOMATION_ID]
                 ),
                 None,
             )
@@ -215,8 +216,8 @@ class ApiDataProvider:
                         case
                         for sublist in testcases
                         for case in sublist
-                        if hasattr(case, "custom_case_automation_id")
-                        and case.custom_case_automation_id == case_updater.get("custom_case_automation_id")
+                        if hasattr(case, UPDATED_SYSTEM_NAME_AUTOMATION_ID)
+                        and case.custom_case_automation_id == case_updater.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
                     ),
                     None,
                 )
