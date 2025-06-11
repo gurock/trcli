@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.9.13]
+
+_released 06-11-2025
+
+### Fixed
+ - get_all_sections() method sets query parameter limit to 0 and fails with 400 Bad Request response 
+ - Refactor and fix setting custom_automation_id via property
+
 ## [1.9.12]
 
 _released 05-30-2025
