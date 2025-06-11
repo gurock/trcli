@@ -7,7 +7,7 @@ from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
-    FAULT_MAPPING,
+    FAULT_MAPPING, OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID,
 )
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
@@ -49,7 +49,7 @@ class ApiRequestHandler:
             fields: List = response.response_text
             automation_id_field = next(
                     filter(
-                    lambda x: x["system_name"] in ["custom_automation_id", "custom_case_automation_id"],
+                    lambda x: x["system_name"] in [OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID],
                     fields
                 ),
                 None
@@ -299,7 +299,7 @@ class ApiRequestHandler:
         if self.environment.case_matcher == MatchersParser.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
-                aut_case_id = case.get("custom_automation_id") or case.get("custom_case_automation_id")
+                aut_case_id = case.get(OLD_SYSTEM_NAME_AUTOMATION_ID) or case.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
                 if aut_case_id:
                     aut_case_id = html.unescape(aut_case_id)
                     test_cases_by_aut_id[aut_case_id] = case
@@ -313,7 +313,7 @@ class ApiRequestHandler:
                             "case_id": case["id"],
                             "section_id": case["section_id"],
                             "title": case["title"],
-                            "custom_automation_id": aut_id
+                            OLD_SYSTEM_NAME_AUTOMATION_ID: aut_id
                         })
                     else:
                         missing_cases_number += 1
@@ -636,10 +636,10 @@ class ApiRequestHandler:
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()
         active_field = getattr(self, "_active_automation_id_field", None)
-        if active_field == "custom_case_automation_id" and "custom_automation_id" in case_body:
-            case_body["custom_case_automation_id"] = case_body.pop("custom_automation_id")
-        if self.environment.case_matcher != MatchersParser.AUTO and "custom_automation_id" in case_body:
-            case_body.pop("custom_automation_id")
+        if active_field == UPDATED_SYSTEM_NAME_AUTOMATION_ID and OLD_SYSTEM_NAME_AUTOMATION_ID in case_body:
+            case_body[UPDATED_SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
+        if self.environment.case_matcher != MatchersParser.AUTO and OLD_SYSTEM_NAME_AUTOMATION_ID in case_body:
+            case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
         if response.status_code == 200:
             case.case_id = response.response_text["id"]
@@ -694,7 +694,8 @@ class ApiRequestHandler:
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
-                return self.__get_all_entities(entity, link=response.response_text["_links"]["next"], entities=entities)
+                next_link = response.response_text["_links"]["next"].replace("limit=0", "limit=250")
+                return self.__get_all_entities(entity, link=next_link, entities=entities)
             else:
                 return entities, response.error_message
         else:

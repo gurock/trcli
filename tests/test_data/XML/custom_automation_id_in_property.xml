@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="test suites root" id="123">
+    <testsuite id="321" failures="0" errors="0" skipped="0" tests="3" time="0.05" name="custom_automation_id in property">
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 1" time="159">
+            <properties>
+                <property name="testrail_case_field" value="template_id:1"/>
+                <property name="testrail_case_field" value="custom_automation_id:automation_id_1"/>
+            </properties>
+            <passed message="No message" type="Passed"/>
+        </testcase>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 2" time="159"
+                  custom_automation_id="automation_id_2">
+            <properties>
+                <property name="testrail_case_field" value="template_id:1"/>
+            </properties>
+            <passed message="No message" type="Passed"/>
+        </testcase>
+        <testcase classname="tests.test_junit_to_dataclass" name="test_testrail 3" time="159"
+                  custom_automation_id="automation_id_4">
+            <properties>
+                <property name="testrail_case_field" value="template_id:1"/>
+                <property name="testrail_case_field" value="custom_automation_id:automation_id_3"/>
+            </properties>
+            <passed message="No message" type="Passed"/>
+        </testcase>
+    </testsuite>
+</testsuites>

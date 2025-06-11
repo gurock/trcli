@@ -36,6 +36,10 @@ class TestJunitParser:
             (
                 Path(__file__).parent / "test_data/XML/required_only.xml",
                 Path(__file__).parent / "test_data/json/required_only.json",
+            ),
+            (
+                Path(__file__).parent / "test_data/XML/custom_automation_id_in_property.xml",
+                Path(__file__).parent / "test_data/json/custom_automation_id_in_property.json",
             )
         ],
         ids=[
@@ -43,6 +47,7 @@ class TestJunitParser:
             "XML with testsuites root",
             "XML with testsuites root, using a glob pattern",
             "XML with no data",
+            "XML with custom_automation_id as property",
         ],
     )
     @pytest.mark.parse_junit
