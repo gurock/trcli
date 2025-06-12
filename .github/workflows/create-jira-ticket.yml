@@ -1,0 +1,44 @@
+name: Create JIRA Ticket
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  create_jira_ticket:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for 'triage' label
+        id: check_label
+        run: |
+          labels=$(jq -r '.issue.labels[].name' <<< '${{ toJson(github.event) }}')
+          if echo "$labels" | grep -q 'triage'; then
+            echo "has_label=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_label=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create JIRA ticket
+        if: steps.check_label.outputs.has_label == 'true'
+        env:
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT: TRCLI
+          JIRA_URL: https://gurock.atlassian.net
+        run: |
+          curl -s -u "$JIRA_USER:$JIRA_TOKEN" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            --data @- "$JIRA_URL/rest/api/3/issue" <<EOF
+          {
+            "fields": {
+              "project": { "key": "${JIRA_PROJECT}" },
+              "summary": "${{ github.event.issue.title }}",
+              "description": "${{ github.event.issue.body }}",
+              "issuetype": { "name": "Bug" },
+              "labels": ["TRCLI"],
+              "components": [{ "name": "CLI" }].
+              "status": { "name": "To Do" }
+            }
+          }
+          EOF
