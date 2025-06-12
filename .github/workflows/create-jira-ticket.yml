@@ -11,8 +11,7 @@ jobs:
       - name: Check for 'triage' label
         id: check_label
         run: |
-          labels=$(jq -r '.issue.labels[].name' <<< '${{ toJson(github.event) }}')
-          if echo "$labels" | grep -q 'triage'; then
+          if [[ "${{ toJson(github.event.issue.labels) }}" == *'"name":"Triage"'* ]]; then
             echo "has_label=true" >> $GITHUB_OUTPUT
           else
             echo "has_label=false" >> $GITHUB_OUTPUT
