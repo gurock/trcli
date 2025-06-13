@@ -17,7 +17,7 @@ jobs:
         if: steps.check_label.outputs.has_label == 'true'
         env:
           JIRA_USER: ${{ secrets.JIRA_USER }}
-          JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_TOKEN: ${{ secrets.JIRA_TOKEN }}
           JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
           JIRA_URL: ${{ secrets.JIRA_URL }}
         run: |
