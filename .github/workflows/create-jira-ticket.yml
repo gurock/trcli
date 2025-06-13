@@ -8,9 +8,9 @@ jobs:
   create_jira_ticket:
     runs-on: ubuntu-latest
     steps:
-      - name: Check for 'triage' label
+      - name: Check for 'Bug' label
         id: check_label
-        if: contains(join(github.event.issue.labels.*.name, ','), 'Triage')
+        if: contains(join(github.event.issue.labels.*.name, ','), 'Bug')
         run: echo "has_label=true" >> $GITHUB_OUTPUT
 
       - name: Create JIRA ticket
