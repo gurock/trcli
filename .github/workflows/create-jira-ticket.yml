@@ -18,8 +18,8 @@ jobs:
         env:
           JIRA_USER: ${{ secrets.JIRA_USER }}
           JIRA_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
-          JIRA_PROJECT: TRCLI
-          JIRA_URL: https://gurock.atlassian.net
+          JIRA_PROJECT: ${{ secrets.JIRA_PROJECT }}
+          JIRA_URL: ${{ secrets.JIRA_URL }}
         run: |
           curl -s -u "$JIRA_USER:$JIRA_TOKEN" \
             -X POST \
