@@ -13,6 +13,24 @@ jobs:
         if: contains(join(github.event.issue.labels.*.name, ','), 'Bug')
         run: echo "has_label=true" >> $GITHUB_OUTPUT
 
+      - name: Set up Node.js
+        if: steps.check_label.outputs.has_label == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install md-to-adf
+        if: steps.check_label.outputs.has_label == 'true'
+        run: npm install -g md-to-adf
+
+      - name: Convert issue body to ADF
+        id: convert_adf
+        if: steps.check_label.outputs.has_label == 'true'
+        run: |
+          ADF_JSON=$(echo "${{ github.event.issue.body }}" | md-to-adf)
+          ADF_JSON_ESCAPED=$(echo "$ADF_JSON" | jq -c .)
+          echo "adf=$ADF_JSON_ESCAPED" >> $GITHUB_OUTPUT
+
       - name: Create JIRA ticket
         if: steps.check_label.outputs.has_label == 'true'
         env:
@@ -29,7 +47,7 @@ jobs:
             "fields": {
               "project": { "key": "${JIRA_PROJECT}" },
               "summary": "${{ github.event.issue.title }}",
-              "description": "${{ github.event.issue.body }}",
+              "description": ${{ steps.convert_adf.outputs.adf }},
               "issuetype": { "name": "Bug" },
               "labels": ["TRCLI"],
               "components": [{ "name": "CLI" }]
