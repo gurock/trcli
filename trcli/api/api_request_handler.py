@@ -232,9 +232,20 @@ class ApiRequestHandler:
         returned_sections, error_message = self.__get_all_sections(project_id, suite_id)
         if not error_message:
             missing_test_sections = False
+            sections_by_id = {section["id"]: section for section in returned_sections}
             sections_by_name = {section["name"]: section for section in returned_sections}
             section_data = []
             for section in self.suites_data_from_provider.testsections:
+                if self.environment.section_id:
+                    if section.section_id in sections_by_id.keys():
+                        section_json = sections_by_id[section.section_id]
+                        section_data.append({
+                            "section_id": section_json["id"],
+                            "suite_id": section_json["suite_id"],
+                            "name": section_json["name"],
+                        })
+                    else:
+                        missing_test_sections = True
                 if section.name in sections_by_name.keys():
                     section_json = sections_by_name[section.name]
                     section_data.append({
