@@ -32,7 +32,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -45,7 +45,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -266,7 +266,7 @@ will be used to upload all results into the same test run.
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 

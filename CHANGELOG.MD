@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.9.14]
+
+_released 06-19-2025
+
+### Fixed
+ - Fixed an issue where test cases are not created in sections specified by --section-id
+
 ## [1.9.13]
 
 _released 06-11-2025
