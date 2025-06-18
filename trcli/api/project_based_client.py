@@ -219,6 +219,7 @@ class ProjectBasedClient:
                 assigned_to_id=self.environment.run_assigned_to_id,
                 include_all=bool(self.environment.run_include_all),
                 refs=self.environment.run_refs,
+                case_ids=self.environment.run_case_ids,
             )
             run_id = added_run
         else:

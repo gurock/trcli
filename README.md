@@ -280,8 +280,8 @@ Options:
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
   --run-include-all      Use this option to include all test cases in this test run.
-  --case-ids             Comma separated list of test case IDs to include in
-                         the test run.
+  --run-case-ids         Comma separated list of test case IDs to include in
+                         the test run (i.e.: 1,2,3,4).
   --run-refs             A comma-separated list of references/requirements
   -f, --file             Write run title and id to file.
   --help                 Show this message and exit.
