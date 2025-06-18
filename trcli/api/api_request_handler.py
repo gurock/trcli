@@ -395,6 +395,7 @@ class ApiRequestHandler:
             assigned_to_id: int = None,
             include_all: bool = False,
             refs: str = None,
+            case_ids: List[int] = None,
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
@@ -404,6 +405,7 @@ class ApiRequestHandler:
         """
         add_run_data = self.data_provider.add_run(
             run_name,
+            case_ids=case_ids,
             milestone_id=milestone_id,
             assigned_to_id=assigned_to_id,
             include_all=include_all,
