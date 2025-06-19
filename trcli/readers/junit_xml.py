@@ -117,7 +117,7 @@ class JunitParser(FileParser):
 
         return case_id, case_name
 
-    def _get_status_id_for_case_result(self, case: JUnitTestCase) -> int | None:
+    def _get_status_id_for_case_result(self, case: JUnitTestCase) -> Union[int, None]:
         if case.is_passed:
             status = "passed"
         elif case.is_skipped:
