@@ -201,6 +201,14 @@ Example:
 |----------------------------------------------------------------------------------------|--------------------------------|
 | ```<testcase classname="tests.LoginTests" name="test_case_1" time="159"></testcase>``` | `tests.LoginTests.test_case_1` |
 
+If automatically assigned `classname` and `name` as `automation_id` is not suitable, you can set it
+via properties, according to:
+[JUnit to TestRail mapping](https://support.gurock.com/hc/en-us/articles/12989737200276)
+```
+ <properties>
+     <property name="testrail_case_field" value="custom_automation_id:automation_id_example"/> 
+```
+Only make sure automation_id system name is correct for your project.
 
 > **Important usage notes:**
 > 1. If you would like to upload automation results for test cases that already exist in TestRail, be sure to update the `automation_id` for those test cases before uploading your automation results
@@ -242,6 +250,19 @@ From an implementation perspective, you can do this in one of two ways:
 For more details, please refer to the [Automation workflows - Specification-first](https://support.gurock.com/hc/en-us/articles/12609869124116)
 documentation.
 
+#### 3 Case result statuses mapping
+Result statuses for case might be overridden using yaml config. You have to add `case_result_statuses` option with
+corresponding mappings to desired statuses.
+Example:
+```yaml
+case_result_statuses:
+  passed: 1
+  skipped: 3
+  error: 4
+  failure: 5
+```
+You can find status ids for tour project using following endpoint:
+ ```/api/v2/get_statuses```
 ### Exploring other features
 
 #### General features
