@@ -32,7 +32,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -45,7 +45,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -266,7 +266,7 @@ will be used to upload all results into the same test run.
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.9.13
+TestRail CLI v1.9.14
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -280,8 +280,8 @@ Options:
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
   --run-include-all      Use this option to include all test cases in this test run.
-  --case-ids             Comma separated list of test case IDs to include in
-                         the test run.
+  --run-case-ids         Comma separated list of test case IDs to include in
+                         the test run (i.e.: 1,2,3,4).
   --run-refs             A comma-separated list of references/requirements
   -f, --file             Write run title and id to file.
   --help                 Show this message and exit.

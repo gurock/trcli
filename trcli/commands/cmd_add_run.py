@@ -67,9 +67,10 @@ def write_run_to_file(environment: Environment, run_id: int):
     help="Use this option to include all test cases in this test run."
 )
 @click.option(
-    "--case-ids",
+    "--run-case-ids",
     metavar="",
-    help="Comma separated list of test case IDs to include in the test run."
+    type=lambda x: [int(i) for i in x.split(",")], 
+    help="Comma separated list of test case IDs to include in the test run (i.e.: 1,2,3,4)."
 )
 @click.option(
     "--run-refs",
