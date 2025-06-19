@@ -12,6 +12,7 @@ _released 06-19-2025
 
 ### Fixed
  - Fixed an issue where test cases are not created in sections specified by --section-id
+ - Test cases not being added when using --case-ids in add_run module
 
 ## [1.9.13]
 
