@@ -261,7 +261,7 @@ case_result_statuses:
   error: 4
   failure: 5
 ```
-You can find status ids for tour project using following endpoint:
+You can find statuses ids for your project using following endpoint:
  ```/api/v2/get_statuses```
 ### Exploring other features
 
