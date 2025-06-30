@@ -11,8 +11,6 @@ We support **only the latest stable release** of the TestRail CLI. Older version
 If you discover a security vulnerability in this project, please report it **privately** by emailing **compliance@gurock.io**.  
 Please **do not** file a public GitHub issue, as that could expose the vulnerability before a fix is available. For more details, see our [official security disclosure guidelines](https://www.ideracorp.com/Legal/Gurock/SecurityStatement#:~:text=IV%20%2D%20Reporting%20Security%20Issues).
 
-We aim to acknowledge reports within **2 business days** and will work to assess and address the issue as promptly as possible.
-
 ## Disclosure Policy
 
 - All reports are reviewed thoroughly and prioritized based on severity and impact.
