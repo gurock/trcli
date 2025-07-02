@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.10.0]
+
+_released 07-02-2025
+
+### Added
+ - Added support for custom test statuses when reporting successes and failures
+ - Refactor junit xml parsing for maintainability
+
 ## [1.9.14]
 
 _released 06-19-2025

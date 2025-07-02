@@ -4,7 +4,8 @@ from beartype.typing import Union, List
 from unittest import TestCase, TestSuite
 from xml.etree import ElementTree as etree
 
-from junitparser import JUnitXml, JUnitXmlError, Element, Attr
+from junitparser import (
+    JUnitXml, JUnitXmlError, Element, Attr, TestSuite as JUnitTestSuite, TestCase as JUnitTestCase)
 
 from trcli.cli import Environment
 from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID
@@ -17,6 +18,13 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailResult, TestRailSeparatedStep,
 )
 from trcli.readers.file_parser import FileParser
+
+STEP_STATUSES = {
+    "passed": 1,
+    "untested": 3,
+    "skipped": 4,
+    "failed": 5
+}
 
 TestCase.id = Attr("id")
 TestSuite.id = Attr("id")
@@ -37,8 +45,10 @@ class JunitParser(FileParser):
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
-        self.case_matcher = environment.case_matcher
-        self.special = environment.special_parser
+        self._case_matcher = environment.case_matcher
+        self._special = environment.special_parser
+        self._case_result_statuses = {"passed": 1, "skipped": 4,"error": 5, "failure": 5}
+        self._update_with_custom_statuses()
 
     @classmethod
     def _add_root_element_to_tree(cls, filepath: Union[str, Path]) -> etree:
@@ -76,127 +86,206 @@ class JunitParser(FileParser):
         suite.write(merged_report_path)
         return merged_report_path
 
-    def parse_file(self) -> List[TestRailSuite]:
-        self.env.log(f"Parsing JUnit report.")
-        suite = JUnitXml.fromfile(
-            self.filepath, parse_func=self._add_root_element_to_tree
-        )
+    @staticmethod
+    def _extract_section_properties(section, processed_props) -> List[TestRailProperty]:
+        properties = []
+        for prop in section.properties():
+            if prop.name not in processed_props:
+                properties.append(TestRailProperty(prop.name, prop.value))
+                processed_props.append(prop.name)
 
-        if self.special == "saucectl":
-            suites = self.split_sauce_report(suite)
+        return properties
+
+    def _update_with_custom_statuses(self):
+        custom_statuses = self.env.params_from_config.get("case_result_statuses", None)
+        if custom_statuses:
+            self._case_result_statuses.update(custom_statuses)
+
+    def _extract_case_id_and_name(self, case) -> tuple:
+        case_name = case.name
+        case_id = None
+
+        if self._case_matcher == MatchersParser.NAME:
+            return MatchersParser.parse_name_with_id(case_name)
+
+        if self._case_matcher == MatchersParser.PROPERTY:
+            for case_props in case.iterchildren(Properties):
+                for prop in case_props.iterchildren(Property):
+                    if prop.name == "test_id":
+                        case_id = int(prop.value.lower().replace("c", ""))
+                        return case_id, case_name
+
+        return case_id, case_name
+
+    def _get_status_id_for_case_result(self, case: JUnitTestCase) -> Union[int, None]:
+        if case.is_passed:
+            status = "passed"
+        elif case.is_skipped:
+            status = "skipped"
         else:
-            suites = [suite]
+            status = case.result[0]._tag.lower()
+        return self._case_result_statuses.get(status)
 
+    @staticmethod
+    def _get_comment_for_case_result(case: JUnitTestCase) -> str:
+        if case.is_passed:
+            return ""
+        result = case.result[0]
+        parts = [
+            f"Type: {result.type}" if result.type else "",
+            f"Message: {result.message}" if result.message else "",
+            f"Text: {result.text}" if result.text else ""
+        ]
+        return "\n".join(part for part in parts if part).strip()
+
+    @staticmethod
+    def _parse_case_properties(case):
+        result_steps = []
+        attachments = []
+        result_fields = []
+        comments = []
+        case_fields = []
+        sauce_session = None
+
+        for case_props in case.iterchildren(Properties):
+            for prop in case_props.iterchildren(Property):
+                name, value = prop.name, prop.value
+                if not name:
+                    continue
+
+                elif name.startswith("testrail_result_step"):
+                    status, step = value.split(':', maxsplit=1)
+                    step_obj = TestRailSeparatedStep(step.strip())
+                    step_obj.status_id = STEP_STATUSES[status.lower().strip()]
+                    result_steps.append(step_obj)
+                elif name.startswith("testrail_attachment"):
+                    attachments.append(value)
+                elif name.startswith("testrail_result_field"):
+                    result_fields.append(value)
+                elif name.startswith("testrail_result_comment"):
+                    comments.append(value)
+                elif name.startswith("testrail_case_field"):
+                    text = prop._elem.text.strip() if prop._elem.text else None
+                    case_fields.append(text or value)
+                elif name.startswith("testrail_sauce_session"):
+                    sauce_session = value
+
+        return result_steps, attachments, result_fields, comments, case_fields, sauce_session
+
+    def _resolve_case_fields(self, result_fields, case_fields):
+        result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
+        if error:
+            self.env.elog(error)
+            raise Exception(error)
+
+        case_fields_dict, error = FieldsParser.resolve_fields(case_fields)
+        if error:
+            self.env.elog(error)
+            raise Exception(error)
+
+        return result_fields_dict, case_fields_dict
+
+    def _parse_test_cases(self, section) -> List[TestRailCase]:
+        test_cases = []
+
+        for case in section:
+            """
+            TODO: use section.iterchildren(JUnitTestCase) to get only testcases belonging to the section
+            required for nested suites
+            """
+            automation_id = f"{case.classname}.{case.name}"
+            case_id, case_name = self._extract_case_id_and_name(case)
+            result_steps, attachments, result_fields, comments, case_fields, sauce_session = self._parse_case_properties(
+                case)
+            result_fields_dict, case_fields_dict = self._resolve_case_fields(result_fields, case_fields)
+            status_id = self._get_status_id_for_case_result(case)
+            comment = self._get_comment_for_case_result(case)
+            result = TestRailResult(
+                case_id=case_id,
+                elapsed=case.time,
+                attachments=attachments,
+                result_fields=result_fields_dict,
+                custom_step_results=result_steps,
+                status_id=status_id,
+                comment=comment,
+            )
+
+            for comment in reversed(comments):
+                result.prepend_comment(comment)
+            if sauce_session:
+                result.prepend_comment(f"SauceLabs session: {sauce_session}")
+
+            automation_id = (
+                    case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
+                    or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id))
+
+            test_cases.append(TestRailCase(
+                title=TestRailCaseFieldsOptimizer.extract_last_words(case_name,
+                                                                     TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
+                case_id=case_id,
+                result=result,
+                custom_automation_id=automation_id,
+                case_fields=case_fields_dict
+            ))
+
+        return test_cases
+
+    def _get_suite_name(self, suite):
+        if self.env.suite_name:
+            return self.env.suite_name
+        elif suite.name:
+            return suite.name
+        raise ValueError("Suite name is not defined in environment or JUnit report.")
+
+
+    def _parse_sections(self, suite) -> List[TestRailSection]:
+        sections = []
+        processed_props = []
+
+        for section in suite:
+            if isinstance(section, JUnitTestSuite):
+                if not len(section):
+                    continue
+                """
+                TODO: Handle nested suites if needed (add sub_sections to data class TestRailSection)
+                inner_suites = section.testsuites()
+                sub_sections = self._parse_sections(inner_suites)
+                then sub_sections=sub_sections
+                """
+                properties = self._extract_section_properties(section, processed_props)
+                test_cases = self._parse_test_cases(section)
+                self.env.log(f"Processed {len(test_cases)} test cases in section {section.name}.")
+                sections.append(TestRailSection(
+                    section.name,
+                    testcases=test_cases,
+                    properties=properties,
+                ))
+
+        return sections
+
+    def parse_file(self) -> List[TestRailSuite]:
+        self.env.log("Parsing JUnit report.")
+        suite = JUnitXml.fromfile(self.filepath, parse_func=self._add_root_element_to_tree)
+
+        suites = self._split_sauce_report(suite) if self._special == "saucectl" else [suite]
         testrail_suites = []
 
         for suite in suites:
             if suite.name:
                 self.env.log(f"Processing JUnit suite - {suite.name}")
-            cases_count = 0
-            test_sections = []
-            processed_section_properties = []
-            for section in suite:
-                if not len(section):
-                    continue
-                test_cases = []
-                properties = []
-                for prop in section.properties():
-                    if prop.name not in processed_section_properties:
-                        properties.append(TestRailProperty(prop.name, prop.value))
-                        processed_section_properties.append(prop.name)
-                for case in section:
-                    cases_count += 1
-                    case_id = None
-                    case_name = case.name
-                    attachments = []
-                    result_fields = []
-                    case_fields = []
-                    comments = []
-                    result_steps = []
-                    sauce_session = None
-                    automation_id = f"{case.classname}.{case_name}"
-                    if self.case_matcher == MatchersParser.NAME:
-                        case_id, case_name = MatchersParser.parse_name_with_id(case_name)
-                    for case_props in case.iterchildren(Properties):
-                        for prop in case_props.iterchildren(Property):
-                            if prop.name and self.case_matcher == MatchersParser.PROPERTY and prop.name == "test_id":
-                                case_id = int(prop.value.lower().replace("c", ""))
-                            if prop.name and prop.name.startswith("testrail_result_step"):
-                                status, step = prop.value.split(':', maxsplit=1)
-                                step = TestRailSeparatedStep(step.strip())
-                                status_dict = {
-                                    "passed": 1,
-                                    "untested": 3,
-                                    "skipped": 4,
-                                    "failed": 5
-                                }
-                                step.status_id = status_dict[status.lower().strip()]
-                                result_steps.append(step)
-                            if prop.name and prop.name.startswith("testrail_attachment"):
-                                attachments.append(prop.value)
-                            if prop.name and prop.name.startswith("testrail_result_field"):
-                                result_fields.append(prop.value)
-                            if prop.name and prop.name.startswith("testrail_result_comment"):
-                                comments.append(prop.value)
-                            if prop.name and prop.name.startswith("testrail_case_field"):
-                                if prop._elem.text is not None and prop._elem.text.strip() != "":
-                                    case_fields.append(prop._elem.text.strip())
-                                else:
-                                    case_fields.append(prop.value)
-                            if prop.name and prop.name.startswith("testrail_sauce_session"):
-                                sauce_session = prop.value
-                    result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
-                    if error:
-                        self.env.elog(error)
-                        raise Exception(error)
-                    case_fields_dict, error = FieldsParser.resolve_fields(case_fields)
-                    automation_id = (
-                            case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
-                            or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID)
-                            or automation_id)
-                    if error:
-                        self.env.elog(error)
-                        raise Exception(error)
-                    result = TestRailResult(
-                        case_id,
-                        elapsed=case.time,
-                        junit_result_unparsed=case.result,
-                        attachments=attachments,
-                        result_fields=result_fields_dict,
-                        custom_step_results=result_steps
-                    )
-                    for comment in reversed(comments):
-                        result.prepend_comment(comment)
-                    if sauce_session:
-                        result.prepend_comment(f"SauceLabs session: {sauce_session}")
-                    test_cases.append(
-                        TestRailCase(
-                            title=TestRailCaseFieldsOptimizer.extract_last_words(case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
-                            case_id=case_id,
-                            result=result,
-                            custom_automation_id=automation_id,
-                            case_fields=case_fields_dict
-                        )
-                    )
-                self.env.log("Processed {0} test cases in section {1}.".format(len(test_cases), section.name))
-                test_sections.append(
-                    TestRailSection(
-                        section.name,
-                        testcases=test_cases,
-                        properties=properties,
-                    )
-                )
-            testrail_suites.append(
-                TestRailSuite(
-                    self.env.suite_name if self.env.suite_name else suite.name,
-                    testsections=test_sections,
-                    source=self.filename,
-                )
-            )
+
+            testrail_sections = self._parse_sections(suite)
+            suite_name = self.env.suite_name if self.env.suite_name else suite.name
+
+            testrail_suites.append(TestRailSuite(
+                suite_name,
+                testsections=testrail_sections,
+                source=self.filename,
+            ))
 
         return testrail_suites
 
-    def split_sauce_report(self, suite) -> List[JUnitXml]:
+    def _split_sauce_report(self, suite) -> List[JUnitXml]:
         self.env.log(f"Processing SauceLabs report.")
         subsuites = {}
         for section in suite:
@@ -235,7 +324,6 @@ class JunitParser(FileParser):
         self.env.log(f"Found {len(subsuites)} SauceLabs suites.")
 
         return [v for k, v in subsuites.items()]
-
 
 if __name__ == '__main__':
     pass
