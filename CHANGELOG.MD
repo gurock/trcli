@@ -8,11 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.10.0]
 
-_released 06-20-2025
+_released 07-02-2025
 
 ### Added
  - Added support for custom test statuses when reporting successes and failures
- - Refactor junit xml parsing
+ - Refactor junit xml parsing for maintainability
 
 ## [1.9.14]
 
