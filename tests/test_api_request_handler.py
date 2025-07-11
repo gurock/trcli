@@ -155,6 +155,32 @@ class TestApiRequestHandler:
             False,
             FAULT_MAPPING["missing_suite"].format(suite_id=6),
         ), "Given suite id should NOT exist in mocked response."
+        
+    @pytest.mark.api_handler
+    def test_check_suite_exists_with_pagination(self, api_request_handler: ApiRequestHandler, requests_mock):
+        project_id = 3
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "suites": [
+                {"id": 4, "name": "Suite1", "description": "Test1", "project_id": 3},
+                {"id": 5, "name": "Suite2", "description": "Test2", "project_id": 3},
+            ]
+        }
+        requests_mock.get(create_url(f"get_suites/{project_id}"), json=mocked_response)
+
+        api_request_handler.suites_data_from_provider.suite_id = 4
+        assert api_request_handler.check_suite_id(project_id) == (
+            True,
+            "",
+        ), "Suite id in test data should exist in mocked response."
+
+        api_request_handler.suites_data_from_provider.suite_id = 6
+        assert api_request_handler.check_suite_id(project_id) == (
+            False,
+            FAULT_MAPPING["missing_suite"].format(suite_id=6),
+        ), "Given suite id should NOT exist in mocked response."
 
     @pytest.mark.api_handler
     def test_add_suite(self, api_request_handler: ApiRequestHandler, requests_mock):
