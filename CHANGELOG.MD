@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.10.1]
+
+_released 07-11-2025
+
+### Fixed
+ - Fixed an issue where users can't upload test results due to TypeError encountered in get_suites API
+
 ## [1.10.0]
 
 _released 07-02-2025
