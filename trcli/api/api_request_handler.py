@@ -1,4 +1,4 @@
-import html
+import html, json
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from beartype.typing import List, Union, Tuple, Dict
 
@@ -131,12 +131,17 @@ class ApiRequestHandler:
         suite_id = self.suites_data_from_provider.suite_id
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
-            available_suites = [suite["id"] for suite in response.response_text]
-            return (
-                (True, "")
-                if suite_id in available_suites
-                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
-            )
+            try:
+                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
+                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
+                available_suites = [suite["id"] for suite in suite_list]
+                return (
+                    (True, "")
+                    if suite_id in available_suites
+                    else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+                )
+            except Exception as e:
+                return None, f"Error parsing suites response: {e}"
         else:
             return None, response.error_message
 
@@ -148,14 +153,18 @@ class ApiRequestHandler:
         error_message = ""
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
-            suites = response.response_text
-            suite = next(
-                filter(lambda x: x["name"] == self.suites_data_from_provider.name, suites),
-                None
-            )
-            if suite:
-                suite_id = suite["id"]
-                self.data_provider.update_data([{"suite_id": suite["id"], "name": suite["name"]}])
+            try:
+                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
+                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
+                suite = next(
+                    filter(lambda x: x["name"] == self.suites_data_from_provider.name, suite_list),
+                    None
+                )
+                if suite:
+                    suite_id = suite["id"]
+                    self.data_provider.update_data([{"suite_id": suite["id"], "name": suite["name"]}])
+            except Exception as e:
+                error_message = f"Error parsing suites response: {e}"
         else:
             error_message = response.error_message
 
@@ -170,20 +179,25 @@ class ApiRequestHandler:
         error_message = ""
         response = self.client.send_get(f"get_suites/{project_id}")
         if not response.error_message:
-            for suite in response.response_text:
-                available_suites.append(int(suite["id"]))
-                returned_resources.append(
-                    {
+            try:
+                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
+                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
+                for suite in suite_list:
+                    available_suites.append(int(suite["id"]))
+                    returned_resources.append({
                         "suite_id": suite["id"],
                         "name": suite["name"],
-                    }
-                )
+                    })
+            except Exception as e:
+                error_message = f"Error parsing suites response: {e}"
         else:
             error_message = response.error_message
 
-        self.data_provider.update_data(suite_data=returned_resources) if len(
-            returned_resources
-        ) > 0 else "Update skipped"
+        if returned_resources:
+            self.data_provider.update_data(suite_data=returned_resources)
+        else:
+            print("Update skipped")
+
         return available_suites, error_message
 
     def add_suites(self, project_id: int) -> Tuple[List[Dict], str]:
