@@ -8,10 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.11.0]
 
-_released 07-18-2025
+_released 07-30-2025
 
 ### Added
  - Added feature to optionally close test run using --auto-close-run in add_run command
+ - Added support for Start and End Date API changes for Test Runs and Test Plans
 
 ## [1.10.1]
 
