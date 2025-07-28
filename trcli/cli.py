@@ -65,6 +65,7 @@ class Environment:
         self.run_assigned_to_id = None
         self.run_case_ids = None
         self.run_include_all = None
+        self.auto_close_run = None
         self.run_refs = None
         self.proxy = None  # Add proxy related attributes
         self.noproxy = None
