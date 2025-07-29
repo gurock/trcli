@@ -14,6 +14,8 @@ def print_config(env: Environment):
             f"\n> Suite ID: {env.suite_id}"
             f"\n> Description: {env.run_description}"
             f"\n> Milestone ID: {env.milestone_id}"
+            f"\n> Start Date: {env.run_start_date}"
+            f"\n> End Date: {env.run_end_date}"
             f"\n> Assigned To ID: {env.run_assigned_to_id}"
             f"\n> Include All: {env.run_include_all}"
             f"\n> Case IDs: {env.run_case_ids}"
@@ -53,6 +55,20 @@ def write_run_to_file(environment: Environment, run_id: int):
     type=click.IntRange(min=1),
     metavar="",
     help="Milestone ID to which the Test Run should be associated to.",
+)
+@click.option(
+    "--run-start-date",
+    metavar="",
+    default=None,
+    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3], 
+    help="The expected or scheduled start date of this test run in MM/DD/YYYY format"
+)
+@click.option(
+    "--run-end-date",
+    metavar="",
+    default=None,
+    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3], 
+    help="The expected or scheduled end date of this test run in MM/DD/YYYY format"
 )
 @click.option(
     "--run-assigned-to-id",
