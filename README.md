@@ -298,6 +298,8 @@ Options:
   --run-description      Summary text to be added to the test run.
   --milestone-id         Milestone ID to which the Test Run should be
                          associated to.  [x>=1]
+  --run-start-date       The expected or scheduled start date of this test run in MM/DD/YYYY format
+  --run-end-date         The expected or scheduled end date of this test run in MM/DD/YYYY format
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
   --run-include-all      Use this option to include all test cases in this test run.
