@@ -67,6 +67,12 @@ def write_run_to_file(environment: Environment, run_id: int):
     help="Use this option to include all test cases in this test run."
 )
 @click.option(
+    "--auto-close-run",
+    is_flag=True,
+    default=False,
+    help="Use this option to automatically close the created run."
+)
+@click.option(
     "--run-case-ids",
     metavar="",
     type=lambda x: [int(i) for i in x.split(",")], 
