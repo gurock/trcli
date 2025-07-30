@@ -214,6 +214,8 @@ class ProjectBasedClient:
                 project_id=self.project.project_id,
                 run_name=self.run_name,
                 milestone_id=self.environment.milestone_id,
+                start_date=self.environment.run_start_date,
+                end_date=self.environment.run_end_date,
                 plan_id=self.environment.plan_id,
                 config_ids=self.environment.config_ids,
                 assigned_to_id=self.environment.run_assigned_to_id,

@@ -51,6 +51,8 @@ class Environment:
         self.plan_id = None
         self.config_ids = None
         self.milestone_id = None
+        self.run_start_date = None
+        self.run_end_date = None
         self.section_id = None
         self.auto_creation_response = None
         self.silent = None

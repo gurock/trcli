@@ -444,6 +444,25 @@ trcli -y \\
                 "Submitted 6 test results"
             ]
         )
+    
+    def test_cli_add_run_and_plan_with_due_date(self):
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run --run-include-all \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Test Run with Due Date" \\
+  --run-start-date "03/01/2030" --run-end-date "03/12/2030"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Creating test run.",
+                f"Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "title: [CLI-E2E-Tests] ADD RUN TEST: Test Run with Due Date"
+            ]
+        )
+
 
     def bug_test_cli_robot_description_bug(self):
         output = _run_cmd(f"""

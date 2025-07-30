@@ -1,6 +1,7 @@
 from beartype.typing import List, Dict, Optional
 
 from serde.json import to_dict
+from datetime import datetime, timezone
 
 from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID
 from trcli.data_classes.dataclass_testrail import TestRailSuite
@@ -66,6 +67,8 @@ class ApiDataProvider:
             self,
             run_name: Optional[str],
             case_ids=None,
+            start_date=None,
+            end_date=None,
             milestone_id=None,
             assigned_to_id=None,
             include_all=None,
@@ -93,6 +96,18 @@ class ApiDataProvider:
             "milestone_id": milestone_id,
             "case_ids": case_ids
         }
+        if isinstance(start_date, list) and start_date is not None:
+            try:
+                dt = datetime(start_date[2], start_date[0], start_date[1], tzinfo=timezone.utc)
+                body["start_on"] = int(dt.timestamp())
+            except ValueError:
+                body["start_on"] = None
+        if isinstance(end_date, list) and end_date is not None:
+            try:
+                dt = datetime(end_date[2], end_date[0], end_date[1], tzinfo=timezone.utc)
+                body["due_on"] = int(dt.timestamp())
+            except ValueError:
+                body["due_on"] = None
         if include_all is not None:
             body["include_all"] = include_all
         if assigned_to_id is not None:
