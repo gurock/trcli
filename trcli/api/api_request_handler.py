@@ -404,6 +404,8 @@ class ApiRequestHandler:
             project_id: int,
             run_name: str,
             milestone_id: int = None,
+            start_date: str = None,
+            end_date: str = None,
             plan_id: int = None,
             config_ids: List[int] = None,
             assigned_to_id: int = None,
@@ -420,6 +422,8 @@ class ApiRequestHandler:
         add_run_data = self.data_provider.add_run(
             run_name,
             case_ids=case_ids,
+            start_date=start_date,
+            end_date=end_date,
             milestone_id=milestone_id,
             assigned_to_id=assigned_to_id,
             include_all=include_all,
@@ -443,7 +447,8 @@ class ApiRequestHandler:
             run_id = response.response_text["runs"][0]["id"]
         return run_id, response.error_message
 
-    def update_run(self, run_id: int, run_name: str, milestone_id: int = None) -> Tuple[dict, str]:
+    def update_run(self, run_id: int, run_name: str, start_date: str = None,
+            end_date: str = None, milestone_id: int = None) -> Tuple[dict, str]:
         """
         Updates an existing run
         :run_id: run id
@@ -453,7 +458,8 @@ class ApiRequestHandler:
         run_response = self.client.send_get(f"get_run/{run_id}")
         existing_description = run_response.response_text.get("description", "")
 
-        add_run_data = self.data_provider.add_run(run_name, milestone_id=milestone_id)
+        add_run_data = self.data_provider.add_run(run_name, start_date=start_date,
+            end_date=end_date, milestone_id=milestone_id)
         add_run_data["description"] = existing_description  # Retain the current description
 
         run_tests, error_message = self.__get_all_tests_in_run(run_id)

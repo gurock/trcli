@@ -51,6 +51,8 @@ class Environment:
         self.plan_id = None
         self.config_ids = None
         self.milestone_id = None
+        self.run_start_date = None
+        self.run_end_date = None
         self.section_id = None
         self.auto_creation_response = None
         self.silent = None
@@ -65,6 +67,7 @@ class Environment:
         self.run_assigned_to_id = None
         self.run_case_ids = None
         self.run_include_all = None
+        self.auto_close_run = None
         self.run_refs = None
         self.proxy = None  # Add proxy related attributes
         self.noproxy = None

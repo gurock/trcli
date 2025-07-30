@@ -208,16 +208,14 @@ class TestResultsUploader:
                 2: mocker.call("Removing unnecessary empty sections that may have been created earlier. ", new_line=False),
                 3: mocker.call("Removed 1 unused/empty section(s)."),
                 4: mocker.call("Creating test run. ", new_line=False),
-                5: mocker.call("Test run: https://fake_host.com/index.php?/runs/view/100"),
-                6: mocker.call("Closing test run. ", new_line=False),
+                5: mocker.call("Closing run. ", new_line=False),
             }
         else:
             calls = {
                 2: mocker.call("Removing unnecessary empty sections that may have been created earlier. ", new_line=False),
                 3: mocker.call("Removed 1 unused/empty section(s)."),
                 4: mocker.call("Updating test run. ", new_line=False),
-                5: mocker.call("Test run: https://fake_host.com/index.php?/runs/view/101"),
-                6: mocker.call("Closing test run. ", new_line=False),
+                5: mocker.call("Closing run. ", new_line=False),
             }
 
         results_uploader.upload_results()

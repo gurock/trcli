@@ -32,7 +32,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.10.1
+TestRail CLI v1.11.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -45,7 +45,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.10.1
+TestRail CLI v1.11.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -287,7 +287,7 @@ will be used to upload all results into the same test run.
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.10.1
+TestRail CLI v1.11.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -298,9 +298,12 @@ Options:
   --run-description      Summary text to be added to the test run.
   --milestone-id         Milestone ID to which the Test Run should be
                          associated to.  [x>=1]
+  --run-start-date       The expected or scheduled start date of this test run in MM/DD/YYYY format
+  --run-end-date         The expected or scheduled end date of this test run in MM/DD/YYYY format
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
   --run-include-all      Use this option to include all test cases in this test run.
+  --auto-close-run       Use this option to automatically close the created run.
   --run-case-ids         Comma separated list of test case IDs to include in
                          the test run (i.e.: 1,2,3,4).
   --run-refs             A comma-separated list of references/requirements
@@ -326,7 +329,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.10.1
+TestRail CLI v1.11.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

@@ -214,6 +214,8 @@ class ProjectBasedClient:
                 project_id=self.project.project_id,
                 run_name=self.run_name,
                 milestone_id=self.environment.milestone_id,
+                start_date=self.environment.run_start_date,
+                end_date=self.environment.run_end_date,
                 plan_id=self.environment.plan_id,
                 config_ids=self.environment.config_ids,
                 assigned_to_id=self.environment.run_assigned_to_id,
@@ -228,6 +230,13 @@ class ProjectBasedClient:
             run, error_message = self.api_request_handler.update_run(
                 run_id, self.run_name, self.environment.milestone_id
             )
+        if self.environment.auto_close_run:
+            self.environment.log("Closing run. ", new_line=False)
+            close_run, error_message = self.api_request_handler.close_run(run_id)
+            if close_run:
+                self.environment.log("Run closed successfully.")
+            else:
+                self.environment.elog(f"Failed to close run: {error_message}")
         if error_message:
             self.environment.elog("\n" + error_message)
         else:

@@ -390,6 +390,7 @@ class TestProjectBasedClient:
             project_based_client,
         ) = project_based_client_data_provider
         environment.run_id = None
+        environment.auto_close_run = False
         api_request_handler.add_run.return_value = (1, "")
         project_based_client.resolve_project()
         run_id, error_message = project_based_client.create_or_update_test_run()
@@ -411,6 +412,7 @@ class TestProjectBasedClient:
             project_based_client,
         ) = project_based_client_data_provider
         environment.run_id = 1
+        environment.auto_close_run = False
         api_request_handler.update_run.return_value = (1, "")
         project_based_client.resolve_project()
         run_id, error_message = project_based_client.create_or_update_test_run()
