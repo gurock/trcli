@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.0]
+
+_released 08-12-2025
+
+### Added
+ - Added Label management facility for Projects, Test Runs and Test Cases
+
 ## [1.11.0]
 
 _released 07-30-2025

@@ -32,7 +32,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.11.0
+TestRail CLI v1.12.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -45,7 +45,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.11.0
+TestRail CLI v1.12.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -81,6 +81,7 @@ Options:
 
 Commands:
   add_run        Add a new test run in TestRail
+  labels         Label management facility for Projects, Test Run and Test cases
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
@@ -284,10 +285,14 @@ tests are run across parallel, independent test nodes, all nodes should report t
 First, use the `add_run` command to create a new run; then, pass the run title and id to each of the test nodes, which
 will be used to upload all results into the same test run.
 
+#### Labels Management
+
+Manage labels for **Projects**, **Test Cases**, and **Test Runs** using the `labels` command. Labels help categorize and organize your test management assets efficiently.
+
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.11.0
+TestRail CLI v1.12.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -329,7 +334,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.11.0
+TestRail CLI v1.12.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
