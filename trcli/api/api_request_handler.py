@@ -733,3 +733,85 @@ class ApiRequestHandler:
                 return entities, response.error_message
         else:
             return [], response.error_message
+
+    # Label management methods
+    def add_label(self, project_id: int, title: str) -> Tuple[dict, str]:
+        """
+        Add a new label to the project
+        :param project_id: ID of the project
+        :param title: Title of the label (max 20 characters)
+        :returns: Tuple with created label data and error string
+        """
+        # Use multipart/form-data like the working CURL command
+        files = {'title': (None, title)}
+        response = self.client.send_post(f"add_label/{project_id}", payload=None, files=files)
+        return response.response_text, response.error_message
+
+    def update_label(self, label_id: int, project_id: int, title: str) -> Tuple[dict, str]:
+        """
+        Update an existing label
+        :param label_id: ID of the label to update
+        :param project_id: ID of the project
+        :param title: New title for the label (max 20 characters)
+        :returns: Tuple with updated label data and error string
+        """
+        # Use multipart/form-data like add_label
+        files = {
+            'project_id': (None, str(project_id)),
+            'title': (None, title)  # Field name is 'title' (no colon) for form data
+        }
+        response = self.client.send_post(f"update_label/{label_id}", payload=None, files=files)
+        return response.response_text, response.error_message
+
+    def get_label(self, label_id: int) -> Tuple[dict, str]:
+        """
+        Get a specific label by ID
+        :param label_id: ID of the label to retrieve
+        :returns: Tuple with label data and error string
+        """
+        response = self.client.send_get(f"get_label/{label_id}")
+        return response.response_text, response.error_message
+
+    def get_labels(self, project_id: int, offset: int = 0, limit: int = 250) -> Tuple[dict, str]:
+        """
+        Get all labels for a project with pagination
+        :param project_id: ID of the project
+        :param offset: Offset for pagination
+        :param limit: Limit for pagination
+        :returns: Tuple with labels data (including pagination info) and error string
+        """
+        params = []
+        if offset > 0:
+            params.append(f"offset={offset}")
+        if limit != 250:
+            params.append(f"limit={limit}")
+        
+        url = f"get_labels/{project_id}"
+        if params:
+            url += "&" + "&".join(params)
+            
+        response = self.client.send_get(url)
+        return response.response_text, response.error_message
+
+    def delete_label(self, label_id: int) -> Tuple[bool, str]:
+        """
+        Delete a single label
+        :param label_id: ID of the label to delete
+        :returns: Tuple with success status and error string
+        """
+        response = self.client.send_post(f"delete_label/{label_id}", payload=None)
+        success = response.status_code == 200
+        return success, response.error_message
+
+    def delete_labels(self, label_ids: List[int]) -> Tuple[bool, str]:
+        """
+        Delete multiple labels
+        :param label_ids: List of label IDs to delete
+        :returns: Tuple with success status and error string
+        """
+        # Send as form data with correct parameter name
+        label_ids_str = ",".join(map(str, label_ids))
+        files = {"label_id": (None, label_ids_str)}  # Note: parameter is 'label_id' not 'label_ids'
+        response = self.client.send_post("delete_labels", payload=None, files=files)
+        success = response.status_code == 200
+        return success, response.error_message
