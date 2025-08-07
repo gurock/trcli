@@ -811,7 +811,7 @@ class ApiRequestHandler:
         """
         # Send as form data with correct parameter name
         label_ids_str = ",".join(map(str, label_ids))
-        files = {"label_id": (None, label_ids_str)}  # Note: parameter is 'label_id' not 'label_ids'
+        files = {"label_ids": (None, label_ids_str)}
         response = self.client.send_post("delete_labels", payload=None, files=files)
         success = response.status_code == 200
         return success, response.error_message

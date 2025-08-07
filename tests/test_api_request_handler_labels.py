@@ -273,7 +273,7 @@ class TestApiRequestHandlerLabels:
             labels_handler.client.send_post.assert_called_once_with(
                 "delete_labels",
                 payload=None,
-                files={"label_id": (None, "1,2,3")}
+                files={"label_ids": (None, "1,2,3")}
             )
 
     def test_delete_label_single_id(self, labels_handler):
@@ -312,7 +312,7 @@ class TestApiRequestHandlerLabels:
             labels_handler.client.send_post.assert_called_once_with(
                 "delete_labels",
                 payload=None,
-                files={"label_id": (None, "1,2,3")}
+                files={"label_ids": (None, "1,2,3")}
             )
 
     def test_delete_labels_api_error(self, labels_handler):
