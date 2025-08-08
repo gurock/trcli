@@ -163,6 +163,7 @@ class TestApiRequestHandler:
             "offset": 0,
             "limit": 250,
             "size": 2,
+            "_links": {"next": None, "prev": None},
             "suites": [
                 {"id": 4, "name": "Suite1", "description": "Test1", "project_id": 3},
                 {"id": 5, "name": "Suite2", "description": "Test2", "project_id": 3},

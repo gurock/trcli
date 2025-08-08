@@ -122,28 +122,27 @@ class ApiRequestHandler:
                 error_message=error,
             )
 
-    def check_suite_id(self, project_id: int) -> (bool, str):
+    def check_suite_id(self, project_id: int) -> Tuple[bool, str]:
         """
         Check if suite from DataProvider exist using get_suites endpoint
         :project_id: project id
         :returns: True if exists in suites. False if not.
         """
         suite_id = self.suites_data_from_provider.suite_id
-        response = self.client.send_get(f"get_suites/{project_id}")
-        if not response.error_message:
-            try:
-                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
-                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
-                available_suites = [suite["id"] for suite in suite_list]
-                return (
-                    (True, "")
-                    if suite_id in available_suites
-                    else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
-                )
-            except Exception as e:
-                return None, f"Error parsing suites response: {e}"
+        suites_data, error = self.__get_all_suites(project_id)
+        if not error:
+            available_suites = [
+                suite
+                for suite in suites_data
+                if suite["id"] == suite_id
+            ]
+            return (
+                (True, "")
+                if len(available_suites) > 0
+                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+            )
         else:
-            return None, response.error_message
+            return None, suites_data.error_message
 
     def resolve_suite_id_using_name(self, project_id: int) -> Tuple[int, str]:
         """Get suite ID matching suite name on data provider or returns -1 if unable to match any suite.
@@ -707,9 +706,15 @@ class ApiRequestHandler:
 
     def __get_all_projects(self) -> Tuple[List[dict], str]:
         """
-        Get all cases from all pages
+        Get all projects from all pages
         """
         return self.__get_all_entities('projects', f"get_projects")
+
+    def __get_all_suites(self, project_id) -> Tuple[List[dict], str]:
+        """
+        Get all suites from all pages
+        """
+        return self.__get_all_entities('suites', f"get_suites/{project_id}")
 
     def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[Dict], str]:
         """
