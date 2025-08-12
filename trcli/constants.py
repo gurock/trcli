@@ -63,7 +63,8 @@ FAULT_MAPPING = dict(
     proxy_bypass_error= "Failed to bypass the proxy for host. Please check the settings.",
     proxy_invalid_configuration= "The provided proxy configuration is invalid. Please check the proxy URL and format.",
     ssl_error_on_proxy= "SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
-    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy."
+    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy.",
+    no_suites_found= "The project {project_id} does not have any suites."
 )
 
 COMMAND_FAULT_MAPPING = dict(

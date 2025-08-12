@@ -550,18 +550,82 @@ class TestApiRequestHandler:
         assert error == "", "No error should have occurred"
 
     @pytest.mark.api_handler
-    def test_get_suites_id(self, api_request_handler: ApiRequestHandler, requests_mock):
+    def test_get_suite_ids(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
         mocked_response = [
             {"id": 100, "name": "Master"},
+            {"id": 101, "name": "Smoke"},
         ]
 
         requests_mock.get(create_url(f"get_suites/{project_id}"), json=mocked_response)
         resources_added, error = api_request_handler.get_suite_ids(project_id)
         assert (
-            resources_added[0] == mocked_response[0]["id"]
+            resources_added[0] == mocked_response[0]["id"] and
+            resources_added[1] == mocked_response[1]["id"]
         ), "ID in response doesn't match mocked response"
-        assert error == "", "Error occurred in get_suite_ids"
+
+    @pytest.mark.api_handler
+    def test_get_suite_ids_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+        
+        requests_mock.get(
+            create_url(f"get_suites/{project_id}"), exc=requests.exceptions.ConnectTimeout
+        )
+        
+        suite_ids, error = api_request_handler.get_suite_ids(project_id)
+        
+        assert suite_ids == [], "Should return empty list on API error"
+        assert error == "Your upload to TestRail did not receive a successful response from your TestRail Instance." \
+                    " Please check your settings and try again.", "Should return connection error message"
+
+    @pytest.mark.api_handler
+    def test_resolve_suite_id_using_name(
+        self, api_request_handler: ApiRequestHandler, requests_mock, mocker
+    ):
+        project_id = 3
+        suite_name = "Suite2"
+        api_request_handler.suites_data_from_provider.name = suite_name
+
+        update_data_mock = mocker.patch('trcli.api.api_request_handler.ApiDataProvider.update_data')
+
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "suites": [
+                {"id": 4, "name": "Suite1", "description": "Test1", "project_id": 3},
+                {"id": 5, "name": "Suite2", "description": "Test2", "project_id": 3},
+            ]
+        }
+        
+        requests_mock.get(create_url(f"get_suites/{project_id}"), json=mocked_response)
+        
+        suite_id, error = api_request_handler.resolve_suite_id_using_name(project_id)
+        
+        assert suite_id == 5, "Should return the correct suite ID for matching name with pagination"
+        assert error == "", "Should have no error message"
+        
+        update_data_mock.assert_called_once_with([{"suite_id": 5, "name": "Suite2"}])
+
+    @pytest.mark.api_handler
+    def test_resolve_suite_id_using_name_error(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        project_id = 3
+
+        requests_mock.get(
+            create_url(f"get_suites/{project_id}"), exc=requests.exceptions.ConnectTimeout
+        )
+
+        suite_id, error = api_request_handler.resolve_suite_id_using_name(project_id)
+
+        assert suite_id == -1, "Should return -1 on API error"
+        assert error == "Your upload to TestRail did not receive a successful response from your TestRail Instance." \
+                    " Please check your settings and try again.", "Should return connection error message"
+
 
     @pytest.mark.api_handler
     def test_return_project_error(
