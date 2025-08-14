@@ -346,3 +346,284 @@ class TestCmdLabels:
                 "\n> Project: Test Project"
             )
             mock_log.assert_called_once_with(expected_message) 
+
+
+class TestLabelsCasesCommands:
+    """Test cases for test case label CLI commands"""
+    
+    def setup_method(self):
+        """Set up test fixtures"""
+        self.runner = CliRunner()
+        self.environment = Environment()
+        
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_cases_success(self, mock_project_client):
+        """Test successful addition of labels to test cases"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.suite.suite_id = None
+        mock_client_instance.api_request_handler.add_labels_to_cases.return_value = (
+            {
+                'successful_cases': [
+                    {'case_id': 1, 'message': "Successfully added label 'test-label' to case 1"},
+                    {'case_id': 2, 'message': "Successfully added label 'test-label' to case 2"}
+                ],
+                'failed_cases': [],
+                'max_labels_reached': [],
+                'case_not_found': []
+            },
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1,2', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_labels_to_cases.assert_called_once_with(
+                case_ids=[1, 2],
+                title='test-label',
+                project_id=1,
+                suite_id=None
+            )
+            
+            # Verify success messages were logged
+            mock_log.assert_any_call("Successfully processed 2 case(s):")
+            mock_log.assert_any_call("  Case 1: Successfully added label 'test-label' to case 1")
+            mock_log.assert_any_call("  Case 2: Successfully added label 'test-label' to case 2")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_cases_with_max_labels_reached(self, mock_project_client):
+        """Test addition of labels with some cases reaching maximum labels"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.api_request_handler.add_labels_to_cases.return_value = (
+            {
+                'successful_cases': [
+                    {'case_id': 1, 'message': "Successfully added label 'test-label' to case 1"}
+                ],
+                'failed_cases': [],
+                'max_labels_reached': [2, 3],
+                'case_not_found': []
+            },
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1,2,3', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            
+            # Verify warning messages were logged
+            mock_log.assert_any_call("Warning: 2 case(s) already have maximum labels (10):")
+            mock_log.assert_any_call("  Case 2: Maximum labels reached")
+            mock_log.assert_any_call("  Case 3: Maximum labels reached")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_cases_title_too_long(self, mock_project_client):
+        """Test title length validation"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1', '--title', 'this-title-is-way-too-long-for-testrail'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Label title must be 20 characters or less.")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_cases_invalid_case_ids(self, mock_project_client):
+        """Test invalid case IDs format"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', 'invalid,ids', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_cases_case_not_found(self, mock_project_client):
+        """Test handling of non-existent case IDs"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.api_request_handler.add_labels_to_cases.return_value = (
+            {
+                'successful_cases': [
+                    {'case_id': 1, 'message': "Successfully added label 'test-label' to case 1"}
+                ],
+                'failed_cases': [],
+                'max_labels_reached': [],
+                'case_not_found': [999, 1000]
+            },
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1,999,1000', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            
+            # Verify error messages were logged
+            mock_elog.assert_any_call("Error: 2 test case(s) not found:")
+            mock_elog.assert_any_call("  Case ID 999 does not exist in the project")
+            mock_elog.assert_any_call("  Case ID 1000 does not exist in the project")
+            
+            # Verify success messages were still logged
+            mock_log.assert_any_call("Successfully processed 1 case(s):")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_cases_by_label_ids_success(self, mock_project_client):
+        """Test successful listing of cases by label IDs"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.suite = None
+        mock_client_instance.api_request_handler.get_cases_by_label.return_value = (
+            [
+                {
+                    'id': 1, 
+                    'title': 'Test Case 1', 
+                    'labels': [{'id': 5, 'title': 'test-label'}]
+                },
+                {
+                    'id': 2, 
+                    'title': 'Test Case 2', 
+                    'labels': [{'id': 5, 'title': 'test-label'}, {'id': 6, 'title': 'other-label'}]
+                }
+            ],
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['list', '--ids', '5'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.get_cases_by_label.assert_called_once_with(
+                project_id=1,
+                suite_id=None,
+                label_ids=[5],
+                label_title=None
+            )
+            
+            # Verify cases were logged
+            mock_log.assert_any_call("Found 2 matching test case(s):")
+            mock_log.assert_any_call("  Case ID: 1, Title: 'Test Case 1' [Labels: ID:5,Title:'test-label']")
+            mock_log.assert_any_call("  Case ID: 2, Title: 'Test Case 2' [Labels: ID:5,Title:'test-label'; ID:6,Title:'other-label']")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_cases_by_label_title_success(self, mock_project_client):
+        """Test successful listing of cases by label title"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.suite = None
+        mock_client_instance.api_request_handler.get_cases_by_label.return_value = (
+            [
+                {
+                    'id': 1, 
+                    'title': 'Test Case 1', 
+                    'labels': [{'id': 5, 'title': 'test-label'}]
+                }
+            ],
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['list', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.get_cases_by_label.assert_called_once_with(
+                project_id=1,
+                suite_id=None,
+                label_ids=None,
+                label_title='test-label'
+            )
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_cases_no_filter_provided(self, mock_project_client):
+        """Test error when neither ids nor title is provided"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['list'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Either --ids or --title must be provided.")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_cases_no_matching_cases(self, mock_project_client):
+        """Test listing when no cases match the label"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.suite = None
+        mock_client_instance.api_request_handler.get_cases_by_label.return_value = ([], "")
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['list', '--title', 'non-existent'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_log.assert_any_call("Found 0 matching test case(s):")
+            mock_log.assert_any_call("  No test cases found with label title 'non-existent'.")
+    
+ 
