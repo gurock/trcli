@@ -222,4 +222,151 @@ def get(environment: Environment, context: click.Context, label_id: int, *args, 
             environment.log(f"  Created on: {label_info.get('created_on', 'N/A')}")
         else:
             environment.elog(f"Unexpected response format: {label_data}")
-            exit(1) 
+            exit(1)
+
+
+@cli.group()
+@click.pass_context
+@pass_environment
+def cases(environment: Environment, context: click.Context, *args, **kwargs):
+    """Manage labels for test cases"""
+    pass
+
+
+@cases.command(name='add')
+@click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
+@click.option("--title", required=True, metavar="", help="Title of the label to add (max 20 characters).")
+@click.pass_context
+@pass_environment
+def add_to_cases(environment: Environment, context: click.Context, case_ids: str, title: str, *args, **kwargs):
+    """Add a label to test cases"""
+    environment.check_for_required_parameters()
+    print_config(environment, "Add Cases")
+    
+    if len(title) > 20:
+        environment.elog("Error: Label title must be 20 characters or less.")
+        exit(1)
+    
+    try:
+        case_id_list = [int(id.strip()) for id in case_ids.split(",")]
+    except ValueError:
+        environment.elog("Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).")
+        exit(1)
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    environment.log(f"Adding label '{title}' to {len(case_id_list)} test case(s)...")
+    
+    results, error_message = project_client.api_request_handler.add_labels_to_cases(
+        case_ids=case_id_list,
+        title=title,
+        project_id=project_client.project.project_id,
+        suite_id=environment.suite_id
+    )
+    
+    if error_message:
+        environment.elog(f"Failed to add labels to cases: {error_message}")
+        exit(1)
+    else:
+        # Report results
+        successful_cases = results.get('successful_cases', [])
+        failed_cases = results.get('failed_cases', [])
+        max_labels_reached = results.get('max_labels_reached', [])
+        case_not_found = results.get('case_not_found', [])
+        
+        if case_not_found:
+            environment.elog(f"Error: {len(case_not_found)} test case(s) not found:")
+            for case_id in case_not_found:
+                environment.elog(f"  Case ID {case_id} does not exist in the project")
+        
+        if successful_cases:
+            environment.log(f"Successfully processed {len(successful_cases)} case(s):")
+            for case_result in successful_cases:
+                environment.log(f"  Case {case_result['case_id']}: {case_result['message']}")
+        
+        if max_labels_reached:
+            environment.log(f"Warning: {len(max_labels_reached)} case(s) already have maximum labels (10):")
+            for case_id in max_labels_reached:
+                environment.log(f"  Case {case_id}: Maximum labels reached")
+        
+        if failed_cases:
+            environment.log(f"Failed to process {len(failed_cases)} case(s):")
+            for case_result in failed_cases:
+                environment.log(f"  Case {case_result['case_id']}: {case_result['error']}")
+        
+        # Exit with error if there were invalid case IDs
+        if case_not_found:
+            exit(1)
+
+
+@cases.command(name='list')
+@click.option("--ids", metavar="", help="Comma-separated list of label IDs to filter by (e.g., 1,2,3).")
+@click.option("--title", metavar="", help="Label title to filter by (max 20 characters).")
+@click.pass_context
+@pass_environment
+def list_cases(environment: Environment, context: click.Context, ids: str, title: str, *args, **kwargs):
+    """List test cases filtered by label ID or title"""
+    environment.check_for_required_parameters()
+    
+    # Validate that either ids or title is provided
+    if not ids and not title:
+        environment.elog("Error: Either --ids or --title must be provided.")
+        exit(1)
+    
+    if title and len(title) > 20:
+        environment.elog("Error: Label title must be 20 characters or less.")
+        exit(1)
+    
+    print_config(environment, "List Cases by Label")
+    
+    label_ids = None
+    if ids:
+        try:
+            label_ids = [int(id.strip()) for id in ids.split(",")]
+        except ValueError:
+            environment.elog("Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3).")
+            exit(1)
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    if title:
+        environment.log(f"Retrieving test cases with label title '{title}'...")
+    else:
+        environment.log(f"Retrieving test cases with label IDs: {', '.join(map(str, label_ids))}...")
+    
+    matching_cases, error_message = project_client.api_request_handler.get_cases_by_label(
+        project_id=project_client.project.project_id,
+        suite_id=environment.suite_id,
+        label_ids=label_ids,
+        label_title=title
+    )
+    
+    if error_message:
+        environment.elog(f"Failed to retrieve cases: {error_message}")
+        exit(1)
+    else:
+        environment.log(f"Found {len(matching_cases)} matching test case(s):")
+        environment.log("")
+        
+        if matching_cases:
+            for case in matching_cases:
+                case_labels = case.get('labels', [])
+                label_info = []
+                for label in case_labels:
+                    label_info.append(f"ID:{label.get('id')},Title:'{label.get('title')}'")
+                
+                labels_str = f" [Labels: {'; '.join(label_info)}]" if label_info else " [No labels]"
+                environment.log(f"  Case ID: {case['id']}, Title: '{case['title']}'{labels_str}")
+        else:
+            if title:
+                environment.log(f"  No test cases found with label title '{title}'.")
+            else:
+                environment.log(f"  No test cases found with the specified label IDs.") 

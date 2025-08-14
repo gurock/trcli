@@ -691,7 +691,10 @@ class ApiRequestHandler:
         """
         Get all cases from all pages
         """
-        return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
+        if suite_id is None:
+            return self.__get_all_entities('cases', f"get_cases/{project_id}")
+        else:
+            return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
 
     def __get_all_sections(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
@@ -815,3 +818,230 @@ class ApiRequestHandler:
         response = self.client.send_post("delete_labels", payload=None, files=files)
         success = response.status_code == 200
         return success, response.error_message
+
+    def add_labels_to_cases(self, case_ids: List[int], title: str, project_id: int, suite_id: int = None) -> Tuple[dict, str]:
+        """
+        Add a label to multiple test cases
+        
+        :param case_ids: List of test case IDs
+        :param title: Label title (max 20 characters)
+        :param project_id: Project ID for validation
+        :param suite_id: Suite ID (optional)
+        :returns: Tuple with response data and error string
+        """
+        # Initialize results structure
+        results = {
+            'successful_cases': [], 
+            'failed_cases': [], 
+            'max_labels_reached': [],
+            'case_not_found': []
+        }
+        
+        # Check if project is multi-suite by getting all cases without suite_id
+        all_cases_no_suite, error_message = self.__get_all_cases(project_id, None)
+        if error_message:
+            return results, error_message
+            
+        # Check if project has multiple suites
+        suite_ids = set()
+        for case in all_cases_no_suite:
+            if 'suite_id' in case and case['suite_id']:
+                suite_ids.add(case['suite_id'])
+        
+        # If project has multiple suites and no suite_id provided, require it
+        if len(suite_ids) > 1 and suite_id is None:
+            return results, "This project is multisuite, suite id is required"
+        
+        # Get all cases to validate that the provided case IDs exist
+        all_cases, error_message = self.__get_all_cases(project_id, suite_id)
+        if error_message:
+            return results, error_message
+        
+        # Create a set of existing case IDs for quick lookup
+        existing_case_ids = {case['id'] for case in all_cases}
+        
+        # Validate case IDs and separate valid from invalid ones
+        invalid_case_ids = [case_id for case_id in case_ids if case_id not in existing_case_ids]
+        valid_case_ids = [case_id for case_id in case_ids if case_id in existing_case_ids]
+        
+        # Record invalid case IDs
+        for case_id in invalid_case_ids:
+            results['case_not_found'].append(case_id)
+        
+        # If no valid case IDs, return early
+        if not valid_case_ids:
+            return results, ""
+        
+        # Check if label exists or create it
+        existing_labels, error_message = self.get_labels(project_id)
+        if error_message:
+            return results, error_message
+            
+        # Find existing label with the same title
+        label_id = None
+        for label in existing_labels.get('labels', []):
+            if label.get('title') == title:
+                label_id = label.get('id')
+                break
+        
+        # Create label if it doesn't exist
+        if label_id is None:
+            label_data, error_message = self.add_label(project_id, title)
+            if error_message:
+                return results, error_message
+            label_info = label_data.get('label', label_data)
+            label_id = label_info.get('id')
+        
+        # Collect case data and validate constraints
+        cases_to_update = []
+        for case_id in valid_case_ids:
+            # Get current case to check existing labels
+            case_response = self.client.send_get(f"get_case/{case_id}")
+            if case_response.status_code != 200:
+                results['failed_cases'].append({
+                    'case_id': case_id,
+                    'error': f"Could not retrieve case {case_id}: {case_response.error_message}"
+                })
+                continue
+            
+            case_data = case_response.response_text
+            current_labels = case_data.get('labels', [])
+            
+            # Check if label already exists on this case
+            if any(label.get('id') == label_id for label in current_labels):
+                results['successful_cases'].append({
+                    'case_id': case_id,
+                    'message': f"Label '{title}' already exists on case {case_id}"
+                })
+                continue
+            
+            # Check maximum labels limit (10)
+            if len(current_labels) >= 10:
+                results['max_labels_reached'].append(case_id)
+                continue
+            
+            # Prepare case for update
+            existing_label_ids = [label.get('id') for label in current_labels if label.get('id')]
+            updated_label_ids = existing_label_ids + [label_id]
+            cases_to_update.append({
+                'case_id': case_id,
+                'labels': updated_label_ids
+            })
+        
+        # Update cases using appropriate endpoint
+        if len(cases_to_update) == 1:
+            # Single case: use update_case/{case_id}
+            case_info = cases_to_update[0]
+            case_update_data = {'labels': case_info['labels']}
+            
+            update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
+            
+            if update_response.status_code == 200:
+                results['successful_cases'].append({
+                    'case_id': case_info['case_id'],
+                    'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
+                })
+            else:
+                results['failed_cases'].append({
+                    'case_id': case_info['case_id'],
+                    'error': update_response.error_message
+                })
+        elif len(cases_to_update) > 1:
+            # Multiple cases: use update_cases/{suite_id}
+            # Need to determine suite_id from the cases
+            case_suite_id = suite_id
+            if not case_suite_id:
+                # Get suite_id from the first case if not provided
+                first_case = all_cases[0] if all_cases else None
+                case_suite_id = first_case.get('suite_id') if first_case else None
+            
+            if not case_suite_id:
+                # Fall back to individual updates if no suite_id available
+                for case_info in cases_to_update:
+                    case_update_data = {'labels': case_info['labels']}
+                    update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
+                    
+                    if update_response.status_code == 200:
+                        results['successful_cases'].append({
+                            'case_id': case_info['case_id'],
+                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
+                        })
+                    else:
+                        results['failed_cases'].append({
+                            'case_id': case_info['case_id'],
+                            'error': update_response.error_message
+                        })
+            else:
+                # Batch update using update_cases/{suite_id}
+                batch_update_data = {
+                    'case_ids': [case_info['case_id'] for case_info in cases_to_update],
+                    'labels': cases_to_update[0]['labels']  # Assuming same labels for all cases
+                }
+                
+                batch_response = self.client.send_post(f"update_cases/{case_suite_id}", payload=batch_update_data)
+                
+                if batch_response.status_code == 200:
+                    for case_info in cases_to_update:
+                        results['successful_cases'].append({
+                            'case_id': case_info['case_id'],
+                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
+                        })
+                else:
+                    # If batch update fails, fall back to individual updates
+                    for case_info in cases_to_update:
+                        case_update_data = {'labels': case_info['labels']}
+                        update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
+                        
+                        if update_response.status_code == 200:
+                            results['successful_cases'].append({
+                                'case_id': case_info['case_id'],
+                                'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
+                            })
+                        else:
+                            results['failed_cases'].append({
+                                'case_id': case_info['case_id'],
+                                'error': update_response.error_message
+                            })
+        
+        return results, ""
+
+    def get_cases_by_label(self, project_id: int, suite_id: int = None, label_ids: List[int] = None, label_title: str = None) -> Tuple[List[dict], str]:
+        """
+        Get test cases filtered by label ID or title
+        
+        :param project_id: Project ID
+        :param suite_id: Suite ID (optional)
+        :param label_ids: List of label IDs to filter by
+        :param label_title: Label title to filter by
+        :returns: Tuple with list of matching cases and error string
+        """
+        # Get all cases first
+        all_cases, error_message = self.__get_all_cases(project_id, suite_id)
+        if error_message:
+            return [], error_message
+        
+        # If filtering by title, first get the label ID
+        target_label_ids = label_ids or []
+        if label_title and not target_label_ids:
+            labels_data, error_message = self.get_labels(project_id)
+            if error_message:
+                return [], error_message
+            
+            for label in labels_data.get('labels', []):
+                if label.get('title') == label_title:
+                    target_label_ids.append(label.get('id'))
+            
+            if not target_label_ids:
+                return [], ""  # No label found is a valid case with 0 results
+        
+        # Filter cases that have any of the target labels
+        matching_cases = []
+        for case in all_cases:
+            case_labels = case.get('labels', [])
+            case_label_ids = [label.get('id') for label in case_labels]
+            
+            # Check if any of the target label IDs are present in this case
+            if any(label_id in case_label_ids for label_id in target_label_ids):
+                matching_cases.append(case)
+        
+        return matching_cases, ""
