@@ -39,8 +39,7 @@ post_run_bodies = {
     "description": "logging: True\ndebug: False",
     "name": "test run",
     "suite_id": 123,
-    "case_ids": [60, 4],
-    "milestone_id": None
+    "case_ids": [60, 4]
 }
 
 post_run_full_body = {
@@ -48,7 +47,6 @@ post_run_full_body = {
     "name": "test run",
     "suite_id": 123,
     "case_ids": [60, 4],
-    "milestone_id": None,
     "assignedto_id": 1,
     "include_all": True,
     "refs": "SAN-1, SAN-2"
