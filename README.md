@@ -291,11 +291,12 @@ will be used to upload all results into the same test run.
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
 
-The TestRail CLI supports two types of label management:
+The TestRail CLI supports three types of label management:
 - **Project Labels**: Manage labels at the project level
-- **Test Case Labels**: Apply labels to specific test cases for better organization and filtering
+- **Test Case Labels**: Apply labels to specific test cases for better organization and filtering  
+- **Test Labels**: Apply labels to specific tests (instances of test cases within test runs) for execution management
 
-Both types of labels support full CRUD (Create, Read, Update, Delete) operations with comprehensive validation and error handling.
+All types of labels support comprehensive operations with validation and error handling. Project labels support full CRUD operations, while test case and test labels focus on assignment and retrieval operations.
 
 ##### Reference
 ```shell
@@ -313,6 +314,7 @@ Commands:
   delete  Delete labels from TestRail
   get     Get a specific label by ID
   list    List all labels in the project
+  tests   Manage labels for tests
   update  Update an existing label in TestRail
 ```
 
@@ -673,6 +675,217 @@ Options:
 - **Filter Requirements**: Either `--ids` or `--title` must be provided for list command
 - **Label Creation**: Labels are automatically created if they don't exist when adding to cases
 - **Duplicate Prevention**: Adding an existing label to a case is handled gracefully
+
+#### Test Labels
+
+The TestRail CLI also supports **test label management** through the `labels tests` command. This functionality allows you to assign labels to specific tests (instances of test cases within test runs), providing powerful organization and filtering capabilities for your test execution.
+
+###### Test Label Features
+- **Add labels to tests**: Apply existing or new labels to one or multiple tests
+- **CSV file support**: Bulk assign labels using CSV files containing test IDs
+- **List tests by labels**: Find tests that have specific labels applied
+- **Get test labels**: Retrieve all labels assigned to specific tests
+- **Automatic label creation**: Labels are created automatically if they don't exist when adding to tests
+- **Maximum label validation**: Enforces TestRail's limit of 10 labels per test
+- **Flexible filtering**: Search by label ID for efficient test management
+
+###### Reference
+```shell
+$ trcli labels tests --help
+Usage: trcli labels tests [OPTIONS] COMMAND [ARGS]...
+
+  Manage labels for tests
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add   Add a label to tests
+  list  List tests filtered by label ID
+  get   Get the labels of tests using test IDs
+```
+
+###### Adding Labels to Tests
+Apply labels to one or multiple tests. If the label doesn't exist, it will be created automatically.
+
+```shell
+# Add a label to a single test
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests add --test-ids 123 --title "Regression"
+
+# Add a label to multiple tests
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests add --test-ids "123,124,125" --title "Critical"
+
+# Add a label to tests using CSV file
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests add --test-id-file test_ids.csv --title "Sprint-42"
+```
+
+**CSV File Format:**
+The CSV file should contain test IDs, one per row or comma-separated. Headers are automatically detected and skipped.
+```csv
+test_id
+123
+124
+125
+```
+
+Or simple format:
+```csv
+123,124,125
+```
+
+###### Listing Tests by Labels
+Find tests that have specific labels applied by label ID.
+
+```shell
+# List tests by label ID
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests list --ids 123
+
+# List tests by multiple label IDs
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests list --ids "123,124,125"
+```
+
+**Output example:**
+```
+Retrieving tests with label IDs: 123...
+Found 2 matching test(s):
+
+  Test ID: 1001, Title: 'Login functionality test', Status: 1 [Labels: ID:123,Title:'Regression'; ID:124,Title:'Critical']
+  Test ID: 1002, Title: 'Password validation test', Status: 2 [Labels: ID:123,Title:'Regression']
+```
+
+###### Getting Test Labels
+Retrieve all labels assigned to specific tests.
+
+```shell
+# Get labels for a single test
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests get --test-id 123
+
+# Get labels for multiple tests
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels tests get --test-id "123,124,125"
+```
+
+**Output example:**
+```
+Retrieving labels for 2 test(s)...
+Test label information:
+
+  Test ID: 123
+    Title: 'Login functionality test'
+    Status: 1
+    Labels (2):
+      - ID: 5, Title: 'Regression'
+      - ID: 7, Title: 'Critical'
+
+  Test ID: 124
+    Title: 'Password validation test'
+    Status: 2
+    Labels: No labels assigned
+```
+
+###### Command Options Reference
+
+**Add Tests Command:**
+```shell
+$ trcli labels tests add --help
+Options:
+  --test-ids      Comma-separated list of test IDs (e.g., 1,2,3)
+  --test-id-file  CSV file containing test IDs
+  --title         Title of the label to add (max 20 characters) [required]
+  --help          Show this message and exit.
+```
+
+**List Tests Command:**
+```shell
+$ trcli labels tests list --help
+Options:
+  --ids   Comma-separated list of label IDs to filter by [required]
+  --help  Show this message and exit.
+```
+
+**Get Tests Command:**
+```shell
+$ trcli labels tests get --help
+Options:
+  --test-id  Comma-separated list of test IDs (e.g., 1,2,3) [required]
+  --help     Show this message and exit.
+```
+
+###### Validation Rules
+
+**Test Label Management includes these validations:**
+
+- **Label Title**: Maximum 20 characters (same as project and case labels)
+- **Test IDs**: Must be valid integers in comma-separated format
+- **Maximum Labels**: Each test can have maximum 10 labels
+- **Input Requirements**: Either `--test-ids` or `--test-id-file` must be provided for add command
+- **Label Creation**: Labels are automatically created if they don't exist when adding to tests
+- **Duplicate Prevention**: Adding an existing label to a test is handled gracefully
+- **CSV File Validation**: Invalid entries in CSV files are ignored with warnings
+
+###### Common Use Cases
+
+**1. Test Execution Categorization**
+```shell
+# Label tests by execution type
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "API Tests" \
+  labels tests add --test-ids "1001,1002,1003" --title "Smoke"
+
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "API Tests" \
+  labels tests add --test-ids "1004,1005" --title "Integration"
+```
+
+**2. Release Management**
+```shell
+# Label tests for specific releases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Mobile App" \
+  labels tests add --test-ids "2001,2002,2003" --title "Release-2.0"
+
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Mobile App" \
+  labels tests add --test-id-file hotfix_tests.csv --title "Hotfix-2.1.3"
+```
+
+**3. Priority and Risk Assessment**
+```shell
+# Label tests by priority
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "E-Commerce" \
+  labels tests add --test-ids "3001,3002" --title "P0-Critical"
+
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "E-Commerce" \
+  labels tests add --test-ids "3003,3004,3005" --title "P1-High"
+```
+
+**4. Test Analysis and Reporting**
+```shell
+# Find all regression tests
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Web App" \
+  labels tests list --ids 5
+
+# Get detailed label information for failed tests
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Web App" \
+  labels tests get --test-id "4001,4002,4003"
+```
 
 ### Reference
 ```shell
