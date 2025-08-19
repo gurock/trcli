@@ -1045,3 +1045,248 @@ class ApiRequestHandler:
                 matching_cases.append(case)
         
         return matching_cases, ""
+
+    def add_labels_to_tests(self, test_ids: List[int], title: str, project_id: int) -> Tuple[dict, str]:
+        """
+        Add a label to multiple tests
+        
+        :param test_ids: List of test IDs
+        :param title: Label title (max 20 characters)
+        :param project_id: Project ID for validation
+        :returns: Tuple with response data and error string
+        """
+        # Initialize results structure
+        results = {
+            'successful_tests': [], 
+            'failed_tests': [], 
+            'max_labels_reached': [],
+            'test_not_found': []
+        }
+        
+        # Validate test IDs by getting run information for each test
+        valid_test_ids = []
+        for test_id in test_ids:
+            # Get test information to validate it exists
+            test_response = self.client.send_get(f"get_test/{test_id}")
+            if test_response.status_code != 200:
+                results['test_not_found'].append(test_id)
+                continue
+            
+            test_data = test_response.response_text
+            # Validate that the test belongs to the correct project
+            run_id = test_data.get('run_id')
+            if run_id:
+                run_response = self.client.send_get(f"get_run/{run_id}")
+                if run_response.status_code == 200:
+                    run_data = run_response.response_text
+                    if run_data.get('project_id') == project_id:
+                        valid_test_ids.append(test_id)
+                    else:
+                        results['test_not_found'].append(test_id)
+                else:
+                    results['test_not_found'].append(test_id)
+            else:
+                results['test_not_found'].append(test_id)
+        
+        # If no valid test IDs, return early
+        if not valid_test_ids:
+            return results, ""
+        
+        # Check if label exists or create it
+        existing_labels, error_message = self.get_labels(project_id)
+        if error_message:
+            return results, error_message
+            
+        # Find existing label with the same title
+        label_id = None
+        for label in existing_labels.get('labels', []):
+            if label.get('title') == title:
+                label_id = label.get('id')
+                break
+        
+        # Create label if it doesn't exist
+        if label_id is None:
+            label_data, error_message = self.add_label(project_id, title)
+            if error_message:
+                return results, error_message
+            label_info = label_data.get('label', label_data)
+            label_id = label_info.get('id')
+        
+        # Collect test data and validate constraints
+        tests_to_update = []
+        for test_id in valid_test_ids:
+            # Get current test to check existing labels
+            test_response = self.client.send_get(f"get_test/{test_id}")
+            if test_response.status_code != 200:
+                results['failed_tests'].append({
+                    'test_id': test_id,
+                    'error': f"Could not retrieve test {test_id}: {test_response.error_message}"
+                })
+                continue
+            
+            test_data = test_response.response_text
+            current_labels = test_data.get('labels', [])
+            
+            # Check if label already exists on this test
+            if any(label.get('id') == label_id for label in current_labels):
+                results['successful_tests'].append({
+                    'test_id': test_id,
+                    'message': f"Label '{title}' already exists on test {test_id}"
+                })
+                continue
+            
+            # Check maximum labels limit (10)
+            if len(current_labels) >= 10:
+                results['max_labels_reached'].append(test_id)
+                continue
+            
+            # Prepare test for update
+            existing_label_ids = [label.get('id') for label in current_labels if label.get('id')]
+            updated_label_ids = existing_label_ids + [label_id]
+            tests_to_update.append({
+                'test_id': test_id,
+                'labels': updated_label_ids
+            })
+        
+        # Update tests using appropriate endpoint
+        if len(tests_to_update) == 1:
+            # Single test: use update_test/{test_id}
+            test_info = tests_to_update[0]
+            test_update_data = {'labels': test_info['labels']}
+            
+            update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
+            
+            if update_response.status_code == 200:
+                results['successful_tests'].append({
+                    'test_id': test_info['test_id'],
+                    'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
+                })
+            else:
+                results['failed_tests'].append({
+                    'test_id': test_info['test_id'],
+                    'error': update_response.error_message
+                })
+        elif len(tests_to_update) > 1:
+            # Multiple tests: use update_tests endpoint with comma-separated test IDs
+            test_ids_str = ",".join(str(test_info['test_id']) for test_info in tests_to_update)
+            batch_update_data = {
+                'test_ids': [test_info['test_id'] for test_info in tests_to_update],
+                'labels': tests_to_update[0]['labels']  # Assuming same labels for all tests
+            }
+            
+            batch_response = self.client.send_post(f"update_tests/{test_ids_str}", payload=batch_update_data)
+            
+            if batch_response.status_code == 200:
+                for test_info in tests_to_update:
+                    results['successful_tests'].append({
+                        'test_id': test_info['test_id'],
+                        'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
+                    })
+            else:
+                # If batch update fails, fall back to individual updates
+                for test_info in tests_to_update:
+                    test_update_data = {'labels': test_info['labels']}
+                    update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
+                    
+                    if update_response.status_code == 200:
+                        results['successful_tests'].append({
+                            'test_id': test_info['test_id'],
+                            'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
+                        })
+                    else:
+                        results['failed_tests'].append({
+                            'test_id': test_info['test_id'],
+                            'error': update_response.error_message
+                        })
+        
+        return results, ""
+
+    def get_tests_by_label(self, project_id: int, label_ids: List[int] = None, label_title: str = None) -> Tuple[List[dict], str]:
+        """
+        Get tests filtered by label ID or title
+        
+        :param project_id: Project ID
+        :param label_ids: List of label IDs to filter by
+        :param label_title: Label title to filter by
+        :returns: Tuple with list of matching tests and error string
+        """
+        # If filtering by title, first get the label ID
+        target_label_ids = label_ids or []
+        if label_title and not target_label_ids:
+            labels_data, error_message = self.get_labels(project_id)
+            if error_message:
+                return [], error_message
+            
+            for label in labels_data.get('labels', []):
+                if label.get('title') == label_title:
+                    target_label_ids.append(label.get('id'))
+            
+            if not target_label_ids:
+                return [], ""  # No label found is a valid case with 0 results
+        
+        # Get all runs for the project to find tests
+        runs_response = self.client.send_get(f"get_runs/{project_id}")
+        if runs_response.status_code != 200:
+            return [], runs_response.error_message
+        
+        runs_data = runs_response.response_text
+        runs = runs_data.get('runs', []) if isinstance(runs_data, dict) else runs_data
+        
+        # Collect all tests from all runs
+        matching_tests = []
+        for run in runs:
+            run_id = run.get('id')
+            if not run_id:
+                continue
+                
+            # Get tests for this run
+            tests_response = self.client.send_get(f"get_tests/{run_id}")
+            if tests_response.status_code != 200:
+                continue  # Skip this run if we can't get tests
+                
+            tests_data = tests_response.response_text
+            tests = tests_data.get('tests', []) if isinstance(tests_data, dict) else tests_data
+            
+            # Filter tests that have any of the target labels
+            for test in tests:
+                test_labels = test.get('labels', [])
+                test_label_ids = [label.get('id') for label in test_labels]
+                
+                # Check if any of the target label IDs are present in this test
+                if any(label_id in test_label_ids for label_id in target_label_ids):
+                    matching_tests.append(test)
+        
+        return matching_tests, ""
+
+    def get_test_labels(self, test_ids: List[int]) -> Tuple[List[dict], str]:
+        """
+        Get labels for specific tests
+        
+        :param test_ids: List of test IDs to get labels for
+        :returns: Tuple with list of test label information and error string
+        """
+        results = []
+        
+        for test_id in test_ids:
+            # Get test information
+            test_response = self.client.send_get(f"get_test/{test_id}")
+            if test_response.status_code != 200:
+                results.append({
+                    'test_id': test_id,
+                    'error': f"Test {test_id} not found or inaccessible",
+                    'labels': []
+                })
+                continue
+            
+            test_data = test_response.response_text
+            test_labels = test_data.get('labels', [])
+            
+            results.append({
+                'test_id': test_id,
+                'title': test_data.get('title', 'Unknown'),
+                'status_id': test_data.get('status_id'),
+                'labels': test_labels,
+                'error': None
+            })
+        
+        return results, ""

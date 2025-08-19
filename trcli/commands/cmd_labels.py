@@ -369,4 +369,274 @@ def list_cases(environment: Environment, context: click.Context, ids: str, title
             if title:
                 environment.log(f"  No test cases found with label title '{title}'.")
             else:
-                environment.log(f"  No test cases found with the specified label IDs.") 
+                environment.log(f"  No test cases found with the specified label IDs.")
+
+
+@cli.group()
+@click.pass_context
+@pass_environment
+def tests(environment: Environment, context: click.Context, *args, **kwargs):
+    """Manage labels for tests"""
+    pass
+
+
+@tests.command(name='add')
+@click.option("--test-ids", metavar="", help="Comma-separated list of test IDs (e.g., 1,2,3).")
+@click.option("--test-id-file", metavar="", help="CSV file containing test IDs.")
+@click.option("--title", required=True, metavar="", help="Title of the label to add (max 20 characters).")
+@click.pass_context
+@pass_environment
+def add_to_tests(environment: Environment, context: click.Context, test_ids: str, test_id_file: str, title: str, *args, **kwargs):
+    """Add a label to tests"""
+    environment.check_for_required_parameters()
+    print_config(environment, "Add Tests")
+    
+    if len(title) > 20:
+        environment.elog("Error: Label title must be 20 characters or less.")
+        exit(1)
+    
+    # Validate that either test_ids or test_id_file is provided
+    if not test_ids and not test_id_file:
+        environment.elog("Error: Either --test-ids or --test-id-file must be provided.")
+        exit(1)
+    
+    if test_ids and test_id_file:
+        environment.elog("Error: Cannot use both --test-ids and --test-id-file. Choose one.")
+        exit(1)
+    
+    test_id_list = []
+    
+    # Parse test IDs from command line
+    if test_ids:
+        try:
+            test_id_list = [int(id.strip()) for id in test_ids.split(",")]
+        except ValueError:
+            environment.elog("Error: Invalid test IDs format. Use comma-separated integers (e.g., 1,2,3).")
+            exit(1)
+    
+    # Parse test IDs from CSV file
+    if test_id_file:
+        import csv
+        import os
+        
+        if not os.path.exists(test_id_file):
+            environment.elog(f"Error: File '{test_id_file}' not found.")
+            exit(1)
+        
+        try:
+            with open(test_id_file, 'r', newline='', encoding='utf-8') as csvfile:
+                # Try to detect delimiter
+                sample = csvfile.read(1024)
+                csvfile.seek(0)
+                sniffer = csv.Sniffer()
+                
+                single_column_mode = False
+                try:
+                    delimiter = sniffer.sniff(sample).delimiter
+                except csv.Error:
+                    # If delimiter detection fails, check for common delimiters
+                    if ',' in sample:
+                        delimiter = ','
+                    elif ';' in sample:
+                        delimiter = ';'
+                    elif '\t' in sample:
+                        delimiter = '\t'
+                    else:
+                        # Single column file - use line-by-line reading
+                        single_column_mode = True
+                
+                if single_column_mode:
+                    # Handle single column files (no delimiters)
+                    csvfile.seek(0)
+                    lines = csvfile.readlines()
+                    for line in lines:
+                        line = line.strip()
+                        if line and not line.lower().startswith('test'):  # Skip likely headers
+                            try:
+                                test_id_list.append(int(line))
+                            except ValueError:
+                                environment.log(f"Warning: Ignoring invalid test ID '{line}' in file")
+                else:
+                    # Handle CSV files with delimiters
+                    reader = csv.reader(csvfile, delimiter=delimiter)
+                    
+                    # Skip header if it exists (check if first row contains non-numeric values)
+                    first_row = next(reader, None)
+                    if first_row:
+                        # Check if first row looks like a header
+                        try:
+                            # If we can convert all values to int, it's likely data, not header
+                            [int(val.strip()) for val in first_row if val.strip()]
+                            # Reset to beginning and don't skip
+                            csvfile.seek(0)
+                            reader = csv.reader(csvfile, delimiter=delimiter)
+                        except ValueError:
+                            # First row contains non-numeric data, likely header, so we skip it
+                            pass
+                    
+                    for row in reader:
+                        for cell in row:
+                            cell_value = cell.strip()
+                            if cell_value:  # Skip empty cells
+                                try:
+                                    test_id_list.append(int(cell_value))
+                                except ValueError:
+                                    environment.log(f"Warning: Ignoring invalid test ID '{cell_value}' in file")
+                                
+        except Exception as e:
+            environment.elog(f"Error reading CSV file: {e}")
+            exit(1)
+        
+        if not test_id_list:
+            environment.elog("Error: No valid test IDs found in the CSV file.")
+            exit(1)
+        
+        environment.log(f"Loaded {len(test_id_list)} test ID(s) from file '{test_id_file}'")
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    environment.log(f"Adding label '{title}' to {len(test_id_list)} test(s)...")
+    
+    results, error_message = project_client.api_request_handler.add_labels_to_tests(
+        test_ids=test_id_list,
+        title=title,
+        project_id=project_client.project.project_id
+    )
+    
+    if error_message:
+        environment.elog(f"Failed to add labels to tests: {error_message}")
+        exit(1)
+    else:
+        # Report results
+        successful_tests = results.get('successful_tests', [])
+        failed_tests = results.get('failed_tests', [])
+        max_labels_reached = results.get('max_labels_reached', [])
+        test_not_found = results.get('test_not_found', [])
+        
+        if test_not_found:
+            environment.log(f"Warning: {len(test_not_found)} test(s) not found or not accessible:")
+            for test_id in test_not_found:
+                environment.log(f"  Test ID {test_id} does not exist or is not accessible")
+        
+        if successful_tests:
+            environment.log(f"Successfully processed {len(successful_tests)} test(s):")
+            for test_result in successful_tests:
+                environment.log(f"  Test {test_result['test_id']}: {test_result['message']}")
+        
+        if max_labels_reached:
+            environment.log(f"Warning: {len(max_labels_reached)} test(s) already have maximum labels (10):")
+            for test_id in max_labels_reached:
+                environment.log(f"  Test {test_id}: Maximum labels reached")
+        
+        if failed_tests:
+            environment.log(f"Failed to process {len(failed_tests)} test(s):")
+            for test_result in failed_tests:
+                environment.log(f"  Test {test_result['test_id']}: {test_result['error']}")
+
+
+@tests.command(name='list')
+@click.option("--ids", required=True, metavar="", help="Comma-separated list of label IDs to filter by (e.g., 1,2,3).")
+@click.pass_context
+@pass_environment
+def list_tests(environment: Environment, context: click.Context, ids: str, *args, **kwargs):
+    """List tests filtered by label ID"""
+    environment.check_for_required_parameters()
+    print_config(environment, "List Tests by Label")
+    
+    try:
+        label_ids = [int(id.strip()) for id in ids.split(",")]
+    except ValueError:
+        environment.elog("Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3).")
+        exit(1)
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    environment.log(f"Retrieving tests with label IDs: {', '.join(map(str, label_ids))}...")
+    
+    matching_tests, error_message = project_client.api_request_handler.get_tests_by_label(
+        project_id=project_client.project.project_id,
+        label_ids=label_ids
+    )
+    
+    if error_message:
+        environment.elog(f"Failed to retrieve tests: {error_message}")
+        exit(1)
+    else:
+        environment.log(f"Found {len(matching_tests)} matching test(s):")
+        environment.log("")
+        
+        if matching_tests:
+            for test in matching_tests:
+                test_labels = test.get('labels', [])
+                label_info = []
+                for label in test_labels:
+                    label_info.append(f"ID:{label.get('id')},Title:'{label.get('title')}'")
+                
+                labels_str = f" [Labels: {'; '.join(label_info)}]" if label_info else " [No labels]"
+                status_name = test.get('status_id', 'Unknown')
+                environment.log(f"  Test ID: {test['id']}, Title: '{test.get('title', 'Unknown')}', Status: {status_name}{labels_str}")
+        else:
+            environment.log(f"  No tests found with the specified label IDs.")
+
+
+@tests.command(name='get')
+@click.option("--test-id", required=True, metavar="", help="Comma-separated list of test IDs (e.g., 1,2,3).")
+@click.pass_context
+@pass_environment
+def get_test_labels(environment: Environment, context: click.Context, test_id: str, *args, **kwargs):
+    """Get the labels of tests using test IDs"""
+    environment.check_for_required_parameters()
+    print_config(environment, "Get Test Labels")
+    
+    try:
+        test_id_list = [int(id.strip()) for id in test_id.split(",")]
+    except ValueError:
+        environment.elog("Error: Invalid test IDs format. Use comma-separated integers (e.g., 1,2,3).")
+        exit(1)
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    environment.log(f"Retrieving labels for {len(test_id_list)} test(s)...")
+    
+    test_labels, error_message = project_client.api_request_handler.get_test_labels(test_id_list)
+    
+    if error_message:
+        environment.elog(f"Failed to retrieve test labels: {error_message}")
+        exit(1)
+    else:
+        environment.log(f"Test label information:")
+        environment.log("")
+        
+        for test_info in test_labels:
+            test_id = test_info['test_id']
+            
+            if test_info.get('error'):
+                environment.log(f"  Test ID: {test_id} - Error: {test_info['error']}")
+            else:
+                test_labels = test_info.get('labels', [])
+                title = test_info.get('title', 'Unknown')
+                status_id = test_info.get('status_id', 'Unknown')
+                
+                environment.log(f"  Test ID: {test_id}")
+                environment.log(f"    Title: '{title}'")
+                environment.log(f"    Status: {status_id}")
+                
+                if test_labels:
+                    environment.log(f"    Labels ({len(test_labels)}):")
+                    for label in test_labels:
+                        environment.log(f"      - ID: {label.get('id')}, Title: '{label.get('title')}'")
+                else:
+                    environment.log(f"    Labels: No labels assigned")
+                environment.log("") 
