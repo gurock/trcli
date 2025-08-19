@@ -625,5 +625,263 @@ class TestLabelsCasesCommands:
             assert result.exit_code == 0
             mock_log.assert_any_call("Found 0 matching test case(s):")
             mock_log.assert_any_call("  No test cases found with label title 'non-existent'.")
+class TestCmdLabelsTests:
+    """Test class for test labels command functionality"""
+
+    def setup_method(self):
+        """Set up test environment"""
+        self.runner = CliRunner()
+        self.environment = Environment(cmd="labels")
+        self.environment.host = "https://test.testrail.com"
+        self.environment.username = "test@example.com"
+        self.environment.password = "password"
+        self.environment.project = "Test Project"
+        self.environment.project_id = 1
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_success(self, mock_project_client):
+        """Test successful label addition to tests"""
+        # Mock the project client and its methods
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.add_labels_to_tests.return_value = (
+            {
+                'successful_tests': [{'test_id': 1, 'message': 'Success'}],
+                'failed_tests': [],
+                'max_labels_reached': [],
+                'test_not_found': []
+            }, 
+            ""
+        )
+
+        # Mock environment methods
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1', '--title', 'Test Label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
+                test_ids=[1], title='Test Label', project_id=1
+            )
+            mock_log.assert_any_call("Successfully processed 1 test(s):")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_with_csv_file(self, mock_project_client):
+        """Test label addition to tests using CSV file"""
+        # Mock the project client
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.add_labels_to_tests.return_value = (
+            {
+                'successful_tests': [{'test_id': 1, 'message': 'Success'}, {'test_id': 2, 'message': 'Success'}],
+                'failed_tests': [],
+                'max_labels_reached': [],
+                'test_not_found': []
+            }, 
+            ""
+        )
+
+        # Create a temporary CSV file
+        with self.runner.isolated_filesystem():
+            with open('test_ids.csv', 'w') as f:
+                f.write('test_id,description\n1,Test One\n2,Test Two\n')
+            
+            # Mock environment methods
+            with patch.object(self.environment, 'log') as mock_log, \
+                 patch.object(self.environment, 'set_parameters'), \
+                 patch.object(self.environment, 'check_for_required_parameters'):
+                
+                result = self.runner.invoke(
+                    cmd_labels.tests, 
+                    ['add', '--test-id-file', 'test_ids.csv', '--title', 'Test Label'], 
+                    obj=self.environment
+                )
+                
+                assert result.exit_code == 0
+                mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
+                    test_ids=[1, 2], title='Test Label', project_id=1
+                )
+                mock_log.assert_any_call("Loaded 2 test ID(s) from file 'test_ids.csv'")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_validation_error(self, mock_project_client):
+        """Test validation error when neither test-ids nor file provided"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--title', 'Test Label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_any_call("Error: Either --test-ids or --test-id-file must be provided.")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_title_too_long(self, mock_project_client):
+        """Test validation error for title too long"""
+        long_title = "a" * 21  # 21 characters, exceeds limit
+        
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1', '--title', long_title], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_any_call("Error: Label title must be 20 characters or less.")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_tests_by_label_success(self, mock_project_client):
+        """Test successful listing of tests by label"""
+        # Mock the project client and its methods
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.get_tests_by_label.return_value = (
+            [
+                {'id': 1, 'title': 'Test 1', 'status_id': 1, 'labels': [{'id': 5, 'title': 'Test Label'}]},
+                {'id': 2, 'title': 'Test 2', 'status_id': 2, 'labels': [{'id': 5, 'title': 'Test Label'}]}
+            ], 
+            ""
+        )
+
+        # Mock environment methods
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['list', '--ids', '5'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.get_tests_by_label.assert_called_once_with(
+                project_id=1, label_ids=[5]
+            )
+            mock_log.assert_any_call("Found 2 matching test(s):")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_get_test_labels_success(self, mock_project_client):
+        """Test successful retrieval of test labels"""
+        # Mock the project client and its methods
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.get_test_labels.return_value = (
+            [
+                {
+                    'test_id': 1, 
+                    'title': 'Test 1', 
+                    'status_id': 1,
+                    'labels': [{'id': 5, 'title': 'Test Label'}],
+                    'error': None
+                }
+            ], 
+            ""
+        )
+
+        # Mock environment methods
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['get', '--test-id', '1'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.get_test_labels.assert_called_once_with([1])
+            mock_log.assert_any_call("Test label information:")
+            mock_log.assert_any_call("  Test ID: 1")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_tests_invalid_ids(self, mock_project_client):
+        """Test invalid label IDs format in list command"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['list', '--ids', 'invalid,ids'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_any_call("Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3).")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')  
+    def test_add_label_to_tests_csv_file_not_found(self, mock_project_client):
+        """Test error when CSV file is not found"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-id-file', 'nonexistent.csv', '--title', 'Test Label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_any_call("Error: File 'nonexistent.csv' not found.")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_with_warnings(self, mock_project_client):
+        """Test label addition with warnings for not found tests and max labels"""
+        # Mock the project client
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.add_labels_to_tests.return_value = (
+            {
+                'successful_tests': [{'test_id': 1, 'message': 'Success'}],
+                'failed_tests': [],
+                'max_labels_reached': [2],
+                'test_not_found': [999]
+            }, 
+            ""
+        )
+
+        # Mock environment methods
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1,2,999', '--title', 'Test Label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_log.assert_any_call("Warning: 1 test(s) not found or not accessible:")
+            mock_log.assert_any_call("  Test ID 999 does not exist or is not accessible")
+            mock_log.assert_any_call("Warning: 1 test(s) already have maximum labels (10):")
+            mock_log.assert_any_call("  Test 2: Maximum labels reached")
     
  

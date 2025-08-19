@@ -939,18 +939,25 @@ echo "y" | trcli -y \\
 
     def test_labels_cases_full_workflow(self):
         """Test complete workflow of test case label operations"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        case_label_title = f"e2e-case-{random_suffix}"
+        
         # First, create a test label
         add_label_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "e2e-case-label"
+  --title "{case_label_title}"
         """)
         _assert_contains(
             add_label_output,
             [
-                "Adding label 'e2e-case-label'...",
+                f"Adding label '{case_label_title}'...",
                 "Successfully added label:"
             ]
         )
@@ -963,43 +970,42 @@ trcli -y \\
         
         try:
             # Use known test case IDs that should exist in the test project
-            # These are typical case IDs that exist in the TestRail test environment
             test_case_ids = ["24964", "24965"]  # Multiple test cases for batch testing
             
-            # Add labels to test cases (using single-suite project for batch testing)
+            # Add labels to test cases
             add_cases_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels cases add \\
   --case-ids "{','.join(test_case_ids)}" \\
-  --title "e2e-case-label"
+  --title "{case_label_title}"
             """)
             _assert_contains(
                 add_cases_output,
                 [
-                    f"Adding label 'e2e-case-label' to {len(test_case_ids)} test case(s)...",
+                    f"Adding label '{case_label_title}' to {len(test_case_ids)} test case(s)...",
                     "Successfully processed"
                 ]
             )
             
-            # List test cases by label title (using single-suite project)
+            # List test cases by label title
             list_by_title_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels cases list \\
-  --title "e2e-case-label"
+  --title "{case_label_title}"
             """)
             _assert_contains(
                 list_by_title_output,
                 [
-                    "Retrieving test cases with label title 'e2e-case-label'...",
+                    f"Retrieving test cases with label title '{case_label_title}'...",
                     "matching test case(s):"
                 ]
             )
             
-            # List test cases by label ID (using single-suite project)
+            # List test cases by label ID
             list_by_id_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
@@ -1167,18 +1173,25 @@ trcli -y \\
 
     def test_labels_cases_single_case_workflow(self):
         """Test single case label operations using update_case endpoint"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        single_case_label_title = f"e2e-single-{random_suffix}"
+        
         # First, create a test label
         add_label_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "e2e-single-case"
+  --title "{single_case_label_title}"
         """)
         _assert_contains(
             add_label_output,
             [
-                "Adding label 'e2e-single-case'...",
+                f"Adding label '{single_case_label_title}'...",
                 "Successfully added label:"
             ]
         )
@@ -1200,14 +1213,14 @@ trcli -y \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels cases add \\
   --case-ids "{single_case_id}" \\
-  --title "e2e-single-case"
+  --title "{single_case_label_title}"
             """)
             _assert_contains(
                 add_single_case_output,
                 [
-                    f"Adding label 'e2e-single-case' to 1 test case(s)...",
+                    f"Adding label '{single_case_label_title}' to 1 test case(s)...",
                     "Successfully processed 1 case(s):",
-                    f"Successfully added label 'e2e-single-case' to case {single_case_id}"
+                    f"Successfully added label '{single_case_label_title}' to case {single_case_id}"
                 ]
             )
 
@@ -1217,12 +1230,12 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels cases list \\
-  --title "e2e-single-case"
+  --title "{single_case_label_title}"
             """)
             _assert_contains(
                 list_cases_output,
                 [
-                    "Retrieving test cases with label title 'e2e-single-case'...",
+                    f"Retrieving test cases with label title '{single_case_label_title}'...",
                     "Found 1 matching test case(s):",
                     f"Case ID: {single_case_id}"
                 ]
@@ -1237,4 +1250,224 @@ echo "y" | trcli -y \\
   labels delete \\
   --ids {label_id}
             """)
+
+    def test_labels_tests_full_workflow(self):
+        """Test complete workflow of test label operations"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        test_label_title = f"e2e-test-{random_suffix}"
+        
+        # First, create a test label
+        add_label_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels add \\
+  --title "{test_label_title}"
+        """)
+        _assert_contains(
+            add_label_output,
+            [
+                f"Adding label '{test_label_title}'...",
+                "Successfully added label:"
+            ]
+        )
+
+        # Extract label ID for cleanup
+        import re
+        label_id_match = re.search(r"ID=(\d+)", add_label_output)
+        assert label_id_match, "Could not extract label ID from output"
+        label_id = label_id_match.group(1)
+
+        try:
+            # Use known test IDs that should exist in the test project
+            test_ids = ["266149", "266151"]  # Real test IDs for functional testing
+
+            # Test 1: Add labels to tests using --test-ids
+            add_tests_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-ids "{','.join(test_ids)}" \\
+  --title "{test_label_title}"
+            """)
+            
+            _assert_contains(
+                add_tests_output,
+                [
+                    f"Adding label '{test_label_title}' to {len(test_ids)} test(s)..."
+                ]
+            )
+
+            # Test 2: Add labels to tests using CSV file
+            import os
+            csv_file_path = os.path.join(os.path.dirname(__file__), "sample_csv", "test_ids.csv")
+            
+            add_tests_csv_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-id-file "{csv_file_path}" \\
+  --title "{test_label_title}"
+            """)
+            
+            _assert_contains(
+                add_tests_csv_output,
+                [
+                    "Loaded 2 test ID(s) from file",
+                    f"Adding label '{test_label_title}' to 2 test(s)..."
+                ]
+            )
+
+            # Test 3: List tests by label ID
+            list_tests_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests list \\
+  --ids "{label_id}"
+            """)
+            _assert_contains(
+                list_tests_output,
+                [
+                    f"Retrieving tests with label IDs: {label_id}...",
+                    "matching test(s):"
+                ]
+            )
+
+            # Test 4: Get test labels for specific tests
+            get_test_labels_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests get \\
+  --test-id "{','.join(test_ids)}"
+            """)
+            _assert_contains(
+                get_test_labels_output,
+                [
+                    f"Retrieving labels for {len(test_ids)} test(s)...",
+                    "Test label information:"
+                ]
+            )
+
+        finally:
+            # Cleanup - delete the test label
+            delete_output = _run_cmd(f"""
+echo "y" | trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels delete \\
+  --ids {label_id}
+            """)
+
+    def test_labels_tests_validation_errors(self):
+        """Test validation errors for test label commands"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        
+        # Test title too long (21 characters exceeds 20 character limit)
+        long_title = f"this-is-a-very-long-title-{random_suffix}"  # This will be > 20 chars
+        title_error_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-ids "266149" \\
+  --title "{long_title}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            title_error_output,
+            ["Error: Label title must be 20 characters or less."]
+        )
+
+        # Test missing test-ids and file
+        valid_title = f"test-{random_suffix}"[:20]  # Ensure valid length
+        missing_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --title "{valid_title}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            missing_ids_output,
+            ["Error: Either --test-ids or --test-id-file must be provided."]
+        )
+
+        # Test invalid label IDs format in list command
+        invalid_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests list \\
+  --ids "invalid,ids"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            invalid_ids_output,
+            ["Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3)."]
+        )
+
+    def test_labels_tests_help_commands(self):
+        """Test help output for test label commands"""
+        
+        # Test main tests help
+        tests_help_output = _run_cmd("trcli labels tests --help")
+        _assert_contains(
+            tests_help_output,
+            [
+                "Usage: trcli labels tests [OPTIONS] COMMAND [ARGS]...",
+                "Manage labels for tests",
+                "Commands:",
+                "add",
+                "list", 
+                "get"
+            ]
+        )
+
+        # Test tests add help
+        tests_add_help_output = _run_cmd("trcli labels tests add --help")
+        _assert_contains(
+            tests_add_help_output,
+            [
+                "Usage: trcli labels tests add [OPTIONS]",
+                "Add a label to tests",
+                "--test-ids",
+                "--test-id-file",
+                "--title"
+            ]
+        )
+
+        # Test tests list help
+        tests_list_help_output = _run_cmd("trcli labels tests list --help")
+        _assert_contains(
+            tests_list_help_output,
+            [
+                "Usage: trcli labels tests list [OPTIONS]",
+                "List tests filtered by label ID",
+                "--ids"
+            ]
+        )
+
+        # Test tests get help
+        tests_get_help_output = _run_cmd("trcli labels tests get --help")
+        _assert_contains(
+            tests_get_help_output,
+            [
+                "Usage: trcli labels tests get [OPTIONS]",
+                "Get the labels of tests using test IDs",
+                "--test-id"
+            ]
+        )
     

@@ -705,4 +705,321 @@ class TestApiRequestHandlerLabelsCases:
             
             # Verify no error but no results
             assert error_message == ""
-            assert len(matching_cases) == 0 
+            assert len(matching_cases) == 0
+
+
+class TestApiRequestHandlerTestLabels:
+    """Test class for test label management API methods"""
+
+    def test_add_labels_to_tests_success_single(self, labels_handler):
+        """Test successful label addition to a single test"""
+        # Mock test validation
+        mock_test_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "title": "Test 1", "run_id": 1, "labels": []},
+            error_message=None
+        )
+        
+        # Mock run validation
+        mock_run_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "project_id": 1},
+            error_message=None
+        )
+        
+        # Mock existing labels
+        mock_labels_response = APIClientResult(
+            status_code=200,
+            response_text={"labels": []},
+            error_message=None
+        )
+        
+        # Mock label creation
+        mock_add_label_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 5, "title": "Test Label"},
+            error_message=None
+        )
+        
+        # Mock test update
+        mock_update_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "labels": [{"id": 5, "title": "Test Label"}]},
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get, \
+             patch.object(labels_handler.client, 'send_post') as mock_post:
+            
+            # Setup get responses for validation and label retrieval
+            mock_get.side_effect = [
+                mock_test_response,  # get_test/{test_id}
+                mock_run_response,   # get_run/{run_id}
+                mock_labels_response, # get_labels
+                mock_test_response,  # get_test/{test_id} again for labels check
+            ]
+            
+            # Setup post responses for label creation and test update
+            mock_post.side_effect = [
+                mock_add_label_response,  # add_label
+                mock_update_response      # update_test
+            ]
+            
+            result, error = labels_handler.add_labels_to_tests(
+                test_ids=[1], 
+                title="Test Label", 
+                project_id=1
+            )
+            
+            assert error == ""
+            assert len(result['successful_tests']) == 1
+            assert len(result['failed_tests']) == 0
+            assert len(result['test_not_found']) == 0
+            assert len(result['max_labels_reached']) == 0
+
+    def test_add_labels_to_tests_test_not_found(self, labels_handler):
+        """Test handling of non-existent test IDs"""
+        # Mock test not found
+        mock_test_response = APIClientResult(
+            status_code=404,
+            response_text=None,
+            error_message="Test not found"
+        )
+        
+        with patch.object(labels_handler.client, 'send_get', return_value=mock_test_response):
+            result, error = labels_handler.add_labels_to_tests(
+                test_ids=[999], 
+                title="Test Label", 
+                project_id=1
+            )
+            
+            assert error == ""
+            assert len(result['test_not_found']) == 1
+            assert 999 in result['test_not_found']
+
+    def test_add_labels_to_tests_max_labels_reached(self, labels_handler):
+        """Test handling of tests that already have maximum labels"""
+        # Create 10 existing labels
+        existing_labels = [{"id": i, "title": f"Label {i}"} for i in range(1, 11)]
+        
+        # Mock test with max labels
+        mock_test_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "title": "Test 1", "run_id": 1, "labels": existing_labels},
+            error_message=None
+        )
+        
+        # Mock run validation
+        mock_run_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "project_id": 1},
+            error_message=None
+        )
+        
+        # Mock existing labels
+        mock_labels_response = APIClientResult(
+            status_code=200,
+            response_text={"labels": []},
+            error_message=None
+        )
+        
+        # Mock label creation
+        mock_add_label_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 11, "title": "New Label"},
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get, \
+             patch.object(labels_handler.client, 'send_post') as mock_post:
+            
+            mock_get.side_effect = [
+                mock_test_response,   # get_test/{test_id}
+                mock_run_response,    # get_run/{run_id}
+                mock_labels_response, # get_labels
+                mock_test_response,   # get_test/{test_id} again for labels check
+            ]
+            
+            mock_post.return_value = mock_add_label_response
+            
+            result, error = labels_handler.add_labels_to_tests(
+                test_ids=[1], 
+                title="New Label", 
+                project_id=1
+            )
+            
+            assert error == ""
+            assert len(result['max_labels_reached']) == 1
+            assert 1 in result['max_labels_reached']
+
+    def test_get_tests_by_label_success(self, labels_handler):
+        """Test successful retrieval of tests by label"""
+        # Mock runs response
+        mock_runs_response = APIClientResult(
+            status_code=200,
+            response_text={"runs": [{"id": 1}, {"id": 2}]},
+            error_message=None
+        )
+        
+        # Mock tests responses for each run
+        mock_tests_response_run1 = APIClientResult(
+            status_code=200,
+            response_text={"tests": [
+                {"id": 1, "title": "Test 1", "labels": [{"id": 5, "title": "Test Label"}]},
+                {"id": 2, "title": "Test 2", "labels": []}
+            ]},
+            error_message=None
+        )
+        
+        mock_tests_response_run2 = APIClientResult(
+            status_code=200,
+            response_text={"tests": [
+                {"id": 3, "title": "Test 3", "labels": [{"id": 5, "title": "Test Label"}]}
+            ]},
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get:
+            mock_get.side_effect = [
+                mock_runs_response,        # get_runs/{project_id}
+                mock_tests_response_run1,  # get_tests/{run_id} for run 1
+                mock_tests_response_run2   # get_tests/{run_id} for run 2
+            ]
+            
+            result, error = labels_handler.get_tests_by_label(
+                project_id=1, 
+                label_ids=[5]
+            )
+            
+            assert error == ""
+            assert len(result) == 2
+            assert result[0]['id'] == 1
+            assert result[1]['id'] == 3
+
+    def test_get_test_labels_success(self, labels_handler):
+        """Test successful retrieval of test labels"""
+        # Mock test responses
+        mock_test_response1 = APIClientResult(
+            status_code=200,
+            response_text={
+                "id": 1, 
+                "title": "Test 1", 
+                "status_id": 1,
+                "labels": [{"id": 5, "title": "Test Label"}]
+            },
+            error_message=None
+        )
+        
+        mock_test_response2 = APIClientResult(
+            status_code=200,
+            response_text={
+                "id": 2, 
+                "title": "Test 2", 
+                "status_id": 2,
+                "labels": []
+            },
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get:
+            mock_get.side_effect = [mock_test_response1, mock_test_response2]
+            
+            result, error = labels_handler.get_test_labels([1, 2])
+            
+            assert error == ""
+            assert len(result) == 2
+            
+            # Check first test
+            assert result[0]['test_id'] == 1
+            assert result[0]['title'] == "Test 1"
+            assert result[0]['status_id'] == 1
+            assert len(result[0]['labels']) == 1
+            assert result[0]['labels'][0]['title'] == "Test Label"
+            assert result[0]['error'] is None
+            
+            # Check second test
+            assert result[1]['test_id'] == 2
+            assert result[1]['title'] == "Test 2"
+            assert result[1]['status_id'] == 2
+            assert len(result[1]['labels']) == 0
+            assert result[1]['error'] is None
+
+    def test_get_test_labels_test_not_found(self, labels_handler):
+        """Test handling of non-existent test IDs in get_test_labels"""
+        # Mock test not found
+        mock_test_response = APIClientResult(
+            status_code=404,
+            response_text=None,
+            error_message="Test not found"
+        )
+        
+        with patch.object(labels_handler.client, 'send_get', return_value=mock_test_response):
+            result, error = labels_handler.get_test_labels([999])
+            
+            assert error == ""
+            assert len(result) == 1
+            assert result[0]['test_id'] == 999
+            assert result[0]['error'] == "Test 999 not found or inaccessible"
+            assert result[0]['labels'] == []
+
+    def test_add_labels_to_tests_batch_update(self, labels_handler):
+        """Test batch update of multiple tests"""
+        # Mock test validation for multiple tests
+        mock_test_response1 = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "title": "Test 1", "run_id": 1, "labels": []},
+            error_message=None
+        )
+        
+        mock_test_response2 = APIClientResult(
+            status_code=200,
+            response_text={"id": 2, "title": "Test 2", "run_id": 1, "labels": []},
+            error_message=None
+        )
+        
+        # Mock run validation
+        mock_run_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "project_id": 1},
+            error_message=None
+        )
+        
+        # Mock existing labels
+        mock_labels_response = APIClientResult(
+            status_code=200,
+            response_text={"labels": [{"id": 5, "title": "Test Label"}]},
+            error_message=None
+        )
+        
+        # Mock batch update
+        mock_batch_response = APIClientResult(
+            status_code=200,
+            response_text={"updated": 2},
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get, \
+             patch.object(labels_handler.client, 'send_post') as mock_post:
+            
+            # Setup get responses
+            mock_get.side_effect = [
+                mock_test_response1,  # get_test/1
+                mock_run_response,    # get_run/1
+                mock_test_response2,  # get_test/2
+                mock_run_response,    # get_run/1
+                mock_labels_response, # get_labels
+                mock_test_response1,  # get_test/1 for labels check
+                mock_test_response2,  # get_test/2 for labels check
+            ]
+            
+            # Setup batch update response
+            mock_post.return_value = mock_batch_response
+            
+            result, error = labels_handler.add_labels_to_tests(
+                test_ids=[1, 2], 
+                title="Test Label", 
+                project_id=1
+            )
+            
+            assert error == ""
+            assert len(result['successful_tests']) == 2 
