@@ -897,6 +897,8 @@ Usage: trcli add_run [OPTIONS]
 Options:
   --title                Title of Test Run to be created or updated in
                          TestRail.
+  --run-id               ID of existing test run to update. If not provided, 
+                         a new run will be created.  [x>=1]
   --suite-id             Suite ID to submit results to.  [x>=1]
   --run-description      Summary text to be added to the test run.
   --milestone-id         Milestone ID to which the Test Run should be
@@ -909,7 +911,9 @@ Options:
   --auto-close-run       Use this option to automatically close the created run.
   --run-case-ids         Comma separated list of test case IDs to include in
                          the test run (i.e.: 1,2,3,4).
-  --run-refs             A comma-separated list of references/requirements
+  --run-refs             A comma-separated list of references/requirements (up to 2000 characters)
+  --run-refs-action      Action to perform on references: 'add' (default), 'update' (replace all), 
+                         or 'delete' (remove all or specific)
   -f, --file             Write run title and id to file.
   --help                 Show this message and exit.
 ```
@@ -921,6 +925,84 @@ run_id: 1
 ```
 
 This file can be used as the config file (or appended to an existing config file) in a later run.
+
+### Managing References in Test Runs
+
+The `add_run` command supports comprehensive reference management for test runs. References are stored in TestRail's "References" field and can contain up to 2000 characters.
+
+#### Adding References to New Runs
+
+When creating a new test run, you can add references using the `--run-refs` option:
+
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "My Test Run" --run-refs "JIRA-100,JIRA-200,REQ-001"
+```
+
+#### Managing References in Existing Runs
+
+For existing test runs, you can use the `--run-refs-action` option to specify how references should be handled:
+
+**Add References (default behavior):**
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" \
+  --run-refs "JIRA-300,JIRA-400" --run-refs-action "add"
+```
+
+**Update (Replace) All References:**
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" \
+  --run-refs "NEW-100,NEW-200" --run-refs-action "update"
+```
+
+**Delete Specific References:**
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" \
+  --run-refs "JIRA-100,JIRA-200" --run-refs-action "delete"
+```
+
+**Delete All References:**
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" \
+  --run-refs-action "delete"
+```
+
+#### Reference Management Rules
+
+- **Character Limit**: References field supports up to 2000 characters
+- **Format**: Comma-separated list of reference IDs
+- **Duplicate Prevention**: When adding references, duplicates are automatically prevented
+- **Action Requirements**: `update` and `delete` actions require an existing run (--run-id must be provided)
+- **Validation**: Invalid reference formats are rejected with clear error messages
+
+#### Examples
+
+**Complete Workflow Example:**
+```bash
+# 1. Create run with initial references
+trcli -y -h https://example.testrail.io/ <--username and --password or --key> --project "My Project" \
+  add_run --title "Sprint 1 Tests" --run-refs "JIRA-100,JIRA-200" -f "run_config.yml"
+
+# 2. Add more references (from the config file)
+trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
+  -c run_config.yml add_run --run-refs "JIRA-300,REQ-001" --run-refs-action "add"
+
+# 3. Replace all references with new ones
+trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
+  -c run_config.yml add_run --run-refs "FINAL-100,FINAL-200" --run-refs-action "update"
+
+# 4. Remove specific references
+trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
+  -c run_config.yml add_run --run-refs "FINAL-100" --run-refs-action "delete"
+
+# 5. Clear all references
+trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
+  -c run_config.yml add_run --run-refs-action "delete"
+```
 
 Generating test cases from OpenAPI specs
 -----------------
