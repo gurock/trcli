@@ -639,7 +639,7 @@ Found 3 test case(s):
 ```
 
 ###### Listing Test Cases by Labels
-Find test cases that have specific labels applied, either by label ID or title.
+Find test cases that have specific labels applied, either by label ID or title. Note that `--ids` and `--title` options are mutually exclusive - use only one at a time.
 
 ```shell
 # List test cases by label title
@@ -698,8 +698,8 @@ Options:
 ```shell
 $ trcli labels cases list --help
 Options:
-  --ids           Comma-separated list of label IDs to filter by
-  --title         Label title to filter by (max 20 characters)
+  --ids           Comma-separated list of label IDs to filter by (mutually exclusive with --title)
+  --title         Label title to filter by (max 20 characters) (mutually exclusive with --ids)
   --help          Show this message and exit.
 ```
 
@@ -710,9 +710,26 @@ Options:
 - **Label Title**: Maximum 20 characters (same as project labels)
 - **Case IDs**: Must be valid integers in comma-separated format
 - **Maximum Labels**: Each test case can have maximum 10 labels
-- **Filter Requirements**: Either `--ids` or `--title` must be provided for list command
+- **Filter Requirements**: Either `--ids` or `--title` must be provided for list command (mutually exclusive)
 - **Label Creation**: Labels are automatically created if they don't exist when adding to cases
 - **Duplicate Prevention**: Adding an existing label to a case is handled gracefully
+
+###### Error Handling Examples
+
+**Test Case Label Management error scenarios:**
+```shell
+# Missing both filter options
+$ trcli <host,credentials> labels cases list
+Error: Either --ids or --title must be provided.
+
+# Using both filter options (mutually exclusive)
+$ trcli <host,credentials> labels cases list --ids 123 --title "Regression"
+Error: --ids and --title options are mutually exclusive. Use only one at a time.
+
+# Invalid case ID format
+$ trcli <host,credentials> labels cases add --case-ids "abc,def" --title "Test"
+Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).
+```
 
 ### Reference
 ```shell

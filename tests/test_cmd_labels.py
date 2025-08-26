@@ -604,6 +604,22 @@ class TestLabelsCasesCommands:
             mock_elog.assert_called_with("Error: Either --ids or --title must be provided.")
     
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_cases_both_filters_provided(self, mock_project_client):
+        """Test error when both ids and title are provided (mutually exclusive)"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['list', '--ids', '123', '--title', 'test-label'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: --ids and --title options are mutually exclusive. Use only one at a time.")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_list_cases_no_matching_cases(self, mock_project_client):
         """Test listing when no cases match the label"""
         mock_client_instance = MagicMock()
@@ -625,5 +641,89 @@ class TestLabelsCasesCommands:
             assert result.exit_code == 0
             mock_log.assert_any_call("Found 0 matching test case(s):")
             mock_log.assert_any_call("  No test cases found with label title 'non-existent'.")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_get_case_labels_success(self, mock_project_client):
+        """Test successful retrieval of labels for specific test cases"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.api_request_handler.get_case_labels.return_value = (
+            [
+                {
+                    'id': 123, 
+                    'title': 'Test Case 1', 
+                    'labels': [{'id': 5, 'title': 'Regression'}, {'id': 7, 'title': 'Critical'}]
+                },
+                {
+                    'id': 124, 
+                    'title': 'Test Case 2', 
+                    'labels': [{'id': 5, 'title': 'Regression'}]
+                },
+                {
+                    'id': 125, 
+                    'title': 'Test Case 3', 
+                    'labels': []
+                }
+            ],
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['get', '--case-ids', '123,124,125'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.get_case_labels.assert_called_once_with([123, 124, 125])
+            
+            # Verify cases were logged with their labels
+            mock_log.assert_any_call("Found 3 test case(s):")
+            mock_log.assert_any_call("  Case ID: 123, Title: 'Test Case 1' [Labels: ID:5,Title:'Regression'; ID:7,Title:'Critical']")
+            mock_log.assert_any_call("  Case ID: 124, Title: 'Test Case 2' [Labels: ID:5,Title:'Regression']")
+            mock_log.assert_any_call("  Case ID: 125, Title: 'Test Case 3' [No labels]")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_get_case_labels_invalid_case_ids(self, mock_project_client):
+        """Test invalid case IDs format in get command"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['get', '--case-ids', 'invalid,ids'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_get_case_labels_api_error(self, mock_project_client):
+        """Test API error in get case labels command"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.api_request_handler.get_case_labels.return_value = (
+            [], "API Error: Case not found"
+        )
+        
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['get', '--case-ids', '999'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Failed to retrieve case labels: API Error: Case not found")
     
  

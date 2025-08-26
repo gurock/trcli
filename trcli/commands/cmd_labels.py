@@ -312,9 +312,13 @@ def list_cases(environment: Environment, context: click.Context, ids: str, title
     """List test cases filtered by label ID or title"""
     environment.check_for_required_parameters()
     
-    # Validate that either ids or title is provided
+    # Validate that either ids or title is provided, but not both
     if not ids and not title:
         environment.elog("Error: Either --ids or --title must be provided.")
+        exit(1)
+    
+    if ids and title:
+        environment.elog("Error: --ids and --title options are mutually exclusive. Use only one at a time.")
         exit(1)
     
     if title and len(title) > 20:
