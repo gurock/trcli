@@ -369,4 +369,49 @@ def list_cases(environment: Environment, context: click.Context, ids: str, title
             if title:
                 environment.log(f"  No test cases found with label title '{title}'.")
             else:
-                environment.log(f"  No test cases found with the specified label IDs.") 
+                environment.log(f"  No test cases found with the specified label IDs.")
+
+
+@cases.command(name='get')
+@click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
+@click.pass_context
+@pass_environment
+def get_case_labels(environment: Environment, context: click.Context, case_ids: str, *args, **kwargs):
+    """Get labels assigned to test cases"""
+    environment.check_for_required_parameters()
+    print_config(environment, "Get Case Labels")
+    
+    try:
+        case_id_list = [int(id.strip()) for id in case_ids.split(",")]
+    except ValueError:
+        environment.elog("Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).")
+        exit(1)
+    
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+    project_client.resolve_project()
+    
+    environment.log(f"Retrieving labels for {len(case_id_list)} test case(s)...")
+    
+    cases_with_labels, error_message = project_client.api_request_handler.get_case_labels(case_id_list)
+    
+    if error_message:
+        environment.elog(f"Failed to retrieve case labels: {error_message}")
+        exit(1)
+    else:
+        environment.log(f"Found {len(cases_with_labels)} test case(s):")
+        environment.log("")
+        
+        if cases_with_labels:
+            for case in cases_with_labels:
+                case_labels = case.get('labels', [])
+                label_info = []
+                for label in case_labels:
+                    label_info.append(f"ID:{label.get('id')},Title:'{label.get('title')}'")
+                
+                labels_str = f" [Labels: {'; '.join(label_info)}]" if label_info else " [No labels]"
+                environment.log(f"  Case ID: {case['id']}, Title: '{case['title']}'{labels_str}")
+        else:
+            environment.log("  No test cases found.") 

@@ -1045,3 +1045,28 @@ class ApiRequestHandler:
                 matching_cases.append(case)
         
         return matching_cases, ""
+
+    def get_case_labels(self, case_ids: List[int]) -> Tuple[List[dict], str]:
+        """
+        Get labels assigned to specific test cases
+        
+        :param case_ids: List of test case IDs
+        :returns: Tuple with list of cases and their labels, and error string
+        """
+        results = []
+        
+        for case_id in case_ids:
+            case_response = self.client.send_get(f"get_case/{case_id}")
+            if case_response.status_code != 200:
+                return [], f"Could not retrieve case {case_id}: {case_response.error_message}"
+            
+            case_data = case_response.response_text
+            case_labels = case_data.get('labels', [])
+            
+            results.append({
+                'id': case_data.get('id'),
+                'title': case_data.get('title'),
+                'labels': case_labels
+            })
+        
+        return results, ""

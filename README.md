@@ -566,6 +566,7 @@ In addition to project-level labels, the TestRail CLI also supports **test case 
 
 ###### Test Case Label Features
 - **Add labels to test cases**: Apply existing or new labels to one or multiple test cases
+- **Get labels assigned to test cases**: View all labels currently assigned to specific test cases
 - **List test cases by labels**: Find test cases that have specific labels applied
 - **Automatic label creation**: Labels are created automatically if they don't exist when adding to cases
 - **Maximum label validation**: Enforces TestRail's limit of 10 labels per test case
@@ -583,6 +584,7 @@ Options:
 
 Commands:
   add   Add a label to test cases
+  get   Get labels assigned to test cases
   list  List test cases filtered by label ID or title
 ```
 
@@ -604,6 +606,36 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
   labels cases add --case-ids "100,101,102" --title "Sprint-42"
+```
+
+###### Getting Labels Assigned to Test Cases
+View all labels assigned to specific test cases. This is useful for inspecting the current label assignments and understanding how test cases are categorized.
+
+```shell
+# Get labels for a single test case
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids 123
+
+# Get labels for multiple test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids "123,124,125"
+
+# Get labels for test cases to audit label usage
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids "100,101,102,103,104"
+```
+
+**Output example:**
+```
+Retrieving labels for 3 test case(s)...
+Found 3 test case(s):
+
+  Case ID: 123, Title: 'Login functionality test' [Labels: ID:5,Title:'Regression'; ID:7,Title:'Critical']
+  Case ID: 124, Title: 'Password validation test' [Labels: ID:5,Title:'Regression']
+  Case ID: 125, Title: 'User registration test' [No labels]
 ```
 
 ###### Listing Test Cases by Labels
@@ -651,6 +683,14 @@ $ trcli labels cases add --help
 Options:
   --case-ids  Comma-separated list of test case IDs [required]
   --title     Title of the label to add (max 20 characters) [required]
+  --help      Show this message and exit.
+```
+
+**Get Cases Command:**
+```shell
+$ trcli labels cases get --help
+Options:
+  --case-ids  Comma-separated list of test case IDs [required]
   --help      Show this message and exit.
 ```
 
