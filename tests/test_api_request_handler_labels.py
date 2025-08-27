@@ -393,7 +393,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[1, 2],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
             
@@ -415,11 +415,12 @@ class TestApiRequestHandlerLabelsCases:
             mock_get_labels.assert_called_once_with(1)
             mock_add_label.assert_called_once_with(1, "test-label")
             assert mock_send_get.call_count == 2
-            # Should call update_cases/{suite_id} once for batch update
-            mock_send_post.assert_called_once_with("update_cases/1", payload={
-                'case_ids': [1, 2], 
-                'labels': [5]
-            })
+            # Should call update_case/{case_id} twice for individual updates
+            expected_calls = [
+                call("update_case/1", payload={'labels': [5]}),
+                call("update_case/2", payload={'labels': [5]})
+            ]
+            mock_send_post.assert_has_calls(expected_calls, any_order=False)
     
     def test_add_labels_to_cases_single_case(self):
         """Test adding labels to a single test case using update_case endpoint"""
@@ -452,7 +453,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method with single case
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[1],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
     
@@ -496,7 +497,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[1],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
             
@@ -532,7 +533,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[1],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
             
@@ -567,7 +568,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[1],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
             
@@ -577,7 +578,7 @@ class TestApiRequestHandlerLabelsCases:
             # Verify results
             assert len(results['successful_cases']) == 1
             assert len(results['case_not_found']) == 0
-            assert "already exists" in results['successful_cases'][0]['message']
+            assert "already exist" in results['successful_cases'][0]['message']
 
     def test_add_labels_to_cases_case_not_found(self):
         """Test handling when case IDs don't exist"""
@@ -589,7 +590,7 @@ class TestApiRequestHandlerLabelsCases:
             # Test the method with case IDs that don't exist
             results, error_message = self.labels_handler.add_labels_to_cases(
                 case_ids=[999, 1000, 1001],
-                title="test-label",
+                titles="test-label",
                 project_id=1
             )
             

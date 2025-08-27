@@ -819,16 +819,27 @@ class ApiRequestHandler:
         success = response.status_code == 200
         return success, response.error_message
 
-    def add_labels_to_cases(self, case_ids: List[int], title: str, project_id: int, suite_id: int = None) -> Tuple[dict, str]:
+    def add_labels_to_cases(self, case_ids: List[int], titles: Union[str, List[str]], project_id: int, suite_id: int = None) -> Tuple[dict, str]:
         """
-        Add a label to multiple test cases
+        Add one or more labels to multiple test cases
         
         :param case_ids: List of test case IDs
-        :param title: Label title (max 20 characters)
+        :param titles: Label title(s) - either a single string or list of strings (each max 20 characters)
         :param project_id: Project ID for validation
         :param suite_id: Suite ID (optional)
         :returns: Tuple with response data and error string
         """
+        # Normalize titles to a list
+        if isinstance(titles, str):
+            title_list = [titles]
+        else:
+            title_list = titles
+        
+        # Validate title lengths
+        for title in title_list:
+            if len(title.strip()) > 20:
+                return {}, f"Label title '{title.strip()}' exceeds 20 character limit"
+        
         # Initialize results structure
         results = {
             'successful_cases': [], 
@@ -872,25 +883,34 @@ class ApiRequestHandler:
         if not valid_case_ids:
             return results, ""
         
-        # Check if label exists or create it
+        # Check if labels exist or create them
         existing_labels, error_message = self.get_labels(project_id)
         if error_message:
             return results, error_message
             
-        # Find existing label with the same title
-        label_id = None
-        for label in existing_labels.get('labels', []):
-            if label.get('title') == title:
-                label_id = label.get('id')
-                break
-        
-        # Create label if it doesn't exist
-        if label_id is None:
-            label_data, error_message = self.add_label(project_id, title)
-            if error_message:
-                return results, error_message
-            label_info = label_data.get('label', label_data)
-            label_id = label_info.get('id')
+        # Find existing labels and create missing ones
+        label_ids = []
+        for title in title_list:
+            title = title.strip()  # Clean whitespace
+            if not title:  # Skip empty titles
+                continue
+                
+            label_id = None
+            for label in existing_labels.get('labels', []):
+                if label.get('title') == title:
+                    label_id = label.get('id')
+                    break
+            
+            # Create label if it doesn't exist
+            if label_id is None:
+                label_data, error_message = self.add_label(project_id, title)
+                if error_message:
+                    return results, error_message
+                label_info = label_data.get('label', label_data)
+                label_id = label_info.get('id')
+            
+            if label_id:
+                label_ids.append(label_id)
         
         # Collect case data and validate constraints
         cases_to_update = []
@@ -906,102 +926,70 @@ class ApiRequestHandler:
             
             case_data = case_response.response_text
             current_labels = case_data.get('labels', [])
+            current_label_ids = [label.get('id') for label in current_labels if label.get('id')]
             
-            # Check if label already exists on this case
-            if any(label.get('id') == label_id for label in current_labels):
+            # Find new labels to add (not already on this case)
+            new_label_ids = []
+            already_exists_titles = []
+            
+            for label_id in label_ids:
+                if label_id not in current_label_ids:
+                    new_label_ids.append(label_id)
+                else:
+                    # Find title for this label_id
+                    for title in title_list:
+                        title = title.strip()
+                        for label in existing_labels.get('labels', []):
+                            if label.get('id') == label_id and label.get('title') == title:
+                                already_exists_titles.append(title)
+                                break
+            
+            # If no new labels to add, record as already exists
+            if not new_label_ids:
                 results['successful_cases'].append({
                     'case_id': case_id,
-                    'message': f"Label '{title}' already exists on case {case_id}"
+                    'message': f"All labels already exist on case {case_id}: {', '.join(already_exists_titles)}"
                 })
                 continue
             
             # Check maximum labels limit (10)
-            if len(current_labels) >= 10:
+            total_labels_after_update = len(current_label_ids) + len(new_label_ids)
+            if total_labels_after_update > 10:
                 results['max_labels_reached'].append(case_id)
                 continue
             
             # Prepare case for update
-            existing_label_ids = [label.get('id') for label in current_labels if label.get('id')]
-            updated_label_ids = existing_label_ids + [label_id]
+            updated_label_ids = current_label_ids + new_label_ids
             cases_to_update.append({
                 'case_id': case_id,
-                'labels': updated_label_ids
+                'labels': updated_label_ids,
+                'new_labels': new_label_ids
             })
         
-        # Update cases using appropriate endpoint
-        if len(cases_to_update) == 1:
-            # Single case: use update_case/{case_id}
-            case_info = cases_to_update[0]
+        # Update cases individually to preserve existing labels correctly
+        # Using individual updates ensures each case keeps its own existing labels
+        for case_info in cases_to_update:
             case_update_data = {'labels': case_info['labels']}
-            
             update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
             
             if update_response.status_code == 200:
+                # Create message based on number of labels added
+                new_label_count = len(case_info.get('new_labels', []))
+                if new_label_count == 1:
+                    label_titles = [title.strip() for title in title_list if title.strip()]
+                    message = f"Successfully added label '{label_titles[0]}' to case {case_info['case_id']}"
+                else:
+                    message = f"Successfully added {new_label_count} labels to case {case_info['case_id']}"
+                
                 results['successful_cases'].append({
                     'case_id': case_info['case_id'],
-                    'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
+                    'message': message
                 })
             else:
                 results['failed_cases'].append({
                     'case_id': case_info['case_id'],
                     'error': update_response.error_message
                 })
-        elif len(cases_to_update) > 1:
-            # Multiple cases: use update_cases/{suite_id}
-            # Need to determine suite_id from the cases
-            case_suite_id = suite_id
-            if not case_suite_id:
-                # Get suite_id from the first case if not provided
-                first_case = all_cases[0] if all_cases else None
-                case_suite_id = first_case.get('suite_id') if first_case else None
-            
-            if not case_suite_id:
-                # Fall back to individual updates if no suite_id available
-                for case_info in cases_to_update:
-                    case_update_data = {'labels': case_info['labels']}
-                    update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
-                    
-                    if update_response.status_code == 200:
-                        results['successful_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                        })
-                    else:
-                        results['failed_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'error': update_response.error_message
-                        })
-            else:
-                # Batch update using update_cases/{suite_id}
-                batch_update_data = {
-                    'case_ids': [case_info['case_id'] for case_info in cases_to_update],
-                    'labels': cases_to_update[0]['labels']  # Assuming same labels for all cases
-                }
-                
-                batch_response = self.client.send_post(f"update_cases/{case_suite_id}", payload=batch_update_data)
-                
-                if batch_response.status_code == 200:
-                    for case_info in cases_to_update:
-                        results['successful_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                        })
-                else:
-                    # If batch update fails, fall back to individual updates
-                    for case_info in cases_to_update:
-                        case_update_data = {'labels': case_info['labels']}
-                        update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
-                        
-                        if update_response.status_code == 200:
-                            results['successful_cases'].append({
-                                'case_id': case_info['case_id'],
-                                'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                            })
-                        else:
-                            results['failed_cases'].append({
-                                'case_id': case_info['case_id'],
-                                'error': update_response.error_message
-                            })
         
         return results, ""
 

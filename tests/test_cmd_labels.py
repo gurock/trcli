@@ -389,7 +389,7 @@ class TestLabelsCasesCommands:
             assert result.exit_code == 0
             mock_client_instance.api_request_handler.add_labels_to_cases.assert_called_once_with(
                 case_ids=[1, 2],
-                title='test-label',
+                titles=['test-label'],
                 project_id=1,
                 suite_id=None
             )
@@ -398,6 +398,49 @@ class TestLabelsCasesCommands:
             mock_log.assert_any_call("Successfully processed 2 case(s):")
             mock_log.assert_any_call("  Case 1: Successfully added label 'test-label' to case 1")
             mock_log.assert_any_call("  Case 2: Successfully added label 'test-label' to case 2")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_multiple_labels_to_cases_success(self, mock_project_client):
+        """Test successful addition of multiple labels to test cases"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.suite.suite_id = None
+        mock_client_instance.api_request_handler.add_labels_to_cases.return_value = (
+            {
+                'successful_cases': [
+                    {'case_id': 1, 'message': "Successfully added 2 labels to case 1"},
+                    {'case_id': 2, 'message': "Successfully added 2 labels to case 2"}
+                ],
+                'failed_cases': [],
+                'max_labels_reached': [],
+                'case_not_found': []
+            },
+            ""
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1,2', '--title', 'label1, label2'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_labels_to_cases.assert_called_once_with(
+                case_ids=[1, 2],
+                titles=['label1', 'label2'],
+                project_id=1,
+                suite_id=None
+            )
+            
+            # Verify success messages were logged
+            mock_log.assert_any_call("Successfully processed 2 case(s):")
+            mock_log.assert_any_call("  Case 1: Successfully added 2 labels to case 1")
+            mock_log.assert_any_call("  Case 2: Successfully added 2 labels to case 2")
     
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_add_labels_to_cases_with_max_labels_reached(self, mock_project_client):
@@ -448,7 +491,23 @@ class TestLabelsCasesCommands:
             )
             
             assert result.exit_code == 1
-            mock_elog.assert_called_with("Error: Label title must be 20 characters or less.")
+            mock_elog.assert_called_with("Error: Label title 'this-title-is-way-too-long-for-testrail' must be 20 characters or less.")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_multiple_labels_title_validation(self, mock_project_client):
+        """Test title length validation for multiple labels"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['add', '--case-ids', '1', '--title', 'valid-label,this-title-is-way-too-long-for-testrail'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Label title 'this-title-is-way-too-long-for-testrail' must be 20 characters or less.")
     
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_add_labels_to_cases_invalid_case_ids(self, mock_project_client):

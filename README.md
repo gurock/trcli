@@ -565,9 +565,10 @@ Error: Invalid label IDs format
 In addition to project-level labels, the TestRail CLI also supports **test case label management** through the `labels cases` command. This functionality allows you to assign labels to specific test cases and filter test cases by their labels, providing powerful organization and filtering capabilities for your test suite.
 
 ###### Test Case Label Features
-- **Add labels to test cases**: Apply existing or new labels to one or multiple test cases
+- **Add labels to test cases**: Apply existing or new labels to one or multiple test cases (supports multiple labels per command)
 - **Get labels assigned to test cases**: View all labels currently assigned to specific test cases
 - **List test cases by labels**: Find test cases that have specific labels applied
+- **Multiple labels support**: Add multiple labels in a single command using comma separation
 - **Automatic label creation**: Labels are created automatically if they don't exist when adding to cases
 - **Maximum label validation**: Enforces TestRail's limit of 10 labels per test case
 - **Flexible filtering**: Search by label ID or title
@@ -606,6 +607,16 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
   labels cases add --case-ids "100,101,102" --title "Sprint-42"
+
+# Add multiple labels to test cases (comma-separated)
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "123,124" --title "Regression,Critical,UI"
+
+# Add multiple labels with spaces (properly quoted)
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "100" --title "Bug Fix, Performance"
 ```
 
 ###### Getting Labels Assigned to Test Cases
@@ -682,7 +693,7 @@ Found 0 matching test case(s):
 $ trcli labels cases add --help
 Options:
   --case-ids  Comma-separated list of test case IDs [required]
-  --title     Title of the label to add (max 20 characters) [required]
+  --title     Label title(s) to add (max 20 characters each). Use comma separation for multiple labels [required]
   --help      Show this message and exit.
 ```
 
@@ -729,6 +740,10 @@ Error: --ids and --title options are mutually exclusive. Use only one at a time.
 # Invalid case ID format
 $ trcli <host,credentials> labels cases add --case-ids "abc,def" --title "Test"
 Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).
+
+# Invalid label title length in multiple labels
+$ trcli <host,credentials> labels cases add --case-ids "123" --title "Valid,this-title-is-way-too-long"
+Error: Label title 'this-title-is-way-too-long' must be 20 characters or less.
 ```
 
 ### Reference

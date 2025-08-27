@@ -235,16 +235,25 @@ def cases(environment: Environment, context: click.Context, *args, **kwargs):
 
 @cases.command(name='add')
 @click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
-@click.option("--title", required=True, metavar="", help="Title of the label to add (max 20 characters).")
+@click.option("--title", required=True, metavar="", help="Label title(s) to add (max 20 characters each). Use comma separation for multiple labels (e.g., 'label1,label2').")
 @click.pass_context
 @pass_environment
 def add_to_cases(environment: Environment, context: click.Context, case_ids: str, title: str, *args, **kwargs):
-    """Add a label to test cases"""
+    """Add one or more labels to test cases"""
     environment.check_for_required_parameters()
     print_config(environment, "Add Cases")
     
-    if len(title) > 20:
-        environment.elog("Error: Label title must be 20 characters or less.")
+    # Parse comma-separated titles
+    title_list = [t.strip() for t in title.split(",") if t.strip()]
+    
+    # Validate each title length
+    for t in title_list:
+        if len(t) > 20:
+            environment.elog(f"Error: Label title '{t}' must be 20 characters or less.")
+            exit(1)
+    
+    if not title_list:
+        environment.elog("Error: At least one valid label title must be provided.")
         exit(1)
     
     try:
@@ -259,11 +268,15 @@ def add_to_cases(environment: Environment, context: click.Context, case_ids: str
     )
     project_client.resolve_project()
     
-    environment.log(f"Adding label '{title}' to {len(case_id_list)} test case(s)...")
+    # Create appropriate log message
+    if len(title_list) == 1:
+        environment.log(f"Adding label '{title_list[0]}' to {len(case_id_list)} test case(s)...")
+    else:
+        environment.log(f"Adding {len(title_list)} labels ({', '.join(title_list)}) to {len(case_id_list)} test case(s)...")
     
     results, error_message = project_client.api_request_handler.add_labels_to_cases(
         case_ids=case_id_list,
-        title=title,
+        titles=title_list,
         project_id=project_client.project.project_id,
         suite_id=environment.suite_id
     )
