@@ -725,7 +725,7 @@ class TestLabelsCasesCommands:
                     'labels': []
                 }
             ],
-            ""
+            []
         )
         
         with patch.object(self.environment, 'log') as mock_log, \
@@ -769,7 +769,7 @@ class TestLabelsCasesCommands:
         mock_client_instance = MagicMock()
         mock_project_client.return_value = mock_client_instance
         mock_client_instance.api_request_handler.get_case_labels.return_value = (
-            [], "API Error: Case not found"
+            [], ["API Error: Case not found"]
         )
         
         with patch.object(self.environment, 'elog') as mock_elog, \
@@ -784,5 +784,43 @@ class TestLabelsCasesCommands:
             
             assert result.exit_code == 1
             mock_elog.assert_called_with("Failed to retrieve case labels: API Error: Case not found")
+    
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_get_case_labels_mixed_valid_invalid(self, mock_project_client):
+        """Test mixed valid and invalid case IDs - should return valid cases and show errors for invalid ones"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.api_request_handler.get_case_labels.return_value = (
+            [
+                {
+                    'id': 123, 
+                    'title': 'Valid Test Case', 
+                    'labels': [{'id': 5, 'title': 'Regression'}]
+                }
+            ],
+            ["Could not retrieve case 999: Case not found", "Could not retrieve case 1000: Case not found"]
+        )
+        
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.cases, 
+                ['get', '--case-ids', '123,999,1000'], 
+                obj=self.environment
+            )
+            
+            # Should not exit with error since some cases were successful
+            assert result.exit_code == 0
+            
+            # Should show success for valid case
+            mock_log.assert_any_call("Found 1 test case(s):")
+            mock_log.assert_any_call("  Case ID: 123, Title: 'Valid Test Case' [Labels: ID:5,Title:'Regression']")
+            
+            # Should show errors for invalid cases
+            mock_elog.assert_any_call("Failed to retrieve case labels: Could not retrieve case 999: Case not found")
+            mock_elog.assert_any_call("Failed to retrieve case labels: Could not retrieve case 1000: Case not found")
     
  

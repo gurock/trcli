@@ -412,23 +412,30 @@ def get_case_labels(environment: Environment, context: click.Context, case_ids: 
     
     environment.log(f"Retrieving labels for {len(case_id_list)} test case(s)...")
     
-    cases_with_labels, error_message = project_client.api_request_handler.get_case_labels(case_id_list)
+    cases_with_labels, error_messages = project_client.api_request_handler.get_case_labels(case_id_list)
     
-    if error_message:
-        environment.elog(f"Failed to retrieve case labels: {error_message}")
-        exit(1)
-    else:
+    # Display errors for failed cases
+    if error_messages:
+        for error in error_messages:
+            environment.elog(f"Failed to retrieve case labels: {error}")
+    
+    # Display results for successful cases
+    if cases_with_labels:
         environment.log(f"Found {len(cases_with_labels)} test case(s):")
         environment.log("")
         
-        if cases_with_labels:
-            for case in cases_with_labels:
-                case_labels = case.get('labels', [])
-                label_info = []
-                for label in case_labels:
-                    label_info.append(f"ID:{label.get('id')},Title:'{label.get('title')}'")
-                
-                labels_str = f" [Labels: {'; '.join(label_info)}]" if label_info else " [No labels]"
-                environment.log(f"  Case ID: {case['id']}, Title: '{case['title']}'{labels_str}")
-        else:
-            environment.log("  No test cases found.") 
+        for case in cases_with_labels:
+            case_labels = case.get('labels', [])
+            label_info = []
+            for label in case_labels:
+                label_info.append(f"ID:{label.get('id')},Title:'{label.get('title')}'")
+            
+            labels_str = f" [Labels: {'; '.join(label_info)}]" if label_info else " [No labels]"
+            environment.log(f"  Case ID: {case['id']}, Title: '{case['title']}'{labels_str}")
+    else:
+        if not error_messages:
+            environment.log("No test cases found.")
+    
+    # Only exit with error if all cases failed
+    if error_messages and not cases_with_labels:
+        exit(1)
