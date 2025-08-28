@@ -13,6 +13,7 @@ ADD_RUN_FAULT_MAPPING = dict(
     missing_title="Please give your Test Run a title using the --title argument.",
 )
 
+#TODO Very inconvenient to use and maintain, consider refactoring and replacing with constants.
 FAULT_MAPPING = dict(
     invalid_file="Provided file is not a valid file.",
     missing_host="Please provide a TestRail server address with the -h argument.",
@@ -63,7 +64,8 @@ FAULT_MAPPING = dict(
     proxy_bypass_error= "Failed to bypass the proxy for host. Please check the settings.",
     proxy_invalid_configuration= "The provided proxy configuration is invalid. Please check the proxy URL and format.",
     ssl_error_on_proxy= "SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
-    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy."
+    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy.",
+    api_request_has_failed="API request has failed with status code {status_code}."
 )
 
 COMMAND_FAULT_MAPPING = dict(
@@ -108,16 +110,90 @@ class SuiteModes(enum.IntEnum):
     single_suite_baselines = 2
     multiple_suites = 3
 
+class SkippingMessage:
+    SKIP_TEST_RUN_AND_RESULTS = "Skipping test run and results upload as per user request."
+    NO_TEST_CASES_TO_UPDATE = "No test cases to update. Skipping."
+    NO_TEST_CASES_TO_ADD = "No new test cases to add. Skipping."
+
+
+class ProcessingMessages:
+    """
+    Messages displayed during processing.
+    To make life easier:
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    ADDING_SUITE_F_PROJECT_NAME = "Adding missing suite to project {project_name}."
+    CHECKING_PROJECT = "Checking project. "
+    CHECKING_SECTIONS = "Checking for missing sections in the suite. "
+    ADDING_SECTIONS = "Adding missing sections to the suite."
+    ADDING = "Adding. "
+    UPDATING = "Updating. "
+    UPDATING_TEST_RUN = "Updating test run. "
+    CREATING_TEST_RUN = "Creating test run. "
+    CLOSING_TEST_RUN = "Closing test run. "
+    CONTINUE_AS_STANDALONE_RUN = "No plan ID found in the existing run. Continue as standalone run. "
+    UPLOADING_ATTACHMENTS_FF_ATTACHMENTS_RESULTS = "Uploading {attachments} attachments for {results} test results."
+
+
+class SuccessMessages:
+    """
+    Messages displayed on successful operations.
+    To make life easier:
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    ADDED_CASES_FF_AMOUNT_ELAPSED = "Submitted {amount} test cases in {elapsed:.1f} secs."
+    UPDATED_CASES_AMOUNT_FF_ACTUAL_EXPECTED = "Updated amount {actual}/{expected} test cases."
+    UPDATED_RUN_FF_LINK_RUN_ID = "Test run: {link}/index.php?/runs/view/{run_id}"
+    ADDED_RESULTS_FF_AMOUNT_ELAPSED = "Submitted {amount} test results in {elapsed:.1f} secs."
+    CLOSED_RUN = "Run closed successfully."
+    COMPLETED_IN_F_ELAPSED = "Completed in {elapsed:.1f} secs."
+    DONE = "Done."
+
+
+class ErrorMessages:
+    """
+    Messages displayed on errors.
+    To make life easier:
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    CAN_NOT_RESOLVE_SUITE_F_ERROR = "Can not resolve suite: \n{error}"
+    CAN_NOT_ADD_SUITE_F_ERROR = "Can not add suite: \n{error}"
+    NO_SUITE_ID = "Suite ID is not provided and no suite found by name or created."
+    CREATING_UPDATING_TESTRUN_F_ERROR = "Error creating or updating test run: \n{error}"
+    SORTING_TEST_CASES_F_ERROR = "Error checking existing and missing test cases: \n{error}"
+    UPLOADING_SECTIONS_F_ERROR = "Error uploading sections: \n{error}"
+    CASES_UPDATE_F_ERROR = "Error updating test cases: \n{error}"
+    ADDING_TEST_CASES_F_ERROR = "Error adding test cases: \n{error}"
+    CLOSING_TEST_RUN_F_ERROR = "Error closing test run: \n{error}"
+    RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR = "Error retrieving run by ID {run_id}: \n{error}"
+    RETRIEVING_TESTS_IN_IN_RUN_F_ERROR = "Error retrieving tests in run: \n{error}"
+    RETRIEVING_RUN_ID_IN_PLAN_F_ERROR ="Error retrieving run entry ID in plan: {error}"
+    FAILED_TO_DEFINE_AUTOMATION_ID_FIELD = "Failed to define automation_id field system name."
+
 
 class RevertMessages:
-    suite_deleted = "Deleted created suite"
-    suite_not_deleted = "Unable to delete created suite: {error}"
-    section_deleted = "Deleted created section"
-    section_not_deleted = "Unable to delete created section: {error}"
-    test_cases_deleted = "Deleted created test cases"
-    test_cases_not_deleted = "Unable to delete created test cases: {error}"
-    run_deleted = "Deleted created run"
-    run_not_deleted = "Unable to delete created run: {error}"
+    """
+    Messages displayed when reverting created entities in TestRail.
+    To make life easier:
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    SUITE_DELETED = "Deleted created suite"
+    SUITE_NOT_DELETED_FF_SUITE_ID_ERROR = "Unable to delete created suite id {suite_id}: {error}"
+    SECTION_DELETED = "Deleted created section"
+    SECTION_NOT_DELETED_FF_SECTION_ID_ERROR = "Unable to delete created section {section_id}: {error}"
+    TEST_CASES_DELETED = "Deleted created test cases"
+    TEST_CASES_NOT_DELETED_F_ERROR = "Unable to delete created test cases: {error}"
+    RUN_DELETED = "Deleted created run"
+    RUN_NOT_DELETED_FF_RUN_ID_ERROR = "Unable to delete created run with id {run_id}: {error}"
+
 
 OLD_SYSTEM_NAME_AUTOMATION_ID = "custom_automation_id"
 # field name mismatch on testrail side (can not reproduce in cloud version TestRail v9.1.2)
