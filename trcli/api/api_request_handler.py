@@ -1046,12 +1046,12 @@ class ApiRequestHandler:
         
         return matching_cases, ""
 
-    def add_labels_to_tests(self, test_ids: List[int], title: str, project_id: int) -> Tuple[dict, str]:
+    def add_labels_to_tests(self, test_ids: List[int], titles: Union[str, List[str]], project_id: int) -> Tuple[dict, str]:
         """
-        Add a label to multiple tests
+        Add labels to multiple tests
         
         :param test_ids: List of test IDs
-        :param title: Label title (max 20 characters)
+        :param titles: Label title(s) - can be a single string or list of strings (max 20 characters each)
         :param project_id: Project ID for validation
         :returns: Tuple with response data and error string
         """
@@ -1062,6 +1062,19 @@ class ApiRequestHandler:
             'max_labels_reached': [],
             'test_not_found': []
         }
+        
+        # Normalize titles to a list
+        if isinstance(titles, str):
+            title_list = [titles]
+        else:
+            title_list = titles
+        
+        # At this point, title_list should already be validated by the CLI
+        # Just ensure we have clean titles
+        title_list = [title.strip() for title in title_list if title.strip()]
+        
+        if not title_list:
+            return {}, "No valid labels provided"
         
         # Validate test IDs by getting run information for each test
         valid_test_ids = []
@@ -1092,25 +1105,33 @@ class ApiRequestHandler:
         if not valid_test_ids:
             return results, ""
         
-        # Check if label exists or create it
+        # Check if labels exist or create them
         existing_labels, error_message = self.get_labels(project_id)
         if error_message:
             return results, error_message
-            
-        # Find existing label with the same title
-        label_id = None
-        for label in existing_labels.get('labels', []):
-            if label.get('title') == title:
-                label_id = label.get('id')
-                break
         
-        # Create label if it doesn't exist
-        if label_id is None:
-            label_data, error_message = self.add_label(project_id, title)
-            if error_message:
-                return results, error_message
-            label_info = label_data.get('label', label_data)
-            label_id = label_info.get('id')
+        # Process each title to get/create label IDs
+        label_ids = []
+        label_id_to_title = {}  # Map label IDs to their titles
+        for title in title_list:
+            # Find existing label with the same title
+            label_id = None
+            for label in existing_labels.get('labels', []):
+                if label.get('title') == title:
+                    label_id = label.get('id')
+                    break
+            
+            # Create label if it doesn't exist
+            if label_id is None:
+                label_data, error_message = self.add_label(project_id, title)
+                if error_message:
+                    return results, error_message
+                label_info = label_data.get('label', label_data)
+                label_id = label_info.get('id')
+            
+            if label_id:
+                label_ids.append(label_id)
+                label_id_to_title[label_id] = title
         
         # Collect test data and validate constraints
         tests_to_update = []
@@ -1126,26 +1147,43 @@ class ApiRequestHandler:
             
             test_data = test_response.response_text
             current_labels = test_data.get('labels', [])
+            current_label_ids = [label.get('id') for label in current_labels if label.get('id')]
             
-            # Check if label already exists on this test
-            if any(label.get('id') == label_id for label in current_labels):
+            new_label_ids = []
+            already_exists_titles = []
+            
+            for label_id in label_ids:
+                if label_id not in current_label_ids:
+                    new_label_ids.append(label_id)
+                else:
+                    if label_id in label_id_to_title:
+                        already_exists_titles.append(label_id_to_title[label_id])
+            
+            if not new_label_ids:
                 results['successful_tests'].append({
                     'test_id': test_id,
-                    'message': f"Label '{title}' already exists on test {test_id}"
+                    'message': f"All labels already exist on test {test_id}: {', '.join(already_exists_titles)}"
                 })
                 continue
             
             # Check maximum labels limit (10)
-            if len(current_labels) >= 10:
+            if len(current_label_ids) + len(new_label_ids) > 10:
                 results['max_labels_reached'].append(test_id)
                 continue
             
             # Prepare test for update
-            existing_label_ids = [label.get('id') for label in current_labels if label.get('id')]
-            updated_label_ids = existing_label_ids + [label_id]
+            updated_label_ids = current_label_ids + new_label_ids
+            
+            new_label_titles = []
+            for label_id in new_label_ids:
+                if label_id in label_id_to_title:
+                    new_label_titles.append(label_id_to_title[label_id])
+            
             tests_to_update.append({
                 'test_id': test_id,
-                'labels': updated_label_ids
+                'labels': updated_label_ids,
+                'new_labels': new_label_ids,
+                'new_label_titles': new_label_titles
             })
         
         # Update tests using appropriate endpoint
@@ -1157,47 +1195,51 @@ class ApiRequestHandler:
             update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
             
             if update_response.status_code == 200:
+                new_label_titles = test_info.get('new_label_titles', [])
+                new_label_count = len(new_label_titles)
+                
+                if new_label_count == 1:
+                    message = f"Successfully added label '{new_label_titles[0]}' to test {test_info['test_id']}"
+                elif new_label_count > 1:
+                    message = f"Successfully added {new_label_count} labels ({', '.join(new_label_titles)}) to test {test_info['test_id']}"
+                else:
+                    message = f"No new labels added to test {test_info['test_id']}"
+                
                 results['successful_tests'].append({
                     'test_id': test_info['test_id'],
-                    'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
+                    'message': message
                 })
             else:
                 results['failed_tests'].append({
                     'test_id': test_info['test_id'],
                     'error': update_response.error_message
                 })
-        elif len(tests_to_update) > 1:
-            # Multiple tests: use update_tests endpoint with comma-separated test IDs
-            test_ids_str = ",".join(str(test_info['test_id']) for test_info in tests_to_update)
-            batch_update_data = {
-                'test_ids': [test_info['test_id'] for test_info in tests_to_update],
-                'labels': tests_to_update[0]['labels']  # Assuming same labels for all tests
-            }
-            
-            batch_response = self.client.send_post(f"update_tests/{test_ids_str}", payload=batch_update_data)
-            
-            if batch_response.status_code == 200:
-                for test_info in tests_to_update:
+        else:
+            # Multiple tests: use individual updates to ensure each test gets its specific labels
+            for test_info in tests_to_update:
+                test_update_data = {'labels': test_info['labels']}
+                update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
+                
+                if update_response.status_code == 200:
+                    new_label_titles = test_info.get('new_label_titles', [])
+                    new_label_count = len(new_label_titles)
+                    
+                    if new_label_count == 1:
+                        message = f"Successfully added label '{new_label_titles[0]}' to test {test_info['test_id']}"
+                    elif new_label_count > 1:
+                        message = f"Successfully added {new_label_count} labels ({', '.join(new_label_titles)}) to test {test_info['test_id']}"
+                    else:
+                        message = f"No new labels added to test {test_info['test_id']}"
+                    
                     results['successful_tests'].append({
                         'test_id': test_info['test_id'],
-                        'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
+                        'message': message
                     })
-            else:
-                # If batch update fails, fall back to individual updates
-                for test_info in tests_to_update:
-                    test_update_data = {'labels': test_info['labels']}
-                    update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
-                    
-                    if update_response.status_code == 200:
-                        results['successful_tests'].append({
-                            'test_id': test_info['test_id'],
-                            'message': f"Successfully added label '{title}' to test {test_info['test_id']}"
-                        })
-                    else:
-                        results['failed_tests'].append({
-                            'test_id': test_info['test_id'],
-                            'error': update_response.error_message
-                        })
+                else:
+                    results['failed_tests'].append({
+                        'test_id': test_info['test_id'],
+                        'error': update_response.error_message
+                    })
         
         return results, ""
 

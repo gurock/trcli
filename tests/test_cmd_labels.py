@@ -669,7 +669,7 @@ class TestCmdLabelsTests:
             
             assert result.exit_code == 0
             mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
-                test_ids=[1], title='Test Label', project_id=1
+                test_ids=[1], titles=['Test Label'], project_id=1
             )
             mock_log.assert_any_call("Successfully processed 1 test(s):")
 
@@ -709,7 +709,7 @@ class TestCmdLabelsTests:
                 
                 assert result.exit_code == 0
                 mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
-                    test_ids=[1, 2], title='Test Label', project_id=1
+                    test_ids=[1, 2], titles=['Test Label'], project_id=1
                 )
                 mock_log.assert_any_call("Loaded 2 test ID(s) from file 'test_ids.csv'")
 
@@ -883,5 +883,125 @@ class TestCmdLabelsTests:
             mock_log.assert_any_call("  Test ID 999 does not exist or is not accessible")
             mock_log.assert_any_call("Warning: 1 test(s) already have maximum labels (10):")
             mock_log.assert_any_call("  Test 2: Maximum labels reached")
-    
- 
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_multiple_labels_to_tests_success(self, mock_project_client):
+        """Test successful addition of multiple labels to tests"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.add_labels_to_tests.return_value = (
+            {
+                'successful_tests': [
+                    {'test_id': 1, 'message': 'Successfully added 2 labels (label1, label2) to test 1'},
+                    {'test_id': 2, 'message': 'Successfully added 2 labels (label1, label2) to test 2'}
+                ],
+                'failed_tests': [],
+                'max_labels_reached': [],
+                'test_not_found': []
+            }, 
+            ""
+        )
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1,2', '--title', 'label1,label2'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
+                test_ids=[1, 2], titles=['label1', 'label2'], project_id=1
+            )
+            mock_log.assert_any_call("Successfully processed 2 test(s):")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_tests_mixed_valid_invalid(self, mock_project_client):
+        """Test mixed valid/invalid labels - should process valid ones and warn about invalid ones"""
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        mock_client_instance.api_request_handler.add_labels_to_tests.return_value = (
+            {
+                'successful_tests': [
+                    {'test_id': 1, 'message': "Successfully added label 'valid-label' to test 1"}
+                ],
+                'failed_tests': [],
+                'max_labels_reached': [],
+                'test_not_found': []
+            }, 
+            ""
+        )
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1', '--title', 'valid-label,this-title-is-way-too-long-for-testrail'], 
+                obj=self.environment
+            )
+            
+            # Should succeed with valid label
+            assert result.exit_code == 0
+            
+            # Should warn about invalid label
+            mock_elog.assert_any_call("Warning: Label title 'this-title-is-way-too-long-for-testrail' exceeds 20 character limit and will be skipped.")
+            
+            # Should process the valid label
+            mock_client_instance.api_request_handler.add_labels_to_tests.assert_called_once_with(
+                test_ids=[1], titles=['valid-label'], project_id=1
+            )
+            
+            # Should show success for valid label
+            mock_log.assert_any_call("Successfully processed 1 test(s):")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_tests_all_invalid_titles(self, mock_project_client):
+        """Test when all labels are invalid - should fail"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1', '--title', 'this-title-is-way-too-long,another-title-that-is-also-too-long'], 
+                obj=self.environment
+            )
+            
+            # Should fail when all labels are invalid
+            assert result.exit_code == 1
+            
+            # Should show warnings for all invalid labels
+            mock_elog.assert_any_call("Warning: Label title 'this-title-is-way-too-long' exceeds 20 character limit and will be skipped.")
+            mock_elog.assert_any_call("Warning: Label title 'another-title-that-is-also-too-long' exceeds 20 character limit and will be skipped.")
+            mock_elog.assert_any_call("Error: No valid label titles provided after filtering.")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_labels_to_tests_max_labels_validation(self, mock_project_client):
+        """Test early validation for more than 10 labels"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            # Create a title string with 11 labels
+            long_title_list = ','.join([f'label{i}' for i in range(1, 12)])
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['add', '--test-ids', '1', '--title', long_title_list], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_called_with("Error: Cannot add more than 10 labels at once. You provided 11 valid labels.")
+     
+   

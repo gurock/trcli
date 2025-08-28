@@ -383,17 +383,44 @@ def tests(environment: Environment, context: click.Context, *args, **kwargs):
 @tests.command(name='add')
 @click.option("--test-ids", metavar="", help="Comma-separated list of test IDs (e.g., 1,2,3).")
 @click.option("--test-id-file", metavar="", help="CSV file containing test IDs.")
-@click.option("--title", required=True, metavar="", help="Title of the label to add (max 20 characters).")
+@click.option("--title", required=True, metavar="", help="Label title(s) to add (max 20 characters each). Use comma separation for multiple labels (e.g., 'label1,label2').")
 @click.pass_context
 @pass_environment
 def add_to_tests(environment: Environment, context: click.Context, test_ids: str, test_id_file: str, title: str, *args, **kwargs):
-    """Add a label to tests"""
+    """Add label(s) to tests"""
     environment.check_for_required_parameters()
     print_config(environment, "Add Tests")
     
-    if len(title) > 20:
-        environment.elog("Error: Label title must be 20 characters or less.")
+    # Parse comma-separated titles
+    title_list = [t.strip() for t in title.split(",") if t.strip()]
+    
+    # Filter valid and invalid labels
+    valid_titles = []
+    invalid_titles = []
+    
+    for t in title_list:
+        if len(t) > 20:
+            invalid_titles.append(t)
+        else:
+            valid_titles.append(t)
+    
+    # Show warnings for invalid labels but continue with valid ones
+    if invalid_titles:
+        for invalid_title in invalid_titles:
+            environment.elog(f"Warning: Label title '{invalid_title}' exceeds 20 character limit and will be skipped.")
+    
+    # Check if we have any valid labels left
+    if not valid_titles:
+        environment.elog("Error: No valid label titles provided after filtering.")
         exit(1)
+    
+    # Validate maximum number of valid labels (TestRail limit is 10 labels per test)
+    if len(valid_titles) > 10:
+        environment.elog(f"Error: Cannot add more than 10 labels at once. You provided {len(valid_titles)} valid labels.")
+        exit(1)
+    
+    # Use only valid titles for processing
+    title_list = valid_titles
     
     # Validate that either test_ids or test_id_file is provided
     if not test_ids and not test_id_file:
@@ -499,43 +526,48 @@ def add_to_tests(environment: Environment, context: click.Context, test_ids: str
     )
     project_client.resolve_project()
     
-    environment.log(f"Adding label '{title}' to {len(test_id_list)} test(s)...")
+    # Log message adjusted for single/multiple labels
+    if len(title_list) == 1:
+        environment.log(f"Adding label '{title_list[0]}' to {len(test_id_list)} test(s)...")
+    else:
+        environment.log(f"Adding {len(title_list)} labels ({', '.join(title_list)}) to {len(test_id_list)} test(s)...")
     
     results, error_message = project_client.api_request_handler.add_labels_to_tests(
         test_ids=test_id_list,
-        title=title,
+        titles=title_list,
         project_id=project_client.project.project_id
     )
     
+    # Handle validation errors (warnings, not fatal)
     if error_message:
-        environment.elog(f"Failed to add labels to tests: {error_message}")
-        exit(1)
-    else:
-        # Report results
-        successful_tests = results.get('successful_tests', [])
-        failed_tests = results.get('failed_tests', [])
-        max_labels_reached = results.get('max_labels_reached', [])
-        test_not_found = results.get('test_not_found', [])
-        
-        if test_not_found:
-            environment.log(f"Warning: {len(test_not_found)} test(s) not found or not accessible:")
-            for test_id in test_not_found:
-                environment.log(f"  Test ID {test_id} does not exist or is not accessible")
-        
-        if successful_tests:
-            environment.log(f"Successfully processed {len(successful_tests)} test(s):")
-            for test_result in successful_tests:
-                environment.log(f"  Test {test_result['test_id']}: {test_result['message']}")
-        
-        if max_labels_reached:
-            environment.log(f"Warning: {len(max_labels_reached)} test(s) already have maximum labels (10):")
-            for test_id in max_labels_reached:
-                environment.log(f"  Test {test_id}: Maximum labels reached")
-        
-        if failed_tests:
-            environment.log(f"Failed to process {len(failed_tests)} test(s):")
-            for test_result in failed_tests:
-                environment.log(f"  Test {test_result['test_id']}: {test_result['error']}")
+        environment.elog(f"Warning: {error_message}")
+    
+    # Process results
+    # Report results
+    successful_tests = results.get('successful_tests', [])
+    failed_tests = results.get('failed_tests', [])
+    max_labels_reached = results.get('max_labels_reached', [])
+    test_not_found = results.get('test_not_found', [])
+    
+    if test_not_found:
+        environment.log(f"Warning: {len(test_not_found)} test(s) not found or not accessible:")
+        for test_id in test_not_found:
+            environment.log(f"  Test ID {test_id} does not exist or is not accessible")
+    
+    if successful_tests:
+        environment.log(f"Successfully processed {len(successful_tests)} test(s):")
+        for test_result in successful_tests:
+            environment.log(f"  Test {test_result['test_id']}: {test_result['message']}")
+    
+    if max_labels_reached:
+        environment.log(f"Warning: {len(max_labels_reached)} test(s) already have maximum labels (10):")
+        for test_id in max_labels_reached:
+            environment.log(f"  Test {test_id}: Maximum labels reached")
+    
+    if failed_tests:
+        environment.log(f"Failed to process {len(failed_tests)} test(s):")
+        for test_result in failed_tests:
+            environment.log(f"  Test {test_result['test_id']}: {test_result['error']}")
 
 
 @tests.command(name='list')
