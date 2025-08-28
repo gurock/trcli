@@ -188,11 +188,7 @@ class JunitParser(FileParser):
     def _parse_test_cases(self, section) -> List[TestRailCase]:
         test_cases = []
 
-        for case in section:
-            """
-            TODO: use section.iterchildren(JUnitTestCase) to get only testcases belonging to the section
-            required for nested suites
-            """
+        for case in section.iterchildren(JUnitTestCase):
             automation_id = f"{case.classname}.{case.name}"
             case_id, case_name = self._extract_case_id_and_name(case)
             result_steps, attachments, result_fields, comments, case_fields, sauce_session = self._parse_case_properties(
@@ -246,12 +242,9 @@ class JunitParser(FileParser):
             if isinstance(section, JUnitTestSuite):
                 if not len(section):
                     continue
-                """
-                TODO: Handle nested suites if needed (add sub_sections to data class TestRailSection)
+
                 inner_suites = section.testsuites()
                 sub_sections = self._parse_sections(inner_suites)
-                then sub_sections=sub_sections
-                """
                 properties = self._extract_section_properties(section, processed_props)
                 test_cases = self._parse_test_cases(section)
                 self.env.log(f"Processed {len(test_cases)} test cases in section {section.name}.")
@@ -259,6 +252,7 @@ class JunitParser(FileParser):
                     section.name,
                     testcases=test_cases,
                     properties=properties,
+                    sub_sections=sub_sections
                 ))
 
         return sections
