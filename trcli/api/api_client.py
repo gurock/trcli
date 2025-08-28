@@ -27,6 +27,13 @@ class APIClientResult:
     response_text: Union[Dict, str, List]
     error_message: str
 
+    def error_or_bad_code(self, expected_code=200) -> str:
+        if self.error_message:
+            return self.error_message
+        if self.status_code != expected_code:
+            return FAULT_MAPPING.get("api_request_has_failed").format(status_code=self.status_code)
+        return ""
+
 
 class APIClient:
     """
