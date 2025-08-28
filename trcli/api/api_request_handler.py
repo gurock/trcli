@@ -835,10 +835,12 @@ class ApiRequestHandler:
         else:
             title_list = titles
         
-        # Validate title lengths
-        for title in title_list:
-            if len(title.strip()) > 20:
-                return {}, f"Label title '{title.strip()}' exceeds 20 character limit"
+        # At this point, title_list should already be validated by the CLI
+        # Just ensure we have clean titles
+        title_list = [title.strip() for title in title_list if title.strip()]
+        
+        if not title_list:
+            return {}, "No valid labels provided"
         
         # Initialize results structure
         results = {
@@ -890,6 +892,8 @@ class ApiRequestHandler:
             
         # Find existing labels and create missing ones
         label_ids = []
+        label_id_to_title = {}  # Map label IDs to their titles
+        
         for title in title_list:
             title = title.strip()  # Clean whitespace
             if not title:  # Skip empty titles
@@ -911,6 +915,7 @@ class ApiRequestHandler:
             
             if label_id:
                 label_ids.append(label_id)
+                label_id_to_title[label_id] = title  # Store the mapping
         
         # Collect case data and validate constraints
         cases_to_update = []
@@ -936,13 +941,9 @@ class ApiRequestHandler:
                 if label_id not in current_label_ids:
                     new_label_ids.append(label_id)
                 else:
-                    # Find title for this label_id
-                    for title in title_list:
-                        title = title.strip()
-                        for label in existing_labels.get('labels', []):
-                            if label.get('id') == label_id and label.get('title') == title:
-                                already_exists_titles.append(title)
-                                break
+                    # Use the mapping to get the title for this label_id
+                    if label_id in label_id_to_title:
+                        already_exists_titles.append(label_id_to_title[label_id])
             
             # If no new labels to add, record as already exists
             if not new_label_ids:
@@ -958,12 +959,20 @@ class ApiRequestHandler:
                 results['max_labels_reached'].append(case_id)
                 continue
             
-            # Prepare case for update
+            # Prepare case for update and track which labels are being added
             updated_label_ids = current_label_ids + new_label_ids
+            
+            # Get titles for the new labels being added using the mapping
+            new_label_titles = []
+            for label_id in new_label_ids:
+                if label_id in label_id_to_title:
+                    new_label_titles.append(label_id_to_title[label_id])
+            
             cases_to_update.append({
                 'case_id': case_id,
                 'labels': updated_label_ids,
-                'new_labels': new_label_ids
+                'new_labels': new_label_ids,
+                'new_label_titles': new_label_titles
             })
         
         # Update cases individually to preserve existing labels correctly
@@ -974,12 +983,15 @@ class ApiRequestHandler:
             
             if update_response.status_code == 200:
                 # Create message based on number of labels added
-                new_label_count = len(case_info.get('new_labels', []))
+                new_label_titles = case_info.get('new_label_titles', [])
+                new_label_count = len(new_label_titles)
+                
                 if new_label_count == 1:
-                    label_titles = [title.strip() for title in title_list if title.strip()]
-                    message = f"Successfully added label '{label_titles[0]}' to case {case_info['case_id']}"
+                    message = f"Successfully added label '{new_label_titles[0]}' to case {case_info['case_id']}"
+                elif new_label_count > 1:
+                    message = f"Successfully added {new_label_count} labels ({', '.join(new_label_titles)}) to case {case_info['case_id']}"
                 else:
-                    message = f"Successfully added {new_label_count} labels to case {case_info['case_id']}"
+                    message = f"No new labels added to case {case_info['case_id']}"
                 
                 results['successful_cases'].append({
                     'case_id': case_info['case_id'],

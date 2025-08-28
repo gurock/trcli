@@ -246,15 +246,33 @@ def add_to_cases(environment: Environment, context: click.Context, case_ids: str
     # Parse comma-separated titles
     title_list = [t.strip() for t in title.split(",") if t.strip()]
     
-    # Validate each title length
+    # Filter valid and invalid labels
+    valid_titles = []
+    invalid_titles = []
+    
     for t in title_list:
         if len(t) > 20:
-            environment.elog(f"Error: Label title '{t}' must be 20 characters or less.")
-            exit(1)
+            invalid_titles.append(t)
+        else:
+            valid_titles.append(t)
     
-    if not title_list:
-        environment.elog("Error: At least one valid label title must be provided.")
+    # Show warnings for invalid labels but continue with valid ones
+    if invalid_titles:
+        for invalid_title in invalid_titles:
+            environment.elog(f"Warning: Label title '{invalid_title}' exceeds 20 character limit and will be skipped.")
+    
+    # Check if we have any valid labels left
+    if not valid_titles:
+        environment.elog("Error: No valid label titles provided after filtering.")
         exit(1)
+    
+    # Validate maximum number of valid labels (TestRail limit is 10 labels per case)
+    if len(valid_titles) > 10:
+        environment.elog(f"Error: Cannot add more than 10 labels at once. You provided {len(valid_titles)} valid labels.")
+        exit(1)
+    
+    # Use only valid titles for processing
+    title_list = valid_titles
     
     try:
         case_id_list = [int(id.strip()) for id in case_ids.split(",")]
@@ -281,39 +299,40 @@ def add_to_cases(environment: Environment, context: click.Context, case_ids: str
         suite_id=environment.suite_id
     )
     
+    # Handle validation errors (but don't exit if there are successful cases)
     if error_message:
-        environment.elog(f"Failed to add labels to cases: {error_message}")
+        environment.elog(f"Warning: {error_message}")
+    
+    # Always process results (even if there were validation errors)
+    # Report results
+    successful_cases = results.get('successful_cases', [])
+    failed_cases = results.get('failed_cases', [])
+    max_labels_reached = results.get('max_labels_reached', [])
+    case_not_found = results.get('case_not_found', [])
+    
+    if case_not_found:
+        environment.elog(f"Error: {len(case_not_found)} test case(s) not found:")
+        for case_id in case_not_found:
+            environment.elog(f"  Case ID {case_id} does not exist in the project")
+    
+    if successful_cases:
+        environment.log(f"Successfully processed {len(successful_cases)} case(s):")
+        for case_result in successful_cases:
+            environment.log(f"  Case {case_result['case_id']}: {case_result['message']}")
+    
+    if max_labels_reached:
+        environment.log(f"Warning: {len(max_labels_reached)} case(s) already have maximum labels (10):")
+        for case_id in max_labels_reached:
+            environment.log(f"  Case {case_id}: Maximum labels reached")
+    
+    if failed_cases:
+        environment.log(f"Failed to process {len(failed_cases)} case(s):")
+        for case_result in failed_cases:
+            environment.log(f"  Case {case_result['case_id']}: {case_result['error']}")
+    
+    # Exit with error if there were invalid case IDs
+    if case_not_found:
         exit(1)
-    else:
-        # Report results
-        successful_cases = results.get('successful_cases', [])
-        failed_cases = results.get('failed_cases', [])
-        max_labels_reached = results.get('max_labels_reached', [])
-        case_not_found = results.get('case_not_found', [])
-        
-        if case_not_found:
-            environment.elog(f"Error: {len(case_not_found)} test case(s) not found:")
-            for case_id in case_not_found:
-                environment.elog(f"  Case ID {case_id} does not exist in the project")
-        
-        if successful_cases:
-            environment.log(f"Successfully processed {len(successful_cases)} case(s):")
-            for case_result in successful_cases:
-                environment.log(f"  Case {case_result['case_id']}: {case_result['message']}")
-        
-        if max_labels_reached:
-            environment.log(f"Warning: {len(max_labels_reached)} case(s) already have maximum labels (10):")
-            for case_id in max_labels_reached:
-                environment.log(f"  Case {case_id}: Maximum labels reached")
-        
-        if failed_cases:
-            environment.log(f"Failed to process {len(failed_cases)} case(s):")
-            for case_result in failed_cases:
-                environment.log(f"  Case {case_result['case_id']}: {case_result['error']}")
-        
-        # Exit with error if there were invalid case IDs
-        if case_not_found:
-            exit(1)
 
 
 @cases.command(name='list')
