@@ -72,6 +72,7 @@ class Environment:
         self.proxy = None  # Add proxy related attributes
         self.noproxy = None
         self.proxy_user = None
+        self.update_cases = False  # Flag to indicate if cases should be updated
 
     @property
     def case_fields(self):
