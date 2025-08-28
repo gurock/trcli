@@ -40,6 +40,7 @@ class TestRailResult:
     custom_step_results: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
     def __post_init__(self):
+        #TODO Remove result handling, it's redundant and this is not the place for it
         if self.junit_result_unparsed is not None:
             self.status_id = self.calculate_status_id_from_junit_element(
                 self.junit_result_unparsed
@@ -126,7 +127,7 @@ class TestRailCase:
 
     title: str
     section_id: int = field(default=None, skip_if_default=True)
-    case_id: int = field(default=None, skip_if_default=True)
+    case_id: int = field(default=None, skip_if_default=True, metadata={"serde_skip": True})
     estimate: str = field(default=None, skip_if_default=True)
     template_id: int = field(default=None, skip_if_default=True)
     type_id: int = field(default=None, skip_if_default=True)
@@ -134,7 +135,7 @@ class TestRailCase:
     refs: str = field(default=None, skip_if_default=True)
     case_fields: Optional[dict] = field(default_factory=dict, skip=True)
     result: TestRailResult = field(default=None, metadata={"serde_skip": True})
-    custom_automation_id: str = field(default=None, skip_if_default=True)
+    custom_automation_id: Optional[str] = field(default=None,  metadata={"serde_skip": True})
     # Uncomment if we want to support separated steps in cases in the future
     # custom_steps_separated: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
 
@@ -151,11 +152,8 @@ class TestRailCase:
                 class_name=self.__class__.__name__,
                 reason="Title is empty.",
             )
-        # Fallback logic for custom_case_automation_id via dynamic attribute assignment
         if self.custom_automation_id:
             self.custom_automation_id = self.custom_automation_id.strip()
-        elif hasattr(self, "custom_case_automation_id") and self.custom_case_automation_id:
-            self.custom_automation_id = self.custom_case_automation_id.strip()
 
     def add_global_case_fields(self, case_fields: dict) -> None:
         """Add global case fields without overriding the existing case-specific fields
@@ -210,6 +208,9 @@ class TestRailSection:
         default_factory=list, metadata={"serde_skip": True}
     )
 
+    sub_sections: List = field(
+        default_factory=list, metadata={"serde_skip": True})
+
     def __getitem__(self, item):
         return getattr(self, item)
 
@@ -241,8 +242,33 @@ class TestRailSuite:
         self.name = f"{self.source} {current_time}" if self.name is None else self.name
 
 
+@serialize
+@deserialize
+@dataclass
+class TestRun:
+    """Class for creating Test Rail test run"""
+
+    name: str = field(default=None, skip_if_default=True)
+    description: str = field(default=None, skip_if_default=True)
+    suite_id: int = field(default=None, skip_if_default=True)
+    milestone_id: int = field(default=None, skip_if_default=True)
+    assignedto_id: int = field(default=None, skip_if_default=True)
+    include_all: bool = field(default=False, skip_if_default=False)
+    case_ids: List[int] = field(default_factory=list, skip_if_default=True)
+    refs: str = field(default=None, skip_if_default=True)
+    start_on: str = field(default=None, skip_if_default=True)
+    due_on: str = field(default=None, skip_if_default=True)
+    run_fields: Optional[dict] = field(default_factory=dict, skip=True)
+
+    def to_dict(self) -> dict:
+        case_dict = to_dict(self)
+        case_dict.update(self.run_fields)
+        return case_dict
+
+
 @dataclass
 class ProjectData:
     project_id: int
+    name: str
     suite_mode: int
     error_message: str
