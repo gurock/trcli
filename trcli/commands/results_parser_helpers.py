@@ -95,6 +95,13 @@ def results_parser_options(f):
         help="List of result fields and values for test results creation. "
              "Usage: --result-fields custom_field_a:value1 --result-fields custom_field_b:3",
     )
+    @click.option(
+        "--update-cases",
+        is_flag=True,
+        default=False,
+        metavar="",
+        help="Use this option if you want to update already existing test cases with data provided from parsed testsuite."
+    )
     @click.option("--allow-ms", is_flag=True, help="Allows using milliseconds for elapsed times.")
     @functools.wraps(f)
     def wrapper_common_options(*args, **kwargs):
