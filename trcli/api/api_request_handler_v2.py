@@ -226,6 +226,19 @@ class ApiRequestHandler:
         """
         return self._run_handler.close_run(self._data_provider.test_run_id)
 
+    def has_missing_sections(self) -> Tuple[bool, str]:
+        """
+        Check if there are sections missing in TestRail compared to the data provider.
+        iterates through all sections, if it finds first missing section,stops and returns True.
+        :returns: Tuple with boolean indicating if there are missing sections and error string.
+        """
+        try:
+            return self._section_handler.has_missing_sections(), ""
+        except EntityException as e:
+            return False, e.message
+        except KeyError as e:
+            return False, f"Invalid response structure checking for missing sections: {str(e)}"
+
     def add_missing_sections(self) -> Tuple[List[int], str]:
         """
         Adds sections that are missing in TestRail.

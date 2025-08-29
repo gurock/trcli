@@ -162,6 +162,7 @@ class ErrorMessages:
     and following part of the name is arg(s) name(s) for formating
     Number of F shows how many args are needed
     """
+    CHECKING_MISSING_SECTIONS_F_ERROR = "Error checking existing and missing sections: \n{error}"
     CAN_NOT_RESOLVE_SUITE_F_ERROR = "Can not resolve suite: \n{error}"
     CAN_NOT_ADD_SUITE_F_ERROR = "Can not add suite: \n{error}"
     NO_SUITE_ID = "Suite ID is not provided and no suite found by name or created."

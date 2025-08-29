@@ -100,7 +100,7 @@ class ResultsUploader(ProjectBasedClient):
             self.environment.log(SkippingMessage.NO_TEST_CASES_TO_ADD)
 
     def _handle_sections_upload(self) -> None:
-        #no needs to check if any missing section, it will upload only missing
+        self._confirmation_for_sections_upload()
         added_sections, error_message = self._upload_sections()
         self._data_provider.created_sections_ids = added_sections
         if error_message:
@@ -126,6 +126,22 @@ class ResultsUploader(ProjectBasedClient):
 
         self.environment.log(ProcessingMessages.ADDING_SECTIONS)
         return self._api_request_handler.add_missing_sections()
+
+    def _confirmation_for_sections_upload(self) -> None:
+        has_missing_sections, error_message = self._api_request_handler.has_missing_sections()
+        if error_message:
+            self.environment.elog(ErrorMessages.CHECKING_MISSING_SECTIONS_F_ERROR.format(error=error_message))
+            self._rollback_and_exit()
+
+        if not has_missing_sections:
+            return
+
+        prompt_message = PROMPT_MESSAGES["create_missing_sections"].format(project_name=self.project.name)
+        fault_message = FAULT_MAPPING["no_user_agreement"].format(type="sections")
+
+        if not self.environment.get_prompt_response_for_auto_creation(prompt_message):
+            self.environment.elog(fault_message)
+            self._rollback_and_exit()
 
     def _update_existing_test_cases(self) -> None:
         cases_to_update = self._data_provider.existing_cases

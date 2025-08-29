@@ -453,13 +453,11 @@ class SectionHandler(ApiEntities):
         suite_id = self._provider.suite_id
         return self._get_all_entities("sections", f"get_sections/{project_id}&suite_id={suite_id}")
 
-    def _is_section_missed(self,section: TestRailSection, parent_id: Optional[int] = None) -> bool:
-        entities = self.entities
-        matched = next((s for s in entities if s["parent_id"] == parent_id and s["name"] == section.name), None)
-        if not matched:
-            return True
-        section.section_id = matched["id"]
-        return any(self._is_section_missed(sub, section.section_id) for sub in section.sub_sections)
+    def has_missing_sections(self) -> bool:
+        for section in self._provider.suites_input.testsections:
+            if self._is_section_missed(section):
+                return True
+        return False
 
     def create_missing_sections(self) -> Tuple[List[int], str]:
         added_ids = []
@@ -470,6 +468,14 @@ class SectionHandler(ApiEntities):
                 return list(reversed(added_ids)), error
         # important to reverse the order if we need to delete sections later in case rollback
         return list(reversed(added_ids)), ""
+
+    def _is_section_missed(self,section: TestRailSection, parent_id: Optional[int] = None) -> bool:
+        entities = self.entities
+        matched = next((s for s in entities if s["parent_id"] == parent_id and s["name"] == section.name), None)
+        if not matched:
+            return True
+        parent_id = matched["id"]
+        return any(self._is_section_missed(sub, parent_id) for sub in section.sub_sections)
 
     def _create_section_tree(self, section: TestRailSection, parent_id: Optional[int] = None) -> Tuple[List[int], str]:
         """

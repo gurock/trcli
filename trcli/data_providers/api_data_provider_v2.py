@@ -100,11 +100,22 @@ class ApiDataProvider:
 
     def update_cases_section_ids(self):
         """Update case section IDs with actual section IDs."""
+        case_ids_to_update = self._collect_cases_id_from_existing_cases()
         for section in self._collect_all_sections():
+
             if section.section_id is None:
                 raise DataProviderException(f"Section ID is not initialized for section: {section.name}.")
+
             for case in section.testcases:
+                #no need to update section_id for existing cases if update is not allowed
+                if not self._environment.update_cases:
+                    if case.case_id in case_ids_to_update:
+                        continue
                 case.section_id = section.section_id
+
+
+    def _collect_cases_id_from_existing_cases(self) -> set[int]:
+        return {case.case_id for case in self.existing_cases if case.case_id is not None}
 
     def update_test_run_description(self, description: str) -> None:
         """Update test run description."""
