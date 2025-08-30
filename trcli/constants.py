@@ -153,6 +153,22 @@ class SuccessMessages:
     COMPLETED_IN_F_ELAPSED = "Completed in {elapsed:.1f} secs."
     DONE = "Done."
 
+class ErrorMessagesSuites:
+    """
+    Messages displayed on errors related to suite resolving.
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    UNKNOWN_SUITE_MODE_F_MODE = "Suite mode: '{mode}' not recognised."
+    CAN_NOT_RESOLVE_SUITE_F_ERROR = "Can not resolve suite: \n{error}"
+    NO_SUITES_IN_SINGLE_SUITE_MODE = "No suites found in single suite mode."
+    CAN_NOT_ADD_SUITE_F_ERROR = "Can not add suite: \n{error}"
+    ONE_OR_MORE_BASE_LINE_CREATED = "One or more baselines created under '{project_name}' (single suite "
+    "with baseline project). Please provide suite ID by "
+    "specifying --suite-id."
+    NOT_EXISTING_F_SUITE_ID = "Not existing suite id specified --suite-id: {suite_id}"
+
 
 class ErrorMessages:
     """
@@ -163,9 +179,6 @@ class ErrorMessages:
     Number of F shows how many args are needed
     """
     CHECKING_MISSING_SECTIONS_F_ERROR = "Error checking existing and missing sections: \n{error}"
-    CAN_NOT_RESOLVE_SUITE_F_ERROR = "Can not resolve suite: \n{error}"
-    CAN_NOT_ADD_SUITE_F_ERROR = "Can not add suite: \n{error}"
-    NO_SUITE_ID = "Suite ID is not provided and no suite found by name or created."
     CREATING_UPDATING_TESTRUN_F_ERROR = "Error creating or updating test run: \n{error}"
     SORTING_TEST_CASES_F_ERROR = "Error checking existing and missing test cases: \n{error}"
     UPLOADING_SECTIONS_F_ERROR = "Error uploading sections: \n{error}"

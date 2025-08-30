@@ -4,7 +4,7 @@ from trcli.api.api_client import APIClient
 from trcli.api.api_request_handler_v2 import ApiRequestHandler
 from trcli.cli import Environment
 from trcli.constants import ProjectErrors, FAULT_MAPPING, SuiteModes, PROMPT_MESSAGES, ProcessingMessages, \
-    SuccessMessages, ErrorMessages
+    SuccessMessages, ErrorMessages, ErrorMessagesSuites
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, ProjectData
 from trcli.data_providers.api_data_provider_v2 import ApiDataProvider
@@ -115,53 +115,76 @@ class ProjectBasedClient:
         existing, error_message = self._api_request_handler.check_suite_id()
 
         if error_message:
-            self._exit_with_error(ErrorMessages.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message))
+            self._exit_with_error(ErrorMessagesSuites.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message))
+
         if not existing:
             self._exit_with_error(
-                f"Not existing suite ID provided: {self.environment.suite_id} "
-                f"for project: {self.project.name} with id: {self.project.project_id}."
-            )
+                ErrorMessagesSuites.NOT_EXISTING_F_SUITE_ID.format(suite_id=self.environment.suite_id))
 
     def _handle_suite_by_name(self) -> None:
         """Handles suite selection when suite name is provided."""
         suite_mode = self.project.suite_mode
         project_id = self.project.project_id
 
-        if suite_mode not in (SuiteModes.multiple_suites, SuiteModes.single_suite_baselines):
-            self._exit_with_error(
-                FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
-            )
+        if suite_mode not in (
+                SuiteModes.multiple_suites,
+                SuiteModes.single_suite_baselines,
+                SuiteModes.single_suite,
+        ):
+            self._exit_with_error(ErrorMessagesSuites.UNKNOWN_SUITE_MODE_F_MODE.format(mode=suite_mode))
 
-        suite_id, error_message = self._api_request_handler.resolve_suite_id_using_name()
-        if error_message:
-            self._exit_with_error(ErrorMessages.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message))
-
-        if suite_id:
-            self._data_provider.update_suite_id(suite_id)
-            self.environment.log(f"Using suite ID: {suite_id} for project (ID): {project_id}.")
-            return
-
-        if suite_mode == SuiteModes.multiple_suites:
-            suite_id, error_message = self._prompt_user_and_add_suite()
-            if error_message:
-                self._exit_with_error(ErrorMessages.CAN_NOT_ADD_SUITE_F_ERROR.format(error=error_message))
-            self._data_provider.update_suite_id(suite_id, is_created=True)
+        if suite_mode == SuiteModes.single_suite:
+            self._handle_single_suite()
             return
 
         if suite_mode == SuiteModes.single_suite_baselines:
-            suite_ids, error_message = self._api_request_handler.get_suites_ids()
-            if error_message:
-                self._exit_with_error(ErrorMessages.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message))
-            if len(suite_ids) != 1:
-                self._exit_with_error(
-                    FAULT_MAPPING["not_unique_suite_id_single_suite_baselines"].format(
-                        project_name=self.environment.project
-                    )
-                )
-            self._data_provider.update_suite_id(suite_ids[0])
+            self._handle_single_suite_baselines()
+            return
 
-        if self._data_provider.suites_input.suite_id is None:
-            self._exit_with_error(ErrorMessages.NO_SUITE_ID)
+        if suite_mode == SuiteModes.multiple_suites:
+            self._handle_multiple_suites(project_id)
+            return
+
+    def _handle_single_suite(self) -> None:
+        suite_ids, error_message = self._api_request_handler.get_suites_ids()
+        if error_message:
+            self._exit_with_error(
+                ErrorMessagesSuites.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message)
+            )
+        if not suite_ids:
+            self._exit_with_error(ErrorMessagesSuites.NO_SUITES_IN_SINGLE_SUITE_MODE)
+
+        self._data_provider.update_suite_id(suite_ids[0])
+
+    def _handle_single_suite_baselines(self) -> None:
+        suite_ids, error_message = self._api_request_handler.get_suites_ids()
+        if error_message:
+            self._exit_with_error(
+                ErrorMessagesSuites.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message)
+            )
+        if len(suite_ids) > 1:
+            self._exit_with_error(ErrorMessagesSuites.ONE_OR_MORE_BASE_LINE_CREATED)
+
+        self._data_provider.update_suite_id(suite_ids[0])
+
+    def _handle_multiple_suites(self, project_id: int) -> None:
+        # First try resolving by name
+        suite_id, error_message = self._api_request_handler.resolve_suite_id_using_name()
+        if error_message:
+            self._exit_with_error(
+                ErrorMessagesSuites.CAN_NOT_RESOLVE_SUITE_F_ERROR.format(error=error_message)
+            )
+        if suite_id:
+            self._data_provider.update_suite_id(suite_id)
+            return
+
+        # Otherwise, prompt user to add a suite
+        suite_id, error_message = self._prompt_user_and_add_suite()
+        if error_message:
+            self._exit_with_error(
+                ErrorMessagesSuites.CAN_NOT_ADD_SUITE_F_ERROR.format(error=error_message)
+            )
+        self._data_provider.update_suite_id(suite_id, is_created=True)
 
     def _prompt_user_and_add_suite(self) -> Tuple[Optional[int], str]:
         prompt_message = PROMPT_MESSAGES["create_new_suite"].format(

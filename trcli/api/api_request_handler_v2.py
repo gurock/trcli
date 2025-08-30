@@ -69,7 +69,7 @@ class ApiRequestHandler:
         :returns: tuple with id of the suite and error message
         """
         try:
-            entities = self._section_handler.entities
+            entities = self._suite_handler.entities
             suite_name = self._data_provider.suites_input.name
             suite = next(filter(lambda x: x["name"] == suite_name, entities), None)
             if suite:
