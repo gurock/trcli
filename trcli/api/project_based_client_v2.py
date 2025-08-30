@@ -189,9 +189,9 @@ class ProjectBasedClient:
     def _prompt_user_and_add_suite(self) -> Tuple[Optional[int], str]:
         prompt_message = PROMPT_MESSAGES["create_new_suite"].format(
             suite_name=self._data_provider.suites_input.name,
-            project_name=self.environment.project,
+            project_name=self.project.name,
         )
-        adding_message = ProcessingMessages.ADDING_SUITE_F_PROJECT_NAME.format(project_name=self.environment.project)
+        adding_message = ProcessingMessages.ADDING_SUITE_F_PROJECT_NAME.format(project_name=self.project.name)
         fault_message = FAULT_MAPPING["no_user_agreement"].format(type="suite")
 
         if not self.environment.get_prompt_response_for_auto_creation(prompt_message):
