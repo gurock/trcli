@@ -1,10 +1,10 @@
 import time
-from typing import Tuple, List, Optional
+from typing import List
 
 from trcli.api.project_based_client_v2 import ProjectBasedClient
 from trcli.cli import Environment
 from trcli.constants import PROMPT_MESSAGES, FAULT_MAPPING, SuccessMessages, ProcessingMessages, SkippingMessage, \
-    ErrorMessages
+    ErrorMessages, ErrorMessagesRun
 
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 from trcli.data_providers.api_data_provider_v2 import DataProviderException
@@ -67,11 +67,10 @@ class ResultsUploader(ProjectBasedClient):
         if self._data_provider.test_run_id:
             error_message = self._update_test_run()
         else:
-            run_id, error_message = self._create_test_run()
-            self._data_provider.update_test_run_id_if_created(run_id)
+            error_message = self._create_test_run()
 
         if error_message:
-            self.environment.elog(ErrorMessages.CREATING_UPDATING_TESTRUN_F_ERROR.format(error=error_message))
+            self.environment.elog(error_message)
             self._rollback_and_exit()
 
         return self._data_provider.test_run_id
@@ -204,20 +203,29 @@ class ResultsUploader(ProjectBasedClient):
             self.environment.log(ProcessingMessages.CLOSING_TEST_RUN, new_line=False)
             error_message = self._api_request_handler.close_run()
             if error_message:
-                self.environment.elog(ErrorMessages.CLOSING_TEST_RUN_F_ERROR.format(error=error_message))
+                self.environment.elog(ErrorMessagesRun.CLOSING_TEST_RUN_F_ERROR.format(error=error_message))
                 exit(1)
             self.environment.log(SuccessMessages.CLOSED_RUN)
 
 
-    def _create_test_run(self) -> Tuple[Optional[int], str]:
+    def _create_test_run(self) -> str:
         """
         Creates a new test run in TestRail.
         """
         self.environment.log(ProcessingMessages.CREATING_TEST_RUN, new_line=False)
-        if self._data_provider.test_plan_id:
-            return self._api_request_handler.add_run_to_plan()
 
-        return self._api_request_handler.add_run()
+        if self._data_provider.test_plan_id:
+            run_id, error_message = self._api_request_handler.add_run_to_plan()
+        else:
+            run_id, error_message = self._api_request_handler.add_run()
+
+        if error_message or (run_id is None):
+            error_message = error_message or "No run ID returned."
+            return ErrorMessagesRun.CREATING_TEST_RUN_F_ERROR.format(error=error_message)
+
+        self._data_provider.update_test_run_id(run_id, is_created=True)
+        self._log_run_link()
+        return ""
 
     def _update_test_run(self) -> str:
         """
@@ -226,20 +234,19 @@ class ResultsUploader(ProjectBasedClient):
         If the run is standalone, it updates the run directly.
         returns an error message if any issue occurs, otherwise returns an empty string.
         """
-
         # 1. Get run
         existing_run, error_message = self._api_request_handler.get_run()
 
         if error_message:
             run_id = self._data_provider.test_run_id
-            return ErrorMessages.RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR.format(run_id=run_id, error=error_message)
+            return ErrorMessagesRun.RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR.format(run_id=run_id, error=error_message)
 
         # 2. Get cases in run
         self.environment.log(ProcessingMessages.UPDATING_TEST_RUN, new_line=False)
         run_cases_ids, error_message = self._api_request_handler.get_cases_ids_in_run()
 
         if error_message:
-            return ErrorMessages.RETRIEVING_TESTS_IN_IN_RUN_F_ERROR.format(error=error_message)
+            return ErrorMessagesRun.RETRIEVING_TESTS_IN_IN_RUN_F_ERROR.format(error=error_message)
 
         self._data_provider.merge_run_case_ids(run_cases_ids)
 
@@ -265,16 +272,19 @@ class ResultsUploader(ProjectBasedClient):
         entry_id, error_message = self._api_request_handler.get_run_entry_id_in_plan(plan_id)
 
         if error_message:
-            return ErrorMessages.RETRIEVING_RUN_ID_IN_PLAN_F_ERROR.format(error=error_message)
+            return ErrorMessagesRun.RETRIEVING_RUN_ID_IN_PLAN_F_ERROR.format(error=error_message)
 
         error_message = self._api_request_handler.update_plan_entry(plan_id, entry_id)
 
         if not error_message:
-            run_id = self._data_provider.test_run_id
-            link = self.environment.host.rstrip('/')
-            self.environment.log(SuccessMessages.UPDATED_RUN_FF_LINK_RUN_ID.format(limk=link, run_id=run_id))
+            self._log_run_link()
 
         return error_message
+
+    def _log_run_link(self) -> None:
+        run_id = self._data_provider.test_run_id
+        link = self.environment.host.rstrip('/')
+        self.environment.log(SuccessMessages.RUN_FF_LINK_RUN_ID.format(link=link, run_id=run_id))
 
     def _rollback_and_exit(self) -> None:
         """

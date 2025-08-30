@@ -147,7 +147,7 @@ class SuccessMessages:
     """
     ADDED_CASES_FF_AMOUNT_ELAPSED = "Submitted {amount} test cases in {elapsed:.1f} secs."
     UPDATED_CASES_AMOUNT_FF_ACTUAL_EXPECTED = "Updated amount {actual}/{expected} test cases."
-    UPDATED_RUN_FF_LINK_RUN_ID = "Test run: {link}/index.php?/runs/view/{run_id}"
+    RUN_FF_LINK_RUN_ID = "Test run: {link}/index.php?/runs/view/{run_id}"
     ADDED_RESULTS_FF_AMOUNT_ELAPSED = "Submitted {amount} test results in {elapsed:.1f} secs."
     CLOSED_RUN = "Run closed successfully."
     COMPLETED_IN_F_ELAPSED = "Completed in {elapsed:.1f} secs."
@@ -169,6 +169,20 @@ class ErrorMessagesSuites:
     "specifying --suite-id."
     NOT_EXISTING_F_SUITE_ID = "Not existing suite id specified --suite-id: {suite_id}"
 
+class ErrorMessagesRun:
+    """
+    Messages displayed on errors related to test run.
+    F in constant name means that the constant is f-string
+    and following part of the name is arg(s) name(s) for formating
+    Number of F shows how many args are needed
+    """
+    CREATING_TEST_RUN_F_ERROR = "Error creating test run: \n{error}"
+    UPDATING_TEST_RUN_F_ERROR = "Error updating test run: \n{error}"
+    RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR = "Error retrieving run by ID {run_id}: \n{error}"
+    RETRIEVING_TESTS_IN_IN_RUN_F_ERROR = "Error retrieving tests in run: \n{error}"
+    RETRIEVING_RUN_ID_IN_PLAN_F_ERROR ="Error retrieving run entry ID in plan: {error}"
+    CLOSING_TEST_RUN_F_ERROR = "Error closing test run: \n{error}"
+
 
 class ErrorMessages:
     """
@@ -179,15 +193,10 @@ class ErrorMessages:
     Number of F shows how many args are needed
     """
     CHECKING_MISSING_SECTIONS_F_ERROR = "Error checking existing and missing sections: \n{error}"
-    CREATING_UPDATING_TESTRUN_F_ERROR = "Error creating or updating test run: \n{error}"
     SORTING_TEST_CASES_F_ERROR = "Error checking existing and missing test cases: \n{error}"
     UPLOADING_SECTIONS_F_ERROR = "Error uploading sections: \n{error}"
     CASES_UPDATE_F_ERROR = "Error updating test cases: \n{error}"
     ADDING_TEST_CASES_F_ERROR = "Error adding test cases: \n{error}"
-    CLOSING_TEST_RUN_F_ERROR = "Error closing test run: \n{error}"
-    RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR = "Error retrieving run by ID {run_id}: \n{error}"
-    RETRIEVING_TESTS_IN_IN_RUN_F_ERROR = "Error retrieving tests in run: \n{error}"
-    RETRIEVING_RUN_ID_IN_PLAN_F_ERROR ="Error retrieving run entry ID in plan: {error}"
     FAILED_TO_DEFINE_AUTOMATION_ID_FIELD = "Failed to define automation_id field system name."
 
 

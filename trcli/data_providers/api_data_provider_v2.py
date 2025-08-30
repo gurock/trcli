@@ -123,8 +123,9 @@ class ApiDataProvider:
             raise DataProviderException("Test run is not initialized. Call add_run() first.")
         self.test_run.description = description
 
-    def update_test_run_id_if_created(self, run_id: int) -> None:
-        self.created_test_run_id = run_id
+    def update_test_run_id(self, run_id: int, is_created=False) -> None:
+        if is_created:
+            self.created_test_run_id = run_id
         self.test_run_id = run_id
 
     def update_custom_automation_id_system_name(self, automation_id_system_name: str) -> None:
