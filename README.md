@@ -740,23 +740,23 @@ Or simple format:
 ```
 
 ###### Listing Tests by Labels
-Find tests that have specific labels applied by label ID.
+Find tests that have specific labels applied by label ID from specific test runs.
 
 ```shell
-# List tests by label ID
+# List tests by label ID from a specific run
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  labels tests list --ids 123
+  labels tests list --run-id 456 --ids 123
 
-# List tests by multiple label IDs
+# List tests by multiple label IDs from multiple runs
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  labels tests list --ids "123,124,125"
+  labels tests list --run-id "456,457" --ids "123,124,125"
 ```
 
 **Output example:**
 ```
-Retrieving tests with label IDs: 123...
+Retrieving tests from run IDs: 456 with label IDs: 123...
 Found 2 matching test(s):
 
   Test ID: 1001, Title: 'Login functionality test', Status: 1 [Labels: ID:123,Title:'Regression'; ID:124,Title:'Critical']
@@ -812,8 +812,9 @@ Options:
 ```shell
 $ trcli labels tests list --help
 Options:
-  --ids   Comma-separated list of label IDs to filter by [required]
-  --help  Show this message and exit.
+  --run-id  Comma-separated list of run IDs to filter tests from [required]
+  --ids     Comma-separated list of label IDs to filter by [required]
+  --help    Show this message and exit.
 ```
 
 **Get Tests Command:**
@@ -876,10 +877,10 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
 
 **4. Test Analysis and Reporting**
 ```shell
-# Find all regression tests
+# Find all regression tests from run 101
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Web App" \
-  labels tests list --ids 5
+  labels tests list --run-id 101 --ids 5
 
 # Get detailed label information for failed tests
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
