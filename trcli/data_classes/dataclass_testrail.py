@@ -126,15 +126,15 @@ class TestRailCase:
     """Class for creating Test Rail test case"""
 
     title: str
-    section_id: int = field(default=None, skip_if_default=True)
-    case_id: int = field(default=None, skip_if_default=True, metadata={"serde_skip": True})
-    estimate: str = field(default=None, skip_if_default=True)
-    template_id: int = field(default=None, skip_if_default=True)
-    type_id: int = field(default=None, skip_if_default=True)
-    milestone_id: int = field(default=None, skip_if_default=True)
-    refs: str = field(default=None, skip_if_default=True)
+    section_id: Optional[int] = field(default=None, skip_if_default=True)
+    case_id: Optional[int] = field(default=None, skip_if_default=True, metadata={"serde_skip": True})
+    estimate: Optional[str] = field(default=None, skip_if_default=True)
+    template_id: Optional[int] = field(default=None, skip_if_default=True)
+    type_id: Optional[int] = field(default=None, skip_if_default=True)
+    milestone_id: Optional[int] = field(default=None, skip_if_default=True)
+    refs: Optional[str] = field(default=None, skip_if_default=True)
     case_fields: Optional[dict] = field(default_factory=dict, skip=True)
-    result: TestRailResult = field(default=None, metadata={"serde_skip": True})
+    result: Optional[TestRailResult] = field(default=None, metadata={"serde_skip": True})
     custom_automation_id: Optional[str] = field(default=None,  metadata={"serde_skip": True})
     # Uncomment if we want to support separated steps in cases in the future
     # custom_steps_separated: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
@@ -197,10 +197,10 @@ class TestRailSection:
     """Class for creating Test Rail test section"""
 
     name: str
-    suite_id: int = field(default=None, skip_if_default=True)
-    parent_id: int = field(default=None, skip_if_default=True)
-    description: str = field(default=None, skip_if_default=True)
-    section_id: int = field(default=None, metadata={"serde_skip": True})
+    suite_id: Optional[int] = field(default=None, skip_if_default=True)
+    parent_id: Optional[int] = field(default=None, skip_if_default=True)
+    description: Optional[str] = field(default=None, skip_if_default=True)
+    section_id: Optional[int] = field(default=None, metadata={"serde_skip": True})
     testcases: List[TestRailCase] = field(
         default_factory=list, metadata={"serde_skip": True}
     )
@@ -230,7 +230,7 @@ class TestRailSuite:
     """Class for creating Test Rail Suite fields"""
 
     name: str
-    suite_id: int = field(default=None, skip_if_default=True)
+    suite_id: Optional[int] = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
     testsections: List[TestRailSection] = field(
         default_factory=list, metadata={"serde_skip": True}

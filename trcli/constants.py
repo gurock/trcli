@@ -113,7 +113,6 @@ class SuiteModes(enum.IntEnum):
 class SkippingMessage:
     SKIP_TEST_RUN_AND_RESULTS = "Skipping test run and results upload as per user request."
     NO_TEST_CASES_TO_UPDATE = "No test cases to update. Skipping."
-    NO_TEST_CASES_TO_ADD = "No new test cases to add. Skipping."
 
 
 class ProcessingMessages:
@@ -126,10 +125,13 @@ class ProcessingMessages:
     """
     ADDING_SUITE_F_PROJECT_NAME = "Adding missing suite to project {project_name}."
     CHECKING_PROJECT = "Checking project. "
+    CHECKING_SUITE = "Checking suite. "
+    RESOLVING_SUITE_BY_ID = "Resolving suite by id. "
+    RESOLVING_SUITE_BY_NAME = "Resolving suite by name. "
     CHECKING_SECTIONS = "Checking for missing sections in the suite. "
     ADDING_SECTIONS = "Adding missing sections to the suite."
-    ADDING = "Adding. "
-    UPDATING = "Updating. "
+    ADDING = "Adding new cases. "
+    UPDATING = "Updating exiting cases. "
     UPDATING_TEST_RUN = "Updating test run. "
     CREATING_TEST_RUN = "Creating test run. "
     CLOSING_TEST_RUN = "Closing test run. "

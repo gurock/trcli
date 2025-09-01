@@ -90,13 +90,9 @@ class ResultsUploader(ProjectBasedClient):
 
         if should_update_cases:
             self._update_existing_test_cases()
-        else:
-            self.environment.log(SkippingMessage.NO_TEST_CASES_TO_UPDATE)
 
         if has_missing_cases:
             self._add_missing_test_cases()
-        else:
-            self.environment.log(SkippingMessage.NO_TEST_CASES_TO_ADD)
 
     def _handle_sections_upload(self) -> None:
         self._get_confirmation_for_sections_upload()
@@ -110,9 +106,6 @@ class ResultsUploader(ProjectBasedClient):
         # Update section IDs when sections are found or created.
         # if --update-cases option specified, for existing cases section or subsection id will be updated as well
         self._data_provider.update_cases_section_ids()
-
-        self.environment.log(ProcessingMessages.ADDING_SECTIONS)
-        return self._api_request_handler.add_missing_sections()
 
     def _get_confirmation_for_sections_upload(self) -> None:
         has_missing_sections, error_message = self._api_request_handler.has_missing_sections()
@@ -133,6 +126,11 @@ class ResultsUploader(ProjectBasedClient):
     def _update_existing_test_cases(self) -> None:
         cases_to_update = self._data_provider.existing_cases
         self.environment.log(ProcessingMessages.UPDATING, new_line=False)
+
+        if not cases_to_update:
+            self.environment.log(SkippingMessage.NO_TEST_CASES_TO_UPDATE)
+            return
+
         error_message = self._api_request_handler.update_existing_cases(cases_to_update)
 
         if error_message:

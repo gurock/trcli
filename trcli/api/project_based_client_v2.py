@@ -1,6 +1,5 @@
 from typing import Optional, Tuple
 
-from trcli.api.api_client import APIClient
 from trcli.api.api_request_handler_v2 import ApiRequestHandler
 from trcli.cli import Environment
 from trcli.constants import ProjectErrors, FAULT_MAPPING, SuiteModes, PROMPT_MESSAGES, ProcessingMessages, \
@@ -20,50 +19,7 @@ class ProjectBasedClient:
         self.project: Optional[ProjectData] = None
         self.environment = environment
         self._data_provider = ApiDataProvider(suite, self.environment)
-        self._api_request_handler = ApiRequestHandler(
-            environment=self.environment,
-            api_client=self._instantiate_api_client(),
-            provider=self._data_provider,
-        )
-
-    def _instantiate_api_client(self) -> APIClient:
-        """
-        Instantiate api client with needed attributes taken from environment.
-        """
-        verbose_logging_function = self.environment.vlog
-        logging_function = self.environment.log
-        proxy = self.environment.proxy  # Will be None if --proxy is not defined
-        noproxy = self.environment.noproxy  # Will be None if --noproxy is not defined
-        proxy_user = self.environment.proxy_user
-        if self.environment.timeout:
-            api_client = APIClient(
-                self.environment.host,
-                verbose_logging_function=verbose_logging_function,
-                logging_function=logging_function,
-                timeout=self.environment.timeout,
-                verify=not self.environment.insecure,
-                proxy=proxy,
-                proxy_user=proxy_user,
-                noproxy=noproxy
-            )
-        else:
-            api_client = APIClient(
-                self.environment.host,
-                logging_function=logging_function,
-                verbose_logging_function=verbose_logging_function,
-                verify=not self.environment.insecure,
-                proxy=proxy,
-                proxy_user=proxy_user,
-                noproxy=noproxy
-            )
-        api_client.username = self.environment.username
-        api_client.password = self.environment.password
-        api_client.api_key = self.environment.key
-        api_client.proxy = self.environment.proxy
-        api_client.proxy_user = self.environment.proxy_user
-        api_client.noproxy = self.environment.noproxy
-
-        return api_client
+        self._api_request_handler = ApiRequestHandler(self.environment, self._data_provider)
 
     def resolve_project(self) -> None:
         """
@@ -90,10 +46,12 @@ class ProjectBasedClient:
     def resolve_suite(self) -> None:
         if not self.project:
             self.resolve_project()
+        self.environment.log(ProcessingMessages.CHECKING_SUITE, new_line=False)
         if self.environment.suite_id:
             self._handle_suite_by_id()
         else:
             self._handle_suite_by_name()
+        self.environment.log(SuccessMessages.DONE)
 
     def _validate_project_id(self) -> None:
         error_messages = {
@@ -111,6 +69,7 @@ class ProjectBasedClient:
 
     def _handle_suite_by_id(self) -> None:
         """Handles suite selection when suite ID is provided."""
+        self.environment.log(ProcessingMessages.RESOLVING_SUITE_BY_ID, new_line=False)
         self._data_provider.update_suite_id(self.environment.suite_id)
         existing, error_message = self._api_request_handler.check_suite_id()
 
@@ -123,8 +82,8 @@ class ProjectBasedClient:
 
     def _handle_suite_by_name(self) -> None:
         """Handles suite selection when suite name is provided."""
+        self.environment.log(ProcessingMessages.RESOLVING_SUITE_BY_NAME, new_line=False)
         suite_mode = self.project.suite_mode
-        project_id = self.project.project_id
 
         if suite_mode not in (
                 SuiteModes.multiple_suites,
@@ -142,7 +101,7 @@ class ProjectBasedClient:
             return
 
         if suite_mode == SuiteModes.multiple_suites:
-            self._handle_multiple_suites(project_id)
+            self._handle_multiple_suites()
             return
 
     def _handle_single_suite(self) -> None:
@@ -167,7 +126,7 @@ class ProjectBasedClient:
 
         self._data_provider.update_suite_id(suite_ids[0])
 
-    def _handle_multiple_suites(self, project_id: int) -> None:
+    def _handle_multiple_suites(self) -> None:
         # First try resolving by name
         suite_id, error_message = self._api_request_handler.resolve_suite_id_using_name()
         if error_message:

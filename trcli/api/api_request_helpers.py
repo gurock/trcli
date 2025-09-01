@@ -17,6 +17,46 @@ from trcli.data_classes.dataclass_testrail import ProjectData, TestRailCase, Tes
 from trcli.data_providers.api_data_provider_v2 import ApiDataProvider
 
 
+def instantiate_api_client(environment: Environment) -> APIClient:
+    """
+    Instantiate api client with needed attributes taken from environment.
+    """
+    verbose_logging_function = environment.vlog
+    logging_function = environment.log
+    proxy = environment.proxy  # Will be None if --proxy is not defined
+    noproxy = environment.noproxy  # Will be None if --noproxy is not defined
+    proxy_user = environment.proxy_user
+    if environment.timeout:
+        api_client = APIClient(
+            environment.host,
+            verbose_logging_function=verbose_logging_function,
+            logging_function=logging_function,
+            timeout=environment.timeout,
+            verify=not environment.insecure,
+            proxy=proxy,
+            proxy_user=proxy_user,
+            noproxy=noproxy
+        )
+    else:
+        api_client = APIClient(
+            environment.host,
+            logging_function=logging_function,
+            verbose_logging_function=verbose_logging_function,
+            verify=not environment.insecure,
+            proxy=proxy,
+            proxy_user=proxy_user,
+            noproxy=noproxy
+        )
+    api_client.username = environment.username
+    api_client.password = environment.password
+    api_client.api_key = environment.key
+    api_client.proxy = environment.proxy
+    api_client.proxy_user = environment.proxy_user
+    api_client.noproxy = environment.noproxy
+
+    return api_client
+
+
 class FutureActions(Enum):
     """Enum for feature actions"""
     ADD_CASE = "adding case"

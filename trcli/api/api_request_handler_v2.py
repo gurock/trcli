@@ -4,7 +4,8 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Optional,List, Tuple, Dict
 
 from trcli.api.api_request_helpers import SectionHandler, CaseHandler, ProjectHandler, SuiteHandler, RunHandler, \
-    PlanHandler, TestHandler, ResultHandler, AttachmentHandler, FuturesHandler, EntityException, FutureActions
+    PlanHandler, TestHandler, ResultHandler, AttachmentHandler, FuturesHandler, EntityException, FutureActions, \
+    instantiate_api_client
 from trcli.api.api_client import APIClient
 from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.cli import Environment
@@ -19,9 +20,9 @@ class ApiRequestHandler:
     Sends requests based on DataProvider data.
     Server as container for keeping all necessary handlers
     """
-    def __init__(self, environment: Environment, api_client: APIClient, provider: ApiDataProvider):
+    def __init__(self, environment: Environment, provider: ApiDataProvider):
         self._environment = environment
-        self._client = api_client
+        self._client: APIClient = instantiate_api_client(self._environment)
         self._data_provider = provider
         self._response_verifier = ApiResponseVerify(self._environment.verify)
         self._section_handler = SectionHandler(environment, self._client, self._data_provider)
