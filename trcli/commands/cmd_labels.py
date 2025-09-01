@@ -571,13 +571,20 @@ def add_to_tests(environment: Environment, context: click.Context, test_ids: str
 
 
 @tests.command(name='list')
+@click.option("--run-id", required=True, metavar="", help="Comma-separated list of run IDs to filter tests from (e.g., 1,2,3).")
 @click.option("--ids", required=True, metavar="", help="Comma-separated list of label IDs to filter by (e.g., 1,2,3).")
 @click.pass_context
 @pass_environment
-def list_tests(environment: Environment, context: click.Context, ids: str, *args, **kwargs):
-    """List tests filtered by label ID"""
+def list_tests(environment: Environment, context: click.Context, run_id: str, ids: str, *args, **kwargs):
+    """List tests filtered by label ID from specific runs"""
     environment.check_for_required_parameters()
     print_config(environment, "List Tests by Label")
+    
+    try:
+        run_ids = [int(id.strip()) for id in run_id.split(",")]
+    except ValueError:
+        environment.elog("Error: Invalid run IDs format. Use comma-separated integers (e.g., 1,2,3).")
+        exit(1)
     
     try:
         label_ids = [int(id.strip()) for id in ids.split(",")]
@@ -591,11 +598,12 @@ def list_tests(environment: Environment, context: click.Context, ids: str, *args
     )
     project_client.resolve_project()
     
-    environment.log(f"Retrieving tests with label IDs: {', '.join(map(str, label_ids))}...")
+    environment.log(f"Retrieving tests from run IDs: {', '.join(map(str, run_ids))} with label IDs: {', '.join(map(str, label_ids))}...")
     
     matching_tests, error_message = project_client.api_request_handler.get_tests_by_label(
         project_id=project_client.project.project_id,
-        label_ids=label_ids
+        label_ids=label_ids,
+        run_ids=run_ids
     )
     
     if error_message:

@@ -772,13 +772,13 @@ class TestCmdLabelsTests:
             
             result = self.runner.invoke(
                 cmd_labels.tests, 
-                ['list', '--ids', '5'], 
+                ['list', '--run-id', '1', '--ids', '5'], 
                 obj=self.environment
             )
             
             assert result.exit_code == 0
             mock_client_instance.api_request_handler.get_tests_by_label.assert_called_once_with(
-                project_id=1, label_ids=[5]
+                project_id=1, label_ids=[5], run_ids=[1]
             )
             mock_log.assert_any_call("Found 2 matching test(s):")
 
@@ -828,12 +828,28 @@ class TestCmdLabelsTests:
             
             result = self.runner.invoke(
                 cmd_labels.tests, 
-                ['list', '--ids', 'invalid,ids'], 
+                ['list', '--run-id', '1', '--ids', 'invalid,ids'], 
                 obj=self.environment
             )
             
             assert result.exit_code == 1
             mock_elog.assert_any_call("Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3).")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_list_tests_invalid_run_ids(self, mock_project_client):
+        """Test invalid run IDs format in list command"""
+        with patch.object(self.environment, 'elog') as mock_elog, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+            
+            result = self.runner.invoke(
+                cmd_labels.tests, 
+                ['list', '--run-id', 'invalid,run', '--ids', '5'], 
+                obj=self.environment
+            )
+            
+            assert result.exit_code == 1
+            mock_elog.assert_any_call("Error: Invalid run IDs format. Use comma-separated integers (e.g., 1,2,3).")
 
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')  
     def test_add_label_to_tests_csv_file_not_found(self, mock_project_client):

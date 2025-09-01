@@ -896,6 +896,57 @@ class TestApiRequestHandlerTestLabels:
             assert result[0]['id'] == 1
             assert result[1]['id'] == 3
 
+    def test_get_tests_by_label_with_run_ids(self, labels_handler):
+        """Test retrieval of tests by label filtered by specific run IDs"""
+        # Mock run responses for specific run IDs
+        mock_run_response_1 = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "name": "Test Run 1"},
+            error_message=None
+        )
+        
+        mock_run_response_2 = APIClientResult(
+            status_code=200,
+            response_text={"id": 2, "name": "Test Run 2"},
+            error_message=None
+        )
+        
+        # Mock tests responses for each run
+        mock_tests_response_run1 = APIClientResult(
+            status_code=200,
+            response_text={"tests": [
+                {"id": 1, "title": "Test 1", "labels": [{"id": 5, "title": "Test Label"}]}
+            ]},
+            error_message=None
+        )
+        
+        mock_tests_response_run2 = APIClientResult(
+            status_code=200,
+            response_text={"tests": [
+                {"id": 2, "title": "Test 2", "labels": [{"id": 5, "title": "Test Label"}]}
+            ]},
+            error_message=None
+        )
+        
+        with patch.object(labels_handler.client, 'send_get') as mock_get:
+            mock_get.side_effect = [
+                mock_run_response_1,       # get_run/1
+                mock_run_response_2,       # get_run/2
+                mock_tests_response_run1,  # get_tests/1
+                mock_tests_response_run2   # get_tests/2
+            ]
+            
+            result, error = labels_handler.get_tests_by_label(
+                project_id=1, 
+                label_ids=[5],
+                run_ids=[1, 2]
+            )
+            
+            assert error == ""
+            assert len(result) == 2
+            assert result[0]['id'] == 1
+            assert result[1]['id'] == 2
+
     def test_get_test_labels_success(self, labels_handler):
         """Test successful retrieval of test labels"""
         # Mock test responses

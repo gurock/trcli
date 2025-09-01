@@ -1243,13 +1243,14 @@ class ApiRequestHandler:
         
         return results, ""
 
-    def get_tests_by_label(self, project_id: int, label_ids: List[int] = None, label_title: str = None) -> Tuple[List[dict], str]:
+    def get_tests_by_label(self, project_id: int, label_ids: List[int] = None, label_title: str = None, run_ids: List[int] = None) -> Tuple[List[dict], str]:
         """
-        Get tests filtered by label ID or title
+        Get tests filtered by label ID or title from specific runs
         
         :param project_id: Project ID
         :param label_ids: List of label IDs to filter by
         :param label_title: Label title to filter by
+        :param run_ids: List of run IDs to filter tests from (optional, defaults to all runs)
         :returns: Tuple with list of matching tests and error string
         """
         # If filtering by title, first get the label ID
@@ -1266,13 +1267,24 @@ class ApiRequestHandler:
             if not target_label_ids:
                 return [], ""  # No label found is a valid case with 0 results
         
-        # Get all runs for the project to find tests
-        runs_response = self.client.send_get(f"get_runs/{project_id}")
-        if runs_response.status_code != 200:
-            return [], runs_response.error_message
-        
-        runs_data = runs_response.response_text
-        runs = runs_data.get('runs', []) if isinstance(runs_data, dict) else runs_data
+        # Get runs for the project (either all runs or specific run IDs)
+        if run_ids:
+            # Use specific run IDs - validate they exist by getting run details
+            runs = []
+            for run_id in run_ids:
+                run_response = self.client.send_get(f"get_run/{run_id}")
+                if run_response.status_code == 200:
+                    runs.append(run_response.response_text)
+                else:
+                    return [], f"Run ID {run_id} not found or inaccessible"
+        else:
+            # Get all runs for the project
+            runs_response = self.client.send_get(f"get_runs/{project_id}")
+            if runs_response.status_code != 200:
+                return [], runs_response.error_message
+            
+            runs_data = runs_response.response_text
+            runs = runs_data.get('runs', []) if isinstance(runs_data, dict) else runs_data
         
         # Collect all tests from all runs
         matching_tests = []

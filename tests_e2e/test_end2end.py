@@ -1324,18 +1324,20 @@ trcli -y \\
                 ]
             )
 
-            # Test 3: List tests by label ID
+            # Test 3: List tests by label ID from a specific run
+            # Use a realistic run ID - for E2E testing we'll use run ID 1 as a common test run
             list_tests_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels tests list \\
+  --run-id "1" \\
   --ids "{label_id}"
             """)
             _assert_contains(
                 list_tests_output,
                 [
-                    f"Retrieving tests with label IDs: {label_id}...",
+                    f"Retrieving tests from run IDs: 1 with label IDs: {label_id}...",
                     "matching test(s):"
                 ]
             )
@@ -1411,6 +1413,7 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels tests list \\
+  --run-id "1" \\
   --ids "invalid,ids"
         """)
         assert return_code != 0
@@ -1455,7 +1458,8 @@ trcli -y \\
             tests_list_help_output,
             [
                 "Usage: trcli labels tests list [OPTIONS]",
-                "List tests filtered by label ID",
+                "List tests filtered by label ID from specific runs",
+                "--run-id",
                 "--ids"
             ]
         )
