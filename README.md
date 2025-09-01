@@ -770,12 +770,12 @@ Retrieve all labels assigned to specific tests.
 # Get labels for a single test
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  labels tests get --test-id 123
+  labels tests get --test-ids 123
 
 # Get labels for multiple tests
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  labels tests get --test-id "123,124,125"
+  labels tests get --test-ids "123,124,125"
 ```
 
 **Output example:**
@@ -884,7 +884,7 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
 # Get detailed label information for failed tests
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Web App" \
-  labels tests get --test-id "4001,4002,4003"
+  labels tests get --test-ids "4001,4002,4003"
 ```
 
 ### Reference

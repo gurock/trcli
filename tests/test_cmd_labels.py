@@ -731,7 +731,7 @@ class TestCmdLabelsTests:
 
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_add_label_to_tests_title_too_long(self, mock_project_client):
-        """Test validation error for title too long"""
+        """Test validation error for title too long - should fail when all labels are invalid"""
         long_title = "a" * 21  # 21 characters, exceeds limit
         
         with patch.object(self.environment, 'elog') as mock_elog, \
@@ -745,7 +745,9 @@ class TestCmdLabelsTests:
             )
             
             assert result.exit_code == 1
-            mock_elog.assert_any_call("Error: Label title must be 20 characters or less.")
+            # Should show warning for invalid label, then error for no valid labels
+            mock_elog.assert_any_call(f"Warning: Label title '{long_title}' exceeds 20 character limit and will be skipped.")
+            mock_elog.assert_any_call("Error: No valid label titles provided after filtering.")
 
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_list_tests_by_label_success(self, mock_project_client):
@@ -808,7 +810,7 @@ class TestCmdLabelsTests:
             
             result = self.runner.invoke(
                 cmd_labels.tests, 
-                ['get', '--test-id', '1'], 
+                ['get', '--test-ids', '1'], 
                 obj=self.environment
             )
             

@@ -767,7 +767,7 @@ class TestApiRequestHandlerTestLabels:
             
             result, error = labels_handler.add_labels_to_tests(
                 test_ids=[1], 
-                title="Test Label", 
+                titles="Test Label", 
                 project_id=1
             )
             
@@ -789,7 +789,7 @@ class TestApiRequestHandlerTestLabels:
         with patch.object(labels_handler.client, 'send_get', return_value=mock_test_response):
             result, error = labels_handler.add_labels_to_tests(
                 test_ids=[999], 
-                title="Test Label", 
+                titles="Test Label", 
                 project_id=1
             )
             
@@ -844,7 +844,7 @@ class TestApiRequestHandlerTestLabels:
             
             result, error = labels_handler.add_labels_to_tests(
                 test_ids=[1], 
-                title="New Label", 
+                titles="New Label", 
                 project_id=1
             )
             
@@ -1017,7 +1017,7 @@ class TestApiRequestHandlerTestLabels:
             
             result, error = labels_handler.add_labels_to_tests(
                 test_ids=[1, 2], 
-                title="Test Label", 
+                titles="Test Label", 
                 project_id=1
             )
             

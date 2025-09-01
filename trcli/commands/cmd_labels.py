@@ -620,16 +620,16 @@ def list_tests(environment: Environment, context: click.Context, ids: str, *args
 
 
 @tests.command(name='get')
-@click.option("--test-id", required=True, metavar="", help="Comma-separated list of test IDs (e.g., 1,2,3).")
+@click.option("--test-ids", required=True, metavar="", help="Comma-separated list of test IDs (e.g., 1,2,3).")
 @click.pass_context
 @pass_environment
-def get_test_labels(environment: Environment, context: click.Context, test_id: str, *args, **kwargs):
+def get_test_labels(environment: Environment, context: click.Context, test_ids: str, *args, **kwargs):
     """Get the labels of tests using test IDs"""
     environment.check_for_required_parameters()
     print_config(environment, "Get Test Labels")
     
     try:
-        test_id_list = [int(id.strip()) for id in test_id.split(",")]
+        test_id_list = [int(id.strip()) for id in test_ids.split(",")]
     except ValueError:
         environment.elog("Error: Invalid test IDs format. Use comma-separated integers (e.g., 1,2,3).")
         exit(1)

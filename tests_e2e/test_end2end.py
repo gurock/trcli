@@ -1346,7 +1346,7 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels tests get \\
-  --test-id "{','.join(test_ids)}"
+  --test-ids "{','.join(test_ids)}"
             """)
             _assert_contains(
                 get_test_labels_output,
