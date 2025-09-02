@@ -5,11 +5,14 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRun, TestRa
 
 
 class DataProviderException(Exception):
-    """Custom exception type for data-provider-level errors like None field/not initiated data failures."""
-    def __init__(self, message=""):
-        self.message = message
-        super().__init__(self.message)
+    """Custom exception for data-provider-level errors (e.g. uninitialized values)."""
+    pass
 
+
+def _require(value, message: str):
+    if value is None:
+        raise DataProviderException(message)
+    return value
 
 class ApiDataProvider:
     """
@@ -20,16 +23,16 @@ class ApiDataProvider:
         self._environment = environment
 
         self.case_fields = self._environment.case_fields
-        self.run_description = self._environment.run_description
         self.result_fields = self._environment.result_fields
+        self.test_run_id: Optional[int] = self._environment.run_id
+        self.test_plan_id: Optional[int] = self._environment.plan_id
+        self.config_ids: Optional[List[int]] = self._environment.config_ids
+
         self._update_parent_section()
         self._add_global_case_fields()
 
         self._project_id: Optional[int] = None
         self._test_run: Optional[TestRun] = None
-        self.test_run_id: Optional[int] = None
-        self.test_plan_id: Optional[int] = None
-        self.config_ids: Optional[List[int]] = None
         self._automation_id_system_name: Optional[str] = None
 
         self.existing_cases: List[TestRailCase] = []
@@ -45,9 +48,7 @@ class ApiDataProvider:
     @property
     def project_id(self) -> int:
         """Return project ID."""
-        if self._project_id is None:
-            raise DataProviderException("Project ID is not initialized. Resolve project and update project id first.")
-        return self._project_id
+        return _require(self._project_id, "Project ID is not initialized. Resolve project first.")
 
     @project_id.setter
     def project_id(self, project_id: int) -> None:
@@ -57,15 +58,13 @@ class ApiDataProvider:
     @property
     def suite_id(self) -> int:
         """Return suite ID."""
-        if self.suites_input.suite_id is None:
-            raise DataProviderException("Suite ID is not initialized. Resolve suite and update suite id first.")
-        return self.suites_input.suite_id
+        return _require(self.suites_input.suite_id, "Suite ID is not initialized. Resolve suite first.")
 
     @property
     def test_run(self) -> TestRun:
         """Return test run object."""
         if self._test_run is None:
-            raise DataProviderException("Test run is not initialized. Call add_run() first.")
+            self._add_run()
         return self._test_run
 
     @property
@@ -113,16 +112,6 @@ class ApiDataProvider:
                         continue
                 case.section_id = section.section_id
 
-
-    def _collect_cases_id_from_existing_cases(self) -> set[int]:
-        return {case.case_id for case in self.existing_cases if case.case_id is not None}
-
-    def update_test_run_description(self, description: str) -> None:
-        """Update test run description."""
-        if self._test_run is None:
-            raise DataProviderException("Test run is not initialized. Call add_run() first.")
-        self.test_run.description = description
-
     def update_test_run_id(self, run_id: int, is_created=False) -> None:
         if is_created:
             self.created_test_run_id = run_id
@@ -134,8 +123,8 @@ class ApiDataProvider:
         Needs to be explained:
         I don't like that we have custom_automation_id field in TestRailCase dataclass,
         because it is not standard field in TestRail and might have another name as we see.
-        #TODO But I decided leave it as is, otherwise the field must be removed from data class
-        #TODO and needs to change couple lines of code in parser.
+        But I decided leave it as is, otherwise the field must be removed from data class
+        and needs to change couple lines of code in parser.
         Here I just update custom_case fields with actual system name of that field and value.
         So later when case data object serialized to dict it will have correct field name.
         I added {"serde_skip": True} in data class to ignore for serialization if the name is different,
@@ -150,7 +139,7 @@ class ApiDataProvider:
             automation_id = case.custom_automation_id
             case.case_fields[self.automation_id_system_name] = automation_id
 
-    def add_run(self) -> None:
+    def _add_run(self) -> None:
         run_name = self._environment.title
         if self._environment.special_parser == "saucectl":
             run_name += f" ({self.suites_input.name})"
@@ -181,23 +170,13 @@ class ApiDataProvider:
             properties.insert(0, f"{run.description}")
         run.description = "\n".join(properties)
 
-        if self._environment.run_id:
-            self.test_run_id = self._environment.run_id
-
-        if self._environment.plan_id:
-            self.test_plan_id = self._environment.plan_id
-
-        if self._environment.config_ids:
-            self.config_ids = self._environment.config_ids
-
         self._test_run = run
 
     def merge_run_case_ids(self, run_case_ids: List[int]) -> None:
         """Merge existing run case IDs with the ones from the suite."""
-        if self.test_run is None:
-            self.add_run()
         if self.test_run.case_ids is None:
             self.test_run.case_ids = []
+
         self.test_run.case_ids = list(set(self.test_run.case_ids + run_case_ids))
 
     def get_results_for_cases(self):
@@ -216,21 +195,6 @@ class ApiDataProvider:
         )
         return [{"results": result_bulk} for result_bulk in result_bulks]
 
-    def check_section_names_duplicates(self):
-        """
-        Check if section names in result xml file are duplicated.
-        #TODO I don't see a reason to use this method, since TestRail allows to have sections with the same name.
-        In our case the first found with specified name will be selected.
-        If we want to prevent name duplication we must validate it at parser level.
-        #TODO Now I just leave it here, latter will be removed.
-        """
-        sections_names = [sections.name for sections in self.suites_input.testsections]
-
-        if len(sections_names) == len(set(sections_names)):
-            return False
-        else:
-            return True
-
     @staticmethod
     def _divide_list_into_bulks(input_list: List, bulk_size: int) -> List:
         return [
@@ -240,6 +204,9 @@ class ApiDataProvider:
     def _collect_all_sections(self) -> List[TestRailSection]:
         return [s for s in self.suites_input.testsections] + \
                [ss for s in self.suites_input.testsections for ss in self._recurse_sections(s)]
+
+    def _collect_cases_id_from_existing_cases(self) -> set[int]:
+        return {case.case_id for case in self.existing_cases if case.case_id is not None}
 
     def _recurse_cases(self, section: TestRailSection) -> List[TestRailCase]:
         return list(section.testcases) + [tc for ss in section.sub_sections for tc in self._recurse_cases(ss)]

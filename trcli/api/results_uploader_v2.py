@@ -26,8 +26,6 @@ class ResultsUploader(ProjectBasedClient):
         If needed missing items like suite/section/test case would be added to TestRail.
         Exits with result code 1 printing proper message to the user in case of a failure
         or with result code 0 if succeeds.
-        #FIXME Would be nice to rename method to 'upload_suite' or  'upload', which is more logical,
-        #FIXME because results upload is separate action and can be skipped.
         """
         self._start_time = time.time()
 
@@ -61,8 +59,6 @@ class ResultsUploader(ProjectBasedClient):
             self._data_provider.suite_id
         except DataProviderException:
             self.resolve_suite()
-
-        self._data_provider.add_run()
 
         if self._data_provider.test_run_id:
             error_message = self._update_test_run()
@@ -205,7 +201,6 @@ class ResultsUploader(ProjectBasedClient):
                 exit(1)
             self.environment.log(SuccessMessages.CLOSED_RUN)
 
-
     def _create_test_run(self) -> str:
         """
         Creates a new test run in TestRail.
@@ -228,55 +223,65 @@ class ResultsUploader(ProjectBasedClient):
     def _update_test_run(self) -> str:
         """
         Updates an existing test run in TestRail.
-        If the run is part of a plan, it updates the run entry in the plan.
-        If the run is standalone, it updates the run directly.
-        returns an error message if any issue occurs, otherwise returns an empty string.
+
+        - Retrieves the run and its cases.
+        - Updates the run depending on whether it belongs to a plan (with or without configs)
+          or is standalone.
+        Returns an error message if any issue occurs, otherwise an empty string.
         """
-        # 1. Get run
+        # 1: Retrieve run ---
         existing_run, error_message = self._api_request_handler.get_run()
-
         if error_message:
-            run_id = self._data_provider.test_run_id
-            return ErrorMessagesRun.RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR.format(run_id=run_id, error=error_message)
+            return ErrorMessagesRun.RETRIEVING_RUN_INFO_FF_RUN_ID_ERROR.format(
+                run_id=self._data_provider.test_run_id,
+                error=error_message,
+            )
 
-        # 2. Get cases in run
+        # 2: Retrieve cases ---
         self.environment.log(ProcessingMessages.UPDATING_TEST_RUN, new_line=False)
-        run_cases_ids, error_message = self._api_request_handler.get_cases_ids_in_run()
-
+        run_case_ids, error_message = self._api_request_handler.get_cases_ids_in_run()
         if error_message:
             return ErrorMessagesRun.RETRIEVING_TESTS_IN_IN_RUN_F_ERROR.format(error=error_message)
 
-        self._data_provider.merge_run_case_ids(run_cases_ids)
+        self._data_provider.merge_run_case_ids(run_case_ids)
 
-        # 3. Update description
-        existing_run_description = existing_run.get("description", "")
-        self._data_provider.update_test_run_description(existing_run_description)
+        # 3: Update description ---
+        self._data_provider.test_run.description = existing_run.get("description", "") # Retain the current description
 
         plan_id = existing_run.get("plan_id")
         config_ids = existing_run.get("config_ids")
 
-        # 4. Standalone run
+        # 4: Decide update strategy ---
         if not plan_id:
-            self.environment.log(ProcessingMessages.CONTINUE_AS_STANDALONE_RUN, new_line=False)
-            error_message = self._api_request_handler.update_run()
-            return error_message
-
-        # 5. Plan run with configs
+            return self._update_as_standalone_run()
         if config_ids:
-            error_message = self._api_request_handler.update_run_in_plan_entry()
-            return error_message
+            return self._update_as_plan_run_with_configs()
+        return self._update_as_plan_run_without_configs(plan_id)
 
-        # 6. Plan run without configs → need entry ID
+    def _update_as_standalone_run(self) -> str:
+        """Update a run that is not part of any plan."""
+        self.environment.log(ProcessingMessages.CONTINUE_AS_STANDALONE_RUN, new_line=False)
+        error_message = self._api_request_handler.update_run()
+        if not error_message:
+            self._log_run_link()
+        return error_message
+
+    def _update_as_plan_run_with_configs(self) -> str:
+        """Update a run that is part of a plan with configs."""
+        error_message = self._api_request_handler.update_run_in_plan_entry()
+        if not error_message:
+            self._log_run_link()
+        return error_message
+
+    def _update_as_plan_run_without_configs(self, plan_id: int) -> str:
+        """Update a run that is part of a plan without configs, requires entry_id."""
         entry_id, error_message = self._api_request_handler.get_run_entry_id_in_plan(plan_id)
-
         if error_message:
             return ErrorMessagesRun.RETRIEVING_RUN_ID_IN_PLAN_F_ERROR.format(error=error_message)
 
         error_message = self._api_request_handler.update_plan_entry(plan_id, entry_id)
-
         if not error_message:
             self._log_run_link()
-
         return error_message
 
     def _log_run_link(self) -> None:
