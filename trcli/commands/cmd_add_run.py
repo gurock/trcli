@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import click
 import yaml
 
@@ -40,6 +42,13 @@ def write_run_to_file(environment: Environment, run_id: int):
         f.write(yaml.dump(data, default_flow_style=False))
     environment.log("Done.")
 
+def parse_date(value: str):
+    try:
+        dt = datetime.strptime(value, "%m/%d/%Y")
+        return int(dt.timestamp())
+    except ValueError:
+        raise click.BadParameter(f"Invalid date format: '{value}'. Expected MM/DD/YYYY.")
+
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
@@ -60,14 +69,14 @@ def write_run_to_file(environment: Environment, run_id: int):
     "--run-start-date",
     metavar="",
     default=None,
-    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3], 
+    type=parse_date,
     help="The expected or scheduled start date of this test run in MM/DD/YYYY format"
 )
 @click.option(
     "--run-end-date",
     metavar="",
     default=None,
-    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3], 
+    type=parse_date,
     help="The expected or scheduled end date of this test run in MM/DD/YYYY format"
 )
 @click.option(
