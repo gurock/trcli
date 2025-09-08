@@ -72,6 +72,7 @@ COMMAND_FAULT_MAPPING = dict(
     parse_openapi=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING),
     parse_robot=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING, **PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING),
     labels=dict(**FAULT_MAPPING),
+    references=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
