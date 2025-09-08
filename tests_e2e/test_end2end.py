@@ -1474,4 +1474,116 @@ trcli -y \\
                 "--test-id"
             ]
         )
+
+    def test_references_cases_help_commands(self):
+        """Test references cases help commands"""
+        
+        # Test main references help
+        references_help_output = _run_cmd("trcli references --help")
+        _assert_contains(
+            references_help_output,
+            [
+                "Usage: trcli references [OPTIONS] COMMAND [ARGS]...",
+                "Manage references in TestRail",
+                "cases"
+            ]
+        )
+        
+        # Test references cases help
+        cases_help_output = _run_cmd("trcli references cases --help")
+        _assert_contains(
+            cases_help_output,
+            [
+                "Usage: trcli references cases [OPTIONS] COMMAND [ARGS]...",
+                "Manage references for test cases",
+                "add",
+                "update", 
+                "delete"
+            ]
+        )
+        
+        # Test references cases add help
+        add_help_output = _run_cmd("trcli references cases add --help")
+        _assert_contains(
+            add_help_output,
+            [
+                "Usage: trcli references cases add [OPTIONS]",
+                "Add references to test cases",
+                "--test-ids",
+                "--refs"
+            ]
+        )
+        
+        # Test references cases update help
+        update_help_output = _run_cmd("trcli references cases update --help")
+        _assert_contains(
+            update_help_output,
+            [
+                "Usage: trcli references cases update [OPTIONS]",
+                "Update references on test cases by replacing existing ones",
+                "--test-ids",
+                "--refs"
+            ]
+        )
+        
+        # Test references cases delete help
+        delete_help_output = _run_cmd("trcli references cases delete --help")
+        _assert_contains(
+            delete_help_output,
+            [
+                "Usage: trcli references cases delete [OPTIONS]",
+                "Delete all or specific references from test cases",
+                "--test-ids",
+                "--refs"
+            ]
+        )
+
+    def test_references_cases_error_scenarios(self):
+        """Test references cases error scenarios"""
+        
+        # Test invalid test case IDs format
+        invalid_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --test-ids "invalid,ids" \\
+  --refs "REQ-1"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            invalid_ids_output,
+            ["Error: Invalid test case IDs format. Use comma-separated integers (e.g., 1,2,3)."]
+        )
+        
+        # Test empty references
+        empty_refs_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --test-ids "321" \\
+  --refs ",,,"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            empty_refs_output,
+            ["Error: No valid references provided."]
+        )
+        
+        # Test references too long (over 2000 characters)
+        long_refs = ','.join([f'REQ-{i}' * 100 for i in range(10)])  # Create very long references
+        long_refs_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --test-ids "321" \\
+  --refs "{long_refs}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            long_refs_output,
+            ["exceeds 2000 character limit"]
+        )
     

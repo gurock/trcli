@@ -888,6 +888,154 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
   labels tests get --test-ids "4001,4002,4003"
 ```
 
+#### References Management
+
+The TestRail CLI provides comprehensive reference management capabilities using the `references` command. References help link test assets to external requirements, user stories, or other documentation, making it easier to track test coverage and maintain traceability.
+
+The TestRail CLI supports complete reference management for test cases with the following operations:
+- **Add**: Add references to existing test cases without removing existing ones
+- **Update**: Replace all existing references with new ones
+- **Delete**: Remove all or specific references from test cases
+
+All reference operations support validation and error handling, with a 2000-character limit for the total references field per test case.
+
+##### Reference Management Features
+
+**Test Case References Support:**
+- **Add** references to test cases while preserving existing ones (2000 characters maximum, single or multiple test cases)
+- **Update** references by replacing existing ones entirely
+- **Delete** all references or specific references from test cases
+
+###### Adding References to Test Cases
+Add references to test cases without removing existing ones. New references are appended to any existing references.
+
+```shell
+# Add references to a single test case
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases add --test-ids 123 --refs "REQ-001,REQ-002"
+
+# Add references to multiple test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases add --test-ids "123,124,125" --refs "STORY-456,BUG-789"
+```
+
+**Output example:**
+```
+Adding references to 2 test case(s)...
+References: REQ-001, REQ-002
+  ✓ Test case 123: References added successfully
+  ✓ Test case 124: References added successfully
+Successfully added references to 2 test case(s)
+```
+
+###### Updating References on Test Cases
+Replace all existing references with new ones. This completely overwrites any existing references.
+
+```shell
+# Update references for a single test case
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases update --test-ids 123 --refs "REQ-003,REQ-004"
+
+# Update references for multiple test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases update --test-ids "123,124" --refs "EPIC-100,STORY-200"
+```
+
+**Output example:**
+```
+Updating references for 2 test case(s)...
+New references: REQ-003, REQ-004
+  ✓ Test case 123: References updated successfully
+  ✓ Test case 124: References updated successfully
+Successfully updated references for 2 test case(s)
+```
+
+###### Deleting References from Test Cases
+Remove all references or specific references from test cases.
+
+```shell
+# Delete all references from test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases delete --test-ids "123,124"
+
+# Delete specific references from test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  references cases delete --test-ids "123,124" --refs "REQ-001,STORY-456"
+```
+
+**Output example:**
+```
+Deleting all references from 2 test case(s)...
+  ✓ Test case 123: All references deleted successfully
+  ✓ Test case 124: All references deleted successfully
+Successfully deleted references from 2 test case(s)
+```
+
+##### Reference Management Command Reference
+
+**Main References Command:**
+```shell
+$ trcli references --help
+Usage: trcli references [OPTIONS] COMMAND [ARGS]...
+
+  Manage references in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  cases  Manage references for test cases
+```
+
+**Test Cases References Commands:**
+```shell
+$ trcli references cases --help
+Usage: trcli references cases [OPTIONS] COMMAND [ARGS]...
+
+  Manage references for test cases
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add     Add references to test cases
+  delete  Delete all or specific references from test cases
+  update  Update references on test cases by replacing existing ones
+```
+
+**Add References Command:**
+```shell
+$ trcli references cases add --help
+Options:
+  --test-ids  Comma-separated list of test case IDs [required]
+  --refs      Comma-separated list of references to add [required]
+  --help      Show this message and exit.
+```
+
+**Update References Command:**
+```shell
+$ trcli references cases update --help
+Options:
+  --test-ids  Comma-separated list of test case IDs [required]
+  --refs      Comma-separated list of references to replace existing ones [required]
+  --help      Show this message and exit.
+```
+
+**Delete References Command:**
+```shell
+$ trcli references cases delete --help
+Options:
+  --test-ids  Comma-separated list of test case IDs [required]
+  --refs      Comma-separated list of specific references to delete (optional)
+  --help      Show this message and exit.
+```
+
 ### Reference
 ```shell
 $ trcli add_run --help
