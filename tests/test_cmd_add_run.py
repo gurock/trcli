@@ -50,16 +50,16 @@ class TestCmdAddRun:
         mock_open_file.return_value.__enter__().write.assert_called_once_with(expected_string)
 
     def test_cli_validation_refs_too_long(self):
-        """Test that references validation fails when exceeding 2000 characters"""
+        """Test that references validation fails when exceeding 250 characters"""
         from trcli.cli import Environment
         
         environment = Environment()
-        environment.run_refs = "A" * 2001  # 2001 characters, exceeds limit
+        environment.run_refs = "A" * 251  # 251 characters, exceeds limit
         
-        assert len(environment.run_refs) > 2000
+        assert len(environment.run_refs) > 250
         
         runner = CliRunner()
-        long_refs = "A" * 2001
+        long_refs = "A" * 251
         
         result = runner.invoke(cmd_add_run.cli, [
             '--title', 'Test Run',
@@ -68,6 +68,22 @@ class TestCmdAddRun:
         
         # Should exit with error code 1 due to missing required parameters or validation
         assert result.exit_code == 1
+
+    def test_cli_validation_refs_exactly_250_chars(self):
+        """Test that references validation passes with exactly 250 characters"""
+        from trcli.cli import Environment
+        
+        runner = CliRunner()
+        refs_250 = "A" * 250  # Exactly 250 characters, should pass validation
+        
+        result = runner.invoke(cmd_add_run.cli, [
+            '--title', 'Test Run',
+            '--run-refs', refs_250
+        ], catch_exceptions=False)
+        
+        # Should not fail due to refs validation (will fail due to missing required parameters)
+        # But the important thing is that it doesn't fail with the character limit error
+        assert "References field cannot exceed 250 characters" not in result.output
 
     def test_validation_logic_refs_action_without_run_id(self):
         """Test validation logic for refs action without run_id"""

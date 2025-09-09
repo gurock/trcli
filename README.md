@@ -911,7 +911,7 @@ Options:
   --auto-close-run       Use this option to automatically close the created run.
   --run-case-ids         Comma separated list of test case IDs to include in
                          the test run (i.e.: 1,2,3,4).
-  --run-refs             A comma-separated list of references/requirements (up to 2000 characters)
+  --run-refs             A comma-separated list of references/requirements (up to 250 characters)
   --run-refs-action      Action to perform on references: 'add' (default), 'update' (replace all), 
                          or 'delete' (remove all or specific)
   -f, --file             Write run title and id to file.
@@ -928,7 +928,7 @@ This file can be used as the config file (or appended to an existing config file
 
 ### Managing References in Test Runs
 
-The `add_run` command supports comprehensive reference management for test runs. References are stored in TestRail's "References" field and can contain up to 2000 characters.
+The `add_run` command supports comprehensive reference management for test runs. References are stored in TestRail's "References" field and can contain up to 250 characters.
 
 #### Adding References to New Runs
 
@@ -973,7 +973,7 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
 
 #### Reference Management Rules
 
-- **Character Limit**: References field supports up to 2000 characters
+- **Character Limit**: References field supports up to 250 characters
 - **Format**: Comma-separated list of reference IDs
 - **Duplicate Prevention**: When adding references, duplicates are automatically prevented
 - **Action Requirements**: `update` and `delete` actions require an existing run (--run-id must be provided)

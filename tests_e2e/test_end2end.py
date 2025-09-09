@@ -523,7 +523,7 @@ trcli -y \\
 
     def test_cli_add_run_refs_validation_error(self):
         """Test references validation (too long)"""
-        long_refs = "A" * 2001  # Exceeds 2000 character limit
+        long_refs = "A" * 251  # Exceeds 250 character limit
         
         output, return_code = _run_cmd_allow_failure(f"""
 trcli -y \\
@@ -537,7 +537,7 @@ trcli -y \\
         assert return_code != 0
         _assert_contains(
             output,
-            ["Error: References field cannot exceed 2000 characters."]
+            ["Error: References field cannot exceed 250 characters."]
         )
 
     def test_cli_add_run_refs_update_action_validation(self):

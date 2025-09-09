@@ -104,7 +104,7 @@ def write_run_to_file(environment: Environment, run_id: int):
 @click.option(
     "--run-refs",
     metavar="",
-    help="A comma-separated list of references/requirements (up to 2000 characters)"
+    help="A comma-separated list of references/requirements (up to 250 characters)"
 )
 @click.option(
     "--run-refs-action",
@@ -122,8 +122,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     environment.set_parameters(context)
     environment.check_for_required_parameters()
     
-    if environment.run_refs and len(environment.run_refs) > 2000:
-        environment.elog("Error: References field cannot exceed 2000 characters.")
+    if environment.run_refs and len(environment.run_refs) > 250:
+        environment.elog("Error: References field cannot exceed 250 characters.")
         exit(1)
     
     if environment.run_refs_action and environment.run_refs_action != 'add' and not environment.run_id:
