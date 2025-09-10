@@ -38,7 +38,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', '1,2', '--refs', 'REQ-1,REQ-2'], 
+                ['add', '--case-ids', '1,2', '--refs', 'REQ-1,REQ-2'], 
                 obj=self.environment
             )
             
@@ -58,7 +58,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', 'invalid,ids', '--refs', 'REQ-1'], 
+                ['add', '--case-ids', 'invalid,ids', '--refs', 'REQ-1'], 
                 obj=self.environment
             )
             
@@ -74,7 +74,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', '1,2', '--refs', ',,,'], 
+                ['add', '--case-ids', '1,2', '--refs', ',,,'], 
                 obj=self.environment
             )
             
@@ -92,7 +92,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', '1', '--refs', long_refs], 
+                ['add', '--case-ids', '1', '--refs', long_refs], 
                 obj=self.environment
             )
             
@@ -116,7 +116,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', '1', '--refs', 'REQ-1'], 
+                ['add', '--case-ids', '1', '--refs', 'REQ-1'], 
                 obj=self.environment
             )
             
@@ -140,7 +140,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['update', '--test-ids', '1,2', '--refs', 'REQ-3,REQ-4'], 
+                ['update', '--case-ids', '1,2', '--refs', 'REQ-3,REQ-4'], 
                 obj=self.environment
             )
             
@@ -167,7 +167,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['delete', '--test-ids', '1,2', '--yes'], 
+                ['delete', '--case-ids', '1,2', '--yes'], 
                 obj=self.environment
             )
             
@@ -197,7 +197,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['delete', '--test-ids', '1', '--refs', 'REQ-1,REQ-2', '--yes'], 
+                ['delete', '--case-ids', '1', '--refs', 'REQ-1,REQ-2', '--yes'], 
                 obj=self.environment
             )
             
@@ -219,7 +219,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['delete', '--test-ids', '1', '--refs', ',,,', '--yes'], 
+                ['delete', '--case-ids', '1', '--refs', ',,,', '--yes'], 
                 obj=self.environment
             )
             
@@ -251,7 +251,7 @@ class TestCmdReferences:
             
             result = self.runner.invoke(
                 cmd_references.cases, 
-                ['add', '--test-ids', '1,2', '--refs', 'REQ-1'], 
+                ['add', '--case-ids', '1,2', '--refs', 'REQ-1'], 
                 obj=self.environment
             )
             

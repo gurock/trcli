@@ -1509,7 +1509,7 @@ trcli -y \\
             [
                 "Usage: trcli references cases add [OPTIONS]",
                 "Add references to test cases",
-                "--test-ids",
+                "--case-ids",
                 "--refs"
             ]
         )
@@ -1521,7 +1521,7 @@ trcli -y \\
             [
                 "Usage: trcli references cases update [OPTIONS]",
                 "Update references on test cases by replacing existing ones",
-                "--test-ids",
+                "--case-ids",
                 "--refs"
             ]
         )
@@ -1533,7 +1533,7 @@ trcli -y \\
             [
                 "Usage: trcli references cases delete [OPTIONS]",
                 "Delete all or specific references from test cases",
-                "--test-ids",
+                "--case-ids",
                 "--refs"
             ]
         )
@@ -1547,7 +1547,7 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   references cases add \\
-  --test-ids "invalid,ids" \\
+  --case-ids "invalid,ids" \\
   --refs "REQ-1"
         """)
         assert return_code != 0
@@ -1562,7 +1562,7 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   references cases add \\
-  --test-ids "321" \\
+  --case-ids "321" \\
   --refs ",,,"
         """)
         assert return_code != 0
@@ -1578,7 +1578,7 @@ trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   references cases add \\
-  --test-ids "321" \\
+  --case-ids "321" \\
   --refs "{long_refs}"
         """)
         assert return_code != 0

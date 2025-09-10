@@ -913,12 +913,12 @@ Add references to test cases without removing existing ones. New references are 
 # Add references to a single test case
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases add --test-ids 123 --refs "REQ-001,REQ-002"
+  references cases add --case-ids 123 --refs "REQ-001,REQ-002"
 
 # Add references to multiple test cases
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases add --test-ids "123,124,125" --refs "STORY-456,BUG-789"
+  references cases add --case-ids "123,124,125" --refs "STORY-456,BUG-789"
 ```
 
 **Output example:**
@@ -937,12 +937,12 @@ Replace all existing references with new ones. This completely overwrites any ex
 # Update references for a single test case
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases update --test-ids 123 --refs "REQ-003,REQ-004"
+  references cases update --case-ids 123 --refs "REQ-003,REQ-004"
 
 # Update references for multiple test cases
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases update --test-ids "123,124" --refs "EPIC-100,STORY-200"
+  references cases update --case-ids "123,124" --refs "EPIC-100,STORY-200"
 ```
 
 **Output example:**
@@ -961,12 +961,12 @@ Remove all references or specific references from test cases.
 # Delete all references from test cases
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases delete --test-ids "123,124"
+  references cases delete --case-ids "123,124"
 
 # Delete specific references from test cases
 $ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
   --project "Your Project" \
-  references cases delete --test-ids "123,124" --refs "REQ-001,STORY-456"
+  references cases delete --case-ids "123,124" --refs "REQ-001,STORY-456"
 ```
 
 **Output example:**
@@ -1013,7 +1013,7 @@ Commands:
 ```shell
 $ trcli references cases add --help
 Options:
-  --test-ids  Comma-separated list of test case IDs [required]
+  --case-ids  Comma-separated list of test case IDs [required]
   --refs      Comma-separated list of references to add [required]
   --help      Show this message and exit.
 ```
@@ -1022,7 +1022,7 @@ Options:
 ```shell
 $ trcli references cases update --help
 Options:
-  --test-ids  Comma-separated list of test case IDs [required]
+  --case-ids  Comma-separated list of test case IDs [required]
   --refs      Comma-separated list of references to replace existing ones [required]
   --help      Show this message and exit.
 ```
@@ -1031,7 +1031,7 @@ Options:
 ```shell
 $ trcli references cases delete --help
 Options:
-  --test-ids  Comma-separated list of test case IDs [required]
+  --case-ids  Comma-separated list of test case IDs [required]
   --refs      Comma-separated list of specific references to delete (optional)
   --help      Show this message and exit.
 ```

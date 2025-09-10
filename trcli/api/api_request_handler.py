@@ -1373,7 +1373,7 @@ class ApiRequestHandler:
                 all_refs.append(ref)
         
         # Join all references
-        new_refs_string = ', '.join(all_refs)
+        new_refs_string = ','.join(all_refs)
         
         # Validate total character limit
         if len(new_refs_string) > 2000:
@@ -1396,7 +1396,7 @@ class ApiRequestHandler:
         :returns: Tuple with success status and error string
         """
         # Join references
-        new_refs_string = ', '.join(references)
+        new_refs_string = ','.join(references)
         
         # Validate total character limit
         if len(new_refs_string) > 2000:
@@ -1441,7 +1441,7 @@ class ApiRequestHandler:
             remaining_refs = [ref for ref in existing_ref_list if ref not in specific_references]
             
             # Join remaining references
-            new_refs_string = ', '.join(remaining_refs)
+            new_refs_string = ','.join(remaining_refs)
             update_data = {'refs': new_refs_string}
         
         # Update the test case

@@ -29,18 +29,18 @@ def cases(environment: Environment, context: click.Context, *args, **kwargs):
 
 
 @cases.command(name='add')
-@click.option("--test-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
+@click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
 @click.option("--refs", required=True, metavar="", help="Comma-separated list of references to add (e.g., REQ-1,REQ-2).")
 @click.pass_context
 @pass_environment
-def add_references(environment: Environment, context: click.Context, test_ids: str, refs: str, *args, **kwargs):
+def add_references(environment: Environment, context: click.Context, case_ids: str, refs: str, *args, **kwargs):
     """Add references to test cases"""
     environment.check_for_required_parameters()
     print_config(environment, "Add References")
     
     # Parse test case IDs
     try:
-        test_case_ids = [int(id.strip()) for id in test_ids.split(",")]
+        test_case_ids = [int(id.strip()) for id in case_ids.split(",")]
     except ValueError:
         environment.elog("Error: Invalid test case IDs format. Use comma-separated integers (e.g., 1,2,3).")
         exit(1)
@@ -52,7 +52,7 @@ def add_references(environment: Environment, context: click.Context, test_ids: s
         exit(1)
     
     # Validate total character limit
-    total_refs_length = len(", ".join(references))
+    total_refs_length = len(",".join(references))
     if total_refs_length > 2000:
         environment.elog(f"Error: Total references length ({total_refs_length} characters) exceeds 2000 character limit.")
         exit(1)
@@ -93,18 +93,18 @@ def add_references(environment: Environment, context: click.Context, test_ids: s
 
 
 @cases.command(name='update')
-@click.option("--test-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
+@click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
 @click.option("--refs", required=True, metavar="", help="Comma-separated list of references to replace existing ones (e.g., REQ-1,REQ-2).")
 @click.pass_context
 @pass_environment
-def update_references(environment: Environment, context: click.Context, test_ids: str, refs: str, *args, **kwargs):
+def update_references(environment: Environment, context: click.Context, case_ids: str, refs: str, *args, **kwargs):
     """Update references on test cases by replacing existing ones"""
     environment.check_for_required_parameters()
     print_config(environment, "Update References")
     
     # Parse test case IDs
     try:
-        test_case_ids = [int(id.strip()) for id in test_ids.split(",")]
+        test_case_ids = [int(id.strip()) for id in case_ids.split(",")]
     except ValueError:
         environment.elog("Error: Invalid test case IDs format. Use comma-separated integers (e.g., 1,2,3).")
         exit(1)
@@ -116,7 +116,7 @@ def update_references(environment: Environment, context: click.Context, test_ids
         exit(1)
     
     # Validate total character limit
-    total_refs_length = len(", ".join(references))
+    total_refs_length = len(",".join(references))
     if total_refs_length > 2000:
         environment.elog(f"Error: Total references length ({total_refs_length} characters) exceeds 2000 character limit.")
         exit(1)
@@ -157,19 +157,19 @@ def update_references(environment: Environment, context: click.Context, test_ids
 
 
 @cases.command(name='delete')
-@click.option("--test-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
+@click.option("--case-ids", required=True, metavar="", help="Comma-separated list of test case IDs (e.g., 1,2,3).")
 @click.option("--refs", metavar="", help="Comma-separated list of specific references to delete. If not provided, all references will be deleted.")
 @click.confirmation_option(prompt="Are you sure you want to delete these references?")
 @click.pass_context
 @pass_environment
-def delete_references(environment: Environment, context: click.Context, test_ids: str, refs: str = None, *args, **kwargs):
+def delete_references(environment: Environment, context: click.Context, case_ids: str, refs: str = None, *args, **kwargs):
     """Delete all or specific references from test cases"""
     environment.check_for_required_parameters()
     print_config(environment, "Delete References")
     
     # Parse test case IDs
     try:
-        test_case_ids = [int(id.strip()) for id in test_ids.split(",")]
+        test_case_ids = [int(id.strip()) for id in case_ids.split(",")]
     except ValueError:
         environment.elog("Error: Invalid test case IDs format. Use comma-separated integers (e.g., 1,2,3).")
         exit(1)

@@ -64,7 +64,7 @@ class TestApiRequestHandlerReferences:
             references_handler.client.send_get.assert_called_once_with("get_case/1")
             references_handler.client.send_post.assert_called_once_with(
                 "update_case/1", 
-                {'refs': 'REQ-1, REQ-2, REQ-3, REQ-4'}
+                {'refs': 'REQ-1,REQ-2,REQ-3,REQ-4'}
             )
 
     def test_add_case_references_no_existing_refs(self, references_handler):
@@ -101,7 +101,7 @@ class TestApiRequestHandlerReferences:
             # Verify the update call
             references_handler.client.send_post.assert_called_once_with(
                 "update_case/1", 
-                {'refs': 'REQ-1, REQ-2'}
+                {'refs': 'REQ-1,REQ-2'}
             )
 
     def test_add_case_references_avoid_duplicates(self, references_handler):
@@ -138,7 +138,7 @@ class TestApiRequestHandlerReferences:
             # Verify only REQ-3 was added (no duplicate REQ-1)
             references_handler.client.send_post.assert_called_once_with(
                 "update_case/1", 
-                {'refs': 'REQ-1, REQ-2, REQ-3'}
+                {'refs': 'REQ-1,REQ-2,REQ-3'}
             )
 
     def test_add_case_references_case_not_found(self, references_handler):
@@ -207,7 +207,7 @@ class TestApiRequestHandlerReferences:
             # Verify the API call
             references_handler.client.send_post.assert_called_once_with(
                 "update_case/1", 
-                {'refs': 'REQ-3, REQ-4'}
+                {'refs': 'REQ-3,REQ-4'}
             )
 
     def test_update_case_references_character_limit_exceeded(self, references_handler):
@@ -302,7 +302,7 @@ class TestApiRequestHandlerReferences:
             references_handler.client.send_get.assert_called_once_with("get_case/1")
             references_handler.client.send_post.assert_called_once_with(
                 "update_case/1", 
-                {'refs': 'REQ-1, REQ-4'}
+                {'refs': 'REQ-1,REQ-4'}
             )
 
     def test_delete_case_references_no_existing_refs(self, references_handler):
