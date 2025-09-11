@@ -122,53 +122,48 @@ class ApiRequestHandler:
                 error_message=error,
             )
 
-    def check_suite_id(self, project_id: int) -> (bool, str):
+    def check_suite_id(self, project_id: int) -> Tuple[bool, str]:
         """
         Check if suite from DataProvider exist using get_suites endpoint
         :project_id: project id
         :returns: True if exists in suites. False if not.
         """
         suite_id = self.suites_data_from_provider.suite_id
-        response = self.client.send_get(f"get_suites/{project_id}")
-        if not response.error_message:
-            try:
-                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
-                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
-                available_suites = [suite["id"] for suite in suite_list]
-                return (
-                    (True, "")
-                    if suite_id in available_suites
-                    else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
-                )
-            except Exception as e:
-                return None, f"Error parsing suites response: {e}"
+        suites_data, error = self.__get_all_suites(project_id)
+        if not error:
+            available_suites = [
+                suite
+                for suite in suites_data
+                if suite["id"] == suite_id
+            ]
+            return (
+                (True, "")
+                if len(available_suites) > 0
+                else (False, FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
+            )
         else:
-            return None, response.error_message
+            return None, suites_data.error_message
 
     def resolve_suite_id_using_name(self, project_id: int) -> Tuple[int, str]:
         """Get suite ID matching suite name on data provider or returns -1 if unable to match any suite.
         :arg project_id: project id
         :returns: tuple with id of the suite and error message"""
         suite_id = -1
-        error_message = ""
-        response = self.client.send_get(f"get_suites/{project_id}")
-        if not response.error_message:
-            try:
-                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
-                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
-                suite = next(
-                    filter(lambda x: x["name"] == self.suites_data_from_provider.name, suite_list),
-                    None
-                )
-                if suite:
+        suite_name = self.suites_data_from_provider.name
+        suites_data, error = self.__get_all_suites(project_id)
+        if not error:
+            for suite in suites_data:
+                if suite["name"] == suite_name:
                     suite_id = suite["id"]
                     self.data_provider.update_data([{"suite_id": suite["id"], "name": suite["name"]}])
-            except Exception as e:
-                error_message = f"Error parsing suites response: {e}"
+                    break
+            return (
+                (suite_id, "")
+                if suite_id != -1
+                else (-1, FAULT_MAPPING["missing_suite"].format(suite_name=suite_name))
+            )
         else:
-            error_message = response.error_message
-
-        return suite_id, error_message
+            return -1, error
 
     def get_suite_ids(self, project_id: int) -> Tuple[List[int], str]:
         """Get suite IDs for requested project_id.
@@ -176,29 +171,27 @@ class ApiRequestHandler:
         : returns: tuple with list of suite ids and error string"""
         available_suites = []
         returned_resources = []
-        error_message = ""
-        response = self.client.send_get(f"get_suites/{project_id}")
-        if not response.error_message:
-            try:
-                parsed = json.loads(response.response_text) if isinstance(response.response_text, str) else response.response_text
-                suite_list = parsed.get("suites") if isinstance(parsed, dict) else parsed
-                for suite in suite_list:
-                    available_suites.append(int(suite["id"]))
-                    returned_resources.append({
+        suites_data, error = self.__get_all_suites(project_id)
+        if not error:
+            for suite in suites_data:
+                available_suites.append(suite["id"])
+                returned_resources.append(
+                    {
                         "suite_id": suite["id"],
                         "name": suite["name"],
-                    })
-            except Exception as e:
-                error_message = f"Error parsing suites response: {e}"
+                    }
+                )
+            if returned_resources:
+                self.data_provider.update_data(suite_data=returned_resources)
+            else:
+                print("Update skipped")
+            return (
+                (available_suites, "")
+                if len(available_suites) > 0
+                else ([], FAULT_MAPPING["no_suites_found"].format(project_id=project_id))
+            )
         else:
-            error_message = response.error_message
-
-        if returned_resources:
-            self.data_provider.update_data(suite_data=returned_resources)
-        else:
-            print("Update skipped")
-
-        return available_suites, error_message
+            return [], error
 
     def add_suites(self, project_id: int) -> Tuple[List[Dict], str]:
         """
@@ -707,9 +700,15 @@ class ApiRequestHandler:
 
     def __get_all_projects(self) -> Tuple[List[dict], str]:
         """
-        Get all cases from all pages
+        Get all projects from all pages
         """
         return self.__get_all_entities('projects', f"get_projects")
+
+    def __get_all_suites(self, project_id) -> Tuple[List[dict], str]:
+        """
+        Get all suites from all pages
+        """
+        return self.__get_all_entities('suites', f"get_suites/{project_id}")
 
     def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[Dict], str]:
         """
