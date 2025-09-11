@@ -80,7 +80,7 @@ class APIClient:
         """
         return self.__send_request("GET", uri, None)
 
-    def send_post(self, uri: str, payload: dict = None, files: Dict[str, Path] = None, as_form_data: bool = False) -> APIClientResult:
+    def send_post(self, uri: str, payload: dict = None, files: Dict[str, Path] = None) -> APIClientResult:
         """
         Sends POST request to host specified by host_name.
         Handles retries taking into consideration retries parameter. Retry will occur when one of the following happens:
@@ -88,9 +88,9 @@ class APIClient:
             * timeout occurred
             * connection error occurred
         """
-        return self.__send_request("POST", uri, payload, files, as_form_data)
+        return self.__send_request("POST", uri, payload, files)
 
-    def __send_request(self, method: str, uri: str, payload: dict, files: Dict[str, Path] = None, as_form_data: bool = False) -> APIClientResult:
+    def __send_request(self, method: str, uri: str, payload: dict, files: Dict[str, Path] = None) -> APIClientResult:
         status_code = -1
         response_text = ""
         error_message = ""
@@ -99,7 +99,7 @@ class APIClient:
         auth = HTTPBasicAuth(username=self.username, password=password)
         headers = {"User-Agent": self.USER_AGENT}
         headers.update(self.__get_proxy_headers())
-        if files is None and not as_form_data:
+        if files is None:
             headers["Content-Type"] = "application/json"
         verbose_log_message = ""
         proxies = self._get_proxies_for_request(url)
@@ -110,23 +110,16 @@ class APIClient:
                     method=method, url=url, payload=payload
                 )
                 if method == "POST":
-                    request_kwargs = {
-                        'url': url,
-                        'auth': auth,
-                        'headers': headers,
-                        'timeout': self.timeout,
-                        'verify': self.verify,
-                        'proxies': proxies
-                    }
-                    if files:
-                        request_kwargs["files"] = files
-                        request_kwargs["data"] = payload if payload else {}
-                    elif as_form_data:
-                        request_kwargs["data"] = payload
-                    else:
-                        request_kwargs["json"] = payload
-                    
-                    response = requests.post(**request_kwargs)
+                    response = requests.post(
+                        url=url,
+                        auth=auth,
+                        json=payload,
+                        timeout=self.timeout,
+                        headers=headers,
+                        verify=self.verify,
+                        files=files,
+                        proxies=proxies
+                    )
                 else:
                     response = requests.get(
                         url=url, 
