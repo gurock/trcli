@@ -33,6 +33,7 @@ FAULT_MAPPING = dict(
     file_open_issue="Error occurred while opening the file ({file_path}). "
     "Make sure that the file exists or the path is correct.",
     missing_suite="Suite with ID '{suite_id}' does not exist in TestRail.",
+    missing_suite_by_name="Suite with name '{suite_name}' does not exist in TestRail.",
     no_user_agreement="User did not agree to create '{type}' automatically. Exiting.",
     error_checking_project="Error detected while checking a project: '{error_message}'",
     error_while_adding_suite="Error detected while adding suite: '{error_message}'",

@@ -160,7 +160,7 @@ class ApiRequestHandler:
             return (
                 (suite_id, "")
                 if suite_id != -1
-                else (-1, FAULT_MAPPING["missing_suite"].format(suite_name=suite_name))
+                else (-1, FAULT_MAPPING["missing_suite_by_name"].format(suite_name=suite_name))
             )
         else:
             return -1, error
