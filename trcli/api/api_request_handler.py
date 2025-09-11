@@ -799,7 +799,7 @@ class ApiRequestHandler:
         :param label_id: ID of the label to delete
         :returns: Tuple with success status and error string
         """
-        response = self.client.send_post(f"delete_label/{label_id}", payload=None)
+        response = self.client.send_post(f"delete_label/{label_id}")
         success = response.status_code == 200
         return success, response.error_message
 
@@ -809,9 +809,10 @@ class ApiRequestHandler:
         :param label_ids: List of label IDs to delete
         :returns: Tuple with success status and error string
         """
-        # Send as form data with correct parameter name
-        label_ids_str = ",".join(map(str, label_ids))
-        files = {"label_ids": (None, label_ids_str)}
+        # Send as form data with JSON array format
+        import json
+        label_ids_json = json.dumps(label_ids)
+        files = {"label_ids": (None, label_ids_json)}
         response = self.client.send_post("delete_labels", payload=None, files=files)
         success = response.status_code == 200
         return success, response.error_message

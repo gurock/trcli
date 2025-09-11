@@ -110,41 +110,23 @@ class APIClient:
                     method=method, url=url, payload=payload
                 )
                 if method == "POST":
-                    if as_form_data:
-                        # Send as application/x-www-form-urlencoded (like curl --form)
-                        request_kwargs = {
-                            'url': url,
-                            'auth': auth,
-                            'data': payload,
-                            'timeout': self.timeout,
-                            'headers': headers,
-                            'verify': self.verify,
-                            'proxies': proxies
-                        }
-                        if files:
-                            request_kwargs['files'] = files
-                        response = requests.post(**request_kwargs)
+                    request_kwargs = {
+                        'url': url,
+                        'auth': auth,
+                        'headers': headers,
+                        'timeout': self.timeout,
+                        'verify': self.verify,
+                        'proxies': proxies
+                    }
+                    if files:
+                        request_kwargs["files"] = files
+                        request_kwargs["data"] = payload if payload else {}
+                    elif as_form_data:
+                        request_kwargs["data"] = payload
                     else:
-                        # Handle different request types
-                        request_kwargs = {
-                            'url': url,
-                            'auth': auth,
-                            'timeout': self.timeout,
-                            'headers': headers,
-                            'verify': self.verify,
-                            'proxies': proxies
-                        }
-                        
-                        if files:
-                            # When files are provided, send as multipart/form-data
-                            request_kwargs['files'] = files
-                            if payload:
-                                request_kwargs['data'] = payload
-                        else:
-                            # When no files, send as JSON
-                            request_kwargs['json'] = payload
-                            
-                        response = requests.post(**request_kwargs)
+                        request_kwargs["json"] = payload
+                    
+                    response = requests.post(**request_kwargs)
                 else:
                     response = requests.get(
                         url=url, 
