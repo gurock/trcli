@@ -73,6 +73,7 @@ COMMAND_FAULT_MAPPING = dict(
     parse_openapi=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING),
     parse_robot=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING, **PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING),
     labels=dict(**FAULT_MAPPING),
+    references=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -94,7 +95,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
-    - labels: Manage labels (add, update, delete, list)"""
+    - labels: Manage labels (projects, cases, and tests)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""

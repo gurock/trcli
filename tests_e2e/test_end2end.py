@@ -4,6 +4,11 @@ import subprocess
 import pytest
 
 
+def _has_testrail_credentials():
+    """Check if TestRail credentials are available in environment variables"""
+    return bool(os.environ.get("TR_CLI_USERNAME") and os.environ.get("TR_CLI_PASSWORD"))
+
+
 def _run_cmd(multiline_cmd: str):
     lines_list = []
     for line in multiline_cmd.splitlines():
@@ -64,8 +69,8 @@ class TestsEndToEnd:
     # TestRail 101 instance has the required configuration for this test run
     TR_INSTANCE = "https://testrail101.testrail.io/"
     # Uncomment and enter your credentials below in order to execute the tests locally
-    # os.environ.setdefault("TR_CLI_USERNAME", "")
-    # os.environ.setdefault("TR_CLI_PASSWORD", "")
+    #os.environ.setdefault("TR_CLI_USERNAME", "")
+    #os.environ.setdefault("TR_CLI_PASSWORD", "")
 
     @pytest.fixture(autouse=True, scope="module")
     def install_trcli(self):
@@ -950,4 +955,655 @@ echo "y" | trcli -y \\
                     "Successfully deleted 1 label(s)"
                 ]
             )
+
+
+    def test_labels_cases_full_workflow(self):
+        """Test complete workflow of test case label operations"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        case_label_title = f"e2e-case-{random_suffix}"
+        
+        # First, create a test label
+        add_label_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels add \\
+  --title "{case_label_title}"
+        """)
+        _assert_contains(
+            add_label_output,
+            [
+                f"Adding label '{case_label_title}'...",
+                "Successfully added label:"
+            ]
+        )
+        
+        # Extract label ID for later use
+        import re
+        label_id_match = re.search(r"ID=(\d+)", add_label_output)
+        assert label_id_match, "Could not extract label ID from output"
+        label_id = label_id_match.group(1)
+        
+        try:
+            # Use known test case IDs that should exist in the test project
+            test_case_ids = ["24964", "24965"]  # Multiple test cases for batch testing
+            
+            # Add labels to test cases
+            add_cases_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases add \\
+  --case-ids "{','.join(test_case_ids)}" \\
+  --title "{case_label_title}"
+            """)
+            _assert_contains(
+                add_cases_output,
+                [
+                    f"Adding label '{case_label_title}' to {len(test_case_ids)} test case(s)...",
+                    "Successfully processed"
+                ]
+            )
+            
+            # List test cases by label title
+            list_by_title_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --title "{case_label_title}"
+            """)
+            _assert_contains(
+                list_by_title_output,
+                [
+                    f"Retrieving test cases with label title '{case_label_title}'...",
+                    "matching test case(s):"
+                ]
+            )
+            
+            # List test cases by label ID
+            list_by_id_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --ids "{label_id}"
+            """)
+            _assert_contains(
+                list_by_id_output,
+                [
+                    f"Retrieving test cases with label IDs: {label_id}...",
+                    "matching test case(s):"
+                ]
+            )
+            
+        finally:
+            # Cleanup - delete the test label
+            delete_output = _run_cmd(f"""
+echo "y" | trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels delete \\
+  --ids {label_id}
+            """)
+            _assert_contains(
+                delete_output,
+                [
+                    f"Deleting labels with IDs: {label_id}...",
+                    "Successfully deleted 1 label(s)"
+                ]
+            )
+
+    def test_labels_cases_validation_errors(self):
+        """Test validation errors for test case label commands"""
+        # Test title too long for add cases
+        long_title_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases add \\
+  --case-ids "1" \\
+  --title "this-title-is-way-too-long-for-testrail"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            long_title_output,
+            ["Error: Label title must be 20 characters or less."]
+        )
+        
+        # Test invalid case IDs format
+        invalid_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases add \\
+  --case-ids "invalid,ids" \\
+  --title "test"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            invalid_ids_output,
+            ["Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3)."]
+        )
+        
+        # Test missing filter for list cases
+        no_filter_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list
+        """)
+        assert return_code != 0
+        _assert_contains(
+            no_filter_output,
+            ["Error: Either --ids or --title must be provided."]
+        )
+        
+        # Test title too long for list cases
+        long_title_list_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --title "this-title-is-way-too-long-for-testrail"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            long_title_list_output,
+            ["Error: Label title must be 20 characters or less."]
+        )
+
+    def test_labels_cases_help_commands(self):
+        """Test help output for test case label commands"""
+        # Test main cases help
+        cases_help_output = _run_cmd("trcli labels cases --help")
+        _assert_contains(
+            cases_help_output,
+            [
+                "Usage: trcli labels cases [OPTIONS] COMMAND [ARGS]...",
+                "Manage labels for test cases",
+                "add   Add a label to test cases",
+                "list  List test cases filtered by label ID or title"
+            ]
+        )
+        
+        # Test cases add help
+        cases_add_help_output = _run_cmd("trcli labels cases add --help")
+        _assert_contains(
+            cases_add_help_output,
+            [
+                "Usage: trcli labels cases add [OPTIONS]",
+                "Add a label to test cases",
+                "--case-ids",
+                "--title"
+            ]
+        )
+        
+        # Test cases list help
+        cases_list_help_output = _run_cmd("trcli labels cases list --help")
+        _assert_contains(
+            cases_list_help_output,
+            [
+                "Usage: trcli labels cases list [OPTIONS]",
+                "List test cases filtered by label ID or title",
+                "--ids",
+                "--title"
+            ]
+        )
+
+    def test_labels_cases_no_matching_cases(self):
+        """Test behavior when no test cases match the specified label"""
+        # Test with non-existent label title
+        no_match_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --title "non-existent-label"
+        """)
+        _assert_contains(
+            no_match_output,
+            [
+                "Retrieving test cases with label title 'non-existent-label'...",
+                "Found 0 matching test case(s):",
+                "No test cases found with label title 'non-existent-label'."
+            ]
+        )
+        
+        # Test with non-existent label ID
+        no_match_id_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --ids "99999"
+        """)
+        _assert_contains(
+            no_match_id_output,
+            [
+                "Retrieving test cases with label IDs: 99999...",
+                "Found 0 matching test case(s):",
+                "No test cases found with the specified label IDs."
+            ]
+        )
+
+    def test_labels_cases_single_case_workflow(self):
+        """Test single case label operations using update_case endpoint"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        single_case_label_title = f"e2e-single-{random_suffix}"
+        
+        # First, create a test label
+        add_label_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels add \\
+  --title "{single_case_label_title}"
+        """)
+        _assert_contains(
+            add_label_output,
+            [
+                f"Adding label '{single_case_label_title}'...",
+                "Successfully added label:"
+            ]
+        )
+
+        # Extract label ID for later use
+        import re
+        label_id_match = re.search(r"ID=(\d+)", add_label_output)
+        assert label_id_match, "Could not extract label ID from output"
+        label_id = label_id_match.group(1)
+
+        try:
+            # Use single test case ID for testing update_case endpoint
+            single_case_id = "24964"
+
+            # Add label to single test case
+            add_single_case_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases add \\
+  --case-ids "{single_case_id}" \\
+  --title "{single_case_label_title}"
+            """)
+            _assert_contains(
+                add_single_case_output,
+                [
+                    f"Adding label '{single_case_label_title}' to 1 test case(s)...",
+                    "Successfully processed 1 case(s):",
+                    f"Successfully added label '{single_case_label_title}' to case {single_case_id}"
+                ]
+            )
+
+            # Verify the label was added by listing cases with this label
+            list_cases_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels cases list \\
+  --title "{single_case_label_title}"
+            """)
+            _assert_contains(
+                list_cases_output,
+                [
+                    f"Retrieving test cases with label title '{single_case_label_title}'...",
+                    "Found 1 matching test case(s):",
+                    f"Case ID: {single_case_id}"
+                ]
+            )
+
+        finally:
+            # Clean up: delete the test label
+            _run_cmd(f"""
+echo "y" | trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels delete \\
+  --ids {label_id}
+            """)
+
+    def test_labels_tests_full_workflow(self):
+        """Test complete workflow of test label operations"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        test_label_title = f"e2e-test-{random_suffix}"
+        
+        # First, create a test label
+        add_label_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels add \\
+  --title "{test_label_title}"
+        """)
+        _assert_contains(
+            add_label_output,
+            [
+                f"Adding label '{test_label_title}'...",
+                "Successfully added label:"
+            ]
+        )
+
+        # Extract label ID for cleanup
+        import re
+        label_id_match = re.search(r"ID=(\d+)", add_label_output)
+        assert label_id_match, "Could not extract label ID from output"
+        label_id = label_id_match.group(1)
+
+        try:
+            # Use known test IDs that should exist in the test project
+            test_ids = ["266149", "266151"]  # Real test IDs for functional testing
+
+            # Test 1: Add labels to tests using --test-ids
+            add_tests_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-ids "{','.join(test_ids)}" \\
+  --title "{test_label_title}"
+            """)
+            
+            _assert_contains(
+                add_tests_output,
+                [
+                    f"Adding label '{test_label_title}' to {len(test_ids)} test(s)..."
+                ]
+            )
+
+            # Test 2: Add labels to tests using CSV file
+            import os
+            csv_file_path = os.path.join(os.path.dirname(__file__), "sample_csv", "test_ids.csv")
+            
+            add_tests_csv_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-id-file "{csv_file_path}" \\
+  --title "{test_label_title}"
+            """)
+            
+            _assert_contains(
+                add_tests_csv_output,
+                [
+                    "Loaded 2 test ID(s) from file",
+                    f"Adding label '{test_label_title}' to 2 test(s)..."
+                ]
+            )
+
+            # Test 3: List tests by label ID from a specific run
+            # Use a realistic run ID - for E2E testing we'll use run ID 1 as a common test run
+            list_tests_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests list \\
+  --run-id "1" \\
+  --ids "{label_id}"
+            """)
+            _assert_contains(
+                list_tests_output,
+                [
+                    f"Retrieving tests from run IDs: 1 with label IDs: {label_id}...",
+                    "matching test(s):"
+                ]
+            )
+
+            # Test 4: Get test labels for specific tests
+            get_test_labels_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests get \\
+  --test-ids "{','.join(test_ids)}"
+            """)
+            _assert_contains(
+                get_test_labels_output,
+                [
+                    f"Retrieving labels for {len(test_ids)} test(s)...",
+                    "Test label information:"
+                ]
+            )
+
+        finally:
+            # Cleanup - delete the test label
+            delete_output = _run_cmd(f"""
+echo "y" | trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels delete \\
+  --ids {label_id}
+            """)
+
+    def test_labels_tests_validation_errors(self):
+        """Test validation errors for test label commands"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid label conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        
+        # Test title too long (21 characters exceeds 20 character limit)
+        long_title = f"this-is-a-very-long-title-{random_suffix}"  # This will be > 20 chars
+        title_error_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --test-ids "266149" \\
+  --title "{long_title}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            title_error_output,
+            ["Error: Label title must be 20 characters or less."]
+        )
+
+        # Test missing test-ids and file
+        valid_title = f"test-{random_suffix}"[:20]  # Ensure valid length
+        missing_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests add \\
+  --title "{valid_title}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            missing_ids_output,
+            ["Error: Either --test-ids or --test-id-file must be provided."]
+        )
+
+        # Test invalid label IDs format in list command
+        invalid_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  labels tests list \\
+  --run-id "1" \\
+  --ids "invalid,ids"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            invalid_ids_output,
+            ["Error: Invalid label IDs format. Use comma-separated integers (e.g., 1,2,3)."]
+        )
+
+    def test_labels_tests_help_commands(self):
+        """Test help output for test label commands"""
+        
+        # Test main tests help
+        tests_help_output = _run_cmd("trcli labels tests --help")
+        _assert_contains(
+            tests_help_output,
+            [
+                "Usage: trcli labels tests [OPTIONS] COMMAND [ARGS]...",
+                "Manage labels for tests",
+                "Commands:",
+                "add",
+                "list", 
+                "get"
+            ]
+        )
+
+        # Test tests add help
+        tests_add_help_output = _run_cmd("trcli labels tests add --help")
+        _assert_contains(
+            tests_add_help_output,
+            [
+                "Usage: trcli labels tests add [OPTIONS]",
+                "Add a label to tests",
+                "--test-ids",
+                "--test-id-file",
+                "--title"
+            ]
+        )
+
+        # Test tests list help
+        tests_list_help_output = _run_cmd("trcli labels tests list --help")
+        _assert_contains(
+            tests_list_help_output,
+            [
+                "Usage: trcli labels tests list [OPTIONS]",
+                "List tests filtered by label ID from specific runs",
+                "--run-id",
+                "--ids"
+            ]
+        )
+
+        # Test tests get help
+        tests_get_help_output = _run_cmd("trcli labels tests get --help")
+        _assert_contains(
+            tests_get_help_output,
+            [
+                "Usage: trcli labels tests get [OPTIONS]",
+                "Get the labels of tests using test IDs",
+                "--test-id"
+            ]
+        )
+
+    def test_references_cases_help_commands(self):
+        """Test references cases help commands"""
+        
+        # Test main references help
+        references_help_output = _run_cmd("trcli references --help")
+        _assert_contains(
+            references_help_output,
+            [
+                "Usage: trcli references [OPTIONS] COMMAND [ARGS]...",
+                "Manage references in TestRail",
+                "cases"
+            ]
+        )
+        
+        # Test references cases help
+        cases_help_output = _run_cmd("trcli references cases --help")
+        _assert_contains(
+            cases_help_output,
+            [
+                "Usage: trcli references cases [OPTIONS] COMMAND [ARGS]...",
+                "Manage references for test cases",
+                "add",
+                "update", 
+                "delete"
+            ]
+        )
+        
+        # Test references cases add help
+        add_help_output = _run_cmd("trcli references cases add --help")
+        _assert_contains(
+            add_help_output,
+            [
+                "Usage: trcli references cases add [OPTIONS]",
+                "Add references to test cases",
+                "--case-ids",
+                "--refs"
+            ]
+        )
+        
+        # Test references cases update help
+        update_help_output = _run_cmd("trcli references cases update --help")
+        _assert_contains(
+            update_help_output,
+            [
+                "Usage: trcli references cases update [OPTIONS]",
+                "Update references on test cases by replacing existing ones",
+                "--case-ids",
+                "--refs"
+            ]
+        )
+        
+        # Test references cases delete help
+        delete_help_output = _run_cmd("trcli references cases delete --help")
+        _assert_contains(
+            delete_help_output,
+            [
+                "Usage: trcli references cases delete [OPTIONS]",
+                "Delete all or specific references from test cases",
+                "--case-ids",
+                "--refs"
+            ]
+        )
+
+    def test_references_cases_error_scenarios(self):
+        """Test references cases error scenarios"""
+        
+        # Test invalid test case IDs format
+        invalid_ids_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --case-ids "invalid,ids" \\
+  --refs "REQ-1"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            invalid_ids_output,
+            ["Error: Invalid test case IDs format. Use comma-separated integers (e.g., 1,2,3)."]
+        )
+        
+        # Test empty references
+        empty_refs_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --case-ids "321" \\
+  --refs ",,,"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            empty_refs_output,
+            ["Error: No valid references provided."]
+        )
+        
+        # Test references too long (over 2000 characters)
+        long_refs = ','.join([f'REQ-{i}' * 100 for i in range(10)])  # Create very long references
+        long_refs_output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  references cases add \\
+  --case-ids "321" \\
+  --refs "{long_refs}"
+        """)
+        assert return_code != 0
+        _assert_contains(
+            long_refs_output,
+            ["exceeds 2000 character limit"]
+        )
     
