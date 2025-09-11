@@ -93,7 +93,6 @@ class ApiDataProvider:
         body = {
             "suite_id": self.suites_input.suite_id,
             "description": "\n".join(properties),
-            "milestone_id": milestone_id,
             "case_ids": case_ids
         }
         if isinstance(start_date, list) and start_date is not None:
@@ -116,6 +115,8 @@ class ApiDataProvider:
             body["refs"] = refs
         if run_name is not None:
             body["name"] = run_name
+        if milestone_id is not None:
+            body["milestone_id"] = milestone_id
         return body
 
     def add_results_for_cases(self, bulk_size):

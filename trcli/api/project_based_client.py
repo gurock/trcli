@@ -228,7 +228,13 @@ class ProjectBasedClient:
             self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
             run, error_message = self.api_request_handler.update_run(
-                run_id, self.run_name, self.environment.milestone_id
+                run_id, 
+                self.run_name, 
+                start_date=self.environment.run_start_date,
+                end_date=self.environment.run_end_date,
+                milestone_id=self.environment.milestone_id,
+                refs=self.environment.run_refs,
+                refs_action=getattr(self.environment, 'run_refs_action', 'add')
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)

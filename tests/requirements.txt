@@ -5,7 +5,7 @@ allure-pytest
 pytest-freezegun
 pytest-mock
 requests-mock
-click==8.0.3
+click==8.2.1
 pyyaml
 junitparser
 pyserde==0.12.*

@@ -15,7 +15,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "click==8.0.3",
+        "click>=8.1.0,<8.2.2", # Note: click version 8.2.2 is yanked as of Aug 2, 2025!
         "pyyaml>=6.0.0,<7.0.0",
         "junitparser>=3.1.0,<4.0.0",
         "pyserde==0.12.*",

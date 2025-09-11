@@ -6,6 +6,19 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.0]
+
+_released 09-11-2025
+
+### Added
+ - Added Label management facility for Projects, Test Cases and Tests
+ - Added Reference management feature for cases using 'references cases' command and add_run command using --run-refs and --run-refs-action
+
+### Fixed
+ - Fixed check_suite_id to handle paginated results
+ - Fixed test run detachment when updating a test run without --milestone-id
+ - Updated supported Click library to latest stable version 8.2.1
+
 ## [1.11.0]
 
 _released 07-30-2025
