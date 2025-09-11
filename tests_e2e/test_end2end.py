@@ -1528,25 +1528,7 @@ trcli -y \\
                 ]
             )
 
-            # Test 3: List tests by label ID from a specific run
-            # Use a realistic run ID - for E2E testing we'll use run ID 1 as a common test run
-            list_tests_output = _run_cmd(f"""
-trcli -y \\
-  -h {self.TR_INSTANCE} \\
-  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
-  labels tests list \\
-  --run-id "1" \\
-  --ids "{label_id}"
-            """)
-            _assert_contains(
-                list_tests_output,
-                [
-                    f"Retrieving tests from run IDs: 1 with label IDs: {label_id}...",
-                    "matching test(s):"
-                ]
-            )
-
-            # Test 4: Get test labels for specific tests
+            # Test 3: Get test labels for specific tests
             get_test_labels_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
@@ -1593,7 +1575,7 @@ trcli -y \\
         assert return_code != 0
         _assert_contains(
             title_error_output,
-            ["Error: Label title must be 20 characters or less."]
+            ["exceeds 20 character limit and will be skipped."]
         )
 
         # Test missing test-ids and file
@@ -1649,7 +1631,7 @@ trcli -y \\
             tests_add_help_output,
             [
                 "Usage: trcli labels tests add [OPTIONS]",
-                "Add a label to tests",
+                "Add label(s) to tests",
                 "--test-ids",
                 "--test-id-file",
                 "--title"

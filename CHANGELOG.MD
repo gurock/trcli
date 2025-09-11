@@ -8,10 +8,16 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.12.0]
 
-_released 08-12-2025
+_released 09-11-2025
 
 ### Added
- - Added Label management facility for Projects, Test Runs and Test Cases
+ - Added Label management facility for Projects, Test Cases and Tests
+ - Added Reference management feature for cases using 'references cases' command and add_run command using --run-refs and --run-refs-action
+
+### Fixed
+ - Fixed check_suite_id to handle paginated results
+ - Fixed test run detachment when updating a test run without --milestone-id
+ - Updated supported Click library to latest stable version 8.2.1
 
 ## [1.11.0]
 
