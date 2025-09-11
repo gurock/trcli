@@ -289,14 +289,13 @@ will be used to upload all results into the same test run.
 
 #### Labels Management
 
-The TestRail CLI provides comprehensive label management capabilities for **Projects** using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
+The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
 
-The `labels` command supports full CRUD (Create, Read, Update, Delete) operations:
-- **Add** new labels to projects
-- **List** existing labels with pagination support
-- **Get** detailed information about specific labels
-- **Update** existing label titles
-- **Delete** single or multiple labels in batch
+The TestRail CLI supports two types of label management:
+- **Project Labels**: Manage labels at the project level
+- **Test Case Labels**: Apply labels to specific test cases for better organization and filtering
+
+Both types of labels support full CRUD (Create, Read, Update, Delete) operations with comprehensive validation and error handling.
 
 ##### Reference
 ```shell
@@ -310,13 +309,25 @@ Options:
 
 Commands:
   add     Add a new label in TestRail
+  cases   Manage labels for test cases
   delete  Delete labels from TestRail
   get     Get a specific label by ID
   list    List all labels in the project
   update  Update an existing label in TestRail
 ```
 
-##### Adding Labels
+#### Project Labels
+
+Project labels are managed using the main `labels` command and provide project-wide label management capabilities. These labels can be created, updated, deleted, and listed at the project level.
+
+**Project Labels Support:**
+- **Add** new labels to projects
+- **List** existing labels with pagination support
+- **Get** detailed information about specific labels
+- **Update** existing label titles
+- **Delete** single or multiple labels in batch
+
+###### Adding Labels
 Create new labels for your project with a descriptive title (maximum 20 characters).
 
 ```shell
@@ -336,7 +347,7 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
   labels add --title "Regression"
 ```
 
-##### Listing Labels
+###### Listing Labels
 View all labels in your project with optional pagination support.
 
 ```shell
@@ -367,7 +378,7 @@ Found 5 labels:
   ID: 127, Title: 'Performance'
 ```
 
-##### Getting Label Details
+###### Getting Label Details
 Retrieve detailed information about a specific label by its ID.
 
 ```shell
@@ -387,7 +398,7 @@ Label details:
   Created on: 1234567890
 ```
 
-##### Updating Labels
+###### Updating Labels
 Modify the title of existing labels (maximum 20 characters).
 
 ```shell
@@ -403,7 +414,7 @@ Updating label with ID 123...
 Successfully updated label: ID=123, Title='High-Priority'
 ```
 
-##### Deleting Labels
+###### Deleting Labels
 Remove single or multiple labels from your project.
 
 ```shell
@@ -426,7 +437,7 @@ Deleting labels with IDs: 123,124...
 Successfully deleted 2 label(s)
 ```
 
-##### Common Use Cases
+###### Common Use Cases
 
 **1. Release Management**
 ```shell
@@ -481,7 +492,7 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
   labels delete --ids "100,101,102,103,104"
 ```
 
-##### Command Options Reference
+###### Command Options Reference
 
 **Add Command:**
 ```shell
@@ -525,7 +536,7 @@ Options:
   --help Show this message and exit.
 ```
 
-##### Error Handling and Validation
+###### Error Handling and Validation
 
 The labels command includes comprehensive validation:
 
@@ -547,6 +558,192 @@ Failed to retrieve label: Label not found
 # Invalid ID format in batch delete
 $ trcli <host,credentials> labels delete --ids "abc,def"
 Error: Invalid label IDs format
+```
+
+#### Test Case Labels
+
+In addition to project-level labels, the TestRail CLI also supports **test case label management** through the `labels cases` command. This functionality allows you to assign labels to specific test cases and filter test cases by their labels, providing powerful organization and filtering capabilities for your test suite.
+
+###### Test Case Label Features
+- **Add labels to test cases**: Apply existing or new labels to one or multiple test cases (supports multiple labels per command)
+- **Get labels assigned to test cases**: View all labels currently assigned to specific test cases
+- **List test cases by labels**: Find test cases that have specific labels applied
+- **Multiple labels support**: Add multiple labels in a single command using comma separation
+- **Automatic label creation**: Labels are created automatically if they don't exist when adding to cases
+- **Maximum label validation**: Enforces TestRail's limit of 10 labels per test case
+- **Flexible filtering**: Search by label ID or title
+
+###### Reference
+```shell
+$ trcli labels cases --help
+Usage: trcli labels cases [OPTIONS] COMMAND [ARGS]...
+
+  Manage labels for test cases
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  add   Add a label to test cases
+  get   Get labels assigned to test cases
+  list  List test cases filtered by label ID or title
+```
+
+###### Adding Labels to Test Cases
+Apply labels to one or multiple test cases. If the label doesn't exist, it will be created automatically.
+
+```shell
+# Add a label to a single test case
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids 123 --title "Regression"
+
+# Add a label to multiple test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "123,124,125" --title "Critical"
+
+# Add a release label to test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "100,101,102" --title "Sprint-42"
+
+# Add multiple labels to test cases (comma-separated)
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "123,124" --title "Regression,Critical,UI"
+
+# Add multiple labels with spaces (properly quoted)
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases add --case-ids "100" --title "Bug Fix, Performance"
+```
+
+###### Getting Labels Assigned to Test Cases
+View all labels assigned to specific test cases. This is useful for inspecting the current label assignments and understanding how test cases are categorized.
+
+```shell
+# Get labels for a single test case
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids 123
+
+# Get labels for multiple test cases
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids "123,124,125"
+
+# Get labels for test cases to audit label usage
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases get --case-ids "100,101,102,103,104"
+```
+
+**Output example:**
+```
+Retrieving labels for 3 test case(s)...
+Found 3 test case(s):
+
+  Case ID: 123, Title: 'Login functionality test' [Labels: ID:5,Title:'Regression'; ID:7,Title:'Critical']
+  Case ID: 124, Title: 'Password validation test' [Labels: ID:5,Title:'Regression']
+  Case ID: 125, Title: 'User registration test' [No labels]
+```
+
+###### Listing Test Cases by Labels
+Find test cases that have specific labels applied, either by label ID or title. Note that `--ids` and `--title` options are mutually exclusive - use only one at a time.
+
+```shell
+# List test cases by label title
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases list --title "Regression"
+
+# List test cases by label ID
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases list --ids 123
+
+# List test cases by multiple label IDs
+$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project" \
+  labels cases list --ids "123,124,125"
+```
+
+**Output example:**
+```
+Retrieving test cases with label title 'Regression'...
+Found 3 matching test case(s):
+
+  Case ID: 123, Title: 'Login functionality test' [Labels: ID:5,Title:'Regression'; ID:7,Title:'Critical']
+  Case ID: 124, Title: 'Password validation test' [Labels: ID:5,Title:'Regression']
+  Case ID: 125, Title: 'User registration test' [Labels: ID:5,Title:'Regression'; ID:8,Title:'UI']
+```
+
+**No matches example:**
+```
+Retrieving test cases with label title 'Non-Existent'...
+Found 0 matching test case(s):
+  No test cases found with label title 'Non-Existent'.
+```
+
+###### Command Options Reference
+
+**Add Cases Command:**
+```shell
+$ trcli labels cases add --help
+Options:
+  --case-ids  Comma-separated list of test case IDs [required]
+  --title     Label title(s) to add (max 20 characters each). Use comma separation for multiple labels [required]
+  --help      Show this message and exit.
+```
+
+**Get Cases Command:**
+```shell
+$ trcli labels cases get --help
+Options:
+  --case-ids  Comma-separated list of test case IDs [required]
+  --help      Show this message and exit.
+```
+
+**List Cases Command:**
+```shell
+$ trcli labels cases list --help
+Options:
+  --ids           Comma-separated list of label IDs to filter by (mutually exclusive with --title)
+  --title         Label title to filter by (max 20 characters) (mutually exclusive with --ids)
+  --help          Show this message and exit.
+```
+
+###### Validation Rules
+
+**Test Case Label Management includes these validations:**
+
+- **Label Title**: Maximum 20 characters (same as project labels)
+- **Case IDs**: Must be valid integers in comma-separated format
+- **Maximum Labels**: Each test case can have maximum 10 labels
+- **Filter Requirements**: Either `--ids` or `--title` must be provided for list command (mutually exclusive)
+- **Label Creation**: Labels are automatically created if they don't exist when adding to cases
+- **Duplicate Prevention**: Adding an existing label to a case is handled gracefully
+
+###### Error Handling Examples
+
+**Test Case Label Management error scenarios:**
+```shell
+# Missing both filter options
+$ trcli <host,credentials> labels cases list
+Error: Either --ids or --title must be provided.
+
+# Using both filter options (mutually exclusive)
+$ trcli <host,credentials> labels cases list --ids 123 --title "Regression"
+Error: --ids and --title options are mutually exclusive. Use only one at a time.
+
+# Invalid case ID format
+$ trcli <host,credentials> labels cases add --case-ids "abc,def" --title "Test"
+Error: Invalid case IDs format. Use comma-separated integers (e.g., 1,2,3).
+
+# Invalid label title length in multiple labels
+$ trcli <host,credentials> labels cases add --case-ids "123" --title "Valid,this-title-is-way-too-long"
+Error: Label title 'this-title-is-way-too-long' must be 20 characters or less.
 ```
 
 ### Reference

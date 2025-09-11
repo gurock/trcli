@@ -6,13 +6,13 @@
 	<testsuite name="[GENERIC-IDS-PROP] Suite 1">
 		<testcase name="Test 1" classname="[GENERIC-IDS-PROP] Suite 1">
 			<properties>
-        		<property name="test_id" value="C12986"/>
+        		<property name="test_id" value="C25009"/>
       		</properties>
 		</testcase>
 		<testcase name="Test 2" classname="[GENERIC-IDS-PROP] Suite 1">
 	    	<failure type="generic_failure" message="Fail due to...">failed due to...</failure>
       		<properties>
-        		<property name="test_id" value="c12987"/>
+        		<property name="test_id" value="c25010"/>
         		<property name="testrail_attachment" value="./attachments/testrail.jpg"/>
       		</properties>
 		</testcase>
@@ -21,7 +21,7 @@
 	<testsuite name="[GENERIC-IDS-PROP] Suite 2">
 		<testcase name="Test 1" classname="[GENERIC-IDS-PROP] Suite 2">
 			<properties>
-        		<property name="test_id" value="12989"/>
+        		<property name="test_id" value="25006"/>
       		</properties>
 		</testcase>
 		<testcase name="Test 2" classname="[GENERIC-IDS-PROP] Suite 2"/>
