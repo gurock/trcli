@@ -441,19 +441,32 @@ class ApiRequestHandler:
         return run_id, response.error_message
 
     def update_run(self, run_id: int, run_name: str, start_date: str = None,
-            end_date: str = None, milestone_id: int = None) -> Tuple[dict, str]:
+            end_date: str = None, milestone_id: int = None, refs: str = None, refs_action: str = 'add') -> Tuple[dict, str]:
         """
         Updates an existing run
         :run_id: run id
         :run_name: run name
+        :refs: references to manage
+        :refs_action: action to perform ('add', 'update', 'delete')
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
+        if run_response.error_message:
+            return None, run_response.error_message
+            
         existing_description = run_response.response_text.get("description", "")
+        existing_refs = run_response.response_text.get("refs", "")
 
         add_run_data = self.data_provider.add_run(run_name, start_date=start_date,
             end_date=end_date, milestone_id=milestone_id)
         add_run_data["description"] = existing_description  # Retain the current description
+
+        # Handle references based on action
+        if refs is not None:
+            updated_refs = self._manage_references(existing_refs, refs, refs_action)
+            add_run_data["refs"] = updated_refs
+        else:
+            add_run_data["refs"] = existing_refs  # Keep existing refs if none provided
 
         run_tests, error_message = self.__get_all_tests_in_run(run_id)
         run_case_ids = [test["case_id"] for test in run_tests]
@@ -481,6 +494,40 @@ class ApiRequestHandler:
             update_response = self.client.send_post(f"update_plan_entry/{plan_id}/{entry_id}", add_run_data)
         run_response = self.client.send_get(f"get_run/{run_id}")
         return run_response.response_text, update_response.error_message
+
+    def _manage_references(self, existing_refs: str, new_refs: str, action: str) -> str:
+        """
+        Manage references based on the specified action.
+        :existing_refs: current references in the run
+        :new_refs: new references to process
+        :action: 'add', 'update', or 'delete'
+        :returns: updated references string
+        """
+        if not existing_refs:
+            existing_refs = ""
+        
+        if action == 'update':
+            # Replace all references with new ones
+            return new_refs
+        elif action == 'delete':
+            if not new_refs:
+                # Delete all references
+                return ""
+            else:
+                # Delete specific references
+                existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
+                refs_to_delete = [ref.strip() for ref in new_refs.split(',') if ref.strip()]
+                updated_list = [ref for ref in existing_list if ref not in refs_to_delete]
+                return ','.join(updated_list)
+        else:  # action == 'add' (default)
+            # Add new references to existing ones
+            if not existing_refs:
+                return new_refs
+            existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
+            new_list = [ref.strip() for ref in new_refs.split(',') if ref.strip()]
+            # Avoid duplicates
+            combined_list = existing_list + [ref for ref in new_list if ref not in existing_list]
+            return ','.join(combined_list)
 
     def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
         """ Getting test result id and upload attachments for it. """

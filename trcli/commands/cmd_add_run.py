@@ -19,7 +19,8 @@ def print_config(env: Environment):
             f"\n> Assigned To ID: {env.run_assigned_to_id}"
             f"\n> Include All: {env.run_include_all}"
             f"\n> Case IDs: {env.run_case_ids}"
-            f"\n> Refs: {env.run_refs}")
+            f"\n> Refs: {env.run_refs}"
+            f"\n> Refs Action: {env.run_refs_action if hasattr(env, 'run_refs_action') else 'add'}")
 
 
 def write_run_to_file(environment: Environment, run_id: int):
@@ -43,6 +44,12 @@ def write_run_to_file(environment: Environment, run_id: int):
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
+@click.option(
+    "--run-id",
+    type=click.IntRange(min=1),
+    metavar="",
+    help="ID of existing test run to update. If not provided, a new run will be created.",
+)
 @click.option(
     "--suite-id",
     type=click.IntRange(min=1),
@@ -97,7 +104,14 @@ def write_run_to_file(environment: Environment, run_id: int):
 @click.option(
     "--run-refs",
     metavar="",
-    help="A comma-separated list of references/requirements"
+    help="A comma-separated list of references/requirements (up to 250 characters)"
+)
+@click.option(
+    "--run-refs-action",
+    type=click.Choice(['add', 'update', 'delete'], case_sensitive=False),
+    default='add',
+    metavar="",
+    help="Action to perform on references: 'add' (default), 'update' (replace all), or 'delete' (remove all or specific)"
 )
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Write run data to file.")
 @click.pass_context
@@ -107,6 +121,18 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     environment.cmd = "add_run"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
+    
+    if environment.run_refs and len(environment.run_refs) > 250:
+        environment.elog("Error: References field cannot exceed 250 characters.")
+        exit(1)
+    
+    if environment.run_refs_action and environment.run_refs_action != 'add' and not environment.run_id:
+        environment.elog("Error: --run-refs-action 'update' and 'delete' can only be used when updating an existing run (--run-id required).")
+        exit(1)
+    
+    if environment.run_refs_action == 'delete' and not environment.run_refs and environment.run_id:
+        environment.run_refs = ""
+    
     print_config(environment)
 
     project_client = ProjectBasedClient(

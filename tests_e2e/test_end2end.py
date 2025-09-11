@@ -493,6 +493,190 @@ trcli -y \\
             ]
         )
 
+    def test_cli_add_run_refs_with_references(self):
+        """Test creating a run with references"""
+        import random
+        import string
+        
+        # Generate random suffix to avoid conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: With References {random_suffix}" \\
+  --run-refs "JIRA-100,JIRA-200,REQ-{random_suffix}" \\
+  -f "run_config_refs.yml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Creating test run.",
+                f"Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                f"title: [CLI-E2E-Tests] ADD RUN TEST: With References {random_suffix}",
+                f"Refs: JIRA-100,JIRA-200,REQ-{random_suffix}",
+                "Writing test run data to file (run_config_refs.yml). Done."
+            ]
+        )
+
+    def test_cli_add_run_refs_validation_error(self):
+        """Test references validation (too long)"""
+        long_refs = "A" * 251  # Exceeds 250 character limit
+        
+        output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Too Long" \\
+  --run-refs "{long_refs}"
+        """)
+        
+        assert return_code != 0
+        _assert_contains(
+            output,
+            ["Error: References field cannot exceed 250 characters."]
+        )
+
+    def test_cli_add_run_refs_update_action_validation(self):
+        """Test that update/delete actions require run_id"""
+        output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Invalid Action" \\
+  --run-refs "JIRA-123" \\
+  --run-refs-action "update"
+        """)
+        
+        assert return_code != 0
+        _assert_contains(
+            output,
+            ["Error: --run-refs-action 'update' and 'delete' can only be used when updating an existing run (--run-id required)."]
+        )
+
+    def test_cli_add_run_refs_update_workflow(self):
+        """Test complete workflow: create run, then update references"""
+        import random
+        import string
+        import re
+        
+        # Generate random suffix to avoid conflicts
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        
+        # Step 1: Create a run with initial references
+        create_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Workflow {random_suffix}" \\
+  --run-refs "JIRA-100,JIRA-200" \\
+  -f "run_config_workflow.yml"
+        """)
+        
+        # Extract run ID from output
+        run_id_match = re.search(r'run_id: (\d+)', create_output)
+        assert run_id_match, "Could not extract run ID from output"
+        run_id = run_id_match.group(1)
+        
+        _assert_contains(
+            create_output,
+            [
+                "Creating test run.",
+                f"run_id: {run_id}",
+                "Refs: JIRA-100,JIRA-200"
+            ]
+        )
+        
+        # Step 2: Add more references to the existing run
+        add_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --run-id {run_id} \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Workflow {random_suffix}" \\
+  --run-refs "JIRA-300,REQ-{random_suffix}" \\
+  --run-refs-action "add"
+        """)
+        
+        _assert_contains(
+            add_output,
+            [
+                "Updating test run.",
+                f"run_id: {run_id}",
+                "Refs Action: add"
+            ]
+        )
+        
+        # Step 3: Update (replace) all references
+        update_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --run-id {run_id} \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Workflow {random_suffix}" \\
+  --run-refs "NEW-100,NEW-200" \\
+  --run-refs-action "update"
+        """)
+        
+        _assert_contains(
+            update_output,
+            [
+                "Updating test run.",
+                f"run_id: {run_id}",
+                "Refs: NEW-100,NEW-200",
+                "Refs Action: update"
+            ]
+        )
+        
+        # Step 4: Delete specific references
+        delete_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --run-id {run_id} \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Workflow {random_suffix}" \\
+  --run-refs "NEW-100" \\
+  --run-refs-action "delete"
+        """)
+        
+        _assert_contains(
+            delete_output,
+            [
+                "Updating test run.",
+                f"run_id: {run_id}",
+                "Refs Action: delete"
+            ]
+        )
+        
+        # Step 5: Delete all references
+        delete_all_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  add_run \\
+  --run-id {run_id} \\
+  --title "[CLI-E2E-Tests] ADD RUN TEST: Refs Workflow {random_suffix}" \\
+  --run-refs-action "delete"
+        """)
+        
+        _assert_contains(
+            delete_all_output,
+            [
+                "Updating test run.",
+                f"run_id: {run_id}",
+                "Refs: ",
+                "Refs Action: delete"
+            ]
+        )
+
 
     def bug_test_cli_robot_description_bug(self):
         output = _run_cmd(f"""
