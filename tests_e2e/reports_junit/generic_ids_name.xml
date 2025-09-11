@@ -4,8 +4,8 @@
 		<property name="Root Suite Property 2" value="Value 2"/>
 	</properties>
 	<testsuite name="[GENERIC-IDS-NAME] Suite 1">
-		<testcase name="[C25000] Test 1" classname="[GENERIC-IDS-NAME] Suite 1"/>
-		<testcase name="[C25001] Test 2" classname="[GENERIC-IDS-NAME] Suite 1">
+		<testcase name="[C12986] Test 1" classname="[GENERIC-IDS-NAME] Suite 1"/>
+		<testcase name="[C12987] Test 2" classname="[GENERIC-IDS-NAME] Suite 1">
 	    	<failure type="generic_failure" message="Fail due to...">failed due to...</failure>
       		<properties>
         		<property name="testrail_attachment" value="./attachments/testrail.jpg"/>
@@ -14,7 +14,7 @@
 		<testcase name="Test 3" classname="[GENERIC-IDS-NAME] Suite 1"/>
 	</testsuite>
 	<testsuite name="[GENERIC-IDS-NAME] Suite 2">
-		<testcase name="[C25003] Test 1" classname="[GENERIC-IDS-NAME] Suite 2"/>
+		<testcase name="[C12989] Test 1" classname="[GENERIC-IDS-NAME] Suite 2"/>
 		<testcase name="Test 2" classname="[GENERIC-IDS-NAME] Suite 2"/>
 		<testcase name="Test 3" classname="[GENERIC-IDS-NAME] Suite 2"/>
 	</testsuite>
