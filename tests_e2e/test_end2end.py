@@ -530,20 +530,27 @@ trcli -y \\
     def test_labels_full_workflow(self):
         """Test complete labels workflow: add, list, get, update, delete"""
         
+        # Generate random suffix to avoid conflicts with existing labels
+        import random
+        import string
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        label_title = f"e2e-{random_suffix}"
+        assert len(label_title) <= 20, f"Label title '{label_title}' exceeds 20 characters"
+        
         # Step 1: Add a new label
         add_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "E2E-Test-Label"
+  --title "{label_title}"
         """)
         _assert_contains(
             add_output,
             [
-                "Adding label 'E2E-Test-Label'...",
+                f"Adding label '{label_title}'...",
                 "Successfully added label: ID=",
-                "Title='E2E-Test-Label'"
+                f"Title='{label_title}'"
             ]
         )
         
@@ -566,7 +573,7 @@ trcli -y \\
             [
                 "Retrieving labels...",
                 "Found",
-                f"ID: {label_id}, Title: 'E2E-Test-Label'"
+                f"ID: {label_id}, Title: '{label_title}'"
             ]
         )
         
@@ -584,25 +591,27 @@ trcli -y \\
                 f"Retrieving label with ID {label_id}...",
                 "Label details:",
                 f"ID: {label_id}",
-                "Title: 'E2E-Test-Label'"
+                f"Title: '{label_title}'"
             ]
         )
         
         # Step 4: Update the label
+        updated_title = f"upd-{random_suffix}"
+        assert len(updated_title) <= 20, f"Updated title '{updated_title}' exceeds 20 characters"
         update_output = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels update \\
   --id {label_id} \\
-  --title "Updated-E2E-Label"
+  --title "{updated_title}"
         """)
         _assert_contains(
             update_output,
             [
                 f"Updating label with ID {label_id}...",
                 f"Successfully updated label: ID={label_id}",
-                "Title='Updated-E2E-Label'"
+                f"Title='{updated_title}'"
             ]
         )
         
@@ -618,7 +627,7 @@ trcli -y \\
             get_updated_output,
             [
                 f"ID: {label_id}",
-                "Title: 'Updated-E2E-Label'"
+                f"Title: '{updated_title}'"
             ]
         )
         
@@ -641,31 +650,42 @@ echo "y" | trcli -y \\
     def test_labels_add_multiple_and_delete_multiple(self):
         """Test adding multiple labels and deleting them in batch"""
         
+        # Generate random suffix to avoid conflicts with existing labels
+        import random
+        import string
+        random_suffix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+        
         # Add first label
+        label1_title = f"b1-{random_suffix}"
+        assert len(label1_title) <= 20, f"Label1 title '{label1_title}' exceeds 20 characters"
         add_output1 = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "Batch-Test-1"
+  --title "{label1_title}"
         """)
         
         # Add second label
+        label2_title = f"b2-{random_suffix}"
+        assert len(label2_title) <= 20, f"Label2 title '{label2_title}' exceeds 20 characters"
         add_output2 = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "Batch-Test-2"
+  --title "{label2_title}"
         """)
         
         # Add third label
+        label3_title = f"b3-{random_suffix}"
+        assert len(label3_title) <= 20, f"Label3 title '{label3_title}' exceeds 20 characters"
         add_output3 = _run_cmd(f"""
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   labels add \\
-  --title "Batch-Test-3"
+  --title "{label3_title}"
         """)
         
         # Extract all label IDs
@@ -687,9 +707,9 @@ trcli -y \\
         _assert_contains(
             list_output,
             [
-                f"ID: {label_id1}, Title: 'Batch-Test-1'",
-                f"ID: {label_id2}, Title: 'Batch-Test-2'",
-                f"ID: {label_id3}, Title: 'Batch-Test-3'"
+                f"ID: {label_id1}, Title: '{label1_title}'",
+                f"ID: {label_id2}, Title: '{label2_title}'",
+                f"ID: {label_id3}, Title: '{label3_title}'"
             ]
         )
         
