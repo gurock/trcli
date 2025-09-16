@@ -6,6 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.1]
+
+_released 09-18-2025
+
+### Added
+ - Added failed automated tests assignment using --assign option
+
+### Fixed
+ - Fixed an issue where JUnit parser fails to detect test case IDs if testcase name is at the beginning or it contains parentheses at the end
+
 ## [1.12.0]
 
 _released 09-11-2025
