@@ -19,6 +19,7 @@ class MatchersParser:
         - "[C123] my test case"
         - "my test case [C123]"
         - "module 1 [C123] my test case"
+        - "my_test_case_C123()" (JUnit 5 support)
 
         :param case_name: Name of the test case
         :return: Tuple with test case ID and test case name without the ID
@@ -29,9 +30,10 @@ class MatchersParser:
             for idx, part in enumerate(parts):
                 if part.lower().startswith("c") and len(part) > 1:
                     id_part = part[1:]
-                    if id_part.isnumeric():
+                    id_part_clean = re.sub(r'\(.*\)$', '', id_part)
+                    if id_part_clean.isnumeric():
                         parts_copy.pop(idx)
-                        return int(id_part), char.join(parts_copy)
+                        return int(id_part_clean), char.join(parts_copy)
 
         results = re.findall(r"\[(.*?)\]", case_name)
         for result in results:
