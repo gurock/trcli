@@ -119,17 +119,35 @@ class ApiDataProvider:
             body["milestone_id"] = milestone_id
         return body
 
-    def add_results_for_cases(self, bulk_size):
+    def add_results_for_cases(self, bulk_size, user_ids=None):
         """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
         testcases = [sections.testcases for sections in self.suites_input.testsections]
 
         bodies = []
+        user_index = 0
+        assigned_count = 0
+        total_failed_count = 0
 
         for sublist in testcases:
             for case in sublist:
                 if case.case_id is not None:
                     case.result.add_global_result_fields(self.result_fields)
+                    
+                    # Count failed tests
+                    if case.result.status_id == 5:  # status_id 5 = Failed
+                        total_failed_count += 1
+                        
+                        # Assign failed tests to users in round-robin fashion if user_ids provided
+                        if user_ids:
+                            case.result.assignedto_id = user_ids[user_index % len(user_ids)]
+                            user_index += 1
+                            assigned_count += 1
+                    
                     bodies.append(case.result.to_dict())
+
+        # Store counts for logging (we'll access this from the api_request_handler)
+        self._assigned_count = assigned_count if user_ids else 0
+        self._total_failed_count = total_failed_count
 
         result_bulks = ApiDataProvider.divide_list_into_bulks(
             bodies,
