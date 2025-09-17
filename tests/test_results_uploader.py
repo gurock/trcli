@@ -36,6 +36,9 @@ class TestResultsUploader:
         environment.run_id = None
         environment.file = "results.xml"
         environment.case_matcher = MatchersParser.AUTO
+        environment.assign_failed_to = None
+        environment._has_invalid_users = False
+        environment._validated_user_ids = []
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
         api_request_handler = mocker.patch(
