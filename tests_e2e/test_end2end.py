@@ -1772,4 +1772,209 @@ trcli -y \\
             long_refs_output,
             ["exceeds 2000 character limit"]
         )
+
+    # ==================== ASSIGN FEATURE TESTS ====================
+    
+    def test_assign_failures_single_user(self):
+        """Test --assign feature with single user"""
+        # Note: This test assumes a valid TestRail user exists in the instance
+        # In a real environment, you would use actual user emails
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Single User" \\
+  --assign "trcli@gurock.io" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Auto-assign failures: Yes (trcli@gurock.io)",
+                "Processed 6 test cases in section [ASSIGNTESTSUITE]",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted 6 test results in",
+                "Assigning failed results: 4/4, Done."
+            ]
+        )
+
+    def test_assign_failures_multiple_users(self):
+        """Test --assign feature with multiple users (round-robin assignment)"""
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Multiple Users" \\
+  --assign "trcli@gurock.io,trcli@testrail.com" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Auto-assign failures: Yes (trcli@gurock.io,trcli@testrail.com)",
+                "Processed 6 test cases in section [ASSIGNTESTSUITE]",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted 6 test results in",
+                "Assigning failed results: 4/4, Done."
+            ]
+        )
+
+    def test_assign_failures_short_form(self):
+        """Test --assign feature using -a short form"""
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Short Form" \\
+  -a "trcli@gurock.io" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Auto-assign failures: Yes (trcli@gurock.io)",
+                "Processed 6 test cases in section [ASSIGNTESTSUITE]",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted 6 test results in",
+                "Assigning failed results: 4/4, Done."
+            ]
+        )
+
+    def test_assign_failures_without_assign_option(self):
+        """Test that normal operation works without --assign option"""
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] No Assign Option" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Auto-assign failures: No",
+                "Processed 6 test cases in section [ASSIGNTESTSUITE]",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted 6 test results in"
+            ]
+        )
+        # Should NOT contain assignment message
+        assert "Assigning failed results:" not in output
+
+    def test_assign_failures_invalid_user(self):
+        """Test --assign feature with invalid user email"""
+        output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Invalid User" \\
+  --assign "invalid.user@nonexistent.com" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        
+        assert return_code != 0
+        _assert_contains(
+            output,
+            [
+                "Error: User not found: invalid.user@nonexistent.com"
+            ]
+        )
+
+    def test_assign_failures_mixed_valid_invalid_users(self):
+        """Test --assign feature with mix of valid and invalid users"""
+        output, return_code = _run_cmd_allow_failure(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Mixed Users" \\
+  --assign "trcli@gurock.io,invalid.user@nonexistent.com" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        
+        assert return_code != 0
+        _assert_contains(
+            output,
+            [
+                "Error: User not found: invalid.user@nonexistent.com"
+            ]
+        )
+
+    def test_assign_failures_whitespace_handling(self):
+        """Test --assign feature with whitespace in email list"""
+        output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Whitespace" \\
+  --assign " trcli@gurock.io , trcli@testrail.com " \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            output,
+            [
+                "Auto-assign failures: Yes ( trcli@gurock.io , trcli@testrail.com )",
+                "Processed 6 test cases in section [ASSIGNTESTSUITE]",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted 6 test results in",
+                "Assigning failed results: 4/4, Done."
+            ]
+        )
+
+    def test_assign_failures_help_documentation(self):
+        """Test that --assign option appears in help documentation"""
+        help_output = _run_cmd("trcli parse_junit --help")
+        _assert_contains(
+            help_output,
+            [
+                "-a, --assign",
+                "Comma-separated list of user emails to assign failed",
+                "test results to."
+            ]
+        )
+
+    def test_assign_failures_with_existing_run(self):
+        """Test --assign feature when updating an existing run"""
+        # First create a run
+        create_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Assign Failures - Update Run" \\
+  -f "reports_junit/generic_ids_auto.xml"
+        """)
+        
+        # Extract run ID from output
+        import re
+        run_id_match = re.search(r'runs/view/(\d+)', create_output)
+        assert run_id_match, "Could not extract run ID from output"
+        run_id = run_id_match.group(1)
+        
+        # Update the run with failed tests and assignment
+        update_output = _run_cmd(f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --run-id {run_id} \\
+  --title "[CLI-E2E-Tests] Assign Failures - Update Run" \\
+  --assign "trcli@gurock.io" \\
+  -f "reports_junit/assign_test_failures.xml"
+        """)
+        _assert_contains(
+            update_output,
+            [
+                "Auto-assign failures: Yes (trcli@gurock.io)",
+                f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view/{run_id}",
+                "Submitted 6 test results in",
+                "Assigning failed results: 4/4, Done."
+            ]
+        )
     

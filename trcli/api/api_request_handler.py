@@ -550,13 +550,19 @@ class ApiRequestHandler:
         """
         Adds one or more new test results.
         :run_id: run id
-        :returns: Tuple with dict created resources and error string.
+        :returns: Tuple with dict created resources, error string, and results count.
         """
         responses = []
         error_message = ""
+        # Get pre-validated user IDs if available
+        user_ids = getattr(self.environment, '_validated_user_ids', [])
+        
         add_results_data_chunks = self.data_provider.add_results_for_cases(
-            self.environment.batch_size
+            self.environment.batch_size, user_ids
         )
+        # Get assigned count from data provider
+        assigned_count = getattr(self.data_provider, '_assigned_count', 0)
+        
         results_amount = sum(
             [len(results["results"]) for results in add_results_data_chunks]
         )
@@ -600,7 +606,17 @@ class ApiRequestHandler:
             self.upload_attachments(report_results_w_attachments, results, run_id)
         else:
             self.environment.log(f"No attachments found to upload.")
+        
+        # Log assignment results if assignment was performed
+        if user_ids:
+            total_failed = getattr(self.data_provider, '_total_failed_count', assigned_count)
+            if assigned_count > 0:
+                self.environment.log(f"Assigning failed results: {assigned_count}/{total_failed}, Done.")
+            else:
+                self.environment.log(f"Assigning failed results: 0/0, Done.")
+        
         return responses, error_message, progress_bar.n
+
 
     def handle_futures(self, futures, action_string, progress_bar) -> Tuple[list, str]:
         responses = []
@@ -705,6 +721,51 @@ class ApiRequestHandler:
                 if not response.error_message:
                     responses.append(response)
         return responses
+
+    def get_user_by_email(self, email: str) -> Tuple[Union[int, None], str]:
+        """
+        Validates a user email and returns the user ID if valid.
+        
+        :param email: User email to validate
+        :returns: Tuple with user ID (or None if not found) and error message
+        """
+        if not email or not email.strip():
+            return None, "Email cannot be empty"
+        
+        email = email.strip()
+        # Use proper URL encoding for the query parameter
+        import urllib.parse
+        encoded_email = urllib.parse.quote_plus(email)
+        response = self.client.send_get(f"get_user_by_email&email={encoded_email}")
+        
+        if response.error_message:
+            # Map TestRail's email validation error to our expected format
+            if "Field :email is not a valid email address" in response.error_message:
+                return None, f"User not found: {email}"
+            return None, response.error_message
+        
+        if response.status_code == 200:
+            try:
+                user_data = response.response_text
+                if isinstance(user_data, dict) and 'id' in user_data:
+                    return user_data['id'], ""
+                else:
+                    return None, f"Invalid response format for user: {email}"
+            except (KeyError, TypeError):
+                return None, f"Invalid response format for user: {email}"
+        elif response.status_code == 400:
+            # Check if the response contains the email validation error
+            if (hasattr(response, 'response_text') and response.response_text and 
+                isinstance(response.response_text, dict) and 
+                "Field :email is not a valid email address" in str(response.response_text.get('error', ''))):
+                return None, f"User not found: {email}"
+            return None, f"User not found: {email}"
+        else:
+            # For other status codes, check if it's the email validation error
+            if (hasattr(response, 'response_text') and response.response_text and
+                "Field :email is not a valid email address" in str(response.response_text)):
+                return None, f"User not found: {email}"
+            return None, f"API error (status {response.status_code}) when validating user: {email}"
 
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         case_body = case.to_dict()

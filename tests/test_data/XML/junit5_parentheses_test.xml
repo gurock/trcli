@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="JUnit 5 Test Suite with Parentheses">
+    <testsuite failures="0" errors="0" skipped="1" tests="4" time="0.05" name="JUnit5ParenthesesTests">
+        <!-- JUnit 5 style test names with parentheses that should now work -->
+        <testcase classname="com.example.MyTests" name="test_name_C120013()" time="1.5"/>
+        <testcase classname="com.example.MyTests" name="testMethod_C123()" time="2.1"/>
+        <testcase classname="com.example.MyTests" name="complexTest_C456(String param, int value)" time="0.8"/>
+        
+        <!-- Test case that should still work (at beginning) -->
+        <testcase classname="com.example.MyTests" name="C789_test_name()" time="1.2"/>
+        
+        <!-- Test case with brackets (should still work) -->
+        <testcase classname="com.example.MyTests" name="[C999] test_with_brackets()" time="0.9"/>
+        
+        <!-- Test case without parentheses (regression test) -->
+        <testcase classname="com.example.MyTests" name="test_name_C555" time="1.0"/>
+    </testsuite>
+</testsuites>

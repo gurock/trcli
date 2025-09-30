@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.12.0
+TestRail CLI v1.12.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -47,7 +47,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.12.0
+TestRail CLI v1.12.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -136,6 +136,8 @@ Options:
   --allow-ms          Allows using milliseconds for elapsed times.
   --special-parser    Optional special parser option for specialized JUnit
                       reports.
+  -a, --assign        Comma-separated list of user emails to assign failed test 
+                      results to.
   --help              Show this message and exit.
 ```
 
@@ -266,6 +268,50 @@ case_result_statuses:
 ```
 You can find statuses ids for your project using following endpoint:
  ```/api/v2/get_statuses```
+
+### Auto-Assigning Failed Tests
+
+The `--assign` (or `-a`) option allows you to automatically assign failed test results to specific TestRail users. This feature is particularly useful in CI/CD environments where you want to automatically assign failures to responsible team members for investigation.
+
+#### Usage
+
+```shell
+# Assign failed tests to a single user
+$ trcli parse_junit -f results.xml --assign user@example.com \
+  --host https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project"
+
+# Assign failed tests to multiple users (round-robin distribution)
+$ trcli parse_junit -f results.xml --assign "user1@example.com,user2@example.com,user3@example.com" \
+  --host https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project"
+
+# Short form using -a
+$ trcli parse_junit -f results.xml -a user@example.com \
+  --host https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project"
+```
+
+#### Example Output
+
+```shell
+Parser Results Execution Parameters
+> Report file: results.xml
+> Config file: /path/to/config.yml
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+> Project: Your Project
+> Run title: Automated Test Run
+> Update run: No
+> Add to milestone: No
+> Auto-assign failures: Yes (user1@example.com,user2@example.com)
+> Auto-create entities: True
+
+Creating test run. Done.
+Adding results: 100%|████████████| 25/25 [00:02<00:00, 12.5results/s]
+Assigning failed results: 3/3, Done.
+Submitted 25 test results in 2.1 secs.
+```
+
 ### Exploring other features
 
 #### General features
@@ -1039,7 +1085,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.12.0
+TestRail CLI v1.12.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1163,7 +1209,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.12.0
+TestRail CLI v1.12.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

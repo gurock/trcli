@@ -7,6 +7,7 @@ from trcli.cli import Environment
 
 
 def print_config(env: Environment):
+    assign_info = f"Yes ({env.assign_failed_to})" if hasattr(env, 'assign_failed_to') and env.assign_failed_to and env.assign_failed_to.strip() else "No"
     env.log(f"Parser Results Execution Parameters"
             f"\n> Report file: {env.file}"
             f"\n> Config file: {env.config}"
@@ -15,6 +16,7 @@ def print_config(env: Environment):
             f"\n> Run title: {env.title}"
             f"\n> Update run: {env.run_id if env.run_id else 'No'}"
             f"\n> Add to milestone: {env.milestone_id if env.milestone_id else 'No'}"
+            f"\n> Auto-assign failures: {assign_info}"
             f"\n> Auto-create entities: {env.auto_creation_response}")
 
 

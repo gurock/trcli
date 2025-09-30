@@ -17,7 +17,7 @@ class ResultsUploader(ProjectBasedClient):
     def __init__(self, environment: Environment, suite: TestRailSuite, skip_run: bool = False):
         super().__init__(environment, suite)
         self.skip_run = skip_run
-        if self.environment.special_parser == "saucectl":
+        if hasattr(self.environment, 'special_parser') and self.environment.special_parser == "saucectl":
             self.run_name += f" ({suite.name})"
 
     def upload_results(self):
@@ -29,6 +29,15 @@ class ResultsUploader(ProjectBasedClient):
         """
         start = time.time()
         results_amount = None
+
+        # Validate user emails early if --assign is specified
+        try:
+            assign_value = getattr(self.environment, 'assign_failed_to', None)
+            if assign_value is not None and str(assign_value).strip():
+                self._validate_and_store_user_ids()
+        except (AttributeError, TypeError):
+            # Skip validation if there are any issues with the assign_failed_to attribute
+            pass
 
         self.resolve_project()
         suite_id, suite_added = self.resolve_suite()
@@ -117,6 +126,7 @@ class ResultsUploader(ProjectBasedClient):
             )
             self.environment.log("\n".join(revert_logs))
             exit(1)
+
         if self.environment.close_run:
             self.environment.log("Closing test run. ", new_line=False)
             response, error_message = self.api_request_handler.close_run(run_id)
@@ -128,6 +138,70 @@ class ResultsUploader(ProjectBasedClient):
         stop = time.time()
         if results_amount:
             self.environment.log(f"Submitted {results_amount} test results in {stop - start:.1f} secs.")
+        
+        # Exit with error if there were invalid users (after processing valid ones)
+        try:
+            has_invalid = getattr(self.environment, '_has_invalid_users', False)
+            if has_invalid is True:  # Explicitly check for True to avoid mock object issues
+                exit(1)
+        except (AttributeError, TypeError):
+            # Skip exit if there are any issues with the attribute
+            pass
+
+    def _validate_and_store_user_ids(self):
+        """
+        Validates user emails from --assign option and stores valid user IDs.
+        For mixed valid/invalid users, warns about invalid ones but continues with valid ones.
+        Exits only if NO valid users are found.
+        """
+        try:
+            assign_value = getattr(self.environment, 'assign_failed_to', None)
+            if assign_value is None or not str(assign_value).strip():
+                return
+        except (AttributeError, TypeError):
+            return
+        
+        # Check for empty or whitespace-only values  
+        assign_str = str(assign_value)
+        if not assign_str.strip():
+            self.environment.elog("Error: --assign option requires at least one user email")
+            exit(1)
+        
+        emails = [email.strip() for email in assign_str.split(',') if email.strip()]
+        
+        if not emails:
+            self.environment.elog("Error: --assign option requires at least one user email")
+            exit(1)
+        
+        valid_user_ids = []
+        invalid_users = []
+        
+        for email in emails:
+            user_id, error_msg = self.api_request_handler.get_user_by_email(email)
+            if user_id is None:
+                invalid_users.append(email)
+                if "User not found" not in error_msg:
+                    # If it's not a "user not found" error, it might be an API issue
+                    self.environment.elog(f"Error: {error_msg}")
+                    exit(1)
+            else:
+                valid_user_ids.append(user_id)
+        
+        # Handle invalid users
+        if invalid_users:
+            for invalid_user in invalid_users:
+                self.environment.elog(f"Error: User not found: {invalid_user}")
+            
+            # Store valid user IDs for processing, but mark that we should exit with error later
+            self.environment._has_invalid_users = True
+            
+            # If ALL users are invalid, exit immediately
+            if not valid_user_ids:
+                exit(1)
+        
+        # Store valid user IDs for later use
+        self.environment._validated_user_ids = valid_user_ids
+
 
     def add_missing_sections(self, project_id: int) -> Tuple[List, int]:
         """
