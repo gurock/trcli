@@ -21,6 +21,12 @@ from trcli.readers.junit_xml import JunitParser
     type=click.Choice(["junit", "saucectl"], case_sensitive=False),
     help="Optional special parser option for specialized JUnit reports."
 )
+@click.option(
+    "-a", "--assign",
+    "assign_failed_to",
+    metavar="",
+    help="Comma-separated list of user emails to assign failed test results to."
+)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
