@@ -8,13 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.12.1]
 
-_released 09-18-2025
+_released 09-30-2025
 
 ### Added
  - Added failed automated tests assignment using --assign option
 
 ### Fixed
- - Fixed an issue where JUnit parser fails to detect test case IDs if testcase name is at the beginning or it contains parentheses at the end
+ - Fixed an issue where JUnit parser fails to detect test case IDs at the beginning or it contains parentheses at the end of testcase names
 
 ## [1.12.0]
 
