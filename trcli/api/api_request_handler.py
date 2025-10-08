@@ -529,6 +529,48 @@ class ApiRequestHandler:
             combined_list = existing_list + [ref for ref in new_list if ref not in existing_list]
             return ','.join(combined_list)
 
+    def append_run_references(self, run_id: int, references: List[str]) -> Tuple[Dict, List[str], List[str], str]:
+        """
+        Append references to a test run, avoiding duplicates.
+        :param run_id: ID of the test run
+        :param references: List of references to append
+        :returns: Tuple with (run_data, added_refs, skipped_refs, error_message)
+        """
+        # Get current run data
+        run_response = self.client.send_get(f"get_run/{run_id}")
+        if run_response.error_message:
+            return None, [], [], run_response.error_message
+        
+        existing_refs = run_response.response_text.get("refs", "") or ""
+        
+        # Parse existing and new references
+        existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
+        new_list = [ref.strip() for ref in references if ref.strip()]
+        
+        # Determine which references are new vs duplicates
+        added_refs = [ref for ref in new_list if ref not in existing_list]
+        skipped_refs = [ref for ref in new_list if ref in existing_list]
+        
+        # If no new references to add, return current state
+        if not added_refs:
+            return run_response.response_text, added_refs, skipped_refs, None
+        
+        # Combine references
+        combined_list = existing_list + added_refs
+        combined_refs = ','.join(combined_list)
+        
+        if len(combined_refs) > 250:
+            return None, [], [], f"Combined references length ({len(combined_refs)} characters) exceeds 250 character limit"
+        
+        update_data = {"refs": combined_refs}
+        update_response = self.client.send_post(f"update_run/{run_id}", update_data)
+        
+        if update_response.error_message:
+            return None, [], [], update_response.error_message
+        
+        updated_run_response = self.client.send_get(f"get_run/{run_id}")
+        return updated_run_response.response_text, added_refs, skipped_refs, updated_run_response.error_message
+
     def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
         """ Getting test result id and upload attachments for it. """
         tests_in_run, error = self.__get_all_tests_in_run(run_id)

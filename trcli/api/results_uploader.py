@@ -17,6 +17,7 @@ class ResultsUploader(ProjectBasedClient):
     def __init__(self, environment: Environment, suite: TestRailSuite, skip_run: bool = False):
         super().__init__(environment, suite)
         self.skip_run = skip_run
+        self.last_run_id = None
         if hasattr(self.environment, 'special_parser') and self.environment.special_parser == "saucectl":
             self.run_name += f" ({suite.name})"
 
@@ -104,6 +105,7 @@ class ResultsUploader(ProjectBasedClient):
 
         # Create/update test run
         run_id, error_message = self.create_or_update_test_run()
+        self.last_run_id = run_id
         if error_message:
             revert_logs = self.rollback_changes(
                 suite_id=suite_id,
