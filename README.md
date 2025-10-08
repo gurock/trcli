@@ -87,6 +87,7 @@ Commands:
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
+  references     Manage references in TestRail
 ```
 
 Uploading automated test results
@@ -136,8 +137,11 @@ Options:
   --allow-ms          Allows using milliseconds for elapsed times.
   --special-parser    Optional special parser option for specialized JUnit
                       reports.
-  -a, --assign        Comma-separated list of user emails to assign failed test 
-                      results to.
+  -a, --assign        Comma-separated list of user emails to assign failed
+                      test results to.
+  --test-run-ref      Comma-separated list of reference IDs to append to the
+                      test run (up to 250 characters total).
+  --json-output       Output reference operation results in JSON format.
   --help              Show this message and exit.
 ```
 
