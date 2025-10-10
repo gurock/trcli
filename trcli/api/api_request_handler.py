@@ -545,7 +545,14 @@ class ApiRequestHandler:
         
         # Parse existing and new references
         existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
-        new_list = [ref.strip() for ref in references if ref.strip()]
+        # Deduplicate input references
+        new_list = []
+        seen = set()
+        for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                new_list.append(ref_clean)
+                seen.add(ref_clean)
         
         # Determine which references are new vs duplicates
         added_refs = [ref for ref in new_list if ref not in existing_list]
@@ -1516,9 +1523,18 @@ class ApiRequestHandler:
         if existing_refs:
             existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
         
-        # Add new references (avoid duplicates)
-        all_refs = existing_ref_list.copy()
+        # Deduplicate input references while preserving order
+        deduplicated_input = []
+        seen = set()
         for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                deduplicated_input.append(ref_clean)
+                seen.add(ref_clean)
+        
+        # Add new references (avoid duplicates with existing)
+        all_refs = existing_ref_list.copy()
+        for ref in deduplicated_input:
             if ref not in all_refs:
                 all_refs.append(ref)
         
@@ -1545,8 +1561,17 @@ class ApiRequestHandler:
         :param references: List of references to replace existing ones
         :returns: Tuple with success status and error string
         """
+        # Deduplicate input references while preserving order
+        deduplicated_refs = []
+        seen = set()
+        for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                deduplicated_refs.append(ref_clean)
+                seen.add(ref_clean)
+        
         # Join references
-        new_refs_string = ','.join(references)
+        new_refs_string = ','.join(deduplicated_refs)
         
         # Validate total character limit
         if len(new_refs_string) > 2000:
@@ -1587,8 +1612,11 @@ class ApiRequestHandler:
             # Parse existing references
             existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
             
+            # Deduplicate input references for efficient processing
+            refs_to_delete = set(ref.strip() for ref in specific_references if ref.strip())
+            
             # Remove specific references
-            remaining_refs = [ref for ref in existing_ref_list if ref not in specific_references]
+            remaining_refs = [ref for ref in existing_ref_list if ref not in refs_to_delete]
             
             # Join remaining references
             new_refs_string = ','.join(remaining_refs)
