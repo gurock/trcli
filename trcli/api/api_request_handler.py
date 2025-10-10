@@ -578,6 +578,70 @@ class ApiRequestHandler:
         updated_run_response = self.client.send_get(f"get_run/{run_id}")
         return updated_run_response.response_text, added_refs, skipped_refs, updated_run_response.error_message
 
+    def update_existing_case_references(self, case_id: int, junit_refs: str, strategy: str = "append") -> Tuple[bool, str, List[str], List[str]]:
+        """
+        Update existing case references with values from JUnit properties.
+        :param case_id: ID of the test case
+        :param junit_refs: References from JUnit testrail_case_field property
+        :param strategy: 'append' or 'replace'
+        :returns: Tuple with (success, error_message, added_refs, skipped_refs)
+        """
+        if not junit_refs or not junit_refs.strip():
+            return True, None, [], []  # No references to process
+        
+        # Parse and validate JUnit references, deduplicating input
+        junit_ref_list = []
+        seen = set()
+        for ref in junit_refs.split(','):
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                junit_ref_list.append(ref_clean)
+                seen.add(ref_clean)
+        
+        if not junit_ref_list:
+            return False, "No valid references found in JUnit property", [], []
+        
+        # Get current case data
+        case_response = self.client.send_get(f"get_case/{case_id}")
+        if case_response.error_message:
+            return False, case_response.error_message, [], []
+        
+        existing_refs = case_response.response_text.get('refs', '') or ''
+        
+        if strategy == "replace":
+            # Replace strategy: use JUnit refs as-is
+            new_refs = ','.join(junit_ref_list)
+            added_refs = junit_ref_list
+            skipped_refs = []
+        else:
+            # Append strategy: combine with existing refs, avoiding duplicates
+            existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
+            
+            # Determine which references are new vs duplicates
+            added_refs = [ref for ref in junit_ref_list if ref not in existing_ref_list]
+            skipped_refs = [ref for ref in junit_ref_list if ref in existing_ref_list]
+            
+            # If no new references to add, return current state
+            if not added_refs:
+                return True, None, added_refs, skipped_refs
+            
+            # Combine references
+            combined_list = existing_ref_list + added_refs
+            new_refs = ','.join(combined_list)
+        
+        # Validate 250 character limit
+        if len(new_refs) > 250:
+            return False, f"Combined references length ({len(new_refs)} characters) exceeds 250 character limit", [], []
+        
+        # Update the case
+        update_data = {"refs": new_refs}
+        update_response = self.client.send_post(f"update_case/{case_id}", update_data)
+        
+        if update_response.error_message:
+            return False, update_response.error_message, [], []
+        
+        return True, None, added_refs, skipped_refs
+
     def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
         """ Getting test result id and upload attachments for it. """
         tests_in_run, error = self.__get_all_tests_in_run(run_id)

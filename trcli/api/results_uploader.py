@@ -1,5 +1,5 @@
 import time
-from beartype.typing import Tuple, Callable, List
+from beartype.typing import Tuple, Callable, List, Dict
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import Environment
@@ -103,9 +103,23 @@ class ResultsUploader(ProjectBasedClient):
                 else:
                     self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
+        # Update existing cases with JUnit references if enabled
+        case_update_results = {}
+        case_update_failed = []
+        if hasattr(self.environment, 'update_existing_cases') and self.environment.update_existing_cases == "yes":
+            self.environment.log("Updating existing cases with JUnit references...")
+            case_update_results, case_update_failed = self.update_existing_cases_with_junit_refs()
+            
+            if case_update_results.get("updated_cases"):
+                self.environment.log(f"Updated {len(case_update_results['updated_cases'])} existing case(s) with references.")
+            if case_update_results.get("failed_cases"):
+                self.environment.elog(f"Failed to update {len(case_update_results['failed_cases'])} case(s).")
+
         # Create/update test run
         run_id, error_message = self.create_or_update_test_run()
         self.last_run_id = run_id
+        # Store case update results for later reporting
+        self.case_update_results = case_update_results
         if error_message:
             revert_logs = self.rollback_changes(
                 suite_id=suite_id,
@@ -149,6 +163,10 @@ class ResultsUploader(ProjectBasedClient):
         except (AttributeError, TypeError):
             # Skip exit if there are any issues with the attribute
             pass
+        
+        # Exit with error if there were case update failures
+        if hasattr(self, 'case_update_results') and self.case_update_results.get("failed_cases"):
+            exit(1)
 
     def _validate_and_store_user_ids(self):
         """
@@ -204,6 +222,68 @@ class ResultsUploader(ProjectBasedClient):
         # Store valid user IDs for later use
         self.environment._validated_user_ids = valid_user_ids
 
+    def update_existing_cases_with_junit_refs(self) -> Tuple[Dict, List]:
+        """
+        Update existing test cases with references from JUnit properties.
+        Returns tuple of (update_results, failed_cases)
+        """
+        if not hasattr(self.environment, 'update_existing_cases') or self.environment.update_existing_cases != "yes":
+            return {}, []
+        
+        update_results = {
+            "updated_cases": [],
+            "skipped_cases": [],
+            "failed_cases": []
+        }
+        failed_cases = []
+        
+        strategy = getattr(self.environment, 'update_strategy', 'append')
+        
+        # Process all test cases in all sections
+        for section in self.api_request_handler.suites_data_from_provider.testsections:
+            for test_case in section.testcases:
+                # Only process cases that have a case_id (existing cases) and JUnit refs
+                if test_case.case_id and test_case.junit_case_refs:
+                    try:
+                        success, error_msg, added_refs, skipped_refs = self.api_request_handler.update_existing_case_references(
+                            test_case.case_id, test_case.junit_case_refs, strategy
+                        )
+                        
+                        if success:
+                            if added_refs or skipped_refs:
+                                update_results["updated_cases"].append({
+                                    "case_id": test_case.case_id,
+                                    "case_title": test_case.title,
+                                    "added_refs": added_refs,
+                                    "skipped_refs": skipped_refs
+                                })
+                            else:
+                                update_results["skipped_cases"].append({
+                                    "case_id": test_case.case_id,
+                                    "case_title": test_case.title,
+                                    "reason": "No valid references to process"
+                                })
+                        else:
+                            error_info = {
+                                "case_id": test_case.case_id,
+                                "case_title": test_case.title,
+                                "error": error_msg
+                            }
+                            update_results["failed_cases"].append(error_info)
+                            failed_cases.append(error_info)
+                            self.environment.elog(f"Failed to update case C{test_case.case_id}: {error_msg}")
+                            
+                    except Exception as e:
+                        error_info = {
+                            "case_id": test_case.case_id,
+                            "case_title": test_case.title,
+                            "error": str(e)
+                        }
+                        update_results["failed_cases"].append(error_info)
+                        failed_cases.append(error_info)
+                        self.environment.elog(f"Exception updating case C{test_case.case_id}: {str(e)}")
+        
+        return update_results, failed_cases
 
     def add_missing_sections(self, project_id: int) -> Tuple[List, int]:
         """
