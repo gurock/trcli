@@ -1,4 +1,4 @@
-name: "✨Feature or Improvement request"
+name: "✨ Feature request"
 description: Suggest an enhancement that makes the CLI faster, smarter, or easier to use. Focus on the user value it delivers and how we can measure its real impact (e.g., time saved, reliability improved, or effort reduced).
 title: "[CLI] <short title>"
 labels: ["feature", "area:cli", "triage:needs-review"]
@@ -47,13 +47,10 @@ body:
   - type: input
     id: primary_value_other
     attributes:
-      label: Describe the other value dimension
+      label: If you selected “Other”, describe the value dimension
       placeholder: e.g. Compliance, Security, Cost reduction, Observability
     validations:
-      required: true
-    if:
-      field: primary_value
-      equals: Other (specify below)
+      required: false
 
   - type: dropdown
     id: limitation_origin
@@ -73,24 +70,18 @@ body:
   - type: input
     id: cli_version
     attributes:
-      label: CLI version
+      label: CLI version (fill if CLI is involved)
       placeholder: trcli 1.11.2
     validations:
-      required: true
-    if:
-      field: limitation_origin
-      contains: CLI
+      required: false
 
   - type: input
     id: tr_version
     attributes:
-      label: TestRail version
-      placeholder: TestRail 9.6
+      label: TestRail version/edition (fill if API is involved)
+      placeholder: TestRail Cloud v9.6 (or Server 7.7)
     validations:
-      required: true
-    if:
-      field: limitation_origin
-      contains: TestRail API
+      required: false
 
   - type: textarea
     id: value_details
