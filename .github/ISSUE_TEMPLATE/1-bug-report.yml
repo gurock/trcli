@@ -33,7 +33,7 @@ body:
       label: Severity
       description: Impact on users or systems
       options:
-        - S1 Critical — production down or data loss
+        - S1 Critical — API down or data loss
         - S2 Major — key workflow blocked, no workaround
         - S3 Moderate — degraded experience, workaround exists
         - S4 Minor — minor defect or cosmetic issue
@@ -141,8 +141,16 @@ body:
   - type: input
     id: versions
     attributes:
-      label: Affected version
-      placeholder: TestRail 9.6, CLI v 1.12.
+      label: Affected TestRail version
+      placeholder: TestRail 9.6
+    validations:
+      required: true
+
+  - type: input
+    id: versions
+    attributes:
+      label: Affected CLI version
+      placeholder: CLI v 1.12.
     validations:
       required: true
       
