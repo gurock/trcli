@@ -1,4 +1,4 @@
-name: "Feature request — CLI improvements"
+name: "✨ Feature / Improvement request"
 description: Suggest an enhancement that makes the CLI faster, smarter, or easier to use. Focus on the user value it delivers and how we can measure its real impact (e.g., time saved, reliability improved, or effort reduced).
 title: "[CLI] <short title>"
 labels: ["feature", "area:cli", "triage:needs-review"]
