@@ -8,14 +8,6 @@ body:
     attributes:
       value: |
         Thank you for reporting a bug. Please complete the fields below. Clear, specific details help us fix issues faster.
-  - type: input
-    id: summary
-    attributes:
-      label: Summary
-      description: One sentence that captures the problem
-      placeholder: Tests fail when project root is not writeable
-    validations:
-      required: true
       
   - type: textarea
     id: description
