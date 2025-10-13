@@ -1,0 +1,136 @@
+name: "Feature request — CLI improvements"
+description: Suggest an enhancement that makes the CLI faster, smarter, or easier to use. Focus on the user value it delivers and how we can measure its real impact (e.g., time saved, reliability improved, or effort reduced).
+title: "[CLI] <short title>"
+labels: ["feature", "area:cli", "triage:needs-review"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please focus on user value for command-line and CI users. Quantify impact where possible.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve (from the user’s perspective)
+      description: What is slow, fragile, or awkward today for CLI users?
+      placeholder: |
+        Our CI jobs fail intermittently when network blips occur during results upload. Engineers re-run entire jobs, adding 20–40 minutes per failure.
+    validations:
+      required: true
+
+- type: textarea
+  id: improvement_ideas
+  attributes:
+    label: How could we improve this?
+    description: Your proposal(s) or ideas — flags, behaviours, configs, messages, examples. Sketch the ideal CLI/CI experience.
+    placeholder: |
+      Add `--retry N --retry-backoff 2s` to uploads; make network errors idempotent; return machine-readable error codes; document proxy examples.
+  validations:
+    required: true
+
+- type: dropdown
+  id: primary_value
+  attributes:
+    label: Primary value dimension
+    options:
+      - Productivity — less time to achieve the task
+      - Reliability — fewer flaky runs and retries
+      - Accuracy — fewer mistakes or misreported results
+      - Developer ergonomics — easier, clearer, safer CLI
+      - New capability — previously not possible by CLI
+      - Other (specify below)
+  validations:
+    required: true
+
+    # Shown only if "Other (specify below)" is selected above
+    
+- type: input
+  id: primary_value_other
+  attributes:
+    label: Describe the other value dimension
+    placeholder: e.g. Compliance, Security, Cost reduction, Observability
+  validations:
+    required: true
+  if:
+    field: primary_value
+    equals: Other (specify below)
+
+
+
+- type: dropdown
+  id: limitation_origin
+  attributes:
+    label: Where is the limitation?
+    description: Your best assessment
+    options:
+      - CLI — behaviour/UX/flags issue
+      - CLI — missing capability
+      - TestRail API — limitation by design
+      - TestRail API — bug or inconsistency
+      - Both CLI and API
+      - Unsure / needs investigation
+  validations:
+    required: true
+
+- type: input
+  id: cli_version
+  attributes:
+    label: CLI version
+    placeholder: trcli 1.11.2
+  validations:
+    required: true
+
+- type: input
+  id: tr_version
+  attributes:
+    label: TestRail version
+    placeholder: TestRail 9.6
+  validations:
+    required: true
+
+  - type: textarea
+    id: value_details
+    attributes:
+      label: What improves, and by how much?
+      description: Baseline to target, with a measurement plan
+      placeholder: |
+        Baseline: median CI run 22 min with 6% retry rate.
+        Target: 22 → 19 min, retries ≤ 1%.
+        Measure: 30 days of CI analytics across three top projects.
+    validations:
+      required: true
+
+  - type: input
+    id: kpis
+    attributes:
+      label: KPI(s)
+      placeholder: Time-to-complete step, retry rate, p95 runtime, error budget, cost per run
+    validations:
+      required: true
+
+  - type: dropdown
+    id: urgency
+    attributes:
+      label: Urgency
+      options:
+        - Critical — revenue or contractual risk
+        - High — major efficiency or quality gain
+        - Medium — important but not time-bound
+        - Low — incremental improvement
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal (CLI-level sketch)
+      description: Flags, config, behaviours, messages. Keep it brief.
+      placeholder: |
+        Add `--retry 5 --retry-backoff 2s` to `trcli results add`.
+        Idempotent uploads keyed by run+case to avoid duplicates.
+        Structured errors with exit codes: 0 success, 10 retriable network error, 20 validation error.
+    validations:
+      required: true
+
