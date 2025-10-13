@@ -1,0 +1,257 @@
+name: "🐞 Bug Report (Latest)"
+description: Report a defect so we can reproduce and fix it
+title: "[Bug] <short title>"
+labels: ["bug"]
+assignees: ["acuanico-tr-galt"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. Please complete the fields below. Clear, specific details help us fix issues faster.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One sentence that captures the problem
+      placeholder: Tests fail when project root is not writeable
+    validations:
+      required: true
+      
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What is happening. Add any background that helps us understand context
+      placeholder: |
+        After upgrading to 2.3.1 the CLI exits with code 1 when writing the junit.xml file.
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Impact on users or systems
+      options:
+        - S1 Critical — production down or data loss
+        - S2 Major — key workflow blocked, no workaround
+        - S3 Moderate — degraded experience, workaround exists
+        - S4 Minor — minor defect or cosmetic issue
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: Order in which we should address the issue
+      options:
+        - P0 Immediate
+        - P1 High
+        - P2 Medium
+        - P3 Low
+    validations:
+      required: true
+      
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Numbered steps that reliably trigger the bug
+      placeholder: |
+        1. Install CLI 2.3.1
+        2. Run `tr-cli run --output junit.xml` in a directory without write permissions
+        3. Observe exit code 1
+    validations:
+      required: true
+      
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+      placeholder: CLI should write to the specified path or return a clear error that path is not writeable
+    validations:
+      required: true
+      
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      placeholder: CLI exits with code 1 and prints a generic error message without the path
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Reproducibility
+      description: How often you can reproduce the issue
+      options:
+        - Always (100%)
+        - Often (~50–99%)
+        - Rarely (~10–49%)
+        - Intermittent (<10% or timing-dependent)
+      multiple: false
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Test framework
+      description: Select the primary framework involved
+      options:
+        - pytest
+        - unittest (Python)
+        - JUnit
+        - TestNG
+        - Jest
+        - Mocha
+        - Jasmine
+        - Playwright
+        - Cypress
+        - Robot Framework
+        - Cucumber / Behave
+        - k6
+        - Locust
+        - Other (specify below)
+    validations:
+      required: true
+
+  # Only shown if user picks "Other (specify below)"
+  - type: input
+    id: framework_other
+    attributes:
+      label: Other framework
+      placeholder: e.g. Vitest, AVA, PHPUnit, RSpec
+    validations:
+      required: false
+
+  - type: dropdown
+    id: languages
+    attributes:
+      label: Programming languages
+      description: Select all that apply
+      multiple: true
+      options:
+        - Python
+        - Java
+        - JavaScript
+        - TypeScript
+        - C#
+        - Ruby
+        - Go
+        - PHP
+        - Kotlin
+        - Swift
+        - Other (specify below)
+    validations:
+      required: true
+
+  # Only shown if "Other (specify below)" selected above
+  - type: input
+    id: language_other
+    attributes:
+      label: Other language
+      placeholder: e.g. Rust, Scala
+    validations:
+      required: false
+
+  - type: input
+    id: language_versions
+    attributes:
+      label: Language and runtime versions
+      description: Exact versions used
+      placeholder: Python 3.11.9; Java 17; Node 20.11; .NET 8.0
+    validations:
+      required: true
+
+  - type: input
+    id: framework_versions
+    attributes:
+      label: Framework and library versions
+      description: Exact versions of test libraries and runners
+      placeholder: pytest 7.4.4; JUnit 5.10; Playwright 1.48
+    validations:
+      required: true
+
+  - type: dropdown
+    id: ci_provider
+    attributes:
+      label: CI provider (if applicable)
+      options:
+        - GitHub Actions
+        - GitLab CI
+        - Jenkins
+        - CircleCI
+        - Azure Pipelines
+        - Bitbucket Pipelines
+        - Buildkite
+        - Other
+    validations:
+      required: false
+
+  - type: input
+    id: os_matrix
+    attributes:
+      label: OS and architecture
+      description: Full matrix if relevant
+      placeholder: Ubuntu 22.04 x86_64; macOS 14 arm64; Windows Server 2022 x64
+    validations:
+      required: true
+
+  - type: textarea
+    id: test_command
+    attributes:
+      label: Exact command(s) used to run tests
+      description: Include any environment variables
+      render: shell
+      placeholder: |
+        export PLAYWRIGHT_BROWSERS_PATH=0
+        pytest -m "smoke" --maxfail=1 -q
+    validations:
+      required: true
+      
+  - type: input
+    id: versions
+    attributes:
+      label: Affected version
+      placeholder: TestRail 9.6, CLI v 1.12.
+    validations:
+      required: true
+      
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and diagnostics
+      description: Paste relevant logs. Mask secrets before posting
+      render: shell
+      placeholder: |
+        Error: EACCES: permission denied, open '.../junit.xml'
+    validations:
+      required: true
+      
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments
+      description: Screenshots, HAR files, failing samples, small repro repo
+      placeholder: Drag and drop files or link to a minimal reproduction
+    validations:
+      required: false
+      
+  - type: input
+    id: workaround
+    attributes:
+      label: Workaround
+      placeholder: Run from a writeable directory
+      
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checks
+      options:
+        - label: I searched for existing issues and discussions
+          required: true
+        - label: I masked secrets and personal data
+          required: true
