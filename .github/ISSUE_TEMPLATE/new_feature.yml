@@ -1,4 +1,4 @@
-name: "✨ Feature request"
+name: "✨Feature or Improvement request"
 description: Suggest an enhancement that makes the CLI faster, smarter, or easier to use. Focus on the user value it delivers and how we can measure its real impact (e.g., time saved, reliability improved, or effort reduced).
 title: "[CLI] <short title>"
 labels: ["feature", "area:cli", "triage:needs-review"]
@@ -20,75 +20,77 @@ body:
     validations:
       required: true
 
-- type: textarea
-  id: improvement_ideas
-  attributes:
-    label: How could we improve this?
-    description: Your proposal(s) or ideas — flags, behaviours, configs, messages, examples. Sketch the ideal CLI/CI experience.
-    placeholder: |
-      Add `--retry N --retry-backoff 2s` to uploads; make network errors idempotent; return machine-readable error codes; document proxy examples.
-  validations:
-    required: true
+  - type: textarea
+    id: improvement_ideas
+    attributes:
+      label: How could we improve this?
+      description: Your proposal(s) or ideas — flags, behaviours, configs, messages, examples. Sketch the ideal CLI/CI experience.
+      placeholder: |
+        Add `--retry N --retry-backoff 2s` to uploads; make network errors idempotent; return machine-readable error codes; document proxy examples.
+    validations:
+      required: true
 
-- type: dropdown
-  id: primary_value
-  attributes:
-    label: Primary value dimension
-    options:
-      - Productivity — less time to achieve the task
-      - Reliability — fewer flaky runs and retries
-      - Accuracy — fewer mistakes or misreported results
-      - Developer ergonomics — easier, clearer, safer CLI
-      - New capability — previously not possible by CLI
-      - Other (specify below)
-  validations:
-    required: true
+  - type: dropdown
+    id: primary_value
+    attributes:
+      label: Primary value dimension
+      options:
+        - Productivity — less time to achieve the task
+        - Reliability — fewer flaky runs and retries
+        - Accuracy — fewer mistakes or misreported results
+        - Developer ergonomics — easier, clearer, safer CLI
+        - New capability — previously not possible by CLI
+        - Other (specify below)
+    validations:
+      required: true
 
-    # Shown only if "Other (specify below)" is selected above
-    
-- type: input
-  id: primary_value_other
-  attributes:
-    label: Describe the other value dimension
-    placeholder: e.g. Compliance, Security, Cost reduction, Observability
-  validations:
-    required: true
-  if:
-    field: primary_value
-    equals: Other (specify below)
+  - type: input
+    id: primary_value_other
+    attributes:
+      label: Describe the other value dimension
+      placeholder: e.g. Compliance, Security, Cost reduction, Observability
+    validations:
+      required: true
+    if:
+      field: primary_value
+      equals: Other (specify below)
 
+  - type: dropdown
+    id: limitation_origin
+    attributes:
+      label: Where is the limitation?
+      description: Your best assessment
+      options:
+        - CLI — behaviour/UX/flags issue
+        - CLI — missing capability
+        - TestRail API — limitation by design
+        - TestRail API — bug or inconsistency
+        - Both CLI and API
+        - Unsure / needs investigation
+    validations:
+      required: true
 
+  - type: input
+    id: cli_version
+    attributes:
+      label: CLI version
+      placeholder: trcli 1.11.2
+    validations:
+      required: true
+    if:
+      field: limitation_origin
+      contains: CLI
 
-- type: dropdown
-  id: limitation_origin
-  attributes:
-    label: Where is the limitation?
-    description: Your best assessment
-    options:
-      - CLI — behaviour/UX/flags issue
-      - CLI — missing capability
-      - TestRail API — limitation by design
-      - TestRail API — bug or inconsistency
-      - Both CLI and API
-      - Unsure / needs investigation
-  validations:
-    required: true
-
-- type: input
-  id: cli_version
-  attributes:
-    label: CLI version
-    placeholder: trcli 1.11.2
-  validations:
-    required: true
-
-- type: input
-  id: tr_version
-  attributes:
-    label: TestRail version
-    placeholder: TestRail 9.6
-  validations:
-    required: true
+  - type: input
+    id: tr_version
+    attributes:
+      label: TestRail version
+      placeholder: TestRail 9.6
+    validations:
+      required: true
+    if:
+      field: limitation_origin
+      contains: TestRail API
 
   - type: textarea
     id: value_details
@@ -133,4 +135,3 @@ body:
         Structured errors with exit codes: 0 success, 10 retriable network error, 20 validation error.
     validations:
       required: true
-
