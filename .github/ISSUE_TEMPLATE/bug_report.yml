@@ -81,143 +81,143 @@ body:
     validations:
       required: true
       
-- type: dropdown
-  id: frequency
-  attributes:
-    label: Reproducibility
-    description: How often you can reproduce the issue
-    options:
-      - Always (100%)
-      - Often (~50–99%)
-      - Rarely (~10–49%)
-      - Intermittent (<10% or timing-dependent)
-    multiple: false
-  validations:
-    required: true
-    
-- type: dropdown
-  id: framework
-  attributes:
-    label: Test framework
-    description: Select the primary framework involved
-    options:
-      - pytest
-      - unittest (Python)
-      - JUnit
-      - TestNG
-      - Jest
-      - Mocha
-      - Jasmine
-      - Playwright
-      - Cypress
-      - Robot Framework
-      - Cucumber / Behave
-      - k6
-      - Locust
-      - Other (specify below)
-  validations:
-    required: true
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: Reproducibility
+      description: How often you can reproduce the issue
+      options:
+        - Always (100%)
+        - Often (~50–99%)
+        - Rarely (~10–49%)
+        - Intermittent (<10% or timing-dependent)
+      multiple: false
+    validations:
+      required: true
+      
+  - type: dropdown
+    id: framework
+    attributes:
+      label: Test framework
+      description: Select the primary framework involved
+      options:
+        - pytest
+        - unittest (Python)
+        - JUnit
+        - TestNG
+        - Jest
+        - Mocha
+        - Jasmine
+        - Playwright
+        - Cypress
+        - Robot Framework
+        - Cucumber / Behave
+        - k6
+        - Locust
+        - Other (specify below)
+    validations:
+      required: true
 
-# Only shown if user picks "Other (specify below)"
-- type: input
-  id: framework_other
-  attributes:
-    label: Other framework
-    placeholder: e.g. Vitest, AVA, PHPUnit, RSpec
-  validations:
-    required: true
-  if:
-    field: framework
-    equals: Other (specify below)
+  # Only shown if user picks "Other (specify below)"
+  - type: input
+    id: framework_other
+    attributes:
+      label: Other framework
+      placeholder: e.g. Vitest, AVA, PHPUnit, RSpec
+    validations:
+      required: true
+    if:
+      field: framework
+      equals: Other (specify below)
 
-- type: dropdown
-  id: languages
-  attributes:
-    label: Programming languages
-    description: Select all that apply
-    multiple: true
-    options:
-      - Python
-      - Java
-      - JavaScript
-      - TypeScript
-      - C#
-      - Ruby
-      - Go
-      - PHP
-      - Kotlin
-      - Swift
-      - Other (specify below)
-  validations:
-    required: true
+  - type: dropdown
+    id: languages
+    attributes:
+      label: Programming languages
+      description: Select all that apply
+      multiple: true
+      options:
+        - Python
+        - Java
+        - JavaScript
+        - TypeScript
+        - C#
+        - Ruby
+        - Go
+        - PHP
+        - Kotlin
+        - Swift
+        - Other (specify below)
+    validations:
+      required: true
 
-# Only shown if "Other (specify below)" selected above
-- type: input
-  id: language_other
-  attributes:
-    label: Other language
-    placeholder: e.g. Rust, Scala
-  validations:
-    required: true
-  if:
-    field: languages
-    contains: Other (specify below)
+  # Only shown if "Other (specify below)" selected above
+  - type: input
+    id: language_other
+    attributes:
+      label: Other language
+      placeholder: e.g. Rust, Scala
+    validations:
+      required: true
+    if:
+      field: languages
+      contains: Other (specify below)
 
-- type: input
-  id: language_versions
-  attributes:
-    label: Language and runtime versions
-    description: Exact versions used
-    placeholder: Python 3.11.9; Java 17; Node 20.11; .NET 8.0
-  validations:
-    required: true
+  - type: input
+    id: language_versions
+    attributes:
+      label: Language and runtime versions
+      description: Exact versions used
+      placeholder: Python 3.11.9; Java 17; Node 20.11; .NET 8.0
+    validations:
+      required: true
 
-- type: input
-  id: framework_versions
-  attributes:
-    label: Framework and library versions
-    description: Exact versions of test libraries and runners
-    placeholder: pytest 7.4.4; JUnit 5.10; Playwright 1.48
-  validations:
-    required: true
+  - type: input
+    id: framework_versions
+    attributes:
+      label: Framework and library versions
+      description: Exact versions of test libraries and runners
+      placeholder: pytest 7.4.4; JUnit 5.10; Playwright 1.48
+    validations:
+      required: true
 
-- type: dropdown
-  id: ci_provider
-  attributes:
-    label: CI provider (if applicable)
-    options:
-      - GitHub Actions
-      - GitLab CI
-      - Jenkins
-      - CircleCI
-      - Azure Pipelines
-      - Bitbucket Pipelines
-      - Buildkite
-      - Other
-  validations:
-    required: false
+  - type: dropdown
+    id: ci_provider
+    attributes:
+      label: CI provider (if applicable)
+      options:
+        - GitHub Actions
+        - GitLab CI
+        - Jenkins
+        - CircleCI
+        - Azure Pipelines
+        - Bitbucket Pipelines
+        - Buildkite
+        - Other
+    validations:
+      required: false
 
-- type: input
-  id: os_matrix
-  attributes:
-    label: OS and architecture
-    description: Full matrix if relevant
-    placeholder: Ubuntu 22.04 x86_64; macOS 14 arm64; Windows Server 2022 x64
-  validations:
-    required: true
+  - type: input
+    id: os_matrix
+    attributes:
+      label: OS and architecture
+      description: Full matrix if relevant
+      placeholder: Ubuntu 22.04 x86_64; macOS 14 arm64; Windows Server 2022 x64
+    validations:
+      required: true
 
-- type: textarea
-  id: test_command
-  attributes:
-    label: Exact command(s) used to run tests
-    description: Include any environment variables
-    render: shell
-    placeholder: |
-      export PLAYWRIGHT_BROWSERS_PATH=0
-      pytest -m "smoke" --maxfail=1 -q
-  validations:
-    required: true
-    
+  - type: textarea
+    id: test_command
+    attributes:
+      label: Exact command(s) used to run tests
+      description: Include any environment variables
+      render: shell
+      placeholder: |
+        export PLAYWRIGHT_BROWSERS_PATH=0
+        pytest -m "smoke" --maxfail=1 -q
+    validations:
+      required: true
+      
   - type: input
     id: versions
     attributes:
@@ -225,6 +225,7 @@ body:
       placeholder: TestRail 9.6, CLI v 1.12.
     validations:
       required: true
+      
   - type: textarea
     id: logs
     attributes:
@@ -234,20 +235,23 @@ body:
       placeholder: |
         Error: EACCES: permission denied, open '.../junit.xml'
     validations:
-        required: true
+      required: true
+      
   - type: textarea
     id: attachments
     attributes:
       label: Attachments
       description: Screenshots, HAR files, failing samples, small repro repo
       placeholder: Drag and drop files or link to a minimal reproduction
-      validations:
-        required: true
+    validations:
+      required: false
+      
   - type: input
     id: workaround
     attributes:
       label: Workaround
       placeholder: Run from a writeable directory
+      
   - type: checkboxes
     id: checks
     attributes:
