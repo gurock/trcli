@@ -139,7 +139,7 @@ body:
       required: true
       
   - type: input
-    id: versions
+    id: TRversions
     attributes:
       label: Affected TestRail version
       placeholder: TestRail 9.6
@@ -147,7 +147,7 @@ body:
       required: true
 
   - type: input
-    id: versions
+    id: CLIversions
     attributes:
       label: Affected CLI version
       placeholder: CLI v 1.12.
