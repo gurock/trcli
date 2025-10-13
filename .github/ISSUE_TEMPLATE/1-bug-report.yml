@@ -19,18 +19,7 @@ body:
     validations:
       required: true
       
-  - type: dropdown
-    id: severity
-    attributes:
-      label: Severity
-      description: Impact on users or systems
-      options:
-        - S1 Critical — API down or data loss
-        - S2 Major — key workflow blocked, no workaround
-        - S3 Moderate — degraded experience, workaround exists
-        - S4 Minor — minor defect or cosmetic issue
-    validations:
-      required: true
+
   
   - type: textarea
     id: repro
@@ -57,6 +46,19 @@ body:
     attributes:
       label: Actual result
       placeholder: CLI exits with code 1 and prints a generic error message without the path
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: Impact on users or systems
+      options:
+        - S1 Critical — API down or data loss
+        - S2 Major — key workflow blocked, no workaround
+        - S3 Moderate — degraded experience, workaround exists
+        - S4 Minor — minor defect or cosmetic issue
     validations:
       required: true
       
