@@ -39,20 +39,7 @@ body:
         - S4 Minor — minor defect or cosmetic issue
     validations:
       required: true
-      
-  - type: dropdown
-    id: priority
-    attributes:
-      label: Priority
-      description: Order in which we should address the issue
-      options:
-        - P0 Immediate
-        - P1 High
-        - P2 Medium
-        - P3 Low
-    validations:
-      required: true
-      
+  
   - type: textarea
     id: repro
     attributes:
@@ -95,67 +82,6 @@ body:
     validations:
       required: true
       
-  - type: dropdown
-    id: framework
-    attributes:
-      label: Test framework
-      description: Select the primary framework involved
-      options:
-        - pytest
-        - unittest (Python)
-        - JUnit
-        - TestNG
-        - Jest
-        - Mocha
-        - Jasmine
-        - Playwright
-        - Cypress
-        - Robot Framework
-        - Cucumber / Behave
-        - k6
-        - Locust
-        - Other (specify below)
-    validations:
-      required: true
-
-  # Only shown if user picks "Other (specify below)"
-  - type: input
-    id: framework_other
-    attributes:
-      label: Other framework
-      placeholder: e.g. Vitest, AVA, PHPUnit, RSpec
-    validations:
-      required: false
-
-  - type: dropdown
-    id: languages
-    attributes:
-      label: Programming languages
-      description: Select all that apply
-      multiple: true
-      options:
-        - Python
-        - Java
-        - JavaScript
-        - TypeScript
-        - C#
-        - Ruby
-        - Go
-        - PHP
-        - Kotlin
-        - Swift
-        - Other (specify below)
-    validations:
-      required: true
-
-  # Only shown if "Other (specify below)" selected above
-  - type: input
-    id: language_other
-    attributes:
-      label: Other language
-      placeholder: e.g. Rust, Scala
-    validations:
-      required: false
 
   - type: input
     id: language_versions
@@ -203,7 +129,7 @@ body:
   - type: textarea
     id: test_command
     attributes:
-      label: Exact command(s) used to run tests
+      label: Provide the command(s) used
       description: Include any environment variables
       render: shell
       placeholder: |
