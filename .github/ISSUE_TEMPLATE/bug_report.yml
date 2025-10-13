@@ -125,10 +125,7 @@ body:
       label: Other framework
       placeholder: e.g. Vitest, AVA, PHPUnit, RSpec
     validations:
-      required: true
-    if:
-      field: framework
-      equals: Other (specify below)
+      required: false
 
   - type: dropdown
     id: languages
@@ -158,10 +155,7 @@ body:
       label: Other language
       placeholder: e.g. Rust, Scala
     validations:
-      required: true
-    if:
-      field: languages
-      contains: Other (specify below)
+      required: false
 
   - type: input
     id: language_versions
