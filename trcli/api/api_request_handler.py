@@ -570,7 +570,37 @@ class ApiRequestHandler:
             return None, [], [], f"Combined references length ({len(combined_refs)} characters) exceeds 250 character limit"
         
         update_data = {"refs": combined_refs}
-        update_response = self.client.send_post(f"update_run/{run_id}", update_data)
+        
+        # Determine the correct API endpoint based on plan membership
+        plan_id = run_response.response_text.get("plan_id")
+        config_ids = run_response.response_text.get("config_ids")
+        
+        if not plan_id:
+            # Standalone run
+            update_response = self.client.send_post(f"update_run/{run_id}", update_data)
+        elif plan_id and config_ids:
+            # Run in plan with configurations
+            update_response = self.client.send_post(f"update_run_in_plan_entry/{run_id}", update_data)
+        else:
+            # Run in plan without configurations - need to use plan entry endpoint
+            plan_response = self.client.send_get(f"get_plan/{plan_id}")
+            if plan_response.error_message:
+                return None, [], [], f"Failed to get plan details: {plan_response.error_message}"
+            
+            # Find the entry_id for this run
+            entry_id = None
+            for entry in plan_response.response_text.get("entries", []):
+                for run in entry.get("runs", []):
+                    if run["id"] == run_id:
+                        entry_id = entry["id"]
+                        break
+                if entry_id:
+                    break
+            
+            if not entry_id:
+                return None, [], [], f"Could not find plan entry for run {run_id}"
+            
+            update_response = self.client.send_post(f"update_plan_entry/{plan_id}/{entry_id}", update_data)
         
         if update_response.error_message:
             return None, [], [], update_response.error_message
