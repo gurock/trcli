@@ -108,7 +108,7 @@ class ResultsUploader(ProjectBasedClient):
         case_update_failed = []
         if hasattr(self.environment, 'update_existing_cases') and self.environment.update_existing_cases == "yes":
             self.environment.log("Updating existing cases with JUnit references...")
-            case_update_results, case_update_failed = self.update_existing_cases_with_junit_refs()
+            case_update_results, case_update_failed = self.update_existing_cases_with_junit_refs(added_test_cases)
             
             if case_update_results.get("updated_cases"):
                 self.environment.log(f"Updated {len(case_update_results['updated_cases'])} existing case(s) with references.")
@@ -222,13 +222,22 @@ class ResultsUploader(ProjectBasedClient):
         # Store valid user IDs for later use
         self.environment._validated_user_ids = valid_user_ids
 
-    def update_existing_cases_with_junit_refs(self) -> Tuple[Dict, List]:
+    def update_existing_cases_with_junit_refs(self, added_test_cases: List[Dict] = None) -> Tuple[Dict, List]:
         """
         Update existing test cases with references from JUnit properties.
-        Returns tuple of (update_results, failed_cases)
+        Excludes newly created cases to avoid unnecessary API calls.
+        
+        :param added_test_cases: List of cases that were just created (to be excluded)
+        :returns: Tuple of (update_results, failed_cases)
         """
         if not hasattr(self.environment, 'update_existing_cases') or self.environment.update_existing_cases != "yes":
-            return {}, []
+            return {}, []  # Feature not enabled
+        
+        # Create a set of newly created case IDs to exclude
+        newly_created_case_ids = set()
+        if added_test_cases:
+            # Ensure all case IDs are integers for consistent comparison
+            newly_created_case_ids = {int(case.get('case_id')) for case in added_test_cases if case.get('case_id')}
         
         update_results = {
             "updated_cases": [],
@@ -243,14 +252,18 @@ class ResultsUploader(ProjectBasedClient):
         for section in self.api_request_handler.suites_data_from_provider.testsections:
             for test_case in section.testcases:
                 # Only process cases that have a case_id (existing cases) and JUnit refs
-                if test_case.case_id and test_case.junit_case_refs:
+                # AND exclude newly created cases
+                if (test_case.case_id and 
+                    test_case.junit_case_refs and 
+                    int(test_case.case_id) not in newly_created_case_ids):
                     try:
                         success, error_msg, added_refs, skipped_refs = self.api_request_handler.update_existing_case_references(
                             test_case.case_id, test_case.junit_case_refs, strategy
                         )
                         
                         if success:
-                            if added_refs or skipped_refs:
+                            if added_refs:
+                                # Only count as "updated" if references were actually added
                                 update_results["updated_cases"].append({
                                     "case_id": test_case.case_id,
                                     "case_title": test_case.title,
@@ -258,10 +271,13 @@ class ResultsUploader(ProjectBasedClient):
                                     "skipped_refs": skipped_refs
                                 })
                             else:
+                                # If no refs were added (all were duplicates or no valid refs), count as skipped
+                                reason = "All references already present" if skipped_refs else "No valid references to process"
                                 update_results["skipped_cases"].append({
                                     "case_id": test_case.case_id,
                                     "case_title": test_case.title,
-                                    "reason": "No valid references to process"
+                                    "reason": reason,
+                                    "skipped_refs": skipped_refs
                                 })
                         else:
                             error_info = {
@@ -282,6 +298,16 @@ class ResultsUploader(ProjectBasedClient):
                         update_results["failed_cases"].append(error_info)
                         failed_cases.append(error_info)
                         self.environment.elog(f"Exception updating case C{test_case.case_id}: {str(e)}")
+                
+                elif (test_case.case_id and 
+                      test_case.junit_case_refs and 
+                      int(test_case.case_id) in newly_created_case_ids):
+                    # Skip newly created cases - they already have their references set
+                    update_results["skipped_cases"].append({
+                        "case_id": test_case.case_id,
+                        "case_title": test_case.title,
+                        "reason": "Newly created case - references already set during creation"
+                    })
         
         return update_results, failed_cases
 

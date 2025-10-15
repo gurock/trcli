@@ -232,7 +232,8 @@ class JunitParser(FileParser):
                 result=result,
                 custom_automation_id=automation_id,
                 case_fields=case_fields_dict,
-                junit_case_refs=case_refs  # Store references from JUnit properties
+                refs=case_refs,  # Set references for case creation
+                junit_case_refs=case_refs  # Store references from JUnit properties for case updates
             ))
 
         return test_cases
