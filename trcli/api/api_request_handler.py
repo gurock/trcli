@@ -629,9 +629,9 @@ class ApiRequestHandler:
             combined_list = existing_ref_list + added_refs
             new_refs = ','.join(combined_list)
         
-        # Validate 250 character limit
-        if len(new_refs) > 250:
-            return False, f"Combined references length ({len(new_refs)} characters) exceeds 250 character limit", [], []
+        # Validate 2000 character limit for test case references
+        if len(new_refs) > 2000:
+            return False, f"Combined references length ({len(new_refs)} characters) exceeds 2000 character limit", [], []
         
         # Update the case
         update_data = {"refs": new_refs}
