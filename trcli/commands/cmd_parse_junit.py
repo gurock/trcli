@@ -86,8 +86,12 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             _handle_test_run_references(environment, run_id)
         
         # Handle case update reporting if enabled
-        if environment.update_existing_cases == "yes" and case_update_results:
+        if environment.update_existing_cases == "yes" and case_update_results is not None:
             _handle_case_update_reporting(environment, case_update_results)
+            
+            # Exit with error if there were case update failures (after reporting)
+            if case_update_results.get("failed_cases"):
+                exit(1)
     except FileNotFoundError:
         environment.elog(FAULT_MAPPING["missing_file"])
         exit(1)

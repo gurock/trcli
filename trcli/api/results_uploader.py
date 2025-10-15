@@ -104,7 +104,7 @@ class ResultsUploader(ProjectBasedClient):
                     self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
         # Update existing cases with JUnit references if enabled
-        case_update_results = {}
+        case_update_results = None
         case_update_failed = []
         if hasattr(self.environment, 'update_existing_cases') and self.environment.update_existing_cases == "yes":
             self.environment.log("Updating existing cases with JUnit references...")
@@ -164,9 +164,7 @@ class ResultsUploader(ProjectBasedClient):
             # Skip exit if there are any issues with the attribute
             pass
         
-        # Exit with error if there were case update failures
-        if hasattr(self, 'case_update_results') and self.case_update_results.get("failed_cases"):
-            exit(1)
+        # Note: Error exit for case update failures is handled in cmd_parse_junit.py after reporting
 
     def _validate_and_store_user_ids(self):
         """
