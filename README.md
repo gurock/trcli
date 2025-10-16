@@ -142,6 +142,11 @@ Options:
   --test-run-ref      Comma-separated list of reference IDs to append to the
                       test run (up to 250 characters total).
   --json-output       Output reference operation results in JSON format.
+  --update-existing-cases   Update existing TestRail cases with values from
+                            JUnit properties (default: no).
+  --update-strategy         Strategy for combining incoming values with
+                            existing case field values, whether to append or
+                            replace (default: append).
   --help              Show this message and exit.
 ```
 

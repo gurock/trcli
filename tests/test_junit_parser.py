@@ -169,9 +169,12 @@ class TestJunitParser:
     def __clear_unparsable_junit_elements(
         self, test_rail_suite: TestRailSuite
     ) -> TestRailSuite:
-        """helper method to delete junit_result_unparsed field,
+        """helper method to delete junit_result_unparsed field and temporary junit_case_refs attribute,
         which asdict() method of dataclass can't handle"""
         for section in test_rail_suite.testsections:
             for case in section.testcases:
                 case.result.junit_result_unparsed = []
+                # Remove temporary junit_case_refs attribute if it exists
+                if hasattr(case, '_junit_case_refs'):
+                    delattr(case, '_junit_case_refs')
         return test_rail_suite
