@@ -179,10 +179,19 @@ def _handle_case_update_reporting(environment: Environment, case_update_results:
     """
     import json
     
+    # Handle None input gracefully
+    if case_update_results is None:
+        return
+    
     if environment.json_output:
         # JSON output for case updates
         result = {
-            "case_updates": {
+            "summary": {
+                "updated_cases": len(case_update_results.get("updated_cases", [])),
+                "skipped_cases": len(case_update_results.get("skipped_cases", [])),
+                "failed_cases": len(case_update_results.get("failed_cases", []))
+            },
+            "details": {
                 "updated_cases": case_update_results.get("updated_cases", []),
                 "skipped_cases": case_update_results.get("skipped_cases", []),
                 "failed_cases": case_update_results.get("failed_cases", [])
@@ -208,6 +217,13 @@ def _handle_case_update_reporting(environment: Environment, case_update_results:
                     added = case_info.get("added_refs", [])
                     skipped = case_info.get("skipped_refs", [])
                     environment.log(f"    C{case_id}: added {len(added)} refs, skipped {len(skipped)} duplicates")
+            
+            if skipped_cases:
+                environment.log("  Skipped case details:")
+                for case_info in skipped_cases:
+                    case_id = case_info["case_id"]
+                    reason = case_info.get("reason", "Unknown reason")
+                    environment.log(f"    C{case_id}: {reason}")
             
             if failed_cases:
                 environment.log("  Failed case details:")

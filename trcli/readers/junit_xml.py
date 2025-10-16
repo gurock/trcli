@@ -225,16 +225,27 @@ class JunitParser(FileParser):
                     case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
                     or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id))
 
-            test_cases.append(TestRailCase(
-                title=TestRailCaseFieldsOptimizer.extract_last_words(case_name,
-                                                                     TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
-                case_id=case_id,
-                result=result,
-                custom_automation_id=automation_id,
-                case_fields=case_fields_dict,
-                refs=case_refs,  # Set references for case creation
-                junit_case_refs=case_refs  # Store references from JUnit properties for case updates
-            ))
+            # Create TestRailCase kwargs
+            case_kwargs = {
+                "title": TestRailCaseFieldsOptimizer.extract_last_words(case_name,
+                                                                       TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
+                "case_id": case_id,
+                "result": result,
+                "custom_automation_id": automation_id,
+                "case_fields": case_fields_dict,
+            }
+            
+            # Only set refs field if case_refs has actual content
+            if case_refs and case_refs.strip():
+                case_kwargs["refs"] = case_refs
+            
+            test_case = TestRailCase(**case_kwargs)
+            
+            # Store JUnit references as a temporary attribute for case updates (not serialized)
+            if case_refs and case_refs.strip():
+                test_case._junit_case_refs = case_refs
+            
+            test_cases.append(test_case)
 
         return test_cases
 

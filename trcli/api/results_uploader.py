@@ -252,11 +252,11 @@ class ResultsUploader(ProjectBasedClient):
                 # Only process cases that have a case_id (existing cases) and JUnit refs
                 # AND exclude newly created cases
                 if (test_case.case_id and 
-                    test_case.junit_case_refs and 
+                    hasattr(test_case, '_junit_case_refs') and test_case._junit_case_refs and 
                     int(test_case.case_id) not in newly_created_case_ids):
                     try:
                         success, error_msg, added_refs, skipped_refs = self.api_request_handler.update_existing_case_references(
-                            test_case.case_id, test_case.junit_case_refs, strategy
+                            test_case.case_id, test_case._junit_case_refs, strategy
                         )
                         
                         if success:
@@ -298,7 +298,7 @@ class ResultsUploader(ProjectBasedClient):
                         self.environment.elog(f"Exception updating case C{test_case.case_id}: {str(e)}")
                 
                 elif (test_case.case_id and 
-                      test_case.junit_case_refs and 
+                      hasattr(test_case, '_junit_case_refs') and test_case._junit_case_refs and 
                       int(test_case.case_id) in newly_created_case_ids):
                     # Skip newly created cases - they already have their references set
                     update_results["skipped_cases"].append({
