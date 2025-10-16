@@ -529,6 +529,85 @@ class ApiRequestHandler:
             combined_list = existing_list + [ref for ref in new_list if ref not in existing_list]
             return ','.join(combined_list)
 
+    def append_run_references(self, run_id: int, references: List[str]) -> Tuple[Dict, List[str], List[str], str]:
+        """
+        Append references to a test run, avoiding duplicates.
+        :param run_id: ID of the test run
+        :param references: List of references to append
+        :returns: Tuple with (run_data, added_refs, skipped_refs, error_message)
+        """
+        # Get current run data
+        run_response = self.client.send_get(f"get_run/{run_id}")
+        if run_response.error_message:
+            return None, [], [], run_response.error_message
+        
+        existing_refs = run_response.response_text.get("refs", "") or ""
+        
+        # Parse existing and new references
+        existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
+        # Deduplicate input references
+        new_list = []
+        seen = set()
+        for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                new_list.append(ref_clean)
+                seen.add(ref_clean)
+        
+        # Determine which references are new vs duplicates
+        added_refs = [ref for ref in new_list if ref not in existing_list]
+        skipped_refs = [ref for ref in new_list if ref in existing_list]
+        
+        # If no new references to add, return current state
+        if not added_refs:
+            return run_response.response_text, added_refs, skipped_refs, None
+        
+        # Combine references
+        combined_list = existing_list + added_refs
+        combined_refs = ','.join(combined_list)
+        
+        if len(combined_refs) > 250:
+            return None, [], [], f"Combined references length ({len(combined_refs)} characters) exceeds 250 character limit"
+        
+        update_data = {"refs": combined_refs}
+        
+        # Determine the correct API endpoint based on plan membership
+        plan_id = run_response.response_text.get("plan_id")
+        config_ids = run_response.response_text.get("config_ids")
+        
+        if not plan_id:
+            # Standalone run
+            update_response = self.client.send_post(f"update_run/{run_id}", update_data)
+        elif plan_id and config_ids:
+            # Run in plan with configurations
+            update_response = self.client.send_post(f"update_run_in_plan_entry/{run_id}", update_data)
+        else:
+            # Run in plan without configurations - need to use plan entry endpoint
+            plan_response = self.client.send_get(f"get_plan/{plan_id}")
+            if plan_response.error_message:
+                return None, [], [], f"Failed to get plan details: {plan_response.error_message}"
+            
+            # Find the entry_id for this run
+            entry_id = None
+            for entry in plan_response.response_text.get("entries", []):
+                for run in entry.get("runs", []):
+                    if run["id"] == run_id:
+                        entry_id = entry["id"]
+                        break
+                if entry_id:
+                    break
+            
+            if not entry_id:
+                return None, [], [], f"Could not find plan entry for run {run_id}"
+            
+            update_response = self.client.send_post(f"update_plan_entry/{plan_id}/{entry_id}", update_data)
+        
+        if update_response.error_message:
+            return None, [], [], update_response.error_message
+        
+        updated_run_response = self.client.send_get(f"get_run/{run_id}")
+        return updated_run_response.response_text, added_refs, skipped_refs, updated_run_response.error_message
+
     def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
         """ Getting test result id and upload attachments for it. """
         tests_in_run, error = self.__get_all_tests_in_run(run_id)
@@ -1474,9 +1553,18 @@ class ApiRequestHandler:
         if existing_refs:
             existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
         
-        # Add new references (avoid duplicates)
-        all_refs = existing_ref_list.copy()
+        # Deduplicate input references while preserving order
+        deduplicated_input = []
+        seen = set()
         for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                deduplicated_input.append(ref_clean)
+                seen.add(ref_clean)
+        
+        # Add new references (avoid duplicates with existing)
+        all_refs = existing_ref_list.copy()
+        for ref in deduplicated_input:
             if ref not in all_refs:
                 all_refs.append(ref)
         
@@ -1503,8 +1591,17 @@ class ApiRequestHandler:
         :param references: List of references to replace existing ones
         :returns: Tuple with success status and error string
         """
+        # Deduplicate input references while preserving order
+        deduplicated_refs = []
+        seen = set()
+        for ref in references:
+            ref_clean = ref.strip()
+            if ref_clean and ref_clean not in seen:
+                deduplicated_refs.append(ref_clean)
+                seen.add(ref_clean)
+        
         # Join references
-        new_refs_string = ','.join(references)
+        new_refs_string = ','.join(deduplicated_refs)
         
         # Validate total character limit
         if len(new_refs_string) > 2000:
@@ -1545,8 +1642,11 @@ class ApiRequestHandler:
             # Parse existing references
             existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
             
+            # Deduplicate input references for efficient processing
+            refs_to_delete = set(ref.strip() for ref in specific_references if ref.strip())
+            
             # Remove specific references
-            remaining_refs = [ref for ref in existing_ref_list if ref not in specific_references]
+            remaining_refs = [ref for ref in existing_ref_list if ref not in refs_to_delete]
             
             # Join remaining references
             new_refs_string = ','.join(remaining_refs)

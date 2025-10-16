@@ -174,8 +174,8 @@ class TestApiRequestHandlerReferences:
         
         with patch.object(references_handler.client, 'send_get', return_value=mock_get_case_response):
             
-            # Try to add more refs that would exceed 2000 chars
-            long_refs = ["REQ-" + "X" * 500 for _ in range(5)]
+            # Try to add more refs that would exceed 2000 chars (using unique refs to account for deduplication)
+            long_refs = [f"REQ-{i}-" + "X" * 500 for i in range(5)]
             
             success, error = references_handler.add_case_references(
                 case_id=1,
@@ -184,6 +184,43 @@ class TestApiRequestHandlerReferences:
             
             assert success is False
             assert "exceeds 2000 character limit" in error
+
+    def test_add_case_references_deduplication(self, references_handler):
+        """Test that duplicate references in input are deduplicated"""
+        # Mock get_case response with existing refs
+        mock_get_case_response = APIClientResult(
+            status_code=200,
+            response_text={
+                "id": 1,
+                "title": "Test Case 1",
+                "refs": "REQ-1"
+            },
+            error_message=None
+        )
+        
+        # Mock update_case response
+        mock_update_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "refs": "REQ-1,REQ-2,REQ-3"},
+            error_message=None
+        )
+        
+        with patch.object(references_handler.client, 'send_get', return_value=mock_get_case_response), \
+             patch.object(references_handler.client, 'send_post', return_value=mock_update_response):
+            
+            success, error = references_handler.add_case_references(
+                case_id=1,
+                references=["REQ-2", "REQ-2", "REQ-3", "REQ-2"]  # Duplicates should be removed
+            )
+            
+            assert success is True
+            assert error == ""
+            
+            # Verify the API call has deduplicated references
+            references_handler.client.send_post.assert_called_once_with(
+                "update_case/1", 
+                {'refs': 'REQ-1,REQ-2,REQ-3'}  # Duplicates removed, order preserved
+            )
 
     def test_update_case_references_success(self, references_handler):
         """Test successful update of references on a test case"""
@@ -212,8 +249,8 @@ class TestApiRequestHandlerReferences:
 
     def test_update_case_references_character_limit_exceeded(self, references_handler):
         """Test character limit validation for update"""
-        # Try to update with refs that exceed 2000 chars
-        long_refs = ["REQ-" + "X" * 500 for _ in range(5)]
+        # Try to update with refs that exceed 2000 chars (using unique refs to account for deduplication)
+        long_refs = [f"REQ-{i}-" + "X" * 500 for i in range(5)]
         
         success, error = references_handler.update_case_references(
             case_id=1,
@@ -222,6 +259,31 @@ class TestApiRequestHandlerReferences:
         
         assert success is False
         assert "exceeds 2000 character limit" in error
+
+    def test_update_case_references_deduplication(self, references_handler):
+        """Test that duplicate references in input are deduplicated"""
+        # Mock update_case response
+        mock_update_response = APIClientResult(
+            status_code=200,
+            response_text={"id": 1, "refs": "REQ-1,REQ-2"},
+            error_message=None
+        )
+        
+        with patch.object(references_handler.client, 'send_post', return_value=mock_update_response):
+            
+            success, error = references_handler.update_case_references(
+                case_id=1,
+                references=["REQ-1", "REQ-1", "REQ-2", "REQ-1"]  # Duplicates should be removed
+            )
+            
+            assert success is True
+            assert error == ""
+            
+            # Verify the API call has deduplicated references
+            references_handler.client.send_post.assert_called_once_with(
+                "update_case/1", 
+                {'refs': 'REQ-1,REQ-2'}  # Duplicates removed, order preserved
+            )
 
     def test_update_case_references_api_failure(self, references_handler):
         """Test API failure during update"""
