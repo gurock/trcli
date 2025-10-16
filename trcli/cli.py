@@ -69,6 +69,10 @@ class Environment:
         self.run_include_all = None
         self.auto_close_run = None
         self.run_refs = None
+        self.test_run_ref = None
+        self.json_output = None
+        self.update_existing_cases = None
+        self.update_strategy = None
         self.proxy = None
         self.assign_failed_to = None  # Add proxy related attributes
         self.noproxy = None

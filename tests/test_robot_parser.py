@@ -53,12 +53,24 @@ class TestRobotParser:
         env.case_matcher = matcher
         env.file = input_xml_path
         file_reader = RobotParser(env)
-        read_junit = file_reader.parse_file()[0]
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert DeepDiff(parsing_result_json, expected_json) == {}, \
             f"Result of parsing XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
+    def __clear_unparsable_junit_elements(
+        self, test_rail_suite: TestRailSuite
+    ) -> TestRailSuite:
+        """helper method to delete temporary junit_case_refs attribute,
+        which asdict() method of dataclass can't handle"""
+        for section in test_rail_suite.testsections:
+            for case in section.testcases:
+                # Remove temporary junit_case_refs attribute if it exists
+                if hasattr(case, '_junit_case_refs'):
+                    delattr(case, '_junit_case_refs')
+        return test_rail_suite
 
     @pytest.mark.parse_robot
     def test_robot_xml_parser_file_not_found(self):

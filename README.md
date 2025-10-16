@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.12.1
+TestRail CLI v1.12.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -87,6 +87,7 @@ Commands:
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
+  references     Manage references in TestRail
 ```
 
 Uploading automated test results
@@ -136,8 +137,16 @@ Options:
   --allow-ms          Allows using milliseconds for elapsed times.
   --special-parser    Optional special parser option for specialized JUnit
                       reports.
-  -a, --assign        Comma-separated list of user emails to assign failed test 
-                      results to.
+  -a, --assign        Comma-separated list of user emails to assign failed
+                      test results to.
+  --test-run-ref      Comma-separated list of reference IDs to append to the
+                      test run (up to 250 characters total).
+  --json-output       Output reference operation results in JSON format.
+  --update-existing-cases   Update existing TestRail cases with values from
+                            JUnit properties (default: no).
+  --update-strategy         Strategy for combining incoming values with
+                            existing case field values, whether to append or
+                            replace (default: append).
   --help              Show this message and exit.
 ```
 

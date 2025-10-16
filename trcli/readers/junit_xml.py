@@ -145,6 +145,7 @@ class JunitParser(FileParser):
         result_fields = []
         comments = []
         case_fields = []
+        case_refs = None
         sauce_session = None
 
         for case_props in case.iterchildren(Properties):
@@ -166,11 +167,16 @@ class JunitParser(FileParser):
                     comments.append(value)
                 elif name.startswith("testrail_case_field"):
                     text = prop._elem.text.strip() if prop._elem.text else None
-                    case_fields.append(text or value)
+                    field_value = text or value
+                    case_fields.append(field_value)
+                    
+                    # Extract refs for case updates
+                    if field_value and field_value.startswith("refs:"):
+                        case_refs = field_value[5:].strip()  # Remove "refs:" prefix
                 elif name.startswith("testrail_sauce_session"):
                     sauce_session = value
 
-        return result_steps, attachments, result_fields, comments, case_fields, sauce_session
+        return result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session
 
     def _resolve_case_fields(self, result_fields, case_fields):
         result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
@@ -195,7 +201,7 @@ class JunitParser(FileParser):
             """
             automation_id = f"{case.classname}.{case.name}"
             case_id, case_name = self._extract_case_id_and_name(case)
-            result_steps, attachments, result_fields, comments, case_fields, sauce_session = self._parse_case_properties(
+            result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session = self._parse_case_properties(
                 case)
             result_fields_dict, case_fields_dict = self._resolve_case_fields(result_fields, case_fields)
             status_id = self._get_status_id_for_case_result(case)
@@ -219,14 +225,27 @@ class JunitParser(FileParser):
                     case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
                     or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id))
 
-            test_cases.append(TestRailCase(
-                title=TestRailCaseFieldsOptimizer.extract_last_words(case_name,
-                                                                     TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
-                case_id=case_id,
-                result=result,
-                custom_automation_id=automation_id,
-                case_fields=case_fields_dict
-            ))
+            # Create TestRailCase kwargs
+            case_kwargs = {
+                "title": TestRailCaseFieldsOptimizer.extract_last_words(case_name,
+                                                                       TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
+                "case_id": case_id,
+                "result": result,
+                "custom_automation_id": automation_id,
+                "case_fields": case_fields_dict,
+            }
+            
+            # Only set refs field if case_refs has actual content
+            if case_refs and case_refs.strip():
+                case_kwargs["refs"] = case_refs
+            
+            test_case = TestRailCase(**case_kwargs)
+            
+            # Store JUnit references as a temporary attribute for case updates (not serialized)
+            if case_refs and case_refs.strip():
+                test_case._junit_case_refs = case_refs
+            
+            test_cases.append(test_case)
 
         return test_cases
 

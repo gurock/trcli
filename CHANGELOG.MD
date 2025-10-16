@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.2]
+
+_released 10-16-2025
+
+### Added
+ - Allow adding references via parse_junit command using --test-run-ref
+ - Allow parse_junit to update existing test cases reference field from JUnit testrail_case_field properties
+
 ## [1.12.1]
 
 _released 09-30-2025
