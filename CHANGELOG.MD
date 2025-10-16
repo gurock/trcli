@@ -8,14 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.12.2]
 
-_released 10-11-2025
+_released 10-16-2025
 
 ### Added
- - Allow adding test run references via parse_junit
+ - Allow adding references via parse_junit command using --test-run-ref
  - Allow parse_junit to update existing test cases reference field from JUnit testrail_case_field properties
-
-### Fixed
- - Fixed an issue where custom variables are not correctly ingesting into TestRail via case or result data
 
 ## [1.12.1]
 
