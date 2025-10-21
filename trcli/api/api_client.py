@@ -1,5 +1,9 @@
 import json
 from pathlib import Path
+import platform
+import os
+import base64
+import hashlib
 
 import requests
 from beartype.typing import Union, Callable, Dict, List
@@ -49,7 +53,8 @@ class APIClient:
         verify: bool = True,
         proxy: str = None, #added proxy params
         proxy_user: str = None,
-        noproxy: str = None, 
+        noproxy: str = None,
+        uploader_metadata: str = None,
     ):
         self.username = ""
         self.password = ""
@@ -62,7 +67,8 @@ class APIClient:
         self.__validate_and_set_timeout(timeout)
         self.proxy = proxy
         self.proxy_user = proxy_user
-        self.noproxy = noproxy.split(',') if noproxy else [] 
+        self.noproxy = noproxy.split(',') if noproxy else []
+        self.uploader_metadata = uploader_metadata 
         
         if not host_name.endswith("/"):
             host_name = host_name + "/"
@@ -99,6 +105,7 @@ class APIClient:
         auth = HTTPBasicAuth(username=self.username, password=password)
         headers = {"User-Agent": self.USER_AGENT}
         headers.update(self.__get_proxy_headers())
+        headers.update(self.__get_uploader_metadata_headers())
         if files is None and not as_form_data:
             headers["Content-Type"] = "application/json"
         verbose_log_message = ""
@@ -209,6 +216,15 @@ class APIClient:
 
         return headers
 
+    def __get_uploader_metadata_headers(self) -> Dict[str, str]:
+        """
+        Returns headers for uploader metadata.
+        """
+        headers = {}
+        if self.uploader_metadata:
+            headers["X-Uploader-Metadata"] = self.uploader_metadata
+        return headers
+
     def _get_proxies_for_request(self, url: str) -> Dict[str, str]:
         """
         Returns the appropriate proxy dictionary for a given request URL.
@@ -275,6 +291,33 @@ class APIClient:
                 f"{DEFAULT_API_CALL_TIMEOUT}"
             )
             self.timeout = DEFAULT_API_CALL_TIMEOUT
+
+    @staticmethod
+    def build_uploader_metadata(version: str, project_id: int = None) -> str:
+        """
+        Build uploader metadata as base64-encoded JSON.
+        
+        :param version: Application version
+        :param project_id: Project ID (optional)
+        :returns: Base64-encoded metadata string
+        """
+        user = os.getenv("USER_EMAIL", "unknown")
+        user_hash = hashlib.sha256(user.encode()).hexdigest()[:8]
+        
+        data = {
+            "app_name": "trcli",
+            "app_version": version,
+            "os": platform.system().lower(),
+            "arch": platform.machine(),
+            "run_mode": "ci" if os.getenv("CI") else "manual",
+            "container": os.path.exists("/.dockerenv"),
+            "user_hash": user_hash,
+        }
+        
+        if project_id is not None:
+            data["project_id"] = project_id
+            
+        return base64.b64encode(json.dumps(data).encode()).decode()
 
     @staticmethod
     def format_request_for_vlog(method: str, url: str, payload: dict):

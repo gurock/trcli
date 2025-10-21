@@ -6,6 +6,7 @@ from trcli.cli import Environment
 from trcli.constants import ProjectErrors, FAULT_MAPPING, SuiteModes, PROMPT_MESSAGES
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+import trcli
 
 
 class ProjectBasedClient:
@@ -36,6 +37,13 @@ class ProjectBasedClient:
         proxy = self.environment.proxy  # Will be None if --proxy is not defined
         noproxy = self.environment.noproxy  # Will be None if --noproxy is not defined
         proxy_user = self.environment.proxy_user
+        
+        # Generate uploader metadata
+        uploader_metadata = APIClient.build_uploader_metadata(
+            version=trcli.__version__,
+            project_id=getattr(self.environment, 'project_id', None)
+        )
+        
         if self.environment.timeout:
             api_client = APIClient(
                 self.environment.host,
@@ -45,7 +53,8 @@ class ProjectBasedClient:
                 verify=not self.environment.insecure,
                 proxy=proxy,
                 proxy_user=proxy_user,
-                noproxy=noproxy
+                noproxy=noproxy,
+                uploader_metadata=uploader_metadata
             )
         else:
             api_client = APIClient(
@@ -55,7 +64,8 @@ class ProjectBasedClient:
                 verify=not self.environment.insecure,
                 proxy=proxy,
                 proxy_user=proxy_user,
-                noproxy=noproxy
+                noproxy=noproxy,
+                uploader_metadata=uploader_metadata
             )
         api_client.username = self.environment.username
         api_client.password = self.environment.password
