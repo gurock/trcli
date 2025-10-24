@@ -3,7 +3,6 @@ from pathlib import Path
 import platform
 import os
 import base64
-import hashlib
 
 import requests
 from beartype.typing import Union, Callable, Dict, List
@@ -293,17 +292,13 @@ class APIClient:
             self.timeout = DEFAULT_API_CALL_TIMEOUT
 
     @staticmethod
-    def build_uploader_metadata(version: str, project_id: int = None) -> str:
+    def build_uploader_metadata(version: str) -> str:
         """
         Build uploader metadata as base64-encoded JSON.
-        
+
         :param version: Application version
-        :param project_id: Project ID (optional)
         :returns: Base64-encoded metadata string
         """
-        user = os.getenv("USER_EMAIL", "unknown")
-        user_hash = hashlib.sha256(user.encode()).hexdigest()[:8]
-        
         data = {
             "app_name": "trcli",
             "app_version": version,
@@ -311,12 +306,8 @@ class APIClient:
             "arch": platform.machine(),
             "run_mode": "ci" if os.getenv("CI") else "manual",
             "container": os.path.exists("/.dockerenv"),
-            "user_hash": user_hash,
         }
-        
-        if project_id is not None:
-            data["project_id"] = project_id
-            
+
         return base64.b64encode(json.dumps(data).encode()).decode()
 
     @staticmethod
