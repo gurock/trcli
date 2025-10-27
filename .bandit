@@ -1,0 +1,8 @@
+# Bandit security scanner configuration (YAML format)
+exclude_dirs:
+  - '/tests/'
+  - '/tests_e2e/'
+  - '/venv/'
+  - '/.venv/'
+  - '/build/'
+  - '/dist/'
