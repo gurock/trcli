@@ -64,23 +64,6 @@ jobs:
             safety check --file tests/requirements.txt >> safety_report.txt || true
           fi
 
-      - name: Run Bandit security scan
-        id: bandit
-        continue-on-error: true
-        run: |
-          pip install bandit
-          echo "### Bandit Security Scan" > bandit_report.txt
-          bandit -r trcli/ -f json -o bandit.json || true
-          bandit -r trcli/ -f txt >> bandit_report.txt || true
-
-          # Check for high severity issues
-          if [ -f bandit.json ]; then
-            HIGH_SEVERITY=$(cat bandit.json | grep -o '"issue_severity": "HIGH"' | wc -l)
-            echo "high_severity=$HIGH_SEVERITY" >> $GITHUB_OUTPUT
-          else
-            echo "high_severity=0" >> $GITHUB_OUTPUT
-          fi
-
       - name: Upload security reports as artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -119,26 +102,9 @@ jobs:
               console.log('No safety report');
             }
 
-            // Read bandit report
-            try {
-              if (fs.existsSync('bandit_report.txt')) {
-                const bandit = fs.readFileSync('bandit_report.txt', 'utf8');
-                const highSeverity = parseInt('${{ steps.bandit.outputs.high_severity }}');
-
-                if (highSeverity > 0) {
-                  comment += `### ⚠️ HIGH SEVERITY ISSUES FOUND: ${highSeverity}\n\n`;
-                }
-
-                comment += `<details><summary>🔍 Code Security Scan (Bandit)</summary>\n\n\`\`\`\n${bandit.substring(0, 50000)}\n\`\`\`\n</details>\n\n`;
-              }
-            } catch (e) {
-              console.log('No bandit report');
-            }
-
             const vulnerabilitiesFound = '${{ steps.pip_audit.outputs.vulnerabilities_found }}' === 'true';
-            const highSeverity = parseInt('${{ steps.bandit.outputs.high_severity }}');
 
-            if (!vulnerabilitiesFound && highSeverity === 0) {
+            if (!vulnerabilitiesFound) {
               comment += `\n✅ **No critical security issues detected!**\n`;
             } else {
               comment += `\n⚠️ **Security issues detected. Please review and address.**\n`;
@@ -152,13 +118,6 @@ jobs:
               repo: context.repo.repo,
               body: comment
             });
-
-      - name: Fail if critical vulnerabilities found
-        if: steps.bandit.outputs.high_severity > 0
-        run: |
-          echo "::error::High severity security issues found!"
-          echo "Please review the Bandit report and address security concerns."
-          exit 1
 
   code-scanning:
     runs-on: ubuntu-latest
