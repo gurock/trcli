@@ -42,9 +42,6 @@ The pre-commit hooks run the following checks automatically:
 #### Linting
 - **flake8** - PEP8 linting with docstrings and bugbear checks
 
-#### Security
-- **bandit** - Security vulnerability scanner (excludes tests)
-
 ### Skipping Hooks (Use Sparingly)
 
 ```bash
@@ -119,9 +116,9 @@ git checkout -b fix/TRCLI-456-api-timeout
 git checkout -b docs/TRCLI-789-update-readme
 ```
 
-### 2. PR Title Format (Semantic Commits)
+### 2. PR Title Format (Recommended)
 
-Use [Conventional Commits](https://www.conventionalcommits.org/) format:
+It's recommended to use [Conventional Commits](https://www.conventionalcommits.org/) format for clarity:
 
 ```
 type(scope): description
@@ -164,16 +161,13 @@ The PR template includes required sections:
 When you open a PR, the following checks run automatically:
 
 #### ✅ PR Validation
-- Validates semantic PR title format
 - Checks for issue reference (JIRA or GitHub)
 - Ensures PR description is complete
 - Auto-labels PR based on type
 
 #### 🔒 Security Scanning
 - Scans dependencies for vulnerabilities
-- Checks code for security issues (Bandit)
 - Runs CodeQL analysis
-- Detects secrets in code
 
 #### 📋 Checklist Enforcement
 - Verifies all checklist items are checked
@@ -202,15 +196,11 @@ Runs on every PR and push to main:
 **Tools Used:**
 - `pip-audit`: Dependency vulnerabilities
 - `safety`: Known security issues
-- `bandit`: Code security analysis
 - `CodeQL`: Advanced code scanning
-- `Gitleaks`: Secret detection
-- `TruffleHog`: Credential scanning
 
 ### PR Validation
 
 **Checks:**
-- Semantic PR title format
 - Issue reference (JIRA ticket or GitHub issue)
 - PR description completeness
 - Auto-labeling by PR type
@@ -246,30 +236,7 @@ git add .
 git commit -m "Your commit message"
 ```
 
-#### "Bandit found security issues"
-**Problem**: Security vulnerability detected in code.
-
-**Solution**:
-1. Review the Bandit output
-2. Fix the security issue
-3. If false positive, add `# nosec` comment with justification
-
-```python
-# Example: Intentional use of assert in non-production code
-assert value is not None  # nosec B101 - Test code only
-```
-
 ### PR Check Failures
-
-#### "Semantic PR validation failed"
-**Problem**: PR title doesn't follow format.
-
-**Solution**: Edit PR title to match:
-```
-feat(scope): description
-fix(scope): description
-docs(scope): description
-```
 
 #### "Issue reference missing"
 **Problem**: No issue reference in PR title or description.
@@ -290,15 +257,6 @@ docs(scope): description
 **Solution**: Complete all items or remove non-applicable ones.
 
 ### Security Scan Failures
-
-#### "High severity issues found"
-**Problem**: Bandit detected high-severity security issue.
-
-**Solution**:
-1. Review the security report in PR comments
-2. Fix the vulnerability
-3. Re-run the security scan
-4. If false positive, configure Bandit to skip specific checks
 
 #### "Vulnerable dependencies detected"
 **Problem**: Dependencies have known CVEs.
@@ -389,7 +347,6 @@ pytest --cov=trcli --cov-report=html # Coverage report
 ### Useful Links
 - [Conventional Commits](https://www.conventionalcommits.org/)
 - [Pre-commit Framework](https://pre-commit.com/)
-- [Bandit Security Tool](https://bandit.readthedocs.io/)
 
 ---
 

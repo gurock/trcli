@@ -16,34 +16,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Validate PR Title Format
-        id: validate_title
-        uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          # Types: feat, fix, docs, style, refactor, perf, test, build, ci, chore, revert
-          types: |
-            feat
-            fix
-            docs
-            style
-            refactor
-            perf
-            test
-            build
-            ci
-            chore
-            revert
-          requireScope: false
-          subjectPattern: ^(?![A-Z]).+$
-          subjectPatternError: |
-            The subject "{subject}" found in the pull request title "{title}"
-            didn't match the configured pattern. Please ensure that the subject
-            doesn't start with an uppercase character.
-          wip: false
-          validateSingleCommit: false
-
       - name: Check for Issue Reference
         id: check_issue
         run: |
@@ -172,7 +144,6 @@ jobs:
 
             | Check | Status |
             |-------|--------|
-            | Semantic PR Title | ✅ Valid |
             | Issue Reference | ${issueStatus} |
             | Issue Section | ${hasIssue ? '✅ Present' : '⚠️ Missing'} |
             | Solution Description | ${hasSolution ? '✅ Present' : '⚠️ Missing'} |
