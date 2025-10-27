@@ -183,8 +183,12 @@ class APIClient:
                         response_text = response.json()
                     error_message = response_text.get("error", "")
                 except (JSONDecodeError, ValueError):
+                    response_preview = response.content[:200].decode('utf-8', errors='ignore')
                     response_text = str(response.content)
-                    error_message = response.content
+                    error_message = FAULT_MAPPING["invalid_json_response"].format(
+                        status_code=status_code,
+                        response_preview=response_preview
+                    )
                 except AttributeError:
                     error_message = ""
                 verbose_log_message = (
