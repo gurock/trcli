@@ -113,7 +113,7 @@ class APIClient:
             error_message = ""
             try:
                 verbose_log_message = APIClient.format_request_for_vlog(
-                    method=method, url=url, payload=payload
+                    method=method, url=url, payload=payload, headers=headers
                 )
                 if method == "POST":
                     request_kwargs = {
@@ -308,19 +308,26 @@ class APIClient:
             "app_version": version,
             "os": platform.system().lower(),
             "arch": platform.machine(),
-            "run_mode": "ci" if os.getenv("CI") else "manual",
+            "run_mode": "ci" if os.getenv("CI") else "other",
             "container": os.path.exists("/.dockerenv"),
         }
 
         return base64.b64encode(json.dumps(data).encode()).decode()
 
     @staticmethod
-    def format_request_for_vlog(method: str, url: str, payload: dict):
-        return (
+    def format_request_for_vlog(method: str, url: str, payload: dict, headers: dict = None):
+        log_message = (
             f"\n**** API Call\n"
             f"method: {method}\n"
-            f"url: {url}\n" + (f"payload: {payload}\n" if payload else "")
+            f"url: {url}\n"
         )
+        if headers:
+            log_message += "headers:\n"
+            for key, value in headers.items():
+                log_message += f"  {key}: {value}\n"
+        if payload:
+            log_message += f"payload: {payload}\n"
+        return log_message
 
     @staticmethod
     def format_response_for_vlog(status_code, body):
