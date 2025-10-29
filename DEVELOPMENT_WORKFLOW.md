@@ -39,9 +39,6 @@ The pre-commit hooks run the following checks automatically:
 #### Code Formatting
 - **Black** - Python code formatter (line length: 120)
 
-#### Linting
-- **flake8** - PEP8 linting with docstrings and bugbear checks
-
 ### Skipping Hooks (Use Sparingly)
 
 ```bash
@@ -163,11 +160,6 @@ When you open a PR, the following checks run automatically:
 #### ✅ PR Validation
 - Checks for issue reference (JIRA or GitHub)
 - Ensures PR description is complete
-- Auto-labels PR based on type
-
-#### 🔒 Security Scanning
-- Scans dependencies for vulnerabilities
-- Runs CodeQL analysis
 
 #### 📋 Checklist Enforcement
 - Verifies all checklist items are checked
@@ -186,24 +178,11 @@ Runs on every PR and push to main:
 - Code coverage must be ≥ 80%
 - All tests must pass
 
-### Security Scanning
-
-**Runs on:**
-- Every PR
-- Push to main/release branches
-- Weekly schedule (Mondays 9 AM UTC)
-
-**Tools Used:**
-- `pip-audit`: Dependency vulnerabilities
-- `safety`: Known security issues
-- `CodeQL`: Advanced code scanning
-
 ### PR Validation
 
 **Checks:**
 - Issue reference (JIRA ticket or GitHub issue)
 - PR description completeness
-- Auto-labeling by PR type
 
 ### Checklist Enforcement
 
@@ -256,24 +235,6 @@ git commit -m "Your commit message"
 
 **Solution**: Complete all items or remove non-applicable ones.
 
-### Security Scan Failures
-
-#### "Vulnerable dependencies detected"
-**Problem**: Dependencies have known CVEs.
-
-**Solution**:
-```bash
-# Update vulnerable package
-pip install --upgrade <package-name>
-
-# Update requirements file
-pip freeze > requirements.txt
-
-# Commit changes
-git add requirements.txt
-git commit -m "TRCLI-XXX: Update dependencies to fix CVE-YYYY-NNNN"
-```
-
 ---
 
 ## Best Practices
@@ -294,11 +255,6 @@ pytest tests/
 - Aim for <400 lines changed per PR
 - Break large features into multiple PRs
 - Easier to review and less likely to introduce bugs
-
-### Security First
-- Never commit secrets/credentials
-- Review security scan results
-- Address high-severity issues before merging
 
 ### Test Coverage
 - Maintain ≥80% code coverage
