@@ -8,10 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.12.3]
 
-_released 11-03-2025
+_released 10-31-2025
 
 ### Added
- - Improve instrumentation/analytics for all API requests
+ - Enhanced TRCLI analytics integration with TestRail API enabling better tracking and insight into usage patterns.
+ - Introduced new development workflow improvements to streamline the contributor and release process.
 
 ## [1.12.2]
 
