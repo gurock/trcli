@@ -1,4 +1,4 @@
-<!-- 
+<!--
 Thanks for contributing!
 PLEASE:
 - Read our contributing guidelines: https://github.com/gurock/trcli/blob/main/CONTRIBUTING.md
@@ -11,10 +11,10 @@ PLEASE:
 How are we solving the problem?
 
 ### Changes
-What changes where made?
+What changes were made?
 
 ### Potential impacts
-What could potentially be affected by the implemented changes? 
+What could potentially be affected by the implemented changes?
 
 ### Steps to test
 Happy path to test implemented scenario

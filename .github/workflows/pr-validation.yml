@@ -1,0 +1,132 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: write
+
+jobs:
+  validate-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for Issue Reference
+        id: check_issue
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check if PR title or body contains issue reference
+          # Accepts: TRCLI-### (JIRA), GIT-### (GitHub), #123 (GitHub), issues/123
+          if echo "$PR_TITLE $PR_BODY" | grep -qE "TRCLI-[0-9]+|GIT-[0-9]+|#[0-9]+|issues/[0-9]+"; then
+            echo "issue_found=true" >> $GITHUB_OUTPUT
+
+            # Extract the issue key/number
+            if echo "$PR_TITLE $PR_BODY" | grep -qE "TRCLI-[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "TRCLI-[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
+              echo "issue_type=JIRA" >> $GITHUB_OUTPUT
+            elif echo "$PR_TITLE $PR_BODY" | grep -qE "GIT-[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "GIT-[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
+              echo "issue_type=GitHub" >> $GITHUB_OUTPUT
+            elif echo "$PR_TITLE $PR_BODY" | grep -qE "#[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "#[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
+              echo "issue_type=GitHub" >> $GITHUB_OUTPUT
+            elif echo "$PR_BODY" | grep -qE "issues/[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_BODY" | grep -oE "issues/[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> $GITHUB_OUTPUT
+              echo "issue_type=GitHub" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "issue_found=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment on PR if issue reference missing
+        if: steps.check_issue.outputs.issue_found == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Missing Issue Reference
+
+              This PR does not reference an issue. Please include a reference in either:
+
+              **JIRA tickets:**
+              - PR title: "feat(api): TRCLI-123 Add new endpoint"
+              - PR description: "Resolves TRCLI-123"
+
+              **GitHub issues:**
+              - PR title: "feat(api): GIT-123 Add new endpoint"
+              - PR description: "Resolves GIT-123" or "Fixes #123"
+              - Or link to the GitHub issue
+
+              This helps with tracking and project management. Thank you!`
+            })
+
+      - name: Check PR Description Completeness
+        id: check_description
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check for required sections
+          if echo "$PR_BODY" | grep -q "Issue being resolved"; then
+            echo "has_issue=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_issue=false" >> $GITHUB_OUTPUT
+          fi
+
+          if echo "$PR_BODY" | grep -q "Solution description"; then
+            echo "has_solution=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_solution=false" >> $GITHUB_OUTPUT
+          fi
+
+          if echo "$PR_BODY" | grep -q "Steps to test"; then
+            echo "has_test_steps=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_test_steps=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate PR Validation Summary
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueFound = '${{ steps.check_issue.outputs.issue_found }}' === 'true';
+            const issueKey = '${{ steps.check_issue.outputs.issue_key }}';
+            const issueType = '${{ steps.check_issue.outputs.issue_type }}';
+            const hasIssue = '${{ steps.check_description.outputs.has_issue }}' === 'true';
+            const hasSolution = '${{ steps.check_description.outputs.has_solution }}' === 'true';
+            const hasTestSteps = '${{ steps.check_description.outputs.has_test_steps }}' === 'true';
+
+            const issueStatus = issueFound
+              ? `✅ Found: ${issueKey} (${issueType})`
+              : '⚠️ Missing';
+
+            const summary = `## 📋 PR Validation Summary
+
+            | Check | Status |
+            |-------|--------|
+            | Issue Reference | ${issueStatus} |
+            | Issue Section | ${hasIssue ? '✅ Present' : '⚠️ Missing'} |
+            | Solution Description | ${hasSolution ? '✅ Present' : '⚠️ Missing'} |
+            | Test Steps | ${hasTestSteps ? '✅ Present' : '⚠️ Missing'} |
+
+            ${issueFound && hasSolution && hasTestSteps ? '✅ All checks passed!' : '⚠️ Some optional sections are missing. Consider adding them for better review context.'}
+            `;
+
+            await core.summary
+              .addRaw(summary)
+              .write();
