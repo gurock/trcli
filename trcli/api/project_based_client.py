@@ -6,6 +6,7 @@ from trcli.cli import Environment
 from trcli.constants import ProjectErrors, FAULT_MAPPING, SuiteModes, PROMPT_MESSAGES
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+import trcli
 
 
 class ProjectBasedClient:
@@ -36,27 +37,25 @@ class ProjectBasedClient:
         proxy = self.environment.proxy  # Will be None if --proxy is not defined
         noproxy = self.environment.noproxy  # Will be None if --noproxy is not defined
         proxy_user = self.environment.proxy_user
+
+        # Generate uploader metadata
+        uploader_metadata = APIClient.build_uploader_metadata(version=trcli.__version__)
+
+        # Build client configuration
+        client_kwargs = {
+            "verbose_logging_function": verbose_logging_function,
+            "logging_function": logging_function,
+            "verify": not self.environment.insecure,
+            "proxy": proxy,
+            "proxy_user": proxy_user,
+            "noproxy": noproxy,
+            "uploader_metadata": uploader_metadata
+        }
+
         if self.environment.timeout:
-            api_client = APIClient(
-                self.environment.host,
-                verbose_logging_function=verbose_logging_function,
-                logging_function=logging_function,
-                timeout=self.environment.timeout,
-                verify=not self.environment.insecure,
-                proxy=proxy,
-                proxy_user=proxy_user,
-                noproxy=noproxy
-            )
-        else:
-            api_client = APIClient(
-                self.environment.host,
-                logging_function=logging_function,
-                verbose_logging_function=verbose_logging_function,
-                verify=not self.environment.insecure,
-                proxy=proxy,
-                proxy_user=proxy_user,
-                noproxy=noproxy
-            )
+            client_kwargs["timeout"] = self.environment.timeout
+
+        api_client = APIClient(self.environment.host, **client_kwargs)
         api_client.username = self.environment.username
         api_client.password = self.environment.password
         api_client.api_key = self.environment.key

@@ -65,7 +65,11 @@ FAULT_MAPPING = dict(
     proxy_invalid_configuration= "The provided proxy configuration is invalid. Please check the proxy URL and format.",
     ssl_error_on_proxy= "SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
     no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy.",
-    no_suites_found= "The project {project_id} does not have any suites."
+    no_suites_found= "The project {project_id} does not have any suites.",
+    invalid_json_response= "Received invalid response from TestRail server (HTTP {status_code}). "
+    "Please verify your TestRail host URL (-h) is correct and points to a valid TestRail instance. "
+    "Response preview: {response_preview}",
+    invalid_api_response= "Invalid response from TestRail API: {error_details}"
 )
 
 COMMAND_FAULT_MAPPING = dict(
