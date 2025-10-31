@@ -1,6 +1,13 @@
+# Pre-commit hooks for code quality, security, and policy enforcement
+# Install: pip install pre-commit
+# Setup: pre-commit install && pre-commit install --hook-type commit-msg
+# Run manually: pre-commit run --all-files
+
 repos:
--   repo: https://github.com/psf/black
-    rev: stable
+  # Code formatting
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
     hooks:
-    - id: black
-      language_version: python3.8
+      - id: black
+        language_version: python3.10
+        args: [--line-length=120]

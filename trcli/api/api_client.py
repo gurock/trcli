@@ -1,5 +1,8 @@
 import json
 from pathlib import Path
+import platform
+import os
+import base64
 
 import requests
 from beartype.typing import Union, Callable, Dict, List
@@ -49,7 +52,8 @@ class APIClient:
         verify: bool = True,
         proxy: str = None, #added proxy params
         proxy_user: str = None,
-        noproxy: str = None, 
+        noproxy: str = None,
+        uploader_metadata: str = None,
     ):
         self.username = ""
         self.password = ""
@@ -62,7 +66,8 @@ class APIClient:
         self.__validate_and_set_timeout(timeout)
         self.proxy = proxy
         self.proxy_user = proxy_user
-        self.noproxy = noproxy.split(',') if noproxy else [] 
+        self.noproxy = noproxy.split(',') if noproxy else []
+        self.uploader_metadata = uploader_metadata 
         
         if not host_name.endswith("/"):
             host_name = host_name + "/"
@@ -99,6 +104,7 @@ class APIClient:
         auth = HTTPBasicAuth(username=self.username, password=password)
         headers = {"User-Agent": self.USER_AGENT}
         headers.update(self.__get_proxy_headers())
+        headers.update(self.__get_uploader_metadata_headers())
         if files is None and not as_form_data:
             headers["Content-Type"] = "application/json"
         verbose_log_message = ""
@@ -107,7 +113,7 @@ class APIClient:
             error_message = ""
             try:
                 verbose_log_message = APIClient.format_request_for_vlog(
-                    method=method, url=url, payload=payload
+                    method=method, url=url, payload=payload, headers=headers
                 )
                 if method == "POST":
                     request_kwargs = {
@@ -177,8 +183,12 @@ class APIClient:
                         response_text = response.json()
                     error_message = response_text.get("error", "")
                 except (JSONDecodeError, ValueError):
+                    response_preview = response.content[:200].decode('utf-8', errors='ignore')
                     response_text = str(response.content)
-                    error_message = response.content
+                    error_message = FAULT_MAPPING["invalid_json_response"].format(
+                        status_code=status_code,
+                        response_preview=response_preview
+                    )
                 except AttributeError:
                     error_message = ""
                 verbose_log_message = (
@@ -207,6 +217,15 @@ class APIClient:
             headers["Proxy-Authorization"] = f"Basic {user_pass_encoded}"
             print(f"Proxy authentication header added: {headers['Proxy-Authorization']}")
 
+        return headers
+
+    def __get_uploader_metadata_headers(self) -> Dict[str, str]:
+        """
+        Returns headers for uploader metadata.
+        """
+        headers = {}
+        if self.uploader_metadata:
+            headers["X-Uploader-Metadata"] = self.uploader_metadata
         return headers
 
     def _get_proxies_for_request(self, url: str) -> Dict[str, str]:
@@ -277,12 +296,38 @@ class APIClient:
             self.timeout = DEFAULT_API_CALL_TIMEOUT
 
     @staticmethod
-    def format_request_for_vlog(method: str, url: str, payload: dict):
-        return (
+    def build_uploader_metadata(version: str) -> str:
+        """
+        Build uploader metadata as base64-encoded JSON.
+
+        :param version: Application version
+        :returns: Base64-encoded metadata string
+        """
+        data = {
+            "app_name": "trcli",
+            "app_version": version,
+            "os": platform.system().lower(),
+            "arch": platform.machine(),
+            "run_mode": "ci" if os.getenv("CI") else "other",
+            "container": os.path.exists("/.dockerenv"),
+        }
+
+        return base64.b64encode(json.dumps(data).encode()).decode()
+
+    @staticmethod
+    def format_request_for_vlog(method: str, url: str, payload: dict, headers: dict = None):
+        log_message = (
             f"\n**** API Call\n"
             f"method: {method}\n"
-            f"url: {url}\n" + (f"payload: {payload}\n" if payload else "")
+            f"url: {url}\n"
         )
+        if headers:
+            log_message += "headers:\n"
+            for key, value in headers.items():
+                log_message += f"  {key}: {value}\n"
+        if payload:
+            log_message += f"payload: {payload}\n"
+        return log_message
 
     @staticmethod
     def format_response_for_vlog(status_code, body):

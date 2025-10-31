@@ -6,6 +6,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.3]
+
+_released 10-31-2025
+
+### Added
+ - Enhanced TRCLI analytics integration with TestRail API enabling better tracking and insight into usage patterns.
+ - Introduced new development workflow improvements to streamline the contributor and release process.
+
 ## [1.12.2]
 
 _released 10-16-2025

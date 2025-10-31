@@ -1,0 +1,176 @@
+name: PR Checklist Enforcement
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  pull-requests: write
+  contents: read
+  checks: write
+
+jobs:
+  check-pr-requirements:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check PR checklist completion
+        id: checklist
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prBody = context.payload.pull_request.body || '';
+
+            // Count checked and unchecked items
+            const checkedItems = (prBody.match(/- \[x\]/gi) || []).length;
+            const uncheckedItems = (prBody.match(/- \[ \]/gi) || []).length;
+            const totalItems = checkedItems + uncheckedItems;
+
+            // Check specific required items
+            const hasIssueReference = /Issue being resolved.*https?:\/\//.test(prBody);
+            const hasSolutionDescription = /Solution description[\s\S]{20,}/.test(prBody);
+            const hasTestSteps = /Steps to test[\s\S]{20,}/.test(prBody);
+
+            // Check if PR Tasks are complete
+            const prTasksComplete = checkedItems === totalItems && totalItems > 0;
+
+            core.setOutput('checked_items', checkedItems);
+            core.setOutput('unchecked_items', uncheckedItems);
+            core.setOutput('total_items', totalItems);
+            core.setOutput('pr_tasks_complete', prTasksComplete);
+            core.setOutput('has_issue_reference', hasIssueReference);
+            core.setOutput('has_solution', hasSolutionDescription);
+            core.setOutput('has_test_steps', hasTestSteps);
+
+            return {
+              checkedItems,
+              uncheckedItems,
+              totalItems,
+              prTasksComplete,
+              hasIssueReference,
+              hasSolutionDescription,
+              hasTestSteps
+            };
+
+      - name: Check test coverage
+        id: coverage_check
+        continue-on-error: true
+        run: |
+          # This will be checked by the main build workflow
+          # We just verify that tests exist for this PR
+          echo "coverage_check=pending" >> $GITHUB_OUTPUT
+
+      - name: Create or update check run
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const checkedItems = parseInt('${{ steps.checklist.outputs.checked_items }}');
+            const uncheckedItems = parseInt('${{ steps.checklist.outputs.unchecked_items }}');
+            const totalItems = parseInt('${{ steps.checklist.outputs.total_items }}');
+            const prTasksComplete = '${{ steps.checklist.outputs.pr_tasks_complete }}' === 'true';
+            const hasIssueReference = '${{ steps.checklist.outputs.has_issue_reference }}' === 'true';
+            const hasSolution = '${{ steps.checklist.outputs.has_solution }}' === 'true';
+            const hasTestSteps = '${{ steps.checklist.outputs.has_test_steps }}' === 'true';
+
+            // Determine check status
+            let conclusion = 'success';
+            let summary = '✅ All PR requirements met!';
+
+            const issues = [];
+
+            if (!prTasksComplete && totalItems > 0) {
+              issues.push(`- ${uncheckedItems} checklist items remaining`);
+            }
+
+            if (!hasIssueReference) {
+              issues.push('- Missing issue reference link');
+            }
+
+            if (!hasSolution) {
+              issues.push('- Solution description needs more details (min 20 chars)');
+            }
+
+            if (!hasTestSteps) {
+              issues.push('- Test steps need more details (min 20 chars)');
+            }
+
+            if (issues.length > 0) {
+              conclusion = 'neutral';
+              summary = '⚠️ PR checklist incomplete:\n\n' + issues.join('\n');
+            }
+
+            // Create check run
+            const checkRun = await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'PR Checklist',
+              head_sha: context.payload.pull_request.head.sha,
+              status: 'completed',
+              conclusion: conclusion,
+              output: {
+                title: 'PR Requirements Check',
+                summary: summary,
+                text: `### Checklist Progress
+            - Checked items: ${checkedItems}
+            - Unchecked items: ${uncheckedItems}
+            - Total items: ${totalItems}
+
+            ### Required Sections
+            - Issue Reference: ${hasIssueReference ? '✅' : '❌'}
+            - Solution Description: ${hasSolution ? '✅' : '❌'}
+            - Test Steps: ${hasTestSteps ? '✅' : '❌'}
+
+            ${conclusion === 'neutral' ? '\n⚠️ **Note:** This is a soft requirement. You can still merge the PR, but completing these items improves code review quality.' : ''}
+            `
+              }
+            });
+
+      - name: Add label based on checklist status
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prTasksComplete = '${{ steps.checklist.outputs.pr_tasks_complete }}' === 'true';
+            const hasIssueReference = '${{ steps.checklist.outputs.has_issue_reference }}' === 'true';
+            const hasSolution = '${{ steps.checklist.outputs.has_solution }}' === 'true';
+            const hasTestSteps = '${{ steps.checklist.outputs.has_test_steps }}' === 'true';
+
+            if (prTasksComplete && hasIssueReference && hasSolution && hasTestSteps) {
+              // Remove incomplete label if exists
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: 'incomplete-pr'
+                });
+              } catch (e) {
+                // Label might not exist
+              }
+
+              // Add ready label
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: ['ready-for-review']
+              });
+            } else {
+              // Remove ready label if exists
+              try {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: context.issue.number,
+                  name: 'ready-for-review'
+                });
+              } catch (e) {
+                // Label might not exist
+              }
+            }

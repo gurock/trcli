@@ -977,6 +977,12 @@ class ApiRequestHandler:
             # Endpoints without pagination (legacy)
             if isinstance(response.response_text, list):
                 return response.response_text, response.error_message
+            # Check if response is a string (JSON parse failed)
+            if isinstance(response.response_text, str):
+                error_msg = FAULT_MAPPING["invalid_api_response"].format(
+                    error_details=response.response_text[:200]
+                )
+                return [], error_msg
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
