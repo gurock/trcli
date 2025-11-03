@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.4]
+
+_released 11-03-2025
+
+### Fixed
+ - Fixed an issue where some empty API responses are blocked/treated as error due to stricter configuration checks.
+
 ## [1.12.3]
 
 _released 10-31-2025
