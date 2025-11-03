@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 _released 11-03-2025
 
 ### Fixed
- - Fixed an issue where some empty API requests are blocked/treated as error due to stricter configuration checks.
+ - Fixed an issue where some empty API responses are blocked/treated as error due to stricter configuration checks.
 
 ## [1.12.3]
 
