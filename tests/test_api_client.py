@@ -419,3 +419,39 @@ class TestAPIClient:
         # Should NOT have JSON content type header when using files
         headers = call_args[1]["headers"]
         assert headers.get("Content-Type") != "application/json"
+
+    @pytest.mark.api_client
+    def test_empty_response_is_valid(self, api_resources_maker, requests_mock):
+        """Test that empty response body with HTTP 200 is treated as valid (e.g., for DELETE operations)."""
+        api_client = api_resources_maker()
+        api_client.uploader_metadata = "test_metadata_value"
+
+        # DELETE operations may return empty body with HTTP 200
+        requests_mock.post(create_url("delete_section/123"), status_code=200, content=b"")
+
+        response = api_client.send_post("delete_section/123")
+
+        # Verify that the request was made only once (no retry)
+        assert requests_mock.call_count == 1
+
+        # Verify successful response with empty dict
+        check_response(200, {}, "", response)
+
+    @pytest.mark.api_client
+    def test_metadata_header_sent_when_enabled(self, api_resources_maker, requests_mock):
+        """Test that X-Uploader-Metadata header is sent when enabled."""
+        api_client = api_resources_maker()
+        test_metadata = "test_metadata_value"
+        api_client.uploader_metadata = test_metadata
+
+        requests_mock.get(create_url("get_projects"), json=FAKE_PROJECT_DATA)
+
+        response = api_client.send_get("get_projects")
+
+        # Check that metadata header was sent
+        request_headers = requests_mock.last_request.headers
+        assert "X-Uploader-Metadata" in request_headers
+        assert request_headers["X-Uploader-Metadata"] == test_metadata
+
+        # Verify successful response
+        check_response(200, FAKE_PROJECT_DATA, "", response)
