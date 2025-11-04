@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.0]
+
+_released 12-01-2025
+
+### Fixed
+ - Added new BDD/Gherkin parser command parse_bdd for behavioral driven development-related testing
+
 ## [1.12.4]
 
 _released 11-03-2025
