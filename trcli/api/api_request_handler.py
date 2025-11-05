@@ -7,7 +7,9 @@ from trcli.api.api_response_verify import ApiResponseVerify
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
-    FAULT_MAPPING, OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID,
+    FAULT_MAPPING,
+    OLD_SYSTEM_NAME_AUTOMATION_ID,
+    UPDATED_SYSTEM_NAME_AUTOMATION_ID,
 )
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
@@ -33,7 +35,7 @@ class ApiRequestHandler:
             environment.case_fields,
             environment.run_description,
             environment.result_fields,
-            environment.section_id
+            environment.section_id,
         )
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
@@ -48,11 +50,11 @@ class ApiRequestHandler:
         if not response.error_message:
             fields: List = response.response_text
             automation_id_field = next(
-                    filter(
+                filter(
                     lambda x: x["system_name"] in [OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID],
-                    fields
+                    fields,
                 ),
-                None
+                None,
             )
             if automation_id_field:
                 if automation_id_field["is_active"] is False:
@@ -79,11 +81,7 @@ class ApiRequestHandler:
         """
         projects_data, error = self.__get_all_projects()
         if not error:
-            available_projects = [
-                project
-                for project in projects_data
-                if project["name"] == project_name
-            ]
+            available_projects = [project for project in projects_data if project["name"] == project_name]
 
             if len(available_projects) == 1:
                 return ProjectData(
@@ -94,9 +92,7 @@ class ApiRequestHandler:
             elif len(available_projects) > 1:
                 if project_id in [project["id"] for project in available_projects]:
                     project_index = [
-                        index
-                        for index, project in enumerate(available_projects)
-                        if project["id"] == project_id
+                        index for index, project in enumerate(available_projects) if project["id"] == project_id
                     ][0]
                     return ProjectData(
                         project_id=int(available_projects[project_index]["id"]),
@@ -131,11 +127,7 @@ class ApiRequestHandler:
         suite_id = self.suites_data_from_provider.suite_id
         suites_data, error = self.__get_all_suites(project_id)
         if not error:
-            available_suites = [
-                suite
-                for suite in suites_data
-                if suite["id"] == suite_id
-            ]
+            available_suites = [suite for suite in suites_data if suite["id"] == suite_id]
             return (
                 (True, "")
                 if len(available_suites) > 0
@@ -207,9 +199,7 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_suite/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
-                if not self.response_verifier.verify_returned_data(
-                    body, response.response_text
-                ):
+                if not self.response_verifier.verify_returned_data(body, response.response_text):
                     responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
@@ -224,9 +214,11 @@ class ApiRequestHandler:
             }
             for response in responses
         ]
-        self.data_provider.update_data(suite_data=returned_resources) if len(
-            returned_resources
-        ) > 0 else "Update skipped"
+        (
+            self.data_provider.update_data(suite_data=returned_resources)
+            if len(returned_resources) > 0
+            else "Update skipped"
+        )
         return returned_resources, error_message
 
     def check_missing_section_ids(self, project_id: int) -> Tuple[bool, str]:
@@ -246,20 +238,24 @@ class ApiRequestHandler:
                 if self.environment.section_id:
                     if section.section_id in sections_by_id.keys():
                         section_json = sections_by_id[section.section_id]
-                        section_data.append({
-                            "section_id": section_json["id"],
-                            "suite_id": section_json["suite_id"],
-                            "name": section_json["name"],
-                        })
+                        section_data.append(
+                            {
+                                "section_id": section_json["id"],
+                                "suite_id": section_json["suite_id"],
+                                "name": section_json["name"],
+                            }
+                        )
                     else:
                         missing_test_sections = True
                 if section.name in sections_by_name.keys():
                     section_json = sections_by_name[section.name]
-                    section_data.append({
-                        "section_id": section_json["id"],
-                        "suite_id": section_json["suite_id"],
-                        "name": section_json["name"],
-                    })
+                    section_data.append(
+                        {
+                            "section_id": section_json["id"],
+                            "suite_id": section_json["suite_id"],
+                            "name": section_json["name"],
+                        }
+                    )
                 else:
                     missing_test_sections = True
             self.data_provider.update_data(section_data=section_data)
@@ -281,9 +277,7 @@ class ApiRequestHandler:
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
                 responses.append(response)
-                if not self.response_verifier.verify_returned_data(
-                    body, response.response_text
-                ):
+                if not self.response_verifier.verify_returned_data(body, response.response_text):
                     responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
@@ -298,9 +292,11 @@ class ApiRequestHandler:
             }
             for response in responses
         ]
-        self.data_provider.update_data(section_data=returned_resources) if len(
-            returned_resources
-        ) > 0 else "Update skipped"
+        (
+            self.data_provider.update_data(section_data=returned_resources)
+            if len(returned_resources) > 0
+            else "Update skipped"
+        )
         return returned_resources, error_message
 
     def check_missing_test_cases_ids(self, project_id: int) -> Tuple[bool, str]:
@@ -327,12 +323,14 @@ class ApiRequestHandler:
                     aut_id = test_case.custom_automation_id
                     if aut_id in test_cases_by_aut_id.keys():
                         case = test_cases_by_aut_id[aut_id]
-                        test_case_data.append({
-                            "case_id": case["id"],
-                            "section_id": case["section_id"],
-                            "title": case["title"],
-                            OLD_SYSTEM_NAME_AUTOMATION_ID: aut_id
-                        })
+                        test_case_data.append(
+                            {
+                                "case_id": case["id"],
+                                "section_id": case["section_id"],
+                                "title": case["title"],
+                                OLD_SYSTEM_NAME_AUTOMATION_ID: aut_id,
+                            }
+                        )
                     else:
                         missing_cases_number += 1
             self.data_provider.update_data(case_data=test_case_data)
@@ -386,25 +384,25 @@ class ApiRequestHandler:
             {
                 "case_id": response.response_text["id"],
                 "section_id": response.response_text["section_id"],
-                "title": response.response_text["title"]
+                "title": response.response_text["title"],
             }
             for response in responses
         ]
         return returned_resources, error_message
 
     def add_run(
-            self,
-            project_id: int,
-            run_name: str,
-            milestone_id: int = None,
-            start_date: str = None,
-            end_date: str = None,
-            plan_id: int = None,
-            config_ids: List[int] = None,
-            assigned_to_id: int = None,
-            include_all: bool = False,
-            refs: str = None,
-            case_ids: List[int] = None,
+        self,
+        project_id: int,
+        run_name: str,
+        milestone_id: int = None,
+        start_date: str = None,
+        end_date: str = None,
+        plan_id: int = None,
+        config_ids: List[int] = None,
+        assigned_to_id: int = None,
+        include_all: bool = False,
+        refs: str = None,
+        case_ids: List[int] = None,
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
@@ -432,7 +430,7 @@ class ApiRequestHandler:
                     "name": add_run_data["name"],
                     "suite_id": add_run_data["suite_id"],
                     "config_ids": config_ids,
-                    "runs": [add_run_data]
+                    "runs": [add_run_data],
                 }
             else:
                 entry_data = add_run_data
@@ -440,8 +438,16 @@ class ApiRequestHandler:
             run_id = response.response_text["runs"][0]["id"]
         return run_id, response.error_message
 
-    def update_run(self, run_id: int, run_name: str, start_date: str = None,
-            end_date: str = None, milestone_id: int = None, refs: str = None, refs_action: str = 'add') -> Tuple[dict, str]:
+    def update_run(
+        self,
+        run_id: int,
+        run_name: str,
+        start_date: str = None,
+        end_date: str = None,
+        milestone_id: int = None,
+        refs: str = None,
+        refs_action: str = "add",
+    ) -> Tuple[dict, str]:
         """
         Updates an existing run
         :run_id: run id
@@ -453,12 +459,13 @@ class ApiRequestHandler:
         run_response = self.client.send_get(f"get_run/{run_id}")
         if run_response.error_message:
             return None, run_response.error_message
-            
+
         existing_description = run_response.response_text.get("description", "")
         existing_refs = run_response.response_text.get("refs", "")
 
-        add_run_data = self.data_provider.add_run(run_name, start_date=start_date,
-            end_date=end_date, milestone_id=milestone_id)
+        add_run_data = self.data_provider.add_run(
+            run_name, start_date=start_date, end_date=end_date, milestone_id=milestone_id
+        )
         add_run_data["description"] = existing_description  # Retain the current description
 
         # Handle references based on action
@@ -473,7 +480,7 @@ class ApiRequestHandler:
         report_case_ids = add_run_data["case_ids"]
         joint_case_ids = list(set(report_case_ids + run_case_ids))
         add_run_data["case_ids"] = joint_case_ids
-        
+
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
         if not plan_id:
@@ -505,29 +512,29 @@ class ApiRequestHandler:
         """
         if not existing_refs:
             existing_refs = ""
-        
-        if action == 'update':
+
+        if action == "update":
             # Replace all references with new ones
             return new_refs
-        elif action == 'delete':
+        elif action == "delete":
             if not new_refs:
                 # Delete all references
                 return ""
             else:
                 # Delete specific references
-                existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
-                refs_to_delete = [ref.strip() for ref in new_refs.split(',') if ref.strip()]
+                existing_list = [ref.strip() for ref in existing_refs.split(",") if ref.strip()]
+                refs_to_delete = [ref.strip() for ref in new_refs.split(",") if ref.strip()]
                 updated_list = [ref for ref in existing_list if ref not in refs_to_delete]
-                return ','.join(updated_list)
+                return ",".join(updated_list)
         else:  # action == 'add' (default)
             # Add new references to existing ones
             if not existing_refs:
                 return new_refs
-            existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
-            new_list = [ref.strip() for ref in new_refs.split(',') if ref.strip()]
+            existing_list = [ref.strip() for ref in existing_refs.split(",") if ref.strip()]
+            new_list = [ref.strip() for ref in new_refs.split(",") if ref.strip()]
             # Avoid duplicates
             combined_list = existing_list + [ref for ref in new_list if ref not in existing_list]
-            return ','.join(combined_list)
+            return ",".join(combined_list)
 
     def append_run_references(self, run_id: int, references: List[str]) -> Tuple[Dict, List[str], List[str], str]:
         """
@@ -540,11 +547,11 @@ class ApiRequestHandler:
         run_response = self.client.send_get(f"get_run/{run_id}")
         if run_response.error_message:
             return None, [], [], run_response.error_message
-        
+
         existing_refs = run_response.response_text.get("refs", "") or ""
-        
+
         # Parse existing and new references
-        existing_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
+        existing_list = [ref.strip() for ref in existing_refs.split(",") if ref.strip()] if existing_refs else []
         # Deduplicate input references
         new_list = []
         seen = set()
@@ -553,28 +560,33 @@ class ApiRequestHandler:
             if ref_clean and ref_clean not in seen:
                 new_list.append(ref_clean)
                 seen.add(ref_clean)
-        
+
         # Determine which references are new vs duplicates
         added_refs = [ref for ref in new_list if ref not in existing_list]
         skipped_refs = [ref for ref in new_list if ref in existing_list]
-        
+
         # If no new references to add, return current state
         if not added_refs:
             return run_response.response_text, added_refs, skipped_refs, None
-        
+
         # Combine references
         combined_list = existing_list + added_refs
-        combined_refs = ','.join(combined_list)
-        
+        combined_refs = ",".join(combined_list)
+
         if len(combined_refs) > 250:
-            return None, [], [], f"Combined references length ({len(combined_refs)} characters) exceeds 250 character limit"
-        
+            return (
+                None,
+                [],
+                [],
+                f"Combined references length ({len(combined_refs)} characters) exceeds 250 character limit",
+            )
+
         update_data = {"refs": combined_refs}
-        
+
         # Determine the correct API endpoint based on plan membership
         plan_id = run_response.response_text.get("plan_id")
         config_ids = run_response.response_text.get("config_ids")
-        
+
         if not plan_id:
             # Standalone run
             update_response = self.client.send_post(f"update_run/{run_id}", update_data)
@@ -586,7 +598,7 @@ class ApiRequestHandler:
             plan_response = self.client.send_get(f"get_plan/{plan_id}")
             if plan_response.error_message:
                 return None, [], [], f"Failed to get plan details: {plan_response.error_message}"
-            
+
             # Find the entry_id for this run
             entry_id = None
             for entry in plan_response.response_text.get("entries", []):
@@ -596,19 +608,21 @@ class ApiRequestHandler:
                         break
                 if entry_id:
                     break
-            
+
             if not entry_id:
                 return None, [], [], f"Could not find plan entry for run {run_id}"
-            
+
             update_response = self.client.send_post(f"update_plan_entry/{plan_id}/{entry_id}", update_data)
-        
+
         if update_response.error_message:
             return None, [], [], update_response.error_message
-        
+
         updated_run_response = self.client.send_get(f"get_run/{run_id}")
         return updated_run_response.response_text, added_refs, skipped_refs, updated_run_response.error_message
 
-    def update_existing_case_references(self, case_id: int, junit_refs: str, strategy: str = "append") -> Tuple[bool, str, List[str], List[str]]:
+    def update_existing_case_references(
+        self, case_id: int, junit_refs: str, strategy: str = "append"
+    ) -> Tuple[bool, str, List[str], List[str]]:
         """
         Update existing case references with values from JUnit properties.
         :param case_id: ID of the test case
@@ -618,62 +632,69 @@ class ApiRequestHandler:
         """
         if not junit_refs or not junit_refs.strip():
             return True, None, [], []  # No references to process
-        
+
         # Parse and validate JUnit references, deduplicating input
         junit_ref_list = []
         seen = set()
-        for ref in junit_refs.split(','):
+        for ref in junit_refs.split(","):
             ref_clean = ref.strip()
             if ref_clean and ref_clean not in seen:
                 junit_ref_list.append(ref_clean)
                 seen.add(ref_clean)
-        
+
         if not junit_ref_list:
             return False, "No valid references found in JUnit property", [], []
-        
+
         # Get current case data
         case_response = self.client.send_get(f"get_case/{case_id}")
         if case_response.error_message:
             return False, case_response.error_message, [], []
-        
-        existing_refs = case_response.response_text.get('refs', '') or ''
-        
+
+        existing_refs = case_response.response_text.get("refs", "") or ""
+
         if strategy == "replace":
             # Replace strategy: use JUnit refs as-is
-            new_refs = ','.join(junit_ref_list)
+            new_refs = ",".join(junit_ref_list)
             added_refs = junit_ref_list
             skipped_refs = []
         else:
             # Append strategy: combine with existing refs, avoiding duplicates
-            existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()] if existing_refs else []
-            
+            existing_ref_list = (
+                [ref.strip() for ref in existing_refs.split(",") if ref.strip()] if existing_refs else []
+            )
+
             # Determine which references are new vs duplicates
             added_refs = [ref for ref in junit_ref_list if ref not in existing_ref_list]
             skipped_refs = [ref for ref in junit_ref_list if ref in existing_ref_list]
-            
+
             # If no new references to add, return current state
             if not added_refs:
                 return True, None, added_refs, skipped_refs
-            
+
             # Combine references
             combined_list = existing_ref_list + added_refs
-            new_refs = ','.join(combined_list)
-        
+            new_refs = ",".join(combined_list)
+
         # Validate 2000 character limit for test case references
         if len(new_refs) > 2000:
-            return False, f"Combined references length ({len(new_refs)} characters) exceeds 2000 character limit", [], []
-        
+            return (
+                False,
+                f"Combined references length ({len(new_refs)} characters) exceeds 2000 character limit",
+                [],
+                [],
+            )
+
         # Update the case
         update_data = {"refs": new_refs}
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
-        
+
         if update_response.error_message:
             return False, update_response.error_message, [], []
-        
+
         return True, None, added_refs, skipped_refs
 
     def upload_attachments(self, report_results: [Dict], results: List[Dict], run_id: int):
-        """ Getting test result id and upload attachments for it. """
+        """Getting test result id and upload attachments for it."""
         tests_in_run, error = self.__get_all_tests_in_run(run_id)
         if not error:
             for report_result in report_results:
@@ -698,26 +719,18 @@ class ApiRequestHandler:
         responses = []
         error_message = ""
         # Get pre-validated user IDs if available
-        user_ids = getattr(self.environment, '_validated_user_ids', [])
-        
-        add_results_data_chunks = self.data_provider.add_results_for_cases(
-            self.environment.batch_size, user_ids
-        )
-        # Get assigned count from data provider
-        assigned_count = getattr(self.data_provider, '_assigned_count', 0)
-        
-        results_amount = sum(
-            [len(results["results"]) for results in add_results_data_chunks]
-        )
+        user_ids = getattr(self.environment, "_validated_user_ids", [])
 
-        with self.environment.get_progress_bar(
-            results_amount=results_amount, prefix="Adding results"
-        ) as progress_bar:
+        add_results_data_chunks = self.data_provider.add_results_for_cases(self.environment.batch_size, user_ids)
+        # Get assigned count from data provider
+        assigned_count = getattr(self.data_provider, "_assigned_count", 0)
+
+        results_amount = sum([len(results["results"]) for results in add_results_data_chunks])
+
+        with self.environment.get_progress_bar(results_amount=results_amount, prefix="Adding results") as progress_bar:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS_ADD_RESULTS) as executor:
                 futures = {
-                    executor.submit(
-                        self.client.send_post, f"add_results_for_cases/{run_id}", body
-                    ): body
+                    executor.submit(self.client.send_post, f"add_results_for_cases/{run_id}", body): body
                     for body in add_results_data_chunks
                 }
                 responses, error_message = self.handle_futures(
@@ -730,11 +743,7 @@ class ApiRequestHandler:
                 # Iterate through futures to get all responses from done tasks (not cancelled)
                 responses = ApiRequestHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
-        results = [
-            result
-            for results_list in responses
-            for result in results_list
-        ]
+        results = [result for results_list in responses for result in results_list]
         report_results_w_attachments = []
         for results_data_chunk in add_results_data_chunks:
             for test_result in results_data_chunk["results"]:
@@ -744,22 +753,22 @@ class ApiRequestHandler:
             attachments_count = 0
             for result in report_results_w_attachments:
                 attachments_count += len(result["attachments"])
-            self.environment.log(f"Uploading {attachments_count} attachments "
-                                 f"for {len(report_results_w_attachments)} test results.")
+            self.environment.log(
+                f"Uploading {attachments_count} attachments " f"for {len(report_results_w_attachments)} test results."
+            )
             self.upload_attachments(report_results_w_attachments, results, run_id)
         else:
             self.environment.log(f"No attachments found to upload.")
-        
+
         # Log assignment results if assignment was performed
         if user_ids:
-            total_failed = getattr(self.data_provider, '_total_failed_count', assigned_count)
+            total_failed = getattr(self.data_provider, "_total_failed_count", assigned_count)
             if assigned_count > 0:
                 self.environment.log(f"Assigning failed results: {assigned_count}/{total_failed}, Done.")
             else:
                 self.environment.log(f"Assigning failed results: 0/0, Done.")
-        
-        return responses, error_message, progress_bar.n
 
+        return responses, error_message, progress_bar.n
 
     def handle_futures(self, futures, action_string, progress_bar) -> Tuple[list, str]:
         responses = []
@@ -776,9 +785,7 @@ class ApiRequestHandler:
                         if action_string == "add_case":
                             arguments = arguments.to_dict()
                             arguments.pop("case_id")
-                        if not self.response_verifier.verify_returned_data(
-                            arguments, response.response_text
-                        ):
+                        if not self.response_verifier.verify_returned_data(arguments, response.response_text):
                             responses.append(response)
                             error_message = FAULT_MAPPING["data_verification_error"]
                             self.__cancel_running_futures(futures, action_string)
@@ -786,9 +793,7 @@ class ApiRequestHandler:
                         progress_bar.update(1)
                 else:
                     error_message = response.error_message
-                    self.environment.log(
-                        f"\nError during {action_string}. Trying to cancel scheduled tasks."
-                    )
+                    self.environment.log(f"\nError during {action_string}. Trying to cancel scheduled tasks.")
                     self.__cancel_running_futures(futures, action_string)
                     break
             else:
@@ -826,9 +831,7 @@ class ApiRequestHandler:
         responses = []
         error_message = ""
         for section in added_sections:
-            response = self.client.send_post(
-                f"delete_section/{section['section_id']}", payload={}
-            )
+            response = self.client.send_post(f"delete_section/{section['section_id']}", payload={})
             if not response.error_message:
                 responses.append(response.response_text)
             else:
@@ -868,45 +871,52 @@ class ApiRequestHandler:
     def get_user_by_email(self, email: str) -> Tuple[Union[int, None], str]:
         """
         Validates a user email and returns the user ID if valid.
-        
+
         :param email: User email to validate
         :returns: Tuple with user ID (or None if not found) and error message
         """
         if not email or not email.strip():
             return None, "Email cannot be empty"
-        
+
         email = email.strip()
         # Use proper URL encoding for the query parameter
         import urllib.parse
+
         encoded_email = urllib.parse.quote_plus(email)
         response = self.client.send_get(f"get_user_by_email&email={encoded_email}")
-        
+
         if response.error_message:
             # Map TestRail's email validation error to our expected format
             if "Field :email is not a valid email address" in response.error_message:
                 return None, f"User not found: {email}"
             return None, response.error_message
-        
+
         if response.status_code == 200:
             try:
                 user_data = response.response_text
-                if isinstance(user_data, dict) and 'id' in user_data:
-                    return user_data['id'], ""
+                if isinstance(user_data, dict) and "id" in user_data:
+                    return user_data["id"], ""
                 else:
                     return None, f"Invalid response format for user: {email}"
             except (KeyError, TypeError):
                 return None, f"Invalid response format for user: {email}"
         elif response.status_code == 400:
             # Check if the response contains the email validation error
-            if (hasattr(response, 'response_text') and response.response_text and 
-                isinstance(response.response_text, dict) and 
-                "Field :email is not a valid email address" in str(response.response_text.get('error', ''))):
+            if (
+                hasattr(response, "response_text")
+                and response.response_text
+                and isinstance(response.response_text, dict)
+                and "Field :email is not a valid email address" in str(response.response_text.get("error", ""))
+            ):
                 return None, f"User not found: {email}"
             return None, f"User not found: {email}"
         else:
             # For other status codes, check if it's the email validation error
-            if (hasattr(response, 'response_text') and response.response_text and
-                "Field :email is not a valid email address" in str(response.response_text)):
+            if (
+                hasattr(response, "response_text")
+                and response.response_text
+                and "Field :email is not a valid email address" in str(response.response_text)
+            ):
                 return None, f"User not found: {email}"
             return None, f"API error (status {response.status_code}) when validating user: {email}"
 
@@ -925,9 +935,7 @@ class ApiRequestHandler:
         return response
 
     def __cancel_running_futures(self, futures, action_string):
-        self.environment.log(
-            f"\nAborting: {action_string}. Trying to cancel scheduled tasks."
-        )
+        self.environment.log(f"\nAborting: {action_string}. Trying to cancel scheduled tasks.")
         for future in futures:
             future.cancel()
 
@@ -936,33 +944,33 @@ class ApiRequestHandler:
         Get all cases from all pages
         """
         if suite_id is None:
-            return self.__get_all_entities('cases', f"get_cases/{project_id}")
+            return self.__get_all_entities("cases", f"get_cases/{project_id}")
         else:
-            return self.__get_all_entities('cases', f"get_cases/{project_id}&suite_id={suite_id}")
+            return self.__get_all_entities("cases", f"get_cases/{project_id}&suite_id={suite_id}")
 
     def __get_all_sections(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
         Get all sections from all pages
         """
-        return self.__get_all_entities('sections', f"get_sections/{project_id}&suite_id={suite_id}")
+        return self.__get_all_entities("sections", f"get_sections/{project_id}&suite_id={suite_id}")
 
     def __get_all_tests_in_run(self, run_id=None) -> Tuple[List[dict], str]:
         """
         Get all tests from all pages
         """
-        return self.__get_all_entities('tests', f"get_tests/{run_id}")
+        return self.__get_all_entities("tests", f"get_tests/{run_id}")
 
     def __get_all_projects(self) -> Tuple[List[dict], str]:
         """
         Get all projects from all pages
         """
-        return self.__get_all_entities('projects', f"get_projects")
+        return self.__get_all_entities("projects", f"get_projects")
 
     def __get_all_suites(self, project_id) -> Tuple[List[dict], str]:
         """
         Get all suites from all pages
         """
-        return self.__get_all_entities('suites', f"get_suites/{project_id}")
+        return self.__get_all_entities("suites", f"get_suites/{project_id}")
 
     def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[Dict], str]:
         """
@@ -979,9 +987,7 @@ class ApiRequestHandler:
                 return response.response_text, response.error_message
             # Check if response is a string (JSON parse failed)
             if isinstance(response.response_text, str):
-                error_msg = FAULT_MAPPING["invalid_api_response"].format(
-                    error_details=response.response_text[:200]
-                )
+                error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
                 return [], error_msg
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
@@ -1001,9 +1007,8 @@ class ApiRequestHandler:
         :param title: Title of the label (max 20 characters)
         :returns: Tuple with created label data and error string
         """
-        # Use multipart/form-data like the working CURL command
-        files = {'title': (None, title)}
-        response = self.client.send_post(f"add_label/{project_id}", payload=None, files=files)
+        payload = {"title": title}
+        response = self.client.send_post(f"add_label/{project_id}", payload=payload)
         return response.response_text, response.error_message
 
     def update_label(self, label_id: int, project_id: int, title: str) -> Tuple[dict, str]:
@@ -1014,12 +1019,8 @@ class ApiRequestHandler:
         :param title: New title for the label (max 20 characters)
         :returns: Tuple with updated label data and error string
         """
-        # Use multipart/form-data like add_label
-        files = {
-            'project_id': (None, str(project_id)),
-            'title': (None, title)  # Field name is 'title' (no colon) for form data
-        }
-        response = self.client.send_post(f"update_label/{label_id}", payload=None, files=files)
+        payload = {"project_id": project_id, "title": title}
+        response = self.client.send_post(f"update_label/{label_id}", payload=payload)
         return response.response_text, response.error_message
 
     def get_label(self, label_id: int) -> Tuple[dict, str]:
@@ -1044,11 +1045,11 @@ class ApiRequestHandler:
             params.append(f"offset={offset}")
         if limit != 250:
             params.append(f"limit={limit}")
-        
+
         url = f"get_labels/{project_id}"
         if params:
             url += "&" + "&".join(params)
-            
+
         response = self.client.send_get(url)
         return response.response_text, response.error_message
 
@@ -1068,18 +1069,17 @@ class ApiRequestHandler:
         :param label_ids: List of label IDs to delete
         :returns: Tuple with success status and error string
         """
-        # Send as form data with JSON array format
-        import json
-        label_ids_json = json.dumps(label_ids)
-        files = {"label_ids": (None, label_ids_json)}
-        response = self.client.send_post("delete_labels", payload=None, files=files)
+        payload = {"label_ids": label_ids}
+        response = self.client.send_post("delete_labels", payload=payload)
         success = response.status_code == 200
         return success, response.error_message
 
-    def add_labels_to_cases(self, case_ids: List[int], title: str, project_id: int, suite_id: int = None) -> Tuple[dict, str]:
+    def add_labels_to_cases(
+        self, case_ids: List[int], title: str, project_id: int, suite_id: int = None
+    ) -> Tuple[dict, str]:
         """
         Add a label to multiple test cases
-        
+
         :param case_ids: List of test case IDs
         :param title: Label title (max 20 characters)
         :param project_id: Project ID for validation
@@ -1087,122 +1087,113 @@ class ApiRequestHandler:
         :returns: Tuple with response data and error string
         """
         # Initialize results structure
-        results = {
-            'successful_cases': [], 
-            'failed_cases': [], 
-            'max_labels_reached': [],
-            'case_not_found': []
-        }
-        
+        results = {"successful_cases": [], "failed_cases": [], "max_labels_reached": [], "case_not_found": []}
+
         # Check if project is multi-suite by getting all cases without suite_id
         all_cases_no_suite, error_message = self.__get_all_cases(project_id, None)
         if error_message:
             return results, error_message
-            
+
         # Check if project has multiple suites
         suite_ids = set()
         for case in all_cases_no_suite:
-            if 'suite_id' in case and case['suite_id']:
-                suite_ids.add(case['suite_id'])
-        
+            if "suite_id" in case and case["suite_id"]:
+                suite_ids.add(case["suite_id"])
+
         # If project has multiple suites and no suite_id provided, require it
         if len(suite_ids) > 1 and suite_id is None:
             return results, "This project is multisuite, suite id is required"
-        
+
         # Get all cases to validate that the provided case IDs exist
         all_cases, error_message = self.__get_all_cases(project_id, suite_id)
         if error_message:
             return results, error_message
-        
+
         # Create a set of existing case IDs for quick lookup
-        existing_case_ids = {case['id'] for case in all_cases}
-        
+        existing_case_ids = {case["id"] for case in all_cases}
+
         # Validate case IDs and separate valid from invalid ones
         invalid_case_ids = [case_id for case_id in case_ids if case_id not in existing_case_ids]
         valid_case_ids = [case_id for case_id in case_ids if case_id in existing_case_ids]
-        
+
         # Record invalid case IDs
         for case_id in invalid_case_ids:
-            results['case_not_found'].append(case_id)
-        
+            results["case_not_found"].append(case_id)
+
         # If no valid case IDs, return early
         if not valid_case_ids:
             return results, ""
-        
+
         # Check if label exists or create it
         existing_labels, error_message = self.get_labels(project_id)
         if error_message:
             return results, error_message
-            
+
         # Find existing label with the same title
         label_id = None
-        for label in existing_labels.get('labels', []):
-            if label.get('title') == title:
-                label_id = label.get('id')
+        for label in existing_labels.get("labels", []):
+            if label.get("title") == title:
+                label_id = label.get("id")
                 break
-        
+
         # Create label if it doesn't exist
         if label_id is None:
             label_data, error_message = self.add_label(project_id, title)
             if error_message:
                 return results, error_message
-            label_info = label_data.get('label', label_data)
-            label_id = label_info.get('id')
-        
+            label_info = label_data.get("label", label_data)
+            label_id = label_info.get("id")
+
         # Collect case data and validate constraints
         cases_to_update = []
         for case_id in valid_case_ids:
             # Get current case to check existing labels
             case_response = self.client.send_get(f"get_case/{case_id}")
             if case_response.status_code != 200:
-                results['failed_cases'].append({
-                    'case_id': case_id,
-                    'error': f"Could not retrieve case {case_id}: {case_response.error_message}"
-                })
+                results["failed_cases"].append(
+                    {"case_id": case_id, "error": f"Could not retrieve case {case_id}: {case_response.error_message}"}
+                )
                 continue
-            
+
             case_data = case_response.response_text
-            current_labels = case_data.get('labels', [])
-            
+            current_labels = case_data.get("labels", [])
+
             # Check if label already exists on this case
-            if any(label.get('id') == label_id for label in current_labels):
-                results['successful_cases'].append({
-                    'case_id': case_id,
-                    'message': f"Label '{title}' already exists on case {case_id}"
-                })
+            if any(label.get("id") == label_id for label in current_labels):
+                results["successful_cases"].append(
+                    {"case_id": case_id, "message": f"Label '{title}' already exists on case {case_id}"}
+                )
                 continue
-            
+
             # Check maximum labels limit (10)
             if len(current_labels) >= 10:
-                results['max_labels_reached'].append(case_id)
+                results["max_labels_reached"].append(case_id)
                 continue
-            
+
             # Prepare case for update
-            existing_label_ids = [label.get('id') for label in current_labels if label.get('id')]
+            existing_label_ids = [label.get("id") for label in current_labels if label.get("id")]
             updated_label_ids = existing_label_ids + [label_id]
-            cases_to_update.append({
-                'case_id': case_id,
-                'labels': updated_label_ids
-            })
-        
+            cases_to_update.append({"case_id": case_id, "labels": updated_label_ids})
+
         # Update cases using appropriate endpoint
         if len(cases_to_update) == 1:
             # Single case: use update_case/{case_id}
             case_info = cases_to_update[0]
-            case_update_data = {'labels': case_info['labels']}
-            
+            case_update_data = {"labels": case_info["labels"]}
+
             update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
-            
+
             if update_response.status_code == 200:
-                results['successful_cases'].append({
-                    'case_id': case_info['case_id'],
-                    'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                })
+                results["successful_cases"].append(
+                    {
+                        "case_id": case_info["case_id"],
+                        "message": f"Successfully added label '{title}' to case {case_info['case_id']}",
+                    }
+                )
             else:
-                results['failed_cases'].append({
-                    'case_id': case_info['case_id'],
-                    'error': update_response.error_message
-                })
+                results["failed_cases"].append(
+                    {"case_id": case_info["case_id"], "error": update_response.error_message}
+                )
         elif len(cases_to_update) > 1:
             # Multiple cases: use update_cases/{suite_id}
             # Need to determine suite_id from the cases
@@ -1210,62 +1201,72 @@ class ApiRequestHandler:
             if not case_suite_id:
                 # Get suite_id from the first case if not provided
                 first_case = all_cases[0] if all_cases else None
-                case_suite_id = first_case.get('suite_id') if first_case else None
-            
+                case_suite_id = first_case.get("suite_id") if first_case else None
+
             if not case_suite_id:
                 # Fall back to individual updates if no suite_id available
                 for case_info in cases_to_update:
-                    case_update_data = {'labels': case_info['labels']}
-                    update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
-                    
+                    case_update_data = {"labels": case_info["labels"]}
+                    update_response = self.client.send_post(
+                        f"update_case/{case_info['case_id']}", payload=case_update_data
+                    )
+
                     if update_response.status_code == 200:
-                        results['successful_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                        })
+                        results["successful_cases"].append(
+                            {
+                                "case_id": case_info["case_id"],
+                                "message": f"Successfully added label '{title}' to case {case_info['case_id']}",
+                            }
+                        )
                     else:
-                        results['failed_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'error': update_response.error_message
-                        })
+                        results["failed_cases"].append(
+                            {"case_id": case_info["case_id"], "error": update_response.error_message}
+                        )
             else:
                 # Batch update using update_cases/{suite_id}
                 batch_update_data = {
-                    'case_ids': [case_info['case_id'] for case_info in cases_to_update],
-                    'labels': cases_to_update[0]['labels']  # Assuming same labels for all cases
+                    "case_ids": [case_info["case_id"] for case_info in cases_to_update],
+                    "labels": cases_to_update[0]["labels"],  # Assuming same labels for all cases
                 }
-                
+
                 batch_response = self.client.send_post(f"update_cases/{case_suite_id}", payload=batch_update_data)
-                
+
                 if batch_response.status_code == 200:
                     for case_info in cases_to_update:
-                        results['successful_cases'].append({
-                            'case_id': case_info['case_id'],
-                            'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                        })
+                        results["successful_cases"].append(
+                            {
+                                "case_id": case_info["case_id"],
+                                "message": f"Successfully added label '{title}' to case {case_info['case_id']}",
+                            }
+                        )
                 else:
                     # If batch update fails, fall back to individual updates
                     for case_info in cases_to_update:
-                        case_update_data = {'labels': case_info['labels']}
-                        update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
-                        
+                        case_update_data = {"labels": case_info["labels"]}
+                        update_response = self.client.send_post(
+                            f"update_case/{case_info['case_id']}", payload=case_update_data
+                        )
+
                         if update_response.status_code == 200:
-                            results['successful_cases'].append({
-                                'case_id': case_info['case_id'],
-                                'message': f"Successfully added label '{title}' to case {case_info['case_id']}"
-                            })
+                            results["successful_cases"].append(
+                                {
+                                    "case_id": case_info["case_id"],
+                                    "message": f"Successfully added label '{title}' to case {case_info['case_id']}",
+                                }
+                            )
                         else:
-                            results['failed_cases'].append({
-                                'case_id': case_info['case_id'],
-                                'error': update_response.error_message
-                            })
-        
+                            results["failed_cases"].append(
+                                {"case_id": case_info["case_id"], "error": update_response.error_message}
+                            )
+
         return results, ""
 
-    def get_cases_by_label(self, project_id: int, suite_id: int = None, label_ids: List[int] = None, label_title: str = None) -> Tuple[List[dict], str]:
+    def get_cases_by_label(
+        self, project_id: int, suite_id: int = None, label_ids: List[int] = None, label_title: str = None
+    ) -> Tuple[List[dict], str]:
         """
         Get test cases filtered by label ID or title
-        
+
         :param project_id: Project ID
         :param suite_id: Suite ID (optional)
         :param label_ids: List of label IDs to filter by
@@ -1276,234 +1277,228 @@ class ApiRequestHandler:
         all_cases, error_message = self.__get_all_cases(project_id, suite_id)
         if error_message:
             return [], error_message
-        
+
         # If filtering by title, first get the label ID
         target_label_ids = label_ids or []
         if label_title and not target_label_ids:
             labels_data, error_message = self.get_labels(project_id)
             if error_message:
                 return [], error_message
-            
-            for label in labels_data.get('labels', []):
-                if label.get('title') == label_title:
-                    target_label_ids.append(label.get('id'))
-            
+
+            for label in labels_data.get("labels", []):
+                if label.get("title") == label_title:
+                    target_label_ids.append(label.get("id"))
+
             if not target_label_ids:
                 return [], ""  # No label found is a valid case with 0 results
-        
+
         # Filter cases that have any of the target labels
         matching_cases = []
         for case in all_cases:
-            case_labels = case.get('labels', [])
-            case_label_ids = [label.get('id') for label in case_labels]
-            
+            case_labels = case.get("labels", [])
+            case_label_ids = [label.get("id") for label in case_labels]
+
             # Check if any of the target label IDs are present in this case
             if any(label_id in case_label_ids for label_id in target_label_ids):
                 matching_cases.append(case)
-        
+
         return matching_cases, ""
 
-    def add_labels_to_tests(self, test_ids: List[int], titles: Union[str, List[str]], project_id: int) -> Tuple[dict, str]:
+    def add_labels_to_tests(
+        self, test_ids: List[int], titles: Union[str, List[str]], project_id: int
+    ) -> Tuple[dict, str]:
         """
         Add labels to multiple tests
-        
+
         :param test_ids: List of test IDs
         :param titles: Label title(s) - can be a single string or list of strings (max 20 characters each)
         :param project_id: Project ID for validation
         :returns: Tuple with response data and error string
         """
         # Initialize results structure
-        results = {
-            'successful_tests': [], 
-            'failed_tests': [], 
-            'max_labels_reached': [],
-            'test_not_found': []
-        }
-        
+        results = {"successful_tests": [], "failed_tests": [], "max_labels_reached": [], "test_not_found": []}
+
         # Normalize titles to a list
         if isinstance(titles, str):
             title_list = [titles]
         else:
             title_list = titles
-        
+
         # At this point, title_list should already be validated by the CLI
         # Just ensure we have clean titles
         title_list = [title.strip() for title in title_list if title.strip()]
-        
+
         if not title_list:
             return {}, "No valid labels provided"
-        
+
         # Validate test IDs by getting run information for each test
         valid_test_ids = []
         for test_id in test_ids:
             # Get test information to validate it exists
             test_response = self.client.send_get(f"get_test/{test_id}")
             if test_response.status_code != 200:
-                results['test_not_found'].append(test_id)
+                results["test_not_found"].append(test_id)
                 continue
-            
+
             test_data = test_response.response_text
             # Validate that the test belongs to the correct project
-            run_id = test_data.get('run_id')
+            run_id = test_data.get("run_id")
             if run_id:
                 run_response = self.client.send_get(f"get_run/{run_id}")
                 if run_response.status_code == 200:
                     run_data = run_response.response_text
-                    if run_data.get('project_id') == project_id:
+                    if run_data.get("project_id") == project_id:
                         valid_test_ids.append(test_id)
                     else:
-                        results['test_not_found'].append(test_id)
+                        results["test_not_found"].append(test_id)
                 else:
-                    results['test_not_found'].append(test_id)
+                    results["test_not_found"].append(test_id)
             else:
-                results['test_not_found'].append(test_id)
-        
+                results["test_not_found"].append(test_id)
+
         # If no valid test IDs, return early
         if not valid_test_ids:
             return results, ""
-        
+
         # Check if labels exist or create them
         existing_labels, error_message = self.get_labels(project_id)
         if error_message:
             return results, error_message
-        
+
         # Process each title to get/create label IDs
         label_ids = []
         label_id_to_title = {}  # Map label IDs to their titles
         for title in title_list:
             # Find existing label with the same title
             label_id = None
-            for label in existing_labels.get('labels', []):
-                if label.get('title') == title:
-                    label_id = label.get('id')
+            for label in existing_labels.get("labels", []):
+                if label.get("title") == title:
+                    label_id = label.get("id")
                     break
-            
+
             # Create label if it doesn't exist
             if label_id is None:
                 label_data, error_message = self.add_label(project_id, title)
                 if error_message:
                     return results, error_message
-                label_info = label_data.get('label', label_data)
-                label_id = label_info.get('id')
-            
+                label_info = label_data.get("label", label_data)
+                label_id = label_info.get("id")
+
             if label_id:
                 label_ids.append(label_id)
                 label_id_to_title[label_id] = title
-        
+
         # Collect test data and validate constraints
         tests_to_update = []
         for test_id in valid_test_ids:
             # Get current test to check existing labels
             test_response = self.client.send_get(f"get_test/{test_id}")
             if test_response.status_code != 200:
-                results['failed_tests'].append({
-                    'test_id': test_id,
-                    'error': f"Could not retrieve test {test_id}: {test_response.error_message}"
-                })
+                results["failed_tests"].append(
+                    {"test_id": test_id, "error": f"Could not retrieve test {test_id}: {test_response.error_message}"}
+                )
                 continue
-            
+
             test_data = test_response.response_text
-            current_labels = test_data.get('labels', [])
-            current_label_ids = [label.get('id') for label in current_labels if label.get('id')]
-            
+            current_labels = test_data.get("labels", [])
+            current_label_ids = [label.get("id") for label in current_labels if label.get("id")]
+
             new_label_ids = []
             already_exists_titles = []
-            
+
             for label_id in label_ids:
                 if label_id not in current_label_ids:
                     new_label_ids.append(label_id)
                 else:
                     if label_id in label_id_to_title:
                         already_exists_titles.append(label_id_to_title[label_id])
-            
+
             if not new_label_ids:
-                results['successful_tests'].append({
-                    'test_id': test_id,
-                    'message': f"All labels already exist on test {test_id}: {', '.join(already_exists_titles)}"
-                })
+                results["successful_tests"].append(
+                    {
+                        "test_id": test_id,
+                        "message": f"All labels already exist on test {test_id}: {', '.join(already_exists_titles)}",
+                    }
+                )
                 continue
-            
+
             # Check maximum labels limit (10)
             if len(current_label_ids) + len(new_label_ids) > 10:
-                results['max_labels_reached'].append(test_id)
+                results["max_labels_reached"].append(test_id)
                 continue
-            
+
             # Prepare test for update
             updated_label_ids = current_label_ids + new_label_ids
-            
+
             new_label_titles = []
             for label_id in new_label_ids:
                 if label_id in label_id_to_title:
                     new_label_titles.append(label_id_to_title[label_id])
-            
-            tests_to_update.append({
-                'test_id': test_id,
-                'labels': updated_label_ids,
-                'new_labels': new_label_ids,
-                'new_label_titles': new_label_titles
-            })
-        
+
+            tests_to_update.append(
+                {
+                    "test_id": test_id,
+                    "labels": updated_label_ids,
+                    "new_labels": new_label_ids,
+                    "new_label_titles": new_label_titles,
+                }
+            )
+
         # Update tests using appropriate endpoint
         if len(tests_to_update) == 1:
             # Single test: use update_test/{test_id}
             test_info = tests_to_update[0]
-            test_update_data = {'labels': test_info['labels']}
-            
+            test_update_data = {"labels": test_info["labels"]}
+
             update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
-            
+
             if update_response.status_code == 200:
-                new_label_titles = test_info.get('new_label_titles', [])
+                new_label_titles = test_info.get("new_label_titles", [])
                 new_label_count = len(new_label_titles)
-                
+
                 if new_label_count == 1:
                     message = f"Successfully added label '{new_label_titles[0]}' to test {test_info['test_id']}"
                 elif new_label_count > 1:
                     message = f"Successfully added {new_label_count} labels ({', '.join(new_label_titles)}) to test {test_info['test_id']}"
                 else:
                     message = f"No new labels added to test {test_info['test_id']}"
-                
-                results['successful_tests'].append({
-                    'test_id': test_info['test_id'],
-                    'message': message
-                })
+
+                results["successful_tests"].append({"test_id": test_info["test_id"], "message": message})
             else:
-                results['failed_tests'].append({
-                    'test_id': test_info['test_id'],
-                    'error': update_response.error_message
-                })
+                results["failed_tests"].append(
+                    {"test_id": test_info["test_id"], "error": update_response.error_message}
+                )
         else:
             # Multiple tests: use individual updates to ensure each test gets its specific labels
             for test_info in tests_to_update:
-                test_update_data = {'labels': test_info['labels']}
+                test_update_data = {"labels": test_info["labels"]}
                 update_response = self.client.send_post(f"update_test/{test_info['test_id']}", payload=test_update_data)
-                
+
                 if update_response.status_code == 200:
-                    new_label_titles = test_info.get('new_label_titles', [])
+                    new_label_titles = test_info.get("new_label_titles", [])
                     new_label_count = len(new_label_titles)
-                    
+
                     if new_label_count == 1:
                         message = f"Successfully added label '{new_label_titles[0]}' to test {test_info['test_id']}"
                     elif new_label_count > 1:
                         message = f"Successfully added {new_label_count} labels ({', '.join(new_label_titles)}) to test {test_info['test_id']}"
                     else:
                         message = f"No new labels added to test {test_info['test_id']}"
-                    
-                    results['successful_tests'].append({
-                        'test_id': test_info['test_id'],
-                        'message': message
-                    })
+
+                    results["successful_tests"].append({"test_id": test_info["test_id"], "message": message})
                 else:
-                    results['failed_tests'].append({
-                        'test_id': test_info['test_id'],
-                        'error': update_response.error_message
-                    })
-        
+                    results["failed_tests"].append(
+                        {"test_id": test_info["test_id"], "error": update_response.error_message}
+                    )
+
         return results, ""
 
-    def get_tests_by_label(self, project_id: int, label_ids: List[int] = None, label_title: str = None, run_ids: List[int] = None) -> Tuple[List[dict], str]:
+    def get_tests_by_label(
+        self, project_id: int, label_ids: List[int] = None, label_title: str = None, run_ids: List[int] = None
+    ) -> Tuple[List[dict], str]:
         """
         Get tests filtered by label ID or title from specific runs
-        
+
         :param project_id: Project ID
         :param label_ids: List of label IDs to filter by
         :param label_title: Label title to filter by
@@ -1516,14 +1511,14 @@ class ApiRequestHandler:
             labels_data, error_message = self.get_labels(project_id)
             if error_message:
                 return [], error_message
-            
-            for label in labels_data.get('labels', []):
-                if label.get('title') == label_title:
-                    target_label_ids.append(label.get('id'))
-            
+
+            for label in labels_data.get("labels", []):
+                if label.get("title") == label_title:
+                    target_label_ids.append(label.get("id"))
+
             if not target_label_ids:
                 return [], ""  # No label found is a valid case with 0 results
-        
+
         # Get runs for the project (either all runs or specific run IDs)
         if run_ids:
             # Use specific run IDs - validate they exist by getting run details
@@ -1539,67 +1534,65 @@ class ApiRequestHandler:
             runs_response = self.client.send_get(f"get_runs/{project_id}")
             if runs_response.status_code != 200:
                 return [], runs_response.error_message
-            
+
             runs_data = runs_response.response_text
-            runs = runs_data.get('runs', []) if isinstance(runs_data, dict) else runs_data
-        
+            runs = runs_data.get("runs", []) if isinstance(runs_data, dict) else runs_data
+
         # Collect all tests from all runs
         matching_tests = []
         for run in runs:
-            run_id = run.get('id')
+            run_id = run.get("id")
             if not run_id:
                 continue
-                
+
             # Get tests for this run
             tests_response = self.client.send_get(f"get_tests/{run_id}")
             if tests_response.status_code != 200:
                 continue  # Skip this run if we can't get tests
-                
+
             tests_data = tests_response.response_text
-            tests = tests_data.get('tests', []) if isinstance(tests_data, dict) else tests_data
-            
+            tests = tests_data.get("tests", []) if isinstance(tests_data, dict) else tests_data
+
             # Filter tests that have any of the target labels
             for test in tests:
-                test_labels = test.get('labels', [])
-                test_label_ids = [label.get('id') for label in test_labels]
-                
+                test_labels = test.get("labels", [])
+                test_label_ids = [label.get("id") for label in test_labels]
+
                 # Check if any of the target label IDs are present in this test
                 if any(label_id in test_label_ids for label_id in target_label_ids):
                     matching_tests.append(test)
-        
+
         return matching_tests, ""
 
     def get_test_labels(self, test_ids: List[int]) -> Tuple[List[dict], str]:
         """
         Get labels for specific tests
-        
+
         :param test_ids: List of test IDs to get labels for
         :returns: Tuple with list of test label information and error string
         """
         results = []
-        
+
         for test_id in test_ids:
             # Get test information
             test_response = self.client.send_get(f"get_test/{test_id}")
             if test_response.status_code != 200:
-                results.append({
-                    'test_id': test_id,
-                    'error': f"Test {test_id} not found or inaccessible",
-                    'labels': []
-                })
+                results.append({"test_id": test_id, "error": f"Test {test_id} not found or inaccessible", "labels": []})
                 continue
-            
+
             test_data = test_response.response_text
-            test_labels = test_data.get('labels', [])
-            
-            results.append({
-                'test_id': test_id,
-                'title': test_data.get('title', 'Unknown'),
-                'status_id': test_data.get('status_id'),
-                'labels': test_labels,
-                'error': None
-            })
-        
+            test_labels = test_data.get("labels", [])
+
+            results.append(
+                {
+                    "test_id": test_id,
+                    "title": test_data.get("title", "Unknown"),
+                    "status_id": test_data.get("status_id"),
+                    "labels": test_labels,
+                    "error": None,
+                }
+            )
+
         return results, ""
 
     # Test case reference management methods
@@ -1614,15 +1607,15 @@ class ApiRequestHandler:
         case_response = self.client.send_get(f"get_case/{case_id}")
         if case_response.status_code != 200:
             return False, f"Failed to retrieve test case {case_id}: {case_response.error_message}"
-        
+
         case_data = case_response.response_text
-        existing_refs = case_data.get('refs', '') or ''
-        
+        existing_refs = case_data.get("refs", "") or ""
+
         # Parse existing references
         existing_ref_list = []
         if existing_refs:
-            existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
-        
+            existing_ref_list = [ref.strip() for ref in existing_refs.split(",") if ref.strip()]
+
         # Deduplicate input references while preserving order
         deduplicated_input = []
         seen = set()
@@ -1631,24 +1624,24 @@ class ApiRequestHandler:
             if ref_clean and ref_clean not in seen:
                 deduplicated_input.append(ref_clean)
                 seen.add(ref_clean)
-        
+
         # Add new references (avoid duplicates with existing)
         all_refs = existing_ref_list.copy()
         for ref in deduplicated_input:
             if ref not in all_refs:
                 all_refs.append(ref)
-        
+
         # Join all references
-        new_refs_string = ','.join(all_refs)
-        
+        new_refs_string = ",".join(all_refs)
+
         # Validate total character limit
         if len(new_refs_string) > 2000:
             return False, f"Total references length ({len(new_refs_string)} characters) exceeds 2000 character limit"
-        
+
         # Update the test case with new references
-        update_data = {'refs': new_refs_string}
+        update_data = {"refs": new_refs_string}
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
-        
+
         if update_response.status_code == 200:
             return True, ""
         else:
@@ -1669,18 +1662,18 @@ class ApiRequestHandler:
             if ref_clean and ref_clean not in seen:
                 deduplicated_refs.append(ref_clean)
                 seen.add(ref_clean)
-        
+
         # Join references
-        new_refs_string = ','.join(deduplicated_refs)
-        
+        new_refs_string = ",".join(deduplicated_refs)
+
         # Validate total character limit
         if len(new_refs_string) > 2000:
             return False, f"Total references length ({len(new_refs_string)} characters) exceeds 2000 character limit"
-        
+
         # Update the test case with new references
-        update_data = {'refs': new_refs_string}
+        update_data = {"refs": new_refs_string}
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
-        
+
         if update_response.status_code == 200:
             return True, ""
         else:
@@ -1695,36 +1688,36 @@ class ApiRequestHandler:
         """
         if specific_references is None:
             # Delete all references by setting refs to empty string
-            update_data = {'refs': ''}
+            update_data = {"refs": ""}
         else:
             # First get the current test case to retrieve existing references
             case_response = self.client.send_get(f"get_case/{case_id}")
             if case_response.status_code != 200:
                 return False, f"Failed to retrieve test case {case_id}: {case_response.error_message}"
-            
+
             case_data = case_response.response_text
-            existing_refs = case_data.get('refs', '') or ''
-            
+            existing_refs = case_data.get("refs", "") or ""
+
             if not existing_refs:
                 # No references to delete
                 return True, ""
-            
+
             # Parse existing references
-            existing_ref_list = [ref.strip() for ref in existing_refs.split(',') if ref.strip()]
-            
+            existing_ref_list = [ref.strip() for ref in existing_refs.split(",") if ref.strip()]
+
             # Deduplicate input references for efficient processing
             refs_to_delete = set(ref.strip() for ref in specific_references if ref.strip())
-            
+
             # Remove specific references
             remaining_refs = [ref for ref in existing_ref_list if ref not in refs_to_delete]
-            
+
             # Join remaining references
-            new_refs_string = ','.join(remaining_refs)
-            update_data = {'refs': new_refs_string}
-        
+            new_refs_string = ",".join(remaining_refs)
+            update_data = {"refs": new_refs_string}
+
         # Update the test case
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
-        
+
         if update_response.status_code == 200:
             return True, ""
         else:
