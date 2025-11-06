@@ -37,7 +37,7 @@ TestRail CLI v1.13.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
-    - parse_bdd: Gherkin .feature files
+    - parse_gherkin: Gherkin .feature files (BDD)
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new empty test run
@@ -86,7 +86,7 @@ Commands:
   add_run        Add a new test run in TestRail
   labels         Manage labels in TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
-  parse_bdd      Parse Gherkin .feature files and upload results to TestRail
+  parse_gherkin  Parse Gherkin .feature files and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
