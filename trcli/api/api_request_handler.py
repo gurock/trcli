@@ -307,9 +307,14 @@ class ApiRequestHandler:
         """
         missing_cases_number = 0
         suite_id = self.suites_data_from_provider.suite_id
-        returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
-        if error_message:
-            return False, error_message
+
+        # Performance optimization: Only fetch all cases if using AUTO matcher
+        # NAME/PROPERTY matchers can validate case IDs individually
+        if self.environment.case_matcher == MatchersParser.AUTO:
+            returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
+            if error_message:
+                return False, error_message
+
         if self.environment.case_matcher == MatchersParser.AUTO:
             test_cases_by_aut_id = {}
             for case in returned_cases:
@@ -337,16 +342,36 @@ class ApiRequestHandler:
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases not matching any TestRail case.")
         else:
+            # For NAME or PROPERTY matcher we validate case IDs individually
             nonexistent_ids = []
-            all_case_ids = [case["id"] for case in returned_cases]
+            case_ids_to_validate = set()
+
+            # Collect all unique case IDs that need validation
             for section in self.suites_data_from_provider.testsections:
                 for test_case in section.testcases:
                     if not test_case.case_id:
                         missing_cases_number += 1
-                    elif int(test_case.case_id) not in all_case_ids:
-                        nonexistent_ids.append(test_case.case_id)
+                    else:
+                        case_ids_to_validate.add(int(test_case.case_id))
+
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases without case ID in the report file.")
+
+            # Validate case IDs exist in TestRail (batch validation for efficiency)
+            # Skip validation if all tests have case IDs and set is large (1000+ cases)
+            should_validate = len(case_ids_to_validate) < 1000 or missing_cases_number > 0
+
+            if case_ids_to_validate and should_validate:
+                self.environment.log(f"Validating {len(case_ids_to_validate)} case IDs exist in TestRail...")
+                validated_ids = self.__validate_case_ids_exist(suite_id, list(case_ids_to_validate))
+                nonexistent_ids = [cid for cid in case_ids_to_validate if cid not in validated_ids]
+            elif case_ids_to_validate and not should_validate:
+                self.environment.log(
+                    f"Skipping validation of {len(case_ids_to_validate)} case IDs (all tests have IDs, trusting they exist). "
+                    f"If you encounter errors, ensure all case IDs in your test report exist in TestRail."
+                )
+                nonexistent_ids = []
+
             if nonexistent_ids:
                 self.environment.elog(f"Nonexistent case IDs found in the report file: {nonexistent_ids}")
                 return False, "Case IDs not in TestRail project or suite were detected in the report file."
@@ -998,6 +1023,53 @@ class ApiRequestHandler:
                 return entities, response.error_message
         else:
             return [], response.error_message
+
+    def __validate_case_ids_exist(self, suite_id: int, case_ids: List[int]) -> set:
+        """
+        Validate that case IDs exist in TestRail without fetching all cases.
+        Returns set of valid case IDs.
+
+        :param suite_id: Suite ID
+        :param case_ids: List of case IDs to validate
+        :returns: Set of case IDs that exist in TestRail
+        """
+        if not case_ids:
+            return set()
+
+        valid_ids = set()
+
+        # For large numbers of case IDs, use concurrent validation
+        if len(case_ids) > 50:
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+
+            def check_case_exists(case_id):
+                """Check if a single case exists"""
+                response = self.client.send_get(f"get_case/{case_id}")
+                if response.status_code == 200 and not response.error_message:
+                    # Verify case belongs to correct project/suite
+                    case_data = response.response_text
+                    if case_data.get("suite_id") == suite_id:
+                        return case_id
+                return None
+
+            # Use 10 concurrent workers to validate IDs
+            with ThreadPoolExecutor(max_workers=10) as executor:
+                futures = {executor.submit(check_case_exists, cid): cid for cid in case_ids}
+
+                for future in as_completed(futures):
+                    result = future.result()
+                    if result is not None:
+                        valid_ids.add(result)
+        else:
+            # For small sets, validate sequentially
+            for case_id in case_ids:
+                response = self.client.send_get(f"get_case/{case_id}")
+                if response.status_code == 200 and not response.error_message:
+                    case_data = response.response_text
+                    if case_data.get("suite_id") == suite_id:
+                        valid_ids.add(case_id)
+
+        return valid_ids
 
     # Label management methods
     def add_label(self, project_id: int, title: str) -> Tuple[dict, str]:
