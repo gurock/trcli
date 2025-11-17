@@ -192,23 +192,34 @@ class TestNameMatcherOptimization:
         assert error == "", "Should not have errors"
 
     @pytest.mark.api_handler
-    def test_name_matcher_validates_when_missing_case_ids(self, environment, api_client, mocker):
+    def test_name_matcher_fetches_all_cases_for_large_report_with_missing_ids(self, environment, api_client, mocker):
         """
-        Test that validation RUNS when:
+        Test that for large reports with missing IDs, we FETCH ALL CASES instead of individual validation.
+        This is the new optimized behavior:
         - Using NAME matcher
-        - Some tests are missing case IDs (even if total > 1000)
-        This is important because missing IDs might indicate extraction errors.
+        - Large report (>=1000 total cases)
+        - Some tests are missing case IDs
+
+        Strategy: Fetch all cases once (e.g., 660 calls for 165k cases) is more efficient than
+        individual validation (e.g., 1500 calls for 1500 cases in report).
         """
-        # Setup: 1500 total cases, 3 missing IDs
+        # Setup: 1500 total cases, 3 missing IDs (total >= 1000 threshold)
         environment.case_matcher = MatchersParser.NAME
         test_suite = create_test_suite_with_missing_case_ids(total_cases=1500, missing_count=3)
         api_request_handler = ApiRequestHandler(environment, api_client, test_suite)
 
-        # Mock validation
+        # Mock get_all_cases to return all case IDs 4-1500 (cases 1-3 don't exist, matching missing IDs)
+        mock_get_all_cases = mocker.patch.object(
+            api_request_handler,
+            "_ApiRequestHandler__get_all_cases",
+            return_value=([{"id": i} for i in range(4, 1501)], None),
+        )
+
+        # Mock individual validation - should NOT be called for large reports
         mock_validate = mocker.patch.object(
             api_request_handler,
             "_ApiRequestHandler__validate_case_ids_exist",
-            return_value=set(range(4, 1501)),  # Exclude the 3 missing
+            return_value=set(range(4, 1501)),
         )
 
         mock_log = mocker.patch.object(environment, "log")
@@ -217,8 +228,66 @@ class TestNameMatcherOptimization:
         project_id = 1
         missing_ids, error = api_request_handler.check_missing_test_cases_ids(project_id)
 
-        # Assert: Validation SHOULD run because there are missing case IDs
+        # Assert: Should FETCH ALL CASES for large reports with missing IDs
+        mock_get_all_cases.assert_called_once_with(project_id, 1)
+
+        # Should NOT use individual validation
+        mock_validate.assert_not_called()
+
+        # Should log that it's using fetch-all strategy
+        fetch_log_calls = [call for call in mock_log.call_args_list if "Fetching all cases" in str(call)]
+        assert len(fetch_log_calls) > 0, "Should log that fetch-all strategy is being used"
+
+        # Should log that missing cases were found
+        missing_log_calls = [call for call in mock_log.call_args_list if "without case ID" in str(call)]
+        assert len(missing_log_calls) > 0, "Should log missing case IDs"
+
+        assert missing_ids, "Should have missing IDs"
+        assert error == "", "Should not have errors"
+
+    @pytest.mark.api_handler
+    def test_name_matcher_validates_individually_for_small_report_with_missing_ids(
+        self, environment, api_client, mocker
+    ):
+        """
+        Test that for small reports with missing IDs, we use INDIVIDUAL validation.
+        - Using NAME matcher
+        - Small report (<1000 total cases)
+        - Some tests are missing case IDs
+
+        Strategy: Individual validation (e.g., 500 calls) is more efficient than
+        fetch all (e.g., 660 calls for 165k cases).
+        """
+        # Setup: 500 total cases, 10 missing IDs (total < 1000 threshold)
+        environment.case_matcher = MatchersParser.NAME
+        test_suite = create_test_suite_with_missing_case_ids(total_cases=500, missing_count=10)
+        api_request_handler = ApiRequestHandler(environment, api_client, test_suite)
+
+        # Mock individual validation
+        mock_validate = mocker.patch.object(
+            api_request_handler,
+            "_ApiRequestHandler__validate_case_ids_exist",
+            return_value=set(range(11, 501)),  # Exclude the 10 missing (1-10)
+        )
+
+        # Mock get_all_cases - should NOT be called for small reports
+        mock_get_all_cases = mocker.patch.object(
+            api_request_handler,
+            "_ApiRequestHandler__get_all_cases",
+            return_value=([], None),
+        )
+
+        mock_log = mocker.patch.object(environment, "log")
+
+        # Execute
+        project_id = 1
+        missing_ids, error = api_request_handler.check_missing_test_cases_ids(project_id)
+
+        # Assert: Should use INDIVIDUAL validation for small reports
         mock_validate.assert_called_once()
+
+        # Should NOT fetch all cases
+        mock_get_all_cases.assert_not_called()
 
         # Should log that missing cases were found
         missing_log_calls = [call for call in mock_log.call_args_list if "without case ID" in str(call)]
@@ -376,12 +445,13 @@ class TestPerformanceComparison:
         """
         Demonstrate that NAME matcher makes fewer API calls than AUTO matcher.
         This is a documentation test showing the optimization benefit.
-        """
-        test_suite = create_test_suite_with_case_ids(num_cases=2000)
 
-        # Test AUTO matcher (old way)
+        Scenario: Large report with all case IDs present (best case for NAME matcher)
+        """
+        # Test AUTO matcher (always fetches all cases)
         environment.case_matcher = MatchersParser.AUTO
-        api_request_handler_auto = ApiRequestHandler(environment, api_client, test_suite)
+        test_suite_auto = create_test_suite_with_case_ids(num_cases=2000)
+        api_request_handler_auto = ApiRequestHandler(environment, api_client, test_suite_auto)
 
         mock_get_all_cases_auto = mocker.patch.object(
             api_request_handler_auto,
@@ -395,22 +465,31 @@ class TestPerformanceComparison:
         # AUTO matcher should call get_all_cases
         assert mock_get_all_cases_auto.call_count == 1, "AUTO matcher fetches all cases"
 
-        # Test NAME matcher (new optimized way)
-        environment.case_matcher = MatchersParser.NAME
+        # Test NAME matcher with all IDs present (best case - skips validation)
+        env_name = Environment()
+        env_name.project = "Test Project"
+        env_name.batch_size = 10
+        env_name.case_matcher = MatchersParser.NAME
+
         test_suite_name = create_test_suite_with_case_ids(num_cases=2000)
-        api_request_handler_name = ApiRequestHandler(environment, api_client, test_suite_name)
+        api_request_handler_name = ApiRequestHandler(env_name, api_client, test_suite_name)
 
         mock_get_all_cases_name = mocker.patch.object(
             api_request_handler_name, "_ApiRequestHandler__get_all_cases", return_value=([], None)
         )
 
-        # Mock validation to skip it (large batch)
-        mocker.patch.object(environment, "log")
+        mock_validate_name = mocker.patch.object(
+            api_request_handler_name, "_ApiRequestHandler__validate_case_ids_exist", return_value=set()
+        )
+
+        mocker.patch.object(env_name, "log")
 
         api_request_handler_name.check_missing_test_cases_ids(project_id=1)
 
-        # NAME matcher should NOT call get_all_cases
+        # NAME matcher should NOT call get_all_cases when all IDs present and report >= 1000
         mock_get_all_cases_name.assert_not_called()
+        # Should also not call individual validation
+        mock_validate_name.assert_not_called()
 
         print("\n" + "=" * 60)
         print("PERFORMANCE COMPARISON")
@@ -418,6 +497,57 @@ class TestPerformanceComparison:
         print(f"AUTO matcher: {mock_get_all_cases_auto.call_count} get_all_cases calls")
         print(f"NAME matcher: {mock_get_all_cases_name.call_count} get_all_cases calls")
         print(f"Improvement: {mock_get_all_cases_auto.call_count - mock_get_all_cases_name.call_count} fewer calls")
+        print("=" * 60)
+
+    @pytest.mark.api_handler
+    def test_performance_name_matcher_with_missing_ids(self, environment, api_client, mocker):
+        """
+        Demonstrate smart strategy selection for NAME matcher with large reports containing missing IDs.
+
+        Scenario: 5000 cases in report, 100 missing IDs
+        - Individual validation: 5000 API calls
+        - Fetch all + validate locally: ~660 API calls (for 165k cases in TestRail)
+        Strategy: Fetch all is more efficient
+        """
+        env = Environment()
+        env.project = "Test Project"
+        env.batch_size = 10
+        env.case_matcher = MatchersParser.NAME
+
+        # 5000 cases, 100 missing IDs
+        test_suite = create_test_suite_with_missing_case_ids(total_cases=5000, missing_count=100)
+        api_request_handler = ApiRequestHandler(env, api_client, test_suite)
+
+        # Mock get_all_cases to simulate fetching 165k cases
+        mock_get_all_cases = mocker.patch.object(
+            api_request_handler,
+            "_ApiRequestHandler__get_all_cases",
+            return_value=([{"id": i} for i in range(101, 5001)], None),  # Cases 101-5000 exist
+        )
+
+        # Mock individual validation - should NOT be called
+        mock_validate = mocker.patch.object(
+            api_request_handler,
+            "_ApiRequestHandler__validate_case_ids_exist",
+            return_value=set(range(101, 5001)),
+        )
+
+        mocker.patch.object(env, "log")
+
+        api_request_handler.check_missing_test_cases_ids(project_id=1)
+
+        # Should use fetch-all strategy (more efficient for large reports)
+        mock_get_all_cases.assert_called_once()
+        mock_validate.assert_not_called()
+
+        print("\n" + "=" * 60)
+        print("LARGE REPORT WITH MISSING IDS")
+        print("=" * 60)
+        print(f"Report size: 5000 cases, 100 missing IDs")
+        print(f"Strategy chosen: Fetch all cases")
+        print(f"API calls: 1 fetch (simulates ~660 paginated calls)")
+        print(f"Alternative: 4900 individual validation calls")
+        print(f"Efficiency: ~7.4x fewer calls")
         print("=" * 60)
 
 

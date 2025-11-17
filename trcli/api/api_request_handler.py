@@ -1,4 +1,5 @@
 import html, json
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from beartype.typing import List, Union, Tuple, Dict
 
@@ -14,7 +15,12 @@ from trcli.constants import (
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailCase, ProjectData
 from trcli.data_providers.api_data_provider import ApiDataProvider
-from trcli.settings import MAX_WORKERS_ADD_RESULTS, MAX_WORKERS_ADD_CASE
+from trcli.settings import (
+    MAX_WORKERS_ADD_RESULTS,
+    MAX_WORKERS_ADD_CASE,
+    ENABLE_PARALLEL_PAGINATION,
+    MAX_WORKERS_PARALLEL_PAGINATION,
+)
 
 
 class ApiRequestHandler:
@@ -342,7 +348,7 @@ class ApiRequestHandler:
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases not matching any TestRail case.")
         else:
-            # For NAME or PROPERTY matcher we validate case IDs individually
+            # For NAME or PROPERTY matcher we validate case IDs
             nonexistent_ids = []
             case_ids_to_validate = set()
 
@@ -354,27 +360,60 @@ class ApiRequestHandler:
                     else:
                         case_ids_to_validate.add(int(test_case.case_id))
 
+            total_tests_in_report = missing_cases_number + len(case_ids_to_validate)
+
             if missing_cases_number:
                 self.environment.log(f"Found {missing_cases_number} test cases without case ID in the report file.")
 
-            # Validate case IDs exist in TestRail (batch validation for efficiency)
-            # Skip validation if all tests have case IDs and set is large (1000+ cases)
-            should_validate = len(case_ids_to_validate) < 1000 or missing_cases_number > 0
+            # Smart validation strategy based on report size
+            # Threshold: 1000 cases (same as skip validation threshold for consistency)
+            if case_ids_to_validate:
+                # Skip validation for large reports with all IDs (most efficient)
+                if missing_cases_number == 0 and total_tests_in_report >= 1000:
+                    # All tests have IDs and report is large: Skip validation (trust IDs)
+                    self.environment.log(
+                        f"Skipping validation of {len(case_ids_to_validate)} case IDs "
+                        f"(all tests have IDs, trusting they exist). "
+                        f"If you encounter errors, ensure all case IDs in your test report exist in TestRail."
+                    )
+                    nonexistent_ids = []
 
-            if case_ids_to_validate and should_validate:
-                self.environment.log(f"Validating {len(case_ids_to_validate)} case IDs exist in TestRail...")
-                validated_ids = self.__validate_case_ids_exist(suite_id, list(case_ids_to_validate))
-                nonexistent_ids = [cid for cid in case_ids_to_validate if cid not in validated_ids]
-            elif case_ids_to_validate and not should_validate:
-                self.environment.log(
-                    f"Skipping validation of {len(case_ids_to_validate)} case IDs (all tests have IDs, trusting they exist). "
-                    f"If you encounter errors, ensure all case IDs in your test report exist in TestRail."
-                )
-                nonexistent_ids = []
+                # Fetch all for large reports with missing IDs
+                elif total_tests_in_report >= 1000:
+                    # Large report (>=1000 cases) with some missing IDs: Fetch all cases and validate locally
+                    # This is more efficient than individual validation for large batches
+                    self.environment.log(
+                        f"Large report detected ({total_tests_in_report} cases). "
+                        f"Fetching all cases from TestRail for efficient validation..."
+                    )
+                    returned_cases, error_message = self.__get_all_cases(project_id, suite_id)
+                    if error_message:
+                        return False, error_message
 
-            if nonexistent_ids:
-                self.environment.elog(f"Nonexistent case IDs found in the report file: {nonexistent_ids}")
-                return False, "Case IDs not in TestRail project or suite were detected in the report file."
+                    # Build lookup dictionary from fetched cases
+                    all_case_ids = {case["id"] for case in returned_cases}
+
+                    # Validate locally (O(1) lookup)
+                    nonexistent_ids = [cid for cid in case_ids_to_validate if cid not in all_case_ids]
+
+                    if nonexistent_ids:
+                        self.environment.elog(
+                            f"Nonexistent case IDs found in the report file: {nonexistent_ids[:20]}"
+                            f"{' ...' if len(nonexistent_ids) > 20 else ''}"
+                        )
+                        return False, "Case IDs not in TestRail project or suite were detected in the report file."
+
+                # Individual validation for small reports
+                else:
+                    # Small report (<1000 cases): Use individual validation
+                    # This is more efficient for small batches
+                    self.environment.log(f"Validating {len(case_ids_to_validate)} case IDs exist in TestRail...")
+                    validated_ids = self.__validate_case_ids_exist(suite_id, list(case_ids_to_validate))
+                    nonexistent_ids = [cid for cid in case_ids_to_validate if cid not in validated_ids]
+
+                    if nonexistent_ids:
+                        self.environment.elog(f"Nonexistent case IDs found in the report file: {nonexistent_ids}")
+                        return False, "Case IDs not in TestRail project or suite were detected in the report file."
 
         return missing_cases_number > 0, ""
 
@@ -1002,7 +1041,18 @@ class ApiRequestHandler:
         Get all entities from all pages if number of entities is too big to return in single response.
         Function using next page field in API response.
         Entity examples: cases, sections
+
+        If ENABLE_PARALLEL_PAGINATION is True or --parallel-pagination flag is set,
+        will use parallel fetching for better performance.
         """
+        # Check if parallel pagination is enabled (CLI flag takes precedence)
+        parallel_enabled = getattr(self.environment, "parallel_pagination", False) or ENABLE_PARALLEL_PAGINATION
+
+        # Use parallel pagination if enabled and this is the first call (entities is empty)
+        if parallel_enabled and not entities:
+            return self.__get_all_entities_parallel(entity, link)
+
+        # Otherwise use sequential pagination (original implementation)
         if link.startswith(self.suffix):
             link = link.replace(self.suffix, "")
         response = self.client.send_get(link)
@@ -1019,6 +1069,234 @@ class ApiRequestHandler:
             if response.response_text["_links"]["next"] is not None:
                 next_link = response.response_text["_links"]["next"].replace("limit=0", "limit=250")
                 return self.__get_all_entities(entity, link=next_link, entities=entities)
+            else:
+                return entities, response.error_message
+        else:
+            return [], response.error_message
+
+    def __get_all_entities_parallel(self, entity: str, link: str) -> Tuple[List[Dict], str]:
+        """
+        Parallel version of __get_all_entities for faster pagination.
+        Fetches multiple pages concurrently using ThreadPoolExecutor.
+
+        :param entity: Entity type (cases, sections, etc.)
+        :param link: Initial API link
+        :returns: Tuple of (all entities list, error message)
+        """
+        fetch_start_time = time.time()
+
+        if link.startswith(self.suffix):
+            link = link.replace(self.suffix, "")
+
+        # Step 1: Fetch first page to get metadata
+        self.environment.log(f"Fetching first page to determine total pages...")
+        response = self.client.send_get(link)
+
+        if response.error_message:
+            return [], response.error_message
+
+        # Handle non-paginated responses (legacy endpoints)
+        if isinstance(response.response_text, list):
+            return response.response_text, response.error_message
+
+        if isinstance(response.response_text, str):
+            error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
+            return [], error_msg
+
+        # Collect first page results
+        all_entities = response.response_text[entity]
+        first_page_count = len(all_entities)
+
+        # Check if there are more pages
+        if response.response_text["_links"]["next"] is None:
+            # Only one page, return immediately
+            fetch_time = time.time() - fetch_start_time
+            self.environment.log(f"Single page fetch completed in {fetch_time:.1f}s")
+            return all_entities, response.error_message
+
+        # Step 2: Calculate total pages needed
+        # TestRail pagination uses limit parameter (default 250)
+        # We need to parse the next link to understand pagination structure
+        next_link = response.response_text["_links"]["next"]
+
+        # Extract offset/limit from the link to calculate total pages
+        import re
+        from urllib.parse import urlparse, parse_qs
+
+        # Parse the next link to get offset and limit
+        parsed = urlparse(next_link)
+        query_params = parse_qs(parsed.query)
+
+        # Get limit (page size) - default to 250 if not found
+        limit = int(query_params.get("limit", [250])[0])
+        if limit == 0:
+            limit = 250
+
+        # Get offset from next link
+        next_offset = int(query_params.get("offset", [limit])[0])
+
+        # Step 3: Fetch pages in parallel with dynamic offset generation
+        # Build base link without offset parameter
+        # TestRail API uses '&' as separator (e.g., get_cases/123&suite_id=2&offset=250)
+        base_link = link.split("&offset=")[0].split("?offset=")[0]
+
+        self.environment.log(
+            f"Starting parallel fetch: first page has {first_page_count} {entity}, "
+            f"fetching remaining pages with {MAX_WORKERS_PARALLEL_PAGINATION} workers..."
+        )
+
+        def fetch_page(offset):
+            """Fetch a single page by offset"""
+            # TestRail always uses '&' as separator, not '?'
+            page_link = f"{base_link}&offset={offset}&limit={limit}"
+            page_response = self.client.send_get(page_link)
+
+            if page_response.error_message:
+                return None, page_response.error_message
+
+            if isinstance(page_response.response_text, dict) and entity in page_response.response_text:
+                page_data = page_response.response_text[entity]
+                # Return empty list if this page has no data (we've reached the end)
+                if not page_data:
+                    return [], None
+                return page_data, None
+            else:
+                return None, "Invalid response format"
+
+        # Fetch pages in parallel with intelligent batching to avoid overwhelming server
+        error_message = ""
+        pages_fetched = 1  # We already have the first page
+
+        # Use batching: submit batches of pages, check results, submit next batch
+        # This prevents overwhelming the server with 10k requests at once
+        batch_size = 100  # Submit 100 pages at a time
+        current_page_index = 0
+        max_pages = 10000  # Safety cap
+        consecutive_empty_pages = 0
+        max_consecutive_empty = 10  # Stop after 10 consecutive empty pages
+
+        with ThreadPoolExecutor(max_workers=MAX_WORKERS_PARALLEL_PAGINATION) as executor:
+            should_continue = True
+
+            while should_continue and current_page_index < max_pages:
+                # Submit next batch of pages
+                futures = {}
+                batch_offsets = []
+
+                for i in range(batch_size):
+                    if current_page_index + i >= max_pages:
+                        break
+                    offset = next_offset + ((current_page_index + i) * limit)
+                    batch_offsets.append(offset)
+                    future = executor.submit(fetch_page, offset)
+                    futures[future] = offset
+
+                if not futures:
+                    break
+
+                # Process this batch
+                batch_had_data = False
+                for future in as_completed(futures):
+                    offset = futures[future]
+                    try:
+                        page_data, page_error = future.result()
+
+                        if page_error:
+                            error_message = page_error
+                            self.environment.elog(f"Error fetching page at offset {offset}: {page_error}")
+                            should_continue = False
+                            # Cancel remaining futures in this batch
+                            for f in futures:
+                                if not f.done():
+                                    f.cancel()
+                            break
+
+                        if page_data is None:
+                            # Error occurred
+                            error_message = "Invalid response format"
+                            should_continue = False
+                            # Cancel remaining
+                            for f in futures:
+                                if not f.done():
+                                    f.cancel()
+                            break
+
+                        if len(page_data) == 0:
+                            # Empty page
+                            consecutive_empty_pages += 1
+                            if consecutive_empty_pages >= max_consecutive_empty:
+                                # We've hit enough empty pages, stop fetching
+                                self.environment.log(f"Reached end of data after {consecutive_empty_pages} empty pages")
+                                should_continue = False
+                                # Cancel remaining futures in this batch
+                                for f in futures:
+                                    if not f.done():
+                                        f.cancel()
+                                break
+                        else:
+                            # Got data - reset consecutive empty counter
+                            consecutive_empty_pages = 0
+                            batch_had_data = True
+
+                            # Add results to our collection
+                            all_entities.extend(page_data)
+                            pages_fetched += 1
+
+                            # Log progress every 50 pages
+                            if pages_fetched % 50 == 0:
+                                self.environment.log(
+                                    f"Fetched {pages_fetched} pages, {len(all_entities)} {entity} so far..."
+                                )
+
+                    except Exception as ex:
+                        error_message = f"Exception during parallel fetch: {str(ex)}"
+                        self.environment.elog(error_message)
+                        should_continue = False
+                        # Cancel remaining
+                        for f in futures:
+                            if not f.done():
+                                f.cancel()
+                        break
+
+                # Move to next batch
+                current_page_index += batch_size
+
+                # If this batch had no data at all, we've likely reached the end
+                if not batch_had_data and consecutive_empty_pages > 0:
+                    should_continue = False
+
+        fetch_time = time.time() - fetch_start_time
+
+        if error_message:
+            self.environment.elog(f"Parallel fetch failed after {fetch_time:.1f}s, falling back to sequential...")
+            # Fall back to sequential fetch
+            return self.__get_all_entities_sequential(entity, link, [])
+
+        self.environment.log(
+            f"Parallel fetch completed: {len(all_entities)} {entity} in {fetch_time:.1f}s "
+            f"(~{len(all_entities) / fetch_time:.0f} items/sec)"
+        )
+
+        return all_entities, ""
+
+    def __get_all_entities_sequential(self, entity: str, link: str, entities: List[Dict]) -> Tuple[List[Dict], str]:
+        """
+        Sequential fallback for __get_all_entities (original implementation).
+        This is kept separate for fallback purposes.
+        """
+        if link.startswith(self.suffix):
+            link = link.replace(self.suffix, "")
+        response = self.client.send_get(link)
+        if not response.error_message:
+            if isinstance(response.response_text, list):
+                return response.response_text, response.error_message
+            if isinstance(response.response_text, str):
+                error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
+                return [], error_msg
+            entities = entities + response.response_text[entity]
+            if response.response_text["_links"]["next"] is not None:
+                next_link = response.response_text["_links"]["next"].replace("limit=0", "limit=250")
+                return self.__get_all_entities_sequential(entity, link=next_link, entities=entities)
             else:
                 return entities, response.error_message
         else:
