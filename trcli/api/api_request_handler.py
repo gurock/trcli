@@ -468,12 +468,16 @@ class ApiRequestHandler:
         else:
             add_run_data["refs"] = existing_refs  # Keep existing refs if none provided
 
-        run_tests, error_message = self.__get_all_tests_in_run(run_id)
-        run_case_ids = [test["case_id"] for test in run_tests]
-        report_case_ids = add_run_data["case_ids"]
-        joint_case_ids = list(set(report_case_ids + run_case_ids))
-        add_run_data["case_ids"] = joint_case_ids
-        
+        existing_include_all = run_response.response_text["include_all"]
+        add_run_data["include_all"] = existing_include_all
+        if not existing_include_all:
+            # Need to set specific case IDs only when NOT including all cases
+            run_tests, error_message = self.__get_all_tests_in_run(run_id)
+            run_case_ids = [test["case_id"] for test in run_tests]
+            report_case_ids = add_run_data["case_ids"]
+            joint_case_ids = list(set(report_case_ids + run_case_ids))
+            add_run_data["case_ids"] = joint_case_ids
+
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
         if not plan_id:
