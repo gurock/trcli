@@ -65,7 +65,9 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
 trcli_description = (
     "Supported and loaded modules:\n"
     "    - parse_junit: JUnit XML Files (& Similar)\n"
-    "    - parse_gherkin: Gherkin .feature files (BDD)\n"
+    "    - parse_cucumber: Cucumber JSON results (BDD)\n"
+    "    - import_gherkin: Upload .feature files to TestRail BDD\n"
+    "    - export_gherkin: Export BDD test cases as .feature files\n"
     "    - parse_robot: Robot Framework XML Files\n"
     "    - parse_openapi: OpenAPI YML Files\n"
     "    - add_run: Create a new test run\n"
