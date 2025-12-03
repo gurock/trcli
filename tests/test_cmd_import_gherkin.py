@@ -104,13 +104,16 @@ class TestCmdImportGherkin:
         mock_api_handler_class.return_value = mock_handler
         mock_handler.add_bdd.return_value = ([456], "")
 
+        # Enable verbose mode via environment (verbose is now a global option)
+        self.environment.verbose = True
+
         with self.runner.isolated_filesystem():
             with open("test.feature", "w") as f:
                 f.write("Feature: Test\n  Scenario: Test\n")
 
             result = self.runner.invoke(
                 cmd_import_gherkin.cli,
-                ["--file", "test.feature", "--section-id", "123", "--verbose"],
+                ["--file", "test.feature", "--section-id", "123"],
                 obj=self.environment,
             )
 

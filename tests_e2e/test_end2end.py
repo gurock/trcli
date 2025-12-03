@@ -2055,10 +2055,10 @@ trcli -y \\
 trcli -y \\
   -h {self.TR_INSTANCE} \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  -v \\
   import_gherkin \\
   -f "reports_gherkin/sample_bdd.feature" \\
-  --section-id 2388 \\
-  --verbose
+  --section-id 2388
         """
         )
         _assert_contains(
@@ -2092,6 +2092,10 @@ trcli -y \\
         json_start = import_output.find("{")
         if json_start >= 0:
             json_str = import_output[json_start:]
+            # Remove "DONE" and any trailing text after the JSON
+            json_end = json_str.find("}")
+            if json_end >= 0:
+                json_str = json_str[: json_end + 1]
             output_data = json.loads(json_str)
             case_id = output_data.get("case_ids", [])[0] if output_data.get("case_ids") else None
 
@@ -2130,6 +2134,10 @@ trcli -y \\
         json_start = import_output.find("{")
         if json_start >= 0:
             json_str = import_output[json_start:]
+            # Remove "DONE" and any trailing text after the JSON
+            json_end = json_str.find("}")
+            if json_end >= 0:
+                json_str = json_str[: json_end + 1]
             output_data = json.loads(json_str)
             case_id = output_data.get("case_ids", [])[0] if output_data.get("case_ids") else None
 
@@ -2287,7 +2295,6 @@ trcli -y \\
                 "-f, --file",
                 "--section-id",
                 "--json-output",
-                "-v, --verbose",
             ],
         )
 
@@ -2295,7 +2302,7 @@ trcli -y \\
         export_gherkin_help = _run_cmd("trcli export_gherkin --help")
         _assert_contains(
             export_gherkin_help,
-            ["Export BDD test case from TestRail as .feature file", "--case-id", "--output", "-v, --verbose"],
+            ["Export BDD test case from TestRail as .feature file", "--case-id", "--output"],
         )
 
         # Test parse_cucumber help

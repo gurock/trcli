@@ -100,7 +100,10 @@ Feature: User Login
         mock_api_handler_class.return_value = mock_handler
         mock_handler.get_bdd.return_value = (self.sample_feature_content, "")
 
-        result = self.runner.invoke(cmd_export_gherkin.cli, ["--case-id", "456", "--verbose"], obj=self.environment)
+        # Enable verbose mode via environment (verbose is now a global option)
+        self.environment.verbose = True
+
+        result = self.runner.invoke(cmd_export_gherkin.cli, ["--case-id", "456"], obj=self.environment)
 
         assert result.exit_code == 0
 

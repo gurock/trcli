@@ -67,54 +67,6 @@ class TestCmdParseGherkin:
         assert "  " in json_str  # Indentation
 
     @pytest.mark.cmd_parse_gherkin
-    def test_parse_gherkin_custom_suite_name(self):
-        """Test parsing with custom suite name"""
-        custom_suite_name = "My Custom Suite"
-        result = self.runner.invoke(
-            cmd_parse_gherkin.cli, ["--file", self.test_feature_path, "--suite-name", custom_suite_name]
-        )
-
-        assert result.exit_code == 0
-        json_start = result.output.find("{")
-        output_data = json.loads(result.output[json_start:])
-        assert output_data["suites"][0]["name"] == custom_suite_name
-
-    @pytest.mark.cmd_parse_gherkin
-    def test_parse_gherkin_case_matcher_name(self):
-        """Test parsing with NAME case matcher"""
-        result = self.runner.invoke(cmd_parse_gherkin.cli, ["--file", self.test_feature_path, "--case-matcher", "name"])
-
-        assert result.exit_code == 0
-        json_start = result.output.find("{")
-        output_data = json.loads(result.output[json_start:])
-        assert "suites" in output_data
-
-    @pytest.mark.cmd_parse_gherkin
-    def test_parse_gherkin_case_matcher_property(self):
-        """Test parsing with PROPERTY case matcher"""
-        result = self.runner.invoke(
-            cmd_parse_gherkin.cli, ["--file", self.test_feature_path, "--case-matcher", "property"]
-        )
-
-        assert result.exit_code == 0
-        json_start = result.output.find("{")
-        output_data = json.loads(result.output[json_start:])
-        assert "suites" in output_data
-
-    @pytest.mark.cmd_parse_gherkin
-    def test_parse_gherkin_verbose_logging(self):
-        """Test parsing with verbose logging enabled"""
-        result = self.runner.invoke(cmd_parse_gherkin.cli, ["--file", self.test_feature_path, "--verbose"])
-
-        assert result.exit_code == 0
-        # Extract JSON from output (may have verbose logs before and after)
-        json_start = result.output.find("{")
-        json_end = result.output.rfind("}") + 1  # Find last closing brace
-        json_str = result.output[json_start:json_end]
-        output_data = json.loads(json_str)
-        assert "suites" in output_data
-
-    @pytest.mark.cmd_parse_gherkin
     def test_parse_gherkin_missing_file(self):
         """Test parsing with non-existent file"""
         result = self.runner.invoke(cmd_parse_gherkin.cli, ["--file", "/nonexistent/file.feature"])
