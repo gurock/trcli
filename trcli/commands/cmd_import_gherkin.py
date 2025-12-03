@@ -25,7 +25,6 @@ import trcli
     required=True,
     help="TestRail section ID where test cases will be created.",
 )
-@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging output.")
 @click.option("--json-output", is_flag=True, help="Output case IDs in JSON format.")
 @click.pass_context
 @pass_environment
@@ -53,9 +52,7 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
     environment.set_parameters(context)
     environment.check_for_required_parameters()
 
-    # Set up logging
-    if kwargs.get("verbose"):
-        environment.verbose = True
+    json_output = kwargs.get("json_output", False)
 
     try:
         # Read the feature file
@@ -75,7 +72,8 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
         environment.vlog(f"API endpoint: POST /api/v2/add_bdd/{section_id}")
 
         # Initialize API client
-        environment.log("Connecting to TestRail...")
+        if not json_output:
+            environment.log("Connecting to TestRail...")
 
         # Create APIClient
         uploader_metadata = APIClient.build_uploader_metadata(version=trcli.__version__)
@@ -103,7 +101,8 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
         )
 
         # Upload feature file
-        environment.log(f"Uploading feature file to TestRail...")
+        if not json_output:
+            environment.log(f"Uploading feature file to TestRail...")
         case_ids, error_message = api_request_handler.add_bdd(section_id, feature_content)
 
         if error_message:

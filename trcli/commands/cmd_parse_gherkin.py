@@ -18,38 +18,20 @@ from serde import to_dict
 )
 @click.option("--output", type=click.Path(), metavar="", help="Optional output file path to save parsed JSON.")
 @click.option("--pretty", is_flag=True, help="Pretty print JSON output with indentation.")
-@click.option(
-    "--case-matcher",
-    metavar="",
-    default="auto",
-    type=click.Choice(["auto", "name", "property"], case_sensitive=False),
-    help="Mechanism to match cases between the report and TestRail.",
-)
-@click.option("--suite-name", metavar="", help="Override suite name (defaults to feature name).")
-@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging output.")
 @click.pass_context
 @pass_environment
-def cli(environment: Environment, context: click.Context, file: str, output: str, pretty: bool, **kwargs):
-    """Parse Gherkin .feature files
+def cli(environment: Environment, context: click.Context, file: str, output: str, pretty: bool):
+    """Parse Gherkin .feature file locally
 
     This command parses Gherkin/BDD .feature files and converts them into
-    TestRail data structure format.
+    TestRail data structure format without uploading to TestRail.
 
     """
     environment.cmd = "parse_gherkin"
     environment.file = file
-    environment.case_matcher = kwargs.get("case_matcher", "auto").upper()
-    environment.suite_name = kwargs.get("suite_name")
-
-    # Set up logging
-    if kwargs.get("verbose"):
-        environment.verbose = True
 
     try:
         # Parse the feature file
-        if environment.verbose:
-            environment.log(f"Starting Gherkin parser for file: {file}")
-
         parser = GherkinParser(environment)
         parsed_suites = parser.parse_file()
 
@@ -148,9 +130,6 @@ def cli(environment: Environment, context: click.Context, file: str, output: str
             # Print to stdout
             print(json_output)
 
-        if environment.verbose:
-            environment.log("✓ Gherkin parsing completed successfully")
-
     except FileNotFoundError:
         environment.elog(FAULT_MAPPING["missing_file"])
         exit(1)
@@ -159,8 +138,4 @@ def cli(environment: Environment, context: click.Context, file: str, output: str
         exit(1)
     except Exception as e:
         environment.elog(f"Unexpected error during parsing: {str(e)}")
-        if environment.verbose:
-            import traceback
-
-            environment.elog(traceback.format_exc())
         exit(1)

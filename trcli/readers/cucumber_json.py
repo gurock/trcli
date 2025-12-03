@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from beartype.typing import List, Dict, Any, Optional
+from beartype.typing import List, Dict, Any, Optional, Tuple
 
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser, TestRailCaseFieldsOptimizer
@@ -308,6 +308,102 @@ class CucumberParser(FileParser):
 
         return "\n\n".join(feature_files)
 
+    def generate_scenario_gherkin(self, feature: Dict[str, Any], scenario: Dict[str, Any]) -> Tuple[str, List[str]]:
+        """Generate Gherkin content for a single scenario with feature context
+
+        This creates a complete .feature file containing just one scenario,
+        including the feature header, tags, and description.
+
+        Args:
+            feature: Feature object from Cucumber JSON
+            scenario: Scenario object from Cucumber JSON
+
+        Returns:
+            Tuple of (gherkin_content, all_tags)
+            - gherkin_content: Complete Gherkin .feature file for single scenario
+            - all_tags: List of all tags (feature + scenario)
+        """
+        lines = []
+
+        # Collect all tags (feature + scenario)
+        feature_tags = self._extract_tags(feature.get("tags", []))
+        scenario_tags = self._extract_tags(scenario.get("tags", []))
+        all_tags = feature_tags + scenario_tags
+
+        # Feature tags
+        if feature_tags:
+            lines.append(" ".join(feature_tags))
+
+        # Feature header
+        feature_name = feature.get("name", "Untitled Feature")
+        feature_description = feature.get("description", "")
+
+        lines.append(f"Feature: {feature_name}")
+        if feature_description:
+            for desc_line in feature_description.split("\n"):
+                if desc_line.strip():
+                    lines.append(f"  {desc_line.strip()}")
+
+        lines.append("")  # Empty line after feature header
+
+        # Background (if exists in feature) - include for context
+        background = None
+        for element in feature.get("elements", []):
+            if element.get("type") == "background":
+                background = element
+                break
+
+        if background:
+            background_content = self._generate_background_content(background)
+            if background_content:
+                lines.append(background_content)
+                lines.append("")
+
+        # Scenario tags
+        if scenario_tags:
+            lines.append("  " + " ".join(scenario_tags))
+
+        # Scenario content
+        scenario_type = scenario.get("type", "scenario")
+        scenario_name = scenario.get("name", "Untitled Scenario")
+
+        if scenario_type == "scenario_outline":
+            lines.append(f"  Scenario Outline: {scenario_name}")
+        else:
+            lines.append(f"  Scenario: {scenario_name}")
+
+        # Steps
+        for step in scenario.get("steps", []):
+            keyword = step.get("keyword", "").strip()
+            step_name = step.get("name", "")
+            lines.append(f"    {keyword} {step_name}")
+
+        # Examples table (for Scenario Outline)
+        if scenario_type == "scenario_outline":
+            examples = scenario.get("examples", [])
+            if examples:
+                for example_group in examples:
+                    lines.append("")  # Empty line before examples
+
+                    # Examples tags (if any)
+                    example_tags = self._extract_tags(example_group.get("tags", []))
+                    if example_tags:
+                        lines.append("    " + " ".join(example_tags))
+
+                    # Examples keyword
+                    lines.append("    Examples:")
+
+                    # Examples table
+                    rows = example_group.get("rows", [])
+                    if rows:
+                        for row in rows:
+                            cells = row.get("cells", [])
+                            if cells:
+                                row_content = " | ".join(cells)
+                                lines.append(f"      | {row_content} |")
+
+        return "\n".join(lines), all_tags
+
     def _generate_feature_content(self, feature: Dict[str, Any]) -> str:
         """Generate Gherkin feature content from Cucumber feature object
 
@@ -470,9 +566,10 @@ class CucumberParser(FileParser):
                 if desc_line.strip():
                     lines.append(f"    {desc_line.strip()}")
 
-        # Background within rule (if any)
+        # Process children in order: Background first, then scenarios
         for element in rule.get("children", []):
             element_type = element.get("type", "")
+
             if element_type == "background":
                 lines.append("")
                 background_content = self._generate_background_content(element)
@@ -480,10 +577,7 @@ class CucumberParser(FileParser):
                 for line in background_content.split("\n"):
                     lines.append("  " + line if line else "")
 
-        # Scenarios within rule
-        for element in rule.get("children", []):
-            element_type = element.get("type", "")
-            if element_type in ("scenario", "scenario_outline"):
+            elif element_type in ("scenario", "scenario_outline"):
                 lines.append("")
                 scenario_content = self._generate_scenario_content(element)
                 # Indent scenario under rule

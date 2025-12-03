@@ -23,7 +23,6 @@ import trcli
     metavar="",
     help="Output path for the .feature file. If not specified, prints to stdout.",
 )
-@click.option("-v", "--verbose", is_flag=True, help="Enable verbose logging output.")
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, case_id: int, output: str, **kwargs):
@@ -52,10 +51,6 @@ def cli(environment: Environment, context: click.Context, case_id: int, output: 
     environment.cmd = "export_gherkin"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
-
-    # Set up logging
-    if kwargs.get("verbose"):
-        environment.verbose = True
 
     try:
         environment.vlog(f"Target case ID: {case_id}")

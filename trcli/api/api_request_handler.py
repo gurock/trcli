@@ -1732,6 +1732,34 @@ class ApiRequestHandler:
         else:
             return False, update_response.error_message
 
+    def update_case_automation_id(self, case_id: int, automation_id: str) -> Tuple[bool, str]:
+        """
+        Update the automation_id field of a test case
+
+        Args:
+            case_id: TestRail test case ID
+            automation_id: Automation ID value to set
+
+        Returns:
+            Tuple of (success, error_message)
+            - success: True if update succeeded, False otherwise
+            - error_message: Empty string on success, error details on failure
+
+        API Endpoint: POST /api/v2/update_case/{case_id}
+        """
+        self.environment.vlog(f"Setting automation_id '{automation_id}' on case {case_id}")
+
+        update_data = {"custom_automation_id": automation_id}
+        update_response = self.client.send_post(f"update_case/{case_id}", update_data)
+
+        if update_response.status_code == 200:
+            return True, ""
+        else:
+            error_msg = (
+                update_response.error_message or f"Failed to update automation_id (HTTP {update_response.status_code})"
+            )
+            return False, error_msg
+
     def add_bdd(self, section_id: int, feature_content: str) -> Tuple[List[int], str]:
         """
         Upload .feature file to TestRail BDD endpoint
@@ -1814,3 +1842,125 @@ class ApiRequestHandler:
         else:
             error_msg = response.error_message or f"Failed to retrieve BDD test case (HTTP {response.status_code})"
             return "", error_msg
+
+    def get_bdd_template_id(self, project_id: int) -> Tuple[int, str]:
+        """
+        Get the BDD template ID for a project
+
+        Args:
+            project_id: TestRail project ID
+
+        Returns:
+            Tuple of (template_id, error_message)
+            - template_id: BDD template ID if found, None otherwise
+            - error_message: Empty string on success, error details on failure
+
+        API Endpoint: GET /api/v2/get_templates/{project_id}
+        """
+        self.environment.vlog(f"Getting templates for project {project_id}")
+        response = self.client.send_get(f"get_templates/{project_id}")
+
+        if response.status_code == 200:
+            templates = response.response_text
+            if isinstance(templates, list):
+                self.environment.vlog(f"Retrieved {len(templates)} template(s) from TestRail")
+
+                # Log all available templates for debugging
+                if templates:
+                    self.environment.vlog("Available templates:")
+                    for template in templates:
+                        template_id = template.get("id")
+                        template_name = template.get("name", "")
+                        self.environment.vlog(f"  - ID {template_id}: '{template_name}'")
+
+                # Look for BDD template by name
+                for template in templates:
+                    template_name = template.get("name", "").strip()
+                    template_name_lower = template_name.lower()
+                    template_id = template.get("id")
+
+                    self.environment.vlog(f"Checking template '{template_name}' (ID: {template_id})")
+                    self.environment.vlog(f"  Lowercase: '{template_name_lower}'")
+
+                    # Check for BDD template (support both US and UK spellings)
+                    if (
+                        "behavior" in template_name_lower
+                        or "behaviour" in template_name_lower
+                        or "bdd" in template_name_lower
+                    ):
+                        self.environment.vlog(f"  ✓ MATCH: This is the BDD template!")
+                        self.environment.log(f"Found BDD template: '{template_name}' (ID: {template_id})")
+                        return template_id, ""
+                    else:
+                        self.environment.vlog(f"  ✗ No match: Does not contain 'behavior', 'behaviour', or 'bdd'")
+
+                # Build detailed error message with available templates
+                error_parts = ["BDD template not found. Please enable BDD template in TestRail project settings."]
+                if templates:
+                    template_list = ", ".join([f"'{t.get('name', 'Unknown')}'" for t in templates])
+                    error_parts.append(f"Available templates: {template_list}")
+                    error_parts.append("The BDD template name should contain 'behavior', 'behaviour', or 'bdd'.")
+                else:
+                    error_parts.append("No templates are available in this project.")
+
+                return None, "\n".join(error_parts)
+            else:
+                return None, "Unexpected response format from get_templates"
+        else:
+            error_msg = response.error_message or f"Failed to get templates (HTTP {response.status_code})"
+            return None, error_msg
+
+    def add_case_bdd(
+        self, section_id: int, title: str, bdd_content: str, template_id: int, tags: List[str] = None
+    ) -> Tuple[int, str]:
+        """
+        Create a BDD test case with Gherkin content
+
+        Args:
+            section_id: TestRail section ID where test case will be created
+            title: Test case title (scenario name)
+            bdd_content: Gherkin scenario content
+            template_id: BDD template ID
+            tags: Optional list of tags (for refs field)
+
+        Returns:
+            Tuple of (case_id, error_message)
+            - case_id: Created test case ID if successful, None otherwise
+            - error_message: Empty string on success, error details on failure
+
+        API Endpoint: POST /api/v2/add_case/{section_id}
+        """
+        self.environment.vlog(f"Creating BDD test case '{title}' in section {section_id}")
+
+        # Build request body
+        # Note: custom_testrail_bdd_scenario expects an array of lines, not a single string
+        bdd_lines = bdd_content.split("\n") if bdd_content else []
+
+        body = {
+            "title": title,
+            "template_id": template_id,
+            "custom_testrail_bdd_scenario": bdd_lines,
+        }
+
+        # Add tags as references if provided
+        if tags:
+            # Filter out @C tags (case IDs) and format others
+            ref_tags = [tag for tag in tags if not tag.upper().startswith("@C")]
+            if ref_tags:
+                body["refs"] = ", ".join(ref_tags)
+
+        response = self.client.send_post(f"add_case/{section_id}", body)
+
+        if response.status_code == 200:
+            if isinstance(response.response_text, dict):
+                case_id = response.response_text.get("id")
+                if case_id:
+                    self.environment.vlog(f"Created BDD test case ID: {case_id}")
+                    return case_id, ""
+                else:
+                    return None, "Response missing 'id' field"
+            else:
+                return None, "Unexpected response format"
+        else:
+            error_msg = response.error_message or f"Failed to create BDD test case (HTTP {response.status_code})"
+            return None, error_msg
