@@ -6,6 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.5]
+
+_released 12-09-2025
+
+### Fixed
+ - Added a new option --parallel-pagination for handling large test result uploads with optimized processing and improved error handling.
+ - Fixed an issue where adding labels to project fails using label add command
+ - Fixed an issue where failed attachment upload errors (e.g. due to file size being too large) is not displayed in standard output.
+ - Fixed an issue where test cases are deleted in existing test runs with configs in a test plan
+
 ## [1.12.4]
 
 _released 11-03-2025
