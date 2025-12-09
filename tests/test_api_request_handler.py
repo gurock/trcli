@@ -1062,3 +1062,89 @@ class TestApiRequestHandler:
         assert payload["include_all"] == False, "include_all should be False"
         assert "case_ids" in payload, "case_ids should be present"
         assert 50 in payload["case_ids"], "Should include existing case ID"
+        
+        def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
+        """Test that 413 errors (file too large) are properly reported."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Create a temporary test file
+        test_file = tmp_path / "large_attachment.jpg"
+        test_file.write_text("test content")
+
+        # Mock add_attachment_to_result endpoint to return 413
+        requests_mock.post(
+            create_url("add_attachment_to_result/2001"),
+            status_code=413,
+            text='<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n<html><head>\n<title>413 Request Entity Too Large</title>\n</head><body>\n<h1>Request Entity Too Large</h1>\n</body></html>\n',
+        )
+
+        # Prepare test data
+        report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, results, run_id)
+
+        # Verify the request was made (case-insensitive comparison)
+        assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_success(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
+        """Test that successful attachment uploads work correctly."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Create a temporary test file
+        test_file = tmp_path / "test_attachment.jpg"
+        test_file.write_text("test content")
+
+        # Mock add_attachment_to_result endpoint to return success
+        requests_mock.post(create_url("add_attachment_to_result/2001"), status_code=200, json={"attachment_id": 5001})
+
+        # Prepare test data
+        report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, results, run_id)
+
+        # Verify the request was made (case-insensitive comparison)
+        assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_file_not_found(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that missing attachment files are properly reported."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Prepare test data with non-existent file
+        report_results = [{"case_id": 100, "attachments": ["/path/to/nonexistent/file.jpg"]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments - should not raise exception
+        api_request_handler.upload_attachments(report_results, results, run_id)
+

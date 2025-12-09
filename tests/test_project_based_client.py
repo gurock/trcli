@@ -26,26 +26,21 @@ class TestProjectBasedClient:
         environment.file = "results.xml"
         environment.case_matcher = MatchersParser.AUTO
 
-        api_request_handler = mocker.patch(
-            "trcli.api.project_based_client.ApiRequestHandler"
-        )
+        api_request_handler = mocker.patch("trcli.api.project_based_client.ApiRequestHandler")
         api_request_handler.get_project_data.return_value = ProjectData(
             project_id=environment.project_id, suite_mode=1, error_message=""
         )
         api_request_handler.check_automation_id_field.return_value = None
         project_based_client = ProjectBasedClient(
-            environment=environment, suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+            environment=environment,
+            suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
         )
         project_based_client.api_request_handler = api_request_handler
         yield environment, api_request_handler, project_based_client
 
     @pytest.mark.project_based_client
-    @pytest.mark.parametrize(
-        "timeout", [40, None], ids=["with_timeout", "without_timeout"]
-    )
-    def test_instantiate_api_client(
-            self, timeout, project_based_client_data_provider, mocker
-    ):
+    @pytest.mark.parametrize("timeout", [40, None], ids=["with_timeout", "without_timeout"])
+    def test_instantiate_api_client(self, timeout, project_based_client_data_provider, mocker):
         """The purpose of this test is to check that APIClient was instantiated properly and credential fields
         were set es expected."""
         (_, api_request_handler, _) = project_based_client_data_provider
@@ -57,24 +52,22 @@ class TestProjectBasedClient:
         environment.key = "test_api_key"
         if timeout:
             environment.timeout = timeout
-        timeout_expected_result = 30 if not timeout else timeout
-        project_based_client = ProjectBasedClient(
-            environment=environment, suite=junit_file_parser
-        )
+        timeout_expected_result = 60 if not timeout else timeout
+        project_based_client = ProjectBasedClient(environment=environment, suite=junit_file_parser)
 
         api_client = project_based_client.instantiate_api_client()
 
         assert (
-                api_client.username == environment.username
+            api_client.username == environment.username
         ), f"Expected username to be set to: {environment.username}, but got: {api_client.username} instead."
         assert (
-                api_client.password == environment.password
+            api_client.password == environment.password
         ), f"Expected password  to be set to: {environment.password}, but got: {api_client.password} instead."
         assert (
-                api_client.api_key == environment.key
+            api_client.api_key == environment.key
         ), f"Expected api_key to be set to: {environment.key}, but got: {api_client.api_key} instead."
         assert (
-                api_client.timeout == timeout_expected_result
+            api_client.timeout == timeout_expected_result
         ), f"Expected timeout to be set to: {timeout_expected_result}, but got: {api_client.timeout} instead."
 
     def test_resolve_project(self, project_based_client_data_provider):
@@ -87,10 +80,10 @@ class TestProjectBasedClient:
         ) = project_based_client_data_provider
 
         project_based_client.resolve_project()
-        assert (
-                project_based_client.project.project_id == environment.project_id
-        ), (f"Expected project_based_client.project to have {environment.project_id},"
-            f" but had {project_based_client.project.project_id}")
+        assert project_based_client.project.project_id == environment.project_id, (
+            f"Expected project_based_client.project to have {environment.project_id},"
+            f" but had {project_based_client.project.project_id}"
+        )
 
     @pytest.mark.project_based_client
     def test_get_suite_id_returns_valid_id(self, project_based_client_data_provider):
@@ -109,14 +102,10 @@ class TestProjectBasedClient:
             suite_mode=SuiteModes.single_suite
         )
 
+        assert result_suite_id == suite_id, f"Expected suite_id: {suite_id} but got {result_suite_id} instead."
+        assert suite_added is False, f"Expected suite_added: {False} but got {suite_added} instead."
         assert (
-                result_suite_id == suite_id
-        ), f"Expected suite_id: {suite_id} but got {result_suite_id} instead."
-        assert (
-                suite_added is False
-        ), f"Expected suite_added: {False} but got {suite_added} instead."
-        assert (
-                result_return_code == result_code
+            result_return_code == result_code
         ), f"Expected suite_id: {result_code} but got {result_return_code} instead."
 
     @pytest.mark.project_based_client
@@ -126,14 +115,14 @@ class TestProjectBasedClient:
         ids=TEST_GET_SUITE_ID_PROMPTS_USER_IDS,
     )
     def test_get_suite_id_multiple_suites_mode(
-            self,
-            user_response,
-            expected_suite_id,
-            expected_result_code,
-            expected_message,
-            suite_add_error,
-            project_based_client_data_provider,
-            mocker,
+        self,
+        user_response,
+        expected_suite_id,
+        expected_result_code,
+        expected_message,
+        suite_add_error,
+        project_based_client_data_provider,
+        mocker,
     ):
         """The purpose of this test is to check that user will be prompted to add suite is one is missing
         in TestRail. Depending on user response either information about addition of missing suite or error message
@@ -160,9 +149,7 @@ class TestProjectBasedClient:
         else:
             project_based_client.api_request_handler.add_suites.return_value = (
                 [{"suite_id": expected_suite_id, "name": suite_name}],
-                FAULT_MAPPING["error_while_adding_suite"].format(
-                    error_message="Failed to add suite."
-                ),
+                FAULT_MAPPING["error_while_adding_suite"].format(error_message="Failed to add suite."),
             )
         project_based_client.api_request_handler.suites_data_from_provider.suite_id = None
         project_based_client.api_request_handler.suites_data_from_provider.name = suite_name
@@ -177,18 +164,14 @@ class TestProjectBasedClient:
 
         if suite_add_error:
             expected_elog_calls.append(
-                mocker.call(
-                    FAULT_MAPPING["error_while_adding_suite"].format(
-                        error_message="Failed to add suite."
-                    )
-                )
+                mocker.call(FAULT_MAPPING["error_while_adding_suite"].format(error_message="Failed to add suite."))
             )
 
         assert (
-                expected_suite_id == result_suite_id
+            expected_suite_id == result_suite_id
         ), f"Expected suite_id: {expected_suite_id} but got {result_suite_id} instead."
         assert (
-                expected_result_code == result_code
+            expected_result_code == result_code
         ), f"Expected suite_id: {expected_result_code} but got {result_code} instead."
         environment.get_prompt_response_for_auto_creation.assert_called_with(
             PROMPT_MESSAGES["create_new_suite"].format(
@@ -197,9 +180,7 @@ class TestProjectBasedClient:
             )
         )
         if user_response:
-            project_based_client.api_request_handler.add_suites.assert_called_with(
-                project_id=project_id
-            )
+            project_based_client.api_request_handler.add_suites.assert_called_with(project_id=project_id)
         environment.log.assert_has_calls(expected_log_calls)
         environment.elog.assert_has_calls(expected_elog_calls)
 
@@ -210,13 +191,13 @@ class TestProjectBasedClient:
         ids=["get_suite_ids succeeds", "get_suite_ids fails"],
     )
     def test_get_suite_id_single_suite_mode(
-            self,
-            suite_ids,
-            error_message,
-            expected_suite_id,
-            expected_result_code,
-            project_based_client_data_provider,
-            mocker,
+        self,
+        suite_ids,
+        error_message,
+        expected_suite_id,
+        expected_result_code,
+        project_based_client_data_provider,
+        mocker,
     ):
         """The purpose of this test is to check flow of get_suite_id_log_error function for single
         suite mode."""
@@ -238,10 +219,10 @@ class TestProjectBasedClient:
         result_suite_id, result_code, suite_added = project_based_client.get_suite_id(suite_mode)
 
         assert (
-                result_suite_id == expected_suite_id
+            result_suite_id == expected_suite_id
         ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
         assert (
-                result_code == expected_result_code
+            result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
         if error_message:
             environment.elog.assert_has_calls(expected_elog_calls)
@@ -253,13 +234,13 @@ class TestProjectBasedClient:
         ids=TEST_GET_SUITE_ID_SINGLE_SUITE_MODE_BASELINES_IDS,
     )
     def test_get_suite_id_single_suite_mode_baselines(
-            self,
-            get_suite_ids_result,
-            expected_suite_id,
-            expected_result_code,
-            expected_error_message,
-            project_based_client_data_provider,
-            mocker,
+        self,
+        get_suite_ids_result,
+        expected_suite_id,
+        expected_result_code,
+        expected_error_message,
+        project_based_client_data_provider,
+        mocker,
     ):
         """The purpose of this test is to check flow of get_suite_id_log_error function for single
         suite with baselines mode."""
@@ -271,26 +252,22 @@ class TestProjectBasedClient:
         suite_mode = SuiteModes.single_suite_baselines
         project_based_client.api_request_handler.resolve_suite_id_using_name.return_value = (-1, "Any Error")
         project_based_client.api_request_handler.suites_data_from_provider.suite_id = None
-        project_based_client.api_request_handler.get_suite_ids.return_value = (
-            get_suite_ids_result
-        )
+        project_based_client.api_request_handler.get_suite_ids.return_value = get_suite_ids_result
         expected_elog_calls = []
         if expected_error_message:
             expected_elog_calls = [mocker.call(expected_error_message)]
         result_suite_id, result_code, suite_added = project_based_client.get_suite_id(suite_mode)
 
         assert (
-                result_suite_id == expected_suite_id
+            result_suite_id == expected_suite_id
         ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
         assert (
-                result_code == expected_result_code
+            result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
         environment.elog.assert_has_calls(expected_elog_calls)
 
     @pytest.mark.project_based_client
-    def test_get_suite_id_unknown_suite_mode(
-            self, project_based_client_data_provider, mocker
-    ):
+    def test_get_suite_id_unknown_suite_mode(self, project_based_client_data_provider, mocker):
         """The purpose of this test is to check that get_suite_id will return -1 and print
         proper message when unknown suite mode will be returned during execution."""
         (
@@ -302,18 +279,14 @@ class TestProjectBasedClient:
         expected_result_code = -1
         expected_suite_id = -1
         project_based_client.api_request_handler.suites_data_from_provider.suite_id = None
-        expected_elog_calls = [
-            mocker.call(
-                FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
-            )
-        ]
+        expected_elog_calls = [mocker.call(FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode))]
         result_suite_id, result_code, suite_added = project_based_client.get_suite_id(suite_mode)
 
         assert (
-                result_suite_id == expected_suite_id
+            result_suite_id == expected_suite_id
         ), f"Expected suite id: {expected_suite_id} but got {result_suite_id} instead."
         assert (
-                result_code == expected_result_code
+            result_code == expected_result_code
         ), f"Expected result code: {expected_result_code} but got {result_code} instead."
         environment.elog.assert_has_calls(expected_elog_calls)
 
@@ -333,13 +306,11 @@ class TestProjectBasedClient:
         result_code = project_based_client.check_suite_id(project_id=project_id)
 
         assert (
-                result_code == expected_result_code
+            result_code == expected_result_code
         ), f"Expected to get {result_code} as result code, but got {expected_result_code} instead."
 
     @pytest.mark.project_based_client
-    def test_check_suite_id_prints_error_message(
-            self, project_based_client_data_provider, mocker
-    ):
+    def test_check_suite_id_prints_error_message(self, project_based_client_data_provider, mocker):
         """The purpose of this test is to check that proper message would be printed to the user
         and program will quit when suite ID is not present in TestRail."""
         (
@@ -356,13 +327,11 @@ class TestProjectBasedClient:
         )
 
         result_code = project_based_client.check_suite_id(project_id=project_id)
-        expected_elog_calls = [
-            mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))
-        ]
+        expected_elog_calls = [mocker.call(FAULT_MAPPING["missing_suite"].format(suite_id=suite_id))]
 
         environment.elog.assert_has_calls(expected_elog_calls)
         assert (
-                result_code == expected_result_code
+            result_code == expected_result_code
         ), f"Expected to get {expected_result_code} as result code, but got {result_code} instead."
 
     def test_resolve_suite_returns_valid_id(self, project_based_client_data_provider):
@@ -377,9 +346,7 @@ class TestProjectBasedClient:
 
         project_based_client.resolve_project()
         suite_id, suite_added = project_based_client.resolve_suite()
-        assert (
-                suite_id == 1
-        ), f"Expected suite id 1 but got {suite_id} instead."
+        assert suite_id == 1, f"Expected suite id 1 but got {suite_id} instead."
 
     def test_create_or_update_test_run_calls_add_run(self, project_based_client_data_provider):
         """The purpose of this test is to check that calling the method without a run_id in the environment causes
@@ -396,12 +363,8 @@ class TestProjectBasedClient:
         run_id, error_message = project_based_client.create_or_update_test_run()
 
         project_based_client.api_request_handler.add_run.assert_called_once()
-        assert (
-                run_id == 1
-        ), f"Expected run_id to be 1 but got {run_id} instead."
-        assert (
-                error_message == ""
-        ), f"Expected error message to be None but got {error_message} instead."
+        assert run_id == 1, f"Expected run_id to be 1 but got {run_id} instead."
+        assert error_message == "", f"Expected error message to be None but got {error_message} instead."
 
     def test_create_or_update_test_run_calls_update_run(self, project_based_client_data_provider):
         """The purpose of this test is to check that calling the method with a run_id in the environment causes
@@ -418,12 +381,8 @@ class TestProjectBasedClient:
         run_id, error_message = project_based_client.create_or_update_test_run()
 
         api_request_handler.update_run.assert_called_once()
-        assert (
-                run_id == 1
-        ), f"Expected run_id to be 1 but got {run_id} instead."
-        assert (
-                error_message == ""
-        ), f"Expected error message to be None but got {error_message} instead."
+        assert run_id == 1, f"Expected run_id to be 1 but got {run_id} instead."
+        assert error_message == "", f"Expected error message to be None but got {error_message} instead."
 
     def test_get_project_id(self, project_based_client_data_provider):
         """The purpose of this test is to check that the _get_project_id() will fall back to the environment.project_id
@@ -434,7 +393,7 @@ class TestProjectBasedClient:
             project_based_client,
         ) = project_based_client_data_provider
 
-        assert (
-                project_based_client._get_project_id() == environment.project_id
-        ), (f"Expected to get {environment.project_id} from project_based_client.get_project_id but got"
-            f" {project_based_client._get_project_id()} instead.")
+        assert project_based_client._get_project_id() == environment.project_id, (
+            f"Expected to get {environment.project_id} from project_based_client.get_project_id but got"
+            f" {project_based_client._get_project_id()} instead."
+        )
