@@ -5,9 +5,7 @@ PARSE_COMMON_FAULT_MAPPING = dict(
     missing_file="Please provide a valid path to your results file with the -f argument.",
 )
 
-PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING = dict(
-    missing_title="Please give your Test Run a title using the --title argument."
-)
+PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING = dict(missing_title="Please give your Test Run a title using the --title argument.")
 
 ADD_RUN_FAULT_MAPPING = dict(
     missing_title="Please give your Test Run a title using the --title argument.",
@@ -58,18 +56,21 @@ FAULT_MAPPING = dict(
     f"  - System Name: automation_id\n"
     f"  - Type: Text (or String)\n"
     f"  - Is Active: True",
-    proxy_connection_error= "Failed to connect to the proxy server. Please check the proxy settings and ensure the server is available.",
-    proxy_authentication_failed= "Proxy authentication failed for proxy. Please verify the username and password.",
-    proxy_timeout= "The connection to the proxy server timed out. Please try again later or check the proxy server's availability.",
-    proxy_bypass_error= "Failed to bypass the proxy for host. Please check the settings.",
-    proxy_invalid_configuration= "The provided proxy configuration is invalid. Please check the proxy URL and format.",
-    ssl_error_on_proxy= "SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
-    no_proxy_match_error= "The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy.",
-    no_suites_found= "The project {project_id} does not have any suites.",
-    invalid_json_response= "Received invalid response from TestRail server (HTTP {status_code}). "
+    proxy_connection_error="Failed to connect to the proxy server. Please check the proxy settings and ensure the server is available.",
+    proxy_authentication_failed="Proxy authentication failed for proxy. Please verify the username and password.",
+    proxy_timeout="The connection to the proxy server timed out. Please try again later or check the proxy server's availability.",
+    proxy_bypass_error="Failed to bypass the proxy for host. Please check the settings.",
+    proxy_invalid_configuration="The provided proxy configuration is invalid. Please check the proxy URL and format.",
+    ssl_error_on_proxy="SSL error encountered while using the HTTPS proxy. Please check the proxy's SSL certificate.",
+    no_proxy_match_error="The host {host} does not match any NO_PROXY rules. Ensure the correct domains or IP addresses are specified for bypassing the proxy.",
+    no_suites_found="The project {project_id} does not have any suites.",
+    invalid_json_response="Received invalid response from TestRail server (HTTP {status_code}). "
     "Please verify your TestRail host URL (-h) is correct and points to a valid TestRail instance. "
     "Response preview: {response_preview}",
-    invalid_api_response= "Invalid response from TestRail API: {error_details}"
+    invalid_api_response="Invalid response from TestRail API: {error_details}",
+    attachment_upload_failed="Failed to upload attachment '{file_path}' for case {case_id}: {error_message}",
+    attachment_too_large="Failed to upload attachment '{file_name}' for case {case_id}: "
+    "File size exceeds TestRail's maximum limit of 250 MB. Please reduce the file size or exclude this attachment.",
 )
 
 COMMAND_FAULT_MAPPING = dict(
@@ -127,6 +128,7 @@ class RevertMessages:
     test_cases_not_deleted = "Unable to delete created test cases: {error}"
     run_deleted = "Deleted created run"
     run_not_deleted = "Unable to delete created run: {error}"
+
 
 OLD_SYSTEM_NAME_AUTOMATION_ID = "custom_automation_id"
 # field name mismatch on testrail side (can not reproduce in cloud version TestRail v9.1.2)

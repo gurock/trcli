@@ -1,4 +1,4 @@
-import html, json
+import html, json, os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from beartype.typing import List, Union, Tuple, Dict
@@ -761,6 +761,7 @@ class ApiRequestHandler:
         """Getting test result id and upload attachments for it."""
         tests_in_run, error = self.__get_all_tests_in_run(run_id)
         if not error:
+            failed_uploads = []
             for report_result in report_results:
                 case_id = report_result["case_id"]
                 test_id = next((test["id"] for test in tests_in_run if test["case_id"] == case_id), None)
@@ -768,9 +769,41 @@ class ApiRequestHandler:
                 for file_path in report_result.get("attachments"):
                     try:
                         with open(file_path, "rb") as file:
-                            self.client.send_post(f"add_attachment_to_result/{result_id}", files={"attachment": file})
+                            response = self.client.send_post(
+                                f"add_attachment_to_result/{result_id}", files={"attachment": file}
+                            )
+
+                            # Check if upload was successful
+                            if response.status_code != 200:
+                                file_name = os.path.basename(file_path)
+
+                                # Handle 413 Request Entity Too Large specifically
+                                if response.status_code == 413:
+                                    error_msg = FAULT_MAPPING["attachment_too_large"].format(
+                                        file_name=file_name, case_id=case_id
+                                    )
+                                    self.environment.elog(error_msg)
+                                    failed_uploads.append(f"{file_name} (case {case_id})")
+                                else:
+                                    # Handle other HTTP errors
+                                    error_msg = FAULT_MAPPING["attachment_upload_failed"].format(
+                                        file_path=file_name,
+                                        case_id=case_id,
+                                        error_message=response.error_message or f"HTTP {response.status_code}",
+                                    )
+                                    self.environment.elog(error_msg)
+                                    failed_uploads.append(f"{file_name} (case {case_id})")
+                    except FileNotFoundError:
+                        self.environment.elog(f"Attachment file not found: {file_path} (case {case_id})")
+                        failed_uploads.append(f"{file_path} (case {case_id})")
                     except Exception as ex:
-                        self.environment.elog(f"Error uploading attachment for case {case_id}: {ex}")
+                        file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
+                        self.environment.elog(f"Error uploading attachment '{file_name}' for case {case_id}: {ex}")
+                        failed_uploads.append(f"{file_name} (case {case_id})")
+
+            # Provide a summary if there were failed uploads
+            if failed_uploads:
+                self.environment.log(f"\nWarning: {len(failed_uploads)} attachment(s) failed to upload.")
         else:
             self.environment.elog(f"Unable to upload attachments due to API request error: {error}")
 
