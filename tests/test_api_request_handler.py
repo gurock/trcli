@@ -1062,8 +1062,9 @@ class TestApiRequestHandler:
         assert payload["include_all"] == False, "include_all should be False"
         assert "case_ids" in payload, "case_ids should be present"
         assert 50 in payload["case_ids"], "Should include existing case ID"
-        
-        def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
         """Test that 413 errors (file too large) are properly reported."""
         run_id = 1
 
@@ -1137,6 +1138,10 @@ class TestApiRequestHandler:
 
         # Mock get_tests endpoint
         mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
             "tests": [{"id": 1001, "case_id": 100}],
         }
         requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
@@ -1147,4 +1152,3 @@ class TestApiRequestHandler:
 
         # Call upload_attachments - should not raise exception
         api_request_handler.upload_attachments(report_results, results, run_id)
-
