@@ -1040,9 +1040,8 @@ class ApiRequestHandler:
         :param title: Title of the label (max 20 characters)
         :returns: Tuple with created label data and error string
         """
-        # Use multipart/form-data like the working CURL command
-        files = {"title": (None, title)}
-        response = self.client.send_post(f"add_label/{project_id}", payload=None, files=files)
+        payload = {"title": title}
+        response = self.client.send_post(f"add_label/{project_id}", payload=payload)
         return response.response_text, response.error_message
 
     def update_label(self, label_id: int, project_id: int, title: str) -> Tuple[dict, str]:
@@ -1053,12 +1052,8 @@ class ApiRequestHandler:
         :param title: New title for the label (max 20 characters)
         :returns: Tuple with updated label data and error string
         """
-        # Use multipart/form-data like add_label
-        files = {
-            "project_id": (None, str(project_id)),
-            "title": (None, title),  # Field name is 'title' (no colon) for form data
-        }
-        response = self.client.send_post(f"update_label/{label_id}", payload=None, files=files)
+        payload = {"project_id": project_id, "title": title}
+        response = self.client.send_post(f"update_label/{label_id}", payload=payload)
         return response.response_text, response.error_message
 
     def get_label(self, label_id: int) -> Tuple[dict, str]:
@@ -1107,12 +1102,8 @@ class ApiRequestHandler:
         :param label_ids: List of label IDs to delete
         :returns: Tuple with success status and error string
         """
-        # Send as form data with JSON array format
-        import json
-
-        label_ids_json = json.dumps(label_ids)
-        files = {"label_ids": (None, label_ids_json)}
-        response = self.client.send_post("delete_labels", payload=None, files=files)
+        payload = {"label_ids": label_ids}
+        response = self.client.send_post("delete_labels", payload=payload)
         success = response.status_code == 200
         return success, response.error_message
 
