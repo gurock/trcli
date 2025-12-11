@@ -148,7 +148,7 @@ Options:
                             JUnit properties (default: no).
   --update-strategy         Strategy for combining incoming values with
                             existing case field values, whether to append or
-                            replace (default: append).
+                            replace (Note: only applies to references default: append).
   --help              Show this message and exit.
 ```
 
