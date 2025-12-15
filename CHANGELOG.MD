@@ -13,6 +13,9 @@ _released 12-01-2025
 ### Fixed
  - Added new BDD/Gherkin parser command parse_bdd for behavioral driven development-related testing
 
+### Added
+ - **BDD Support for parse_junit**: Added `--special-parser bdd` option to group multiple JUnit scenarios into a single TestRail BDD test case; supports case ID extraction, BDD case validation and result aggregation
+
 ## [1.12.4]
 
 _released 11-03-2025

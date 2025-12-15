@@ -4,8 +4,7 @@ from beartype.typing import Union, List
 from unittest import TestCase, TestSuite
 from xml.etree import ElementTree as etree
 
-from junitparser import (
-    JUnitXml, JUnitXmlError, Element, Attr, TestSuite as JUnitTestSuite, TestCase as JUnitTestCase)
+from junitparser import JUnitXml, JUnitXmlError, Element, Attr, TestSuite as JUnitTestSuite, TestCase as JUnitTestCase
 
 from trcli.cli import Environment
 from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID
@@ -15,16 +14,12 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailSuite,
     TestRailSection,
     TestRailProperty,
-    TestRailResult, TestRailSeparatedStep,
+    TestRailResult,
+    TestRailSeparatedStep,
 )
 from trcli.readers.file_parser import FileParser
 
-STEP_STATUSES = {
-    "passed": 1,
-    "untested": 3,
-    "skipped": 4,
-    "failed": 5
-}
+STEP_STATUSES = {"passed": 1, "untested": 3, "skipped": 4, "failed": 5}
 
 TestCase.id = Attr("id")
 TestSuite.id = Attr("id")
@@ -47,7 +42,7 @@ class JunitParser(FileParser):
         super().__init__(environment)
         self._case_matcher = environment.case_matcher
         self._special = environment.special_parser
-        self._case_result_statuses = {"passed": 1, "skipped": 4,"error": 5, "failure": 5}
+        self._case_result_statuses = {"passed": 1, "skipped": 4, "error": 5, "failure": 5}
         self._update_with_custom_statuses()
 
     @classmethod
@@ -134,7 +129,7 @@ class JunitParser(FileParser):
         parts = [
             f"Type: {result.type}" if result.type else "",
             f"Message: {result.message}" if result.message else "",
-            f"Text: {result.text}" if result.text else ""
+            f"Text: {result.text}" if result.text else "",
         ]
         return "\n".join(part for part in parts if part).strip()
 
@@ -155,7 +150,7 @@ class JunitParser(FileParser):
                     continue
 
                 elif name.startswith("testrail_result_step"):
-                    status, step = value.split(':', maxsplit=1)
+                    status, step = value.split(":", maxsplit=1)
                     step_obj = TestRailSeparatedStep(step.strip())
                     step_obj.status_id = STEP_STATUSES[status.lower().strip()]
                     result_steps.append(step_obj)
@@ -169,7 +164,7 @@ class JunitParser(FileParser):
                     text = prop._elem.text.strip() if prop._elem.text else None
                     field_value = text or value
                     case_fields.append(field_value)
-                    
+
                     # Extract refs for case updates
                     if field_value and field_value.startswith("refs:"):
                         case_refs = field_value[5:].strip()  # Remove "refs:" prefix
@@ -201,8 +196,9 @@ class JunitParser(FileParser):
             """
             automation_id = f"{case.classname}.{case.name}"
             case_id, case_name = self._extract_case_id_and_name(case)
-            result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session = self._parse_case_properties(
-                case)
+            result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session = (
+                self._parse_case_properties(case)
+            )
             result_fields_dict, case_fields_dict = self._resolve_case_fields(result_fields, case_fields)
             status_id = self._get_status_id_for_case_result(case)
             comment = self._get_comment_for_case_result(case)
@@ -221,30 +217,31 @@ class JunitParser(FileParser):
             if sauce_session:
                 result.prepend_comment(f"SauceLabs session: {sauce_session}")
 
-            automation_id = (
-                    case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None)
-                    or case._elem.get(OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id))
+            automation_id = case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None) or case._elem.get(
+                OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id
+            )
 
             # Create TestRailCase kwargs
             case_kwargs = {
-                "title": TestRailCaseFieldsOptimizer.extract_last_words(case_name,
-                                                                       TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH),
+                "title": TestRailCaseFieldsOptimizer.extract_last_words(
+                    case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH
+                ),
                 "case_id": case_id,
                 "result": result,
                 "custom_automation_id": automation_id,
                 "case_fields": case_fields_dict,
             }
-            
+
             # Only set refs field if case_refs has actual content
             if case_refs and case_refs.strip():
                 case_kwargs["refs"] = case_refs
-            
+
             test_case = TestRailCase(**case_kwargs)
-            
+
             # Store JUnit references as a temporary attribute for case updates (not serialized)
             if case_refs and case_refs.strip():
                 test_case._junit_case_refs = case_refs
-            
+
             test_cases.append(test_case)
 
         return test_cases
@@ -255,7 +252,6 @@ class JunitParser(FileParser):
         elif suite.name:
             return suite.name
         raise ValueError("Suite name is not defined in environment or JUnit report.")
-
 
     def _parse_sections(self, suite) -> List[TestRailSection]:
         sections = []
@@ -272,15 +268,423 @@ class JunitParser(FileParser):
                 then sub_sections=sub_sections
                 """
                 properties = self._extract_section_properties(section, processed_props)
-                test_cases = self._parse_test_cases(section)
-                self.env.log(f"Processed {len(test_cases)} test cases in section {section.name}.")
-                sections.append(TestRailSection(
-                    section.name,
-                    testcases=test_cases,
-                    properties=properties,
-                ))
+
+                # BDD MODE: Group all scenarios under one test case
+                if self._is_bdd_mode():
+                    test_case = self._parse_bdd_feature_as_single_case(section)
+                    test_cases = [test_case] if test_case else []
+                # STANDARD MODE: One test case per JUnit testcase
+                else:
+                    test_cases = self._parse_test_cases(section)
+
+                self.env.log(f"Processed {len(test_cases)} test case(s) in section {section.name}.")
+                sections.append(
+                    TestRailSection(
+                        section.name,
+                        testcases=test_cases,
+                        properties=properties,
+                    )
+                )
 
         return sections
+
+    def _is_bdd_mode(self) -> bool:
+        """Check if BDD grouping mode is enabled
+
+        Returns:
+            True if special parser is 'bdd', False otherwise
+        """
+        return self._special == "bdd"
+
+    def _extract_feature_case_id_from_property(self, testsuite) -> Union[int, None]:
+        """Extract case ID from testsuite-level properties
+
+        Looks for properties: testrail_case_id, test_id, bdd_case_id
+
+        Args:
+            testsuite: JUnit testsuite element
+
+        Returns:
+            Case ID as integer or None if not found
+        """
+        for prop in testsuite.properties():
+            if prop.name in ["testrail_case_id", "test_id", "bdd_case_id"]:
+                case_id_str = prop.value.lower().replace("c", "")
+                if case_id_str.isnumeric():
+                    self.env.vlog(f"BDD: Found case ID C{case_id_str} in testsuite property '{prop.name}'")
+                    return int(case_id_str)
+        return None
+
+    def _extract_case_id_from_testcases(self, testsuite) -> List[tuple]:
+        """Extract case IDs from testcase properties and names
+
+        Args:
+            testsuite: JUnit testsuite element
+
+        Returns:
+            List of tuples (testcase_name, case_id)
+        """
+        testcase_case_ids = []
+
+        for testcase in testsuite:
+            tc_case_id = None
+
+            # Check testcase properties first
+            for case_props in testcase.iterchildren(Properties):
+                for prop in case_props.iterchildren(Property):
+                    if prop.name == "test_id":
+                        tc_case_id_str = prop.value.lower().replace("c", "")
+                        if tc_case_id_str.isnumeric():
+                            tc_case_id = int(tc_case_id_str)
+                            break
+
+            # Check testcase name if property not found
+            if not tc_case_id:
+                tc_case_id, _ = MatchersParser.parse_name_with_id(testcase.name)
+
+            if tc_case_id:
+                testcase_case_ids.append((testcase.name, tc_case_id))
+
+        return testcase_case_ids
+
+    def _extract_and_validate_bdd_case_id(self, testsuite) -> tuple:
+        """Extract case ID from various sources and validate consistency
+
+        In BDD mode, all scenarios in a feature MUST share the same case ID.
+
+        Priority order:
+        1. Testsuite-level property (testrail_case_id, test_id, bdd_case_id)
+        2. Testcase properties (all must be same)
+        3. Testcase names (all must be same)
+        4. Testsuite name pattern [C123]
+
+        Args:
+            testsuite: JUnit testsuite element
+
+        Returns:
+            Tuple of (case_id: int or None, validation_errors: List[str])
+        """
+        validation_errors = []
+
+        # Priority 1: Testsuite-level property
+        case_id = self._extract_feature_case_id_from_property(testsuite)
+        if case_id:
+            return case_id, []
+
+        # Priority 2 & 3: Check testcase properties and names
+        testcase_case_ids = self._extract_case_id_from_testcases(testsuite)
+
+        if not testcase_case_ids:
+            validation_errors.append(
+                f"BDD Error: No case ID found for feature '{testsuite.name}'.\n"
+                f"  Add case ID using one of:\n"
+                f"  - Testsuite property: <property name='testrail_case_id' value='C42'/>\n"
+                f"  - Testcase names: 'Scenario name C42'\n"
+                f"  - Testcase property: <property name='test_id' value='C42'/>"
+            )
+            return None, validation_errors
+
+        # Check consistency - all must be the same
+        unique_case_ids = set(cid for _, cid in testcase_case_ids)
+
+        if len(unique_case_ids) > 1:
+            validation_errors.append(
+                f"BDD Error: Multiple different case IDs found in feature '{testsuite.name}'.\n"
+                f"  In BDD mode, all scenarios must map to the SAME TestRail case.\n"
+                f"  Found case IDs: {sorted(unique_case_ids)}\n"
+                f"  Scenarios:\n"
+                + "\n".join(f"    - '{name}' → C{cid}" for name, cid in testcase_case_ids)
+                + f"\n\n  If these should be separate test cases, remove --special-parser bdd flag."
+            )
+            return None, validation_errors
+
+        case_id = testcase_case_ids[0][1]
+        self.env.vlog(
+            f"BDD: Found consistent case ID C{case_id} across {len(testcase_case_ids)} scenario(s) "
+            f"in feature '{testsuite.name}'"
+        )
+
+        # Priority 4: Check testsuite name if no testcase IDs found
+        if not case_id and self._case_matcher == MatchersParser.NAME:
+            case_id, _ = MatchersParser.parse_name_with_id(testsuite.name)
+            if case_id:
+                self.env.vlog(f"BDD: Found case ID C{case_id} in testsuite name")
+
+        return case_id, []
+
+    def _validate_bdd_case_exists(self, case_id: int, feature_name: str) -> tuple:
+        """Validate that case exists in TestRail AND is a BDD test case
+
+        A valid BDD test case MUST have:
+        - Exist in TestRail (case ID is valid)
+        - Have custom_testrail_bdd_scenario field with content
+
+        Args:
+            case_id: TestRail case ID to validate
+            feature_name: Feature/testsuite name for error context
+
+        Returns:
+            Tuple of (is_valid: bool, error_message: str, case_data: dict)
+        """
+        try:
+            # Import here to avoid circular dependency
+            from trcli.api.api_request_handler import ApiRequestHandler
+            from trcli.api.project_based_client import ProjectBasedClient
+            from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+            # Get API client
+            temp_suite = TestRailSuite(name="temp", suite_id=1)
+            project_client = ProjectBasedClient(environment=self.env, suite=temp_suite)
+            api_handler = project_client.api_request_handler
+
+            # Step 1: Get case from TestRail
+            response = api_handler.client.send_get(f"get_case/{case_id}")
+
+            if response.error_message:
+                return (
+                    False,
+                    (
+                        f"BDD Validation Error: Case C{case_id} does not exist in TestRail.\n"
+                        f"Feature: '{feature_name}'\n"
+                        f"API Error: {response.error_message}\n\n"
+                        f"Action Required:\n"
+                        f"  1. Verify case C{case_id} exists in TestRail\n"
+                        f"  2. Ensure you have permission to access this case\n"
+                        f"  3. Create the BDD test case if it doesn't exist:\n"
+                        f"     trcli import_gherkin -f {feature_name}.feature --section-id <ID>"
+                    ),
+                    {},
+                )
+
+            case_data = response.response_text
+
+            # Step 2: Validate it's a BDD test case
+            bdd_scenario_field = case_data.get("custom_testrail_bdd_scenario")
+
+            if not bdd_scenario_field:
+                return (
+                    False,
+                    (
+                        f"BDD Validation Error: Case C{case_id} is NOT a BDD test case.\n"
+                        f"Feature: '{feature_name}'\n"
+                        f"Case Title: '{case_data.get('title', 'Unknown')}'\n\n"
+                        f"Reason: The 'custom_testrail_bdd_scenario' field is empty or null.\n"
+                        f"This indicates the case is using a regular template, not the BDD template.\n\n"
+                        f"Action Required:\n"
+                        f"  Option 1: Upload this case using standard mode (remove --special-parser bdd)\n"
+                        f"  Option 2: Create a proper BDD test case with:\n"
+                        f"     trcli import_gherkin -f {feature_name}.feature --section-id <ID>\n"
+                        f"  Option 3: Convert existing case to BDD template in TestRail UI"
+                    ),
+                    case_data,
+                )
+
+            # Success!
+            self.env.vlog(
+                f"BDD: Validated case C{case_id} is a valid BDD test case\n"
+                f"  - Title: '{case_data.get('title')}'\n"
+                f"  - Template ID: {case_data.get('template_id')}\n"
+                f"  - Has BDD scenarios: Yes"
+            )
+
+            return True, "", case_data
+
+        except Exception as e:
+            return (
+                False,
+                (
+                    f"BDD Validation Error: Unable to validate case C{case_id}.\n"
+                    f"Feature: '{feature_name}'\n"
+                    f"Error: {str(e)}\n\n"
+                    f"Action Required: Verify your TestRail connection and case access permissions."
+                ),
+                {},
+            )
+
+    def _aggregate_scenario_statuses(self, scenario_statuses: List[int]) -> int:
+        """Aggregate scenario statuses using fail-fast logic
+
+        Fail-fast logic:
+        - If ANY scenario is Failed (5) → Feature is Failed (5)
+        - Else if ANY scenario is Skipped (4) → Feature is Skipped (4)
+        - Else if ALL scenarios Passed (1) → Feature is Passed (1)
+
+        Args:
+            scenario_statuses: List of TestRail status IDs
+
+        Returns:
+            Aggregated status ID
+        """
+        if 5 in scenario_statuses:  # Any failure
+            return 5
+        elif 4 in scenario_statuses:  # Any skipped (no failures)
+            return 4
+        else:  # All passed
+            return 1
+
+    def _format_failure_message(self, scenario_name: str, result_obj) -> str:
+        """Format failure details for comment
+
+        Args:
+            scenario_name: Clean scenario name
+            result_obj: JUnit result object (failure/error element)
+
+        Returns:
+            Formatted failure message
+        """
+        lines = [f"Scenario: {scenario_name}"]
+
+        if result_obj.type:
+            lines.append(f"   Type: {result_obj.type}")
+
+        if result_obj.message:
+            lines.append(f"   Message: {result_obj.message}")
+
+        if result_obj.text:
+            # Truncate if too long
+            text = result_obj.text.strip()
+            if len(text) > 500:
+                text = text[:500] + "\n   ... (truncated)"
+            lines.append(f"   Details:\n   {text}")
+
+        return "\n".join(lines)
+
+    def _parse_bdd_feature_as_single_case(self, testsuite) -> Union[TestRailCase, None]:
+        """Parse all scenarios in a testsuite as a single BDD test case
+
+        Enhanced validation:
+        1. Case ID exists
+        2. All scenarios have same case ID
+        3. Case exists in TestRail
+        4. Case is actually a BDD test case (has custom_testrail_bdd_scenario)
+
+        Args:
+            testsuite: JUnit testsuite containing multiple scenarios
+
+        Returns:
+            Single TestRailCase with aggregated scenario results, or None if validation fails
+        """
+        feature_name = testsuite.name
+
+        # Step 1: Extract and validate case ID consistency
+        case_id, validation_errors = self._extract_and_validate_bdd_case_id(testsuite)
+
+        if validation_errors:
+            for error in validation_errors:
+                self.env.elog(error)
+            return None
+
+        if not case_id:
+            self.env.elog(f"BDD Error: No valid case ID found for feature '{feature_name}'. " f"Skipping this feature.")
+            return None
+
+        # Step 2: Validate case exists AND is a BDD case
+        is_valid, error_message, case_data = self._validate_bdd_case_exists(case_id, feature_name)
+
+        if not is_valid:
+            self.env.elog(error_message)
+            # Raise exception to stop processing
+            from trcli.data_classes.validation_exception import ValidationException
+
+            raise ValidationException(
+                field_name="case_id",
+                class_name="BDD Feature",
+                reason=f"Case C{case_id} validation failed. See error above for details.",
+            )
+
+        self.env.log(f"BDD: Case C{case_id} validated as BDD test case for feature '{feature_name}'")
+
+        # Step 3: Parse all scenarios
+        scenarios = []
+        scenario_statuses = []
+        total_time = 0
+        failure_messages = []
+
+        for idx, testcase in enumerate(testsuite, 1):
+            scenario_name = testcase.name
+            # Clean case ID from name
+            _, clean_scenario_name = MatchersParser.parse_name_with_id(scenario_name)
+            if not clean_scenario_name:
+                clean_scenario_name = scenario_name
+
+            scenario_time = float(testcase.time or 0)
+            total_time += scenario_time
+
+            # Determine scenario status
+            if testcase.is_passed:
+                scenario_status = 1
+                scenario_status_label = "PASSED"
+            elif testcase.is_skipped:
+                scenario_status = 4
+                scenario_status_label = "SKIPPED"
+            else:  # Failed
+                scenario_status = 5
+                scenario_status_label = "FAILED"
+
+                # Capture failure details
+                if testcase.result:
+                    result_obj = testcase.result[0]
+                    error_msg = self._format_failure_message(clean_scenario_name, result_obj)
+                    failure_messages.append(error_msg)
+
+            # Track status for aggregation
+            scenario_statuses.append(scenario_status)
+
+            # Create step result for this scenario
+            step = TestRailSeparatedStep(content=f"Scenario {idx}: {clean_scenario_name}")
+            step.status_id = scenario_status
+            scenarios.append(step)
+
+            self.env.vlog(f"  - Scenario {idx}: {clean_scenario_name} → {scenario_status_label} " f"({scenario_time}s)")
+
+        # Step 4: Aggregate statuses
+        overall_status = self._aggregate_scenario_statuses(scenario_statuses)
+
+        status_labels = {1: "PASSED", 4: "SKIPPED", 5: "FAILED"}
+        overall_status_label = status_labels.get(overall_status, "UNKNOWN")
+
+        # Step 5: Create comment with summary
+        passed_count = scenario_statuses.count(1)
+        failed_count = scenario_statuses.count(5)
+        skipped_count = scenario_statuses.count(4)
+        total_count = len(scenario_statuses)
+
+        summary = (
+            f"Feature Summary:\n"
+            f"  Total Scenarios: {total_count}\n"
+            f"  Passed: {passed_count}\n"
+            f"  Failed: {failed_count}\n"
+            f"  Skipped: {skipped_count}\n"
+        )
+
+        if failure_messages:
+            comment = f"{summary}\n{'='*50}\nFailure Details:\n\n" + "\n\n".join(failure_messages)
+        else:
+            comment = summary
+
+        # Step 6: Create aggregated result
+        result = TestRailResult(
+            case_id=case_id,
+            status_id=overall_status,
+            elapsed=total_time if total_time > 0 else None,  # Pass numeric value, not formatted string
+            custom_step_results=scenarios,
+            comment=comment,
+        )
+
+        # Step 7: Create test case
+        test_case = TestRailCase(
+            title=feature_name,
+            case_id=case_id,
+            result=result,
+        )
+
+        self.env.log(
+            f"BDD: Grouped {total_count} scenario(s) under case C{case_id} "
+            f"'{feature_name}' → {overall_status_label}"
+        )
+        self.env.log(f"     Breakdown: {passed_count} passed, {failed_count} failed, " f"{skipped_count} skipped")
+
+        return test_case
 
     def parse_file(self) -> List[TestRailSuite]:
         self.env.log("Parsing JUnit report.")
@@ -296,11 +700,13 @@ class JunitParser(FileParser):
             testrail_sections = self._parse_sections(suite)
             suite_name = self.env.suite_name if self.env.suite_name else suite.name
 
-            testrail_suites.append(TestRailSuite(
-                suite_name,
-                testsections=testrail_sections,
-                source=self.filename,
-            ))
+            testrail_suites.append(
+                TestRailSuite(
+                    suite_name,
+                    testsections=testrail_sections,
+                    source=self.filename,
+                )
+            )
 
         return testrail_suites
 
@@ -310,9 +716,9 @@ class JunitParser(FileParser):
         for section in suite:
             if not len(section):
                 continue
-            divider_index = section.name.find('-')
+            divider_index = section.name.find("-")
             subsuite_name = section.name[:divider_index].strip()
-            section.name = section.name[divider_index + 1:].strip()
+            section.name = section.name[divider_index + 1 :].strip()
             new_xml = JUnitXml(subsuite_name)
             if subsuite_name not in subsuites.keys():
                 subsuites[subsuite_name] = new_xml
@@ -344,5 +750,6 @@ class JunitParser(FileParser):
 
         return [v for k, v in subsuites.items()]
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     pass
