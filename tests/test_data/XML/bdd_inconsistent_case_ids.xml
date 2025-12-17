@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="3" failures="0" errors="0" time="3.0">
+  <testsuite name="Login Feature" tests="3" failures="0" errors="0" time="3.0">
+    <!-- Error case: Different case IDs (should fail validation) -->
+    <testcase classname="Login Feature" name="Successful login C123" time="1.0"/>
+    <testcase classname="Login Feature" name="Invalid password C124" time="1.0"/>
+    <testcase classname="Login Feature" name="Locked account C125" time="1.0"/>
+  </testsuite>
+</testsuites>

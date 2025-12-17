@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="2" failures="0" errors="0" time="4.0">
+  <testsuite name="Feature All Pass" tests="2" failures="0" errors="0" time="4.0">
+    <properties>
+      <property name="testrail_case_id" value="C100"/>
+    </properties>
+    <testcase classname="Feature All Pass" name="Scenario 1" time="2.0"/>
+    <testcase classname="Feature All Pass" name="Scenario 2" time="2.0"/>
+  </testsuite>
+</testsuites>

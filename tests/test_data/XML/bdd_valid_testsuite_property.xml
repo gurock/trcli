@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="3" failures="0" errors="0" time="8.5">
+  <testsuite name="User Enrollment" tests="3" failures="0" errors="0" time="8.5">
+    <properties>
+      <!-- Feature-level case ID for BDD template test case -->
+      <property name="testrail_case_id" value="C42"/>
+    </properties>
+
+    <!-- Scenario 1: Passed -->
+    <testcase classname="User Enrollment" name="Enroll a student" time="5.0"/>
+
+    <!-- Scenario 2: Passed -->
+    <testcase classname="User Enrollment" name="Unenroll a student" time="3.0"/>
+
+    <!-- Scenario 3: Passed -->
+    <testcase classname="User Enrollment" name="Update student information" time="0.5"/>
+  </testsuite>
+</testsuites>
