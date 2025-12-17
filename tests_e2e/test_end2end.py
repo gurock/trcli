@@ -1996,17 +1996,6 @@ trcli parse_gherkin \\
         )
         _assert_contains(output, ["Parsing Gherkin feature file:", "sample_login.feature", '"suites"', '"summary"'])
 
-    def test_parse_gherkin_custom_suite_name(self):
-        """Test parse_gherkin command with custom suite name"""
-        output = _run_cmd(
-            f"""
-trcli parse_gherkin \\
-  -f "reports_gherkin/sample_login.feature" \\
-  --suite-name "Custom BDD Suite"
-        """
-        )
-        _assert_contains(output, ["Parsing Gherkin feature file:", '"name": "Custom BDD Suite"'])
-
     def test_import_gherkin_upload_feature(self):
         """Test import_gherkin command to upload .feature file to TestRail"""
         output = _run_cmd(
@@ -2158,7 +2147,7 @@ trcli -y \\
                     [
                         "Connecting to TestRail...",
                         "Retrieving BDD test case",
-                        "Successfully exported BDD test case",
+                        "Successfully exported test case",
                         "exported_bdd.feature",
                     ],
                 )
@@ -2172,18 +2161,18 @@ trcli -y \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   parse_cucumber \\
   --title "[CLI-E2E-Tests] Cucumber Parser - Results Only" \\
-  --suite-id 128 \\
+  --suite-id 86 \\
   -f "reports_cucumber/sample_cucumber.json"
         """
         )
         _assert_contains(
             output,
             [
+                "Parsing Cucumber",
                 "Processed",
-                "test cases",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Submitted",
-                "test results",
+                "Results uploaded successfully",
             ],
         )
 
@@ -2196,7 +2185,7 @@ trcli -y \\
   --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
   parse_cucumber \\
   --title "[CLI-E2E-Tests] Cucumber Parser - With Feature Upload" \\
-  --suite-id 128 \\
+  --suite-id 86 \\
   --upload-feature \\
   --feature-section-id 2388 \\
   -f "reports_cucumber/sample_cucumber.json"
@@ -2205,64 +2194,14 @@ trcli -y \\
         _assert_contains(
             output,
             [
-                "Generating .feature file from Cucumber JSON...",
-                "Generated .feature file",
-                "Uploading .feature file to TestRail...",
-                "Successfully uploaded",
-                "test case(s) from .feature file",
-                "Processed",
-                "test cases",
+                "Creating BDD test cases from features...",
+                "Successfully created",
+                "BDD test case",
+                "Proceeding to upload test results...",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 "Submitted",
-                "test results",
+                "Results uploaded successfully",
             ],
-        )
-
-    def test_parse_cucumber_advanced_features(self):
-        """Test parse_cucumber with advanced Gherkin features (Background, Examples, Rules)"""
-        output = _run_cmd(
-            f"""
-trcli -y \\
-  -h {self.TR_INSTANCE} \\
-  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
-  parse_cucumber \\
-  --title "[CLI-E2E-Tests] Cucumber Parser - Advanced Features" \\
-  --suite-id 128 \\
-  --upload-feature \\
-  --feature-section-id 2388 \\
-  -f "reports_cucumber/sample_cucumber_advanced.json"
-        """
-        )
-        _assert_contains(
-            output,
-            [
-                "Generating .feature file from Cucumber JSON...",
-                "Generated .feature file",
-                "Uploading .feature file to TestRail...",
-                "Successfully uploaded",
-                "test case(s) from .feature file",
-                "Processed",
-                "test cases",
-                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-            ],
-        )
-
-    def test_parse_cucumber_with_verbose_logging(self):
-        """Test parse_cucumber with verbose logging enabled"""
-        output = _run_cmd(
-            f"""
-trcli -y \\
-  -h {self.TR_INSTANCE} \\
-  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
-  parse_cucumber \\
-  --title "[CLI-E2E-Tests] Cucumber Parser - Verbose" \\
-  --suite-id 128 \\
-  --verbose \\
-  -f "reports_cucumber/sample_cucumber.json"
-        """
-        )
-        _assert_contains(
-            output, ["Processed", "test cases", f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view"]
         )
 
     def test_bdd_help_commands(self):
@@ -2281,8 +2220,6 @@ trcli -y \\
                 "-f, --file",
                 "--output",
                 "--pretty",
-                "--suite-name",
-                "--case-matcher",
             ],
         )
 

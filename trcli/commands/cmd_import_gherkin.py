@@ -52,8 +52,6 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
     environment.set_parameters(context)
     environment.check_for_required_parameters()
 
-    json_output = kwargs.get("json_output", False)
-
     try:
         # Read the feature file
         feature_path = Path(file)
@@ -72,8 +70,7 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
         environment.vlog(f"API endpoint: POST /api/v2/add_bdd/{section_id}")
 
         # Initialize API client
-        if not json_output:
-            environment.log("Connecting to TestRail...")
+        environment.log("Connecting to TestRail...")
 
         # Create APIClient
         uploader_metadata = APIClient.build_uploader_metadata(version=trcli.__version__)
@@ -101,8 +98,7 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
         )
 
         # Upload feature file
-        if not json_output:
-            environment.log(f"Uploading feature file to TestRail...")
+        environment.log(f"Uploading feature file to TestRail...")
         case_ids, error_message = api_request_handler.add_bdd(section_id, feature_content)
 
         if error_message:
