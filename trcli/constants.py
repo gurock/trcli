@@ -68,6 +68,9 @@ FAULT_MAPPING = dict(
     "Please verify your TestRail host URL (-h) is correct and points to a valid TestRail instance. "
     "Response preview: {response_preview}",
     invalid_api_response="Invalid response from TestRail API: {error_details}",
+    attachment_upload_failed="Failed to upload attachment '{file_path}' for case {case_id}: {error_message}",
+    attachment_too_large="Failed to upload attachment '{file_name}' for case {case_id}: "
+    "File size exceeds TestRail's maximum limit of 250 MB. Please reduce the file size or exclude this attachment.",
 )
 
 COMMAND_FAULT_MAPPING = dict(

@@ -83,6 +83,8 @@ Options:
                      'username:password'.
   --noproxy          Comma-separated list of hostnames to bypass the proxy
                      (e.g., localhost,127.0.0.1).
+  --parallel-pagination  Enable parallel pagination for faster case fetching
+                     (experimental).
   --help             Show this message and exit.
 
 Commands:
@@ -1722,6 +1724,50 @@ During performance tests we discovered that using more than 10 workers didn't im
 Average time for uploading:
 - 2000 test cases was around 460 seconds
 - 5000 test cases was around 1000 seconds
+
+### Parallel Pagination (Experimental)
+
+The TestRail CLI includes an experimental `--parallel-pagination` option that significantly improves performance when fetching large numbers of test cases from TestRail. This feature uses parallel fetching to retrieve multiple pages of results concurrently, rather than fetching them sequentially.
+
+#### When to Use Parallel Pagination
+
+Use `--parallel-pagination` when:
+- Working with projects that have thousands of test cases
+- Fetching test cases takes a long time during operations
+- You need faster case matching and validation during result uploads
+
+#### How It Works
+
+When enabled, parallel pagination:
+1. Fetches the first page to determine total pages available
+2. Uses a thread pool (default: 10 workers set by `MAX_WORKERS_PARALLEL_PAGINATION` in `trcli/settings.py`) to fetch remaining pages concurrently
+3. Automatically handles batching to avoid overwhelming the server
+4. Combines all results efficiently for processing
+
+#### Usage
+
+Enable parallel pagination by adding the `--parallel-pagination` flag to any command:
+
+```shell
+# Enable parallel pagination for faster case fetching during result upload
+$ trcli parse_junit -f results.xml --parallel-pagination \
+  --host https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project"
+
+# Example with parse_robot
+$ trcli parse_robot -f output.xml --parallel-pagination \
+  --host https://yourinstance.testrail.io --username <your_username> --password <your_password> \
+  --project "Your Project"
+```
+
+You can also enable this feature globally by setting `ENABLE_PARALLEL_PAGINATION = True` in `trcli/settings.py`. The CLI flag takes precedence over the settings file.
+
+#### Performance Considerations
+
+- This feature is most beneficial when dealing with large test case repositories (1000+ cases)
+- The default worker count is set to 10, which provides a good balance between speed and server load
+- For smaller projects with few test cases, the performance improvement may be negligible
+- This is an experimental feature - please report any issues you encounter
 
 
 Contributing

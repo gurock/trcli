@@ -77,6 +77,7 @@ class Environment:
         self.assign_failed_to = None  # Add proxy related attributes
         self.noproxy = None
         self.proxy_user = None
+        self.parallel_pagination = None
 
     @property
     def case_fields(self):
@@ -343,6 +344,9 @@ class TRCLI(click.MultiCommand):
 @click.option("--proxy-user", metavar="", help="Proxy username and password in the format 'username:password'.")
 @click.option(
     "--noproxy", metavar="", help="Comma-separated list of hostnames to bypass the proxy (e.g., localhost,127.0.0.1)."
+)
+@click.option(
+    "--parallel-pagination", is_flag=True, help="Enable parallel pagination for faster case fetching (experimental)."
 )
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""

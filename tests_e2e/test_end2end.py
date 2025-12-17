@@ -1902,7 +1902,7 @@ trcli -y \\
         """Test that --assign option appears in help documentation"""
         help_output = _run_cmd("trcli parse_junit --help")
         _assert_contains(
-            help_output, ["-a, --assign", "Comma-separated list of user emails to assign failed", "test results to."]
+            help_output, ["-a, --assign", "Comma-separated list of user emails to assign", "failed test results to."]
         )
 
     def test_assign_failures_with_existing_run(self):

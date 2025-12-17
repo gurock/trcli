@@ -865,3 +865,329 @@ class TestApiRequestHandler:
 
         assert feature_content == expected_feature, "Should return feature content"
         assert error == "", "There should be no error"
+
+    @pytest.mark.api_handler
+    def test_update_run_with_include_all_false_standalone(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test update_run for standalone run with include_all=false"""
+        run_id = 100
+        run_name = "Updated Test Run"
+
+        # Mock get_run response - standalone run (no plan_id), include_all=false
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Original description",
+            "refs": "REF-1",
+            "include_all": False,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        # Mock get_tests response - existing cases in run
+        get_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1, "case_id": 1, "status_id": 1}, {"id": 2, "case_id": 2, "status_id": 1}],
+        }
+
+        # Mock update_run response
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=get_tests_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        # Assertions
+        assert error == "", "No error should occur"
+        assert run_data["id"] == run_id, "Run ID should match"
+
+        # Verify the payload sent to update_run
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["include_all"] == False, "include_all should be False"
+        assert "case_ids" in payload, "case_ids should be present"
+        # Should contain union of existing (1, 2) and report cases
+        assert set(payload["case_ids"]) >= {1, 2}, "Should include existing case IDs"
+
+    @pytest.mark.api_handler
+    def test_update_run_with_include_all_false_plan_with_config(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        """Test update_run for run in plan with config and include_all=false (the bug scenario)"""
+        run_id = 200
+        run_name = "Updated Test Run in Plan"
+
+        # Mock get_run response - run in plan with config, include_all=false
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Original description",
+            "refs": "REF-1",
+            "include_all": False,
+            "plan_id": 10,
+            "config_ids": [5, 6],  # Has configs - will use update_run_in_plan_entry
+        }
+
+        # Mock get_tests response - existing cases
+        get_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 3,
+            "_links": {"next": None, "prev": None},
+            "tests": [
+                {"id": 1, "case_id": 188, "status_id": 1},
+                {"id": 2, "case_id": 180, "status_id": 1},
+                {"id": 3, "case_id": 191, "status_id": 1},
+            ],
+        }
+
+        # Mock update_run_in_plan_entry response
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=get_tests_response)
+        requests_mock.post(create_url(f"update_run_in_plan_entry/{run_id}"), json=update_run_response)
+
+        # Execute update_run
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        # Assertions
+        assert error == "", "No error should occur"
+        assert run_data["id"] == run_id, "Run ID should match"
+
+        # Verify the payload sent to update_run_in_plan_entry
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run_in_plan_entry" in r.url][0]
+        payload = update_request.json()
+
+        # THIS IS THE CRITICAL FIX - must include include_all=False
+        assert payload["include_all"] == False, "include_all must be False (fixes the bug)"
+        assert "case_ids" in payload, "case_ids should be present"
+        # Should contain union of existing (188, 180, 191) and report cases
+        assert set(payload["case_ids"]) >= {188, 180, 191}, "Should preserve existing case IDs"
+
+    @pytest.mark.api_handler
+    def test_update_run_with_include_all_true_preserves_setting(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        """Test update_run preserves include_all=true and doesn't send case_ids"""
+        run_id = 300
+        run_name = "Updated Run with Include All"
+
+        # Mock get_run response - include_all=true
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Original description",
+            "refs": "REF-1",
+            "include_all": True,  # Run includes all cases
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        # Mock update_run response
+        update_run_response = {"id": run_id, "name": run_name, "include_all": True}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        # Assertions
+        assert error == "", "No error should occur"
+        assert run_data["include_all"] == True, "include_all should be preserved"
+
+        # Verify the payload sent to update_run
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["include_all"] == True, "include_all should be True"
+        assert "case_ids" not in payload, "case_ids should NOT be present when include_all=True"
+
+    @pytest.mark.api_handler
+    def test_update_run_handles_get_tests_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test update_run handles errors from get_tests gracefully"""
+        run_id = 400
+        run_name = "Test Run"
+
+        # Mock get_run response - include_all=false
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Original description",
+            "refs": "REF-1",
+            "include_all": False,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        # Mock get_tests to return error (403 Forbidden, for example)
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.get(create_url(f"get_tests/{run_id}"), status_code=403, json={"error": "Access denied"})
+
+        # Execute update_run - should fail gracefully
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        # Assertions
+        assert run_data is None, "run_data should be None on error"
+        assert error is not None, "Error message should be present"
+        assert "Failed to get tests in run" in error, "Error should indicate get_tests failure"
+
+    @pytest.mark.api_handler
+    def test_update_run_with_include_all_false_plan_without_config(
+        self, api_request_handler: ApiRequestHandler, requests_mock
+    ):
+        """Test update_run for run in plan without config uses update_plan_entry"""
+        run_id = 500
+        run_name = "Updated Test Run in Plan No Config"
+        plan_id = 20
+        entry_id = "abc-123"
+
+        # Mock get_run response - run in plan without config
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Original description",
+            "refs": "REF-1",
+            "include_all": False,
+            "plan_id": plan_id,
+            "config_ids": [],  # No configs - will use update_plan_entry
+        }
+
+        # Mock get_tests response
+        get_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1, "case_id": 50, "status_id": 1}],
+        }
+
+        # Mock get_plan response
+        get_plan_response = {
+            "id": plan_id,
+            "entries": [{"id": entry_id, "runs": [{"id": run_id, "entry_id": entry_id}]}],
+        }
+
+        # Mock update_plan_entry response
+        update_plan_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=get_tests_response)
+        requests_mock.get(create_url(f"get_plan/{plan_id}"), json=get_plan_response)
+        requests_mock.post(create_url(f"update_plan_entry/{plan_id}/{entry_id}"), json=update_plan_response)
+
+        # Execute update_run
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        # Assertions
+        assert error == "", "No error should occur"
+        assert run_data["id"] == run_id, "Run ID should match"
+
+        # Verify update_plan_entry was called with correct payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if f"update_plan_entry/{plan_id}/{entry_id}" in r.url][0]
+        payload = update_request.json()
+
+        assert payload["include_all"] == False, "include_all should be False"
+        assert "case_ids" in payload, "case_ids should be present"
+        assert 50 in payload["case_ids"], "Should include existing case ID"
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
+        """Test that 413 errors (file too large) are properly reported."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Create a temporary test file
+        test_file = tmp_path / "large_attachment.jpg"
+        test_file.write_text("test content")
+
+        # Mock add_attachment_to_result endpoint to return 413
+        requests_mock.post(
+            create_url("add_attachment_to_result/2001"),
+            status_code=413,
+            text='<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n<html><head>\n<title>413 Request Entity Too Large</title>\n</head><body>\n<h1>Request Entity Too Large</h1>\n</body></html>\n',
+        )
+
+        # Prepare test data
+        report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, results, run_id)
+
+        # Verify the request was made (case-insensitive comparison)
+        assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_success(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
+        """Test that successful attachment uploads work correctly."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Create a temporary test file
+        test_file = tmp_path / "test_attachment.jpg"
+        test_file.write_text("test content")
+
+        # Mock add_attachment_to_result endpoint to return success
+        requests_mock.post(create_url("add_attachment_to_result/2001"), status_code=200, json={"attachment_id": 5001})
+
+        # Prepare test data
+        report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, results, run_id)
+
+        # Verify the request was made (case-insensitive comparison)
+        assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_file_not_found(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that missing attachment files are properly reported."""
+        run_id = 1
+
+        # Mock get_tests endpoint
+        mocked_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1001, "case_id": 100}],
+        }
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
+
+        # Prepare test data with non-existent file
+        report_results = [{"case_id": 100, "attachments": ["/path/to/nonexistent/file.jpg"]}]
+        results = [{"id": 2001, "test_id": 1001}]
+
+        # Call upload_attachments - should not raise exception
+        api_request_handler.upload_attachments(report_results, results, run_id)
