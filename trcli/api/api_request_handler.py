@@ -5,6 +5,7 @@ from beartype.typing import List, Union, Tuple, Dict, Optional
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.api.api_response_verify import ApiResponseVerify
+from trcli.api.api_cache import RequestCache
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -45,6 +46,8 @@ class ApiRequestHandler:
         )
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
+        # Initialize session-scoped cache for API responses
+        self._cache = RequestCache(max_size=512)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
@@ -1057,36 +1060,66 @@ class ApiRequestHandler:
 
     def __get_all_cases(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
-        Get all cases from all pages
+        Get all cases from all pages (with caching)
         """
-        if suite_id is None:
-            return self.__get_all_entities("cases", f"get_cases/{project_id}")
-        else:
-            return self.__get_all_entities("cases", f"get_cases/{project_id}&suite_id={suite_id}")
+        cache_key = f"get_cases/{project_id}"
+        params = (project_id, suite_id)
+
+        def fetch():
+            if suite_id is None:
+                return self.__get_all_entities("cases", f"get_cases/{project_id}", entities=[])
+            else:
+                return self.__get_all_entities("cases", f"get_cases/{project_id}&suite_id={suite_id}", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
 
     def __get_all_sections(self, project_id=None, suite_id=None) -> Tuple[List[dict], str]:
         """
-        Get all sections from all pages
+        Get all sections from all pages (with caching)
         """
-        return self.__get_all_entities("sections", f"get_sections/{project_id}&suite_id={suite_id}")
+        cache_key = f"get_sections/{project_id}"
+        params = (project_id, suite_id)
+
+        def fetch():
+            return self.__get_all_entities("sections", f"get_sections/{project_id}&suite_id={suite_id}", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
 
     def __get_all_tests_in_run(self, run_id=None) -> Tuple[List[dict], str]:
         """
-        Get all tests from all pages
+        Get all tests from all pages (with caching)
         """
-        return self.__get_all_entities("tests", f"get_tests/{run_id}")
+        cache_key = f"get_tests/{run_id}"
+        params = (run_id,)
+
+        def fetch():
+            return self.__get_all_entities("tests", f"get_tests/{run_id}", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
 
     def __get_all_projects(self) -> Tuple[List[dict], str]:
         """
-        Get all projects from all pages
+        Get all projects from all pages (with caching)
         """
-        return self.__get_all_entities("projects", f"get_projects")
+        cache_key = "get_projects"
+        params = None
+
+        def fetch():
+            return self.__get_all_entities("projects", f"get_projects", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
 
     def __get_all_suites(self, project_id) -> Tuple[List[dict], str]:
         """
-        Get all suites from all pages
+        Get all suites from all pages (with caching)
         """
-        return self.__get_all_entities("suites", f"get_suites/{project_id}")
+        cache_key = f"get_suites/{project_id}"
+        params = (project_id,)
+
+        def fetch():
+            return self.__get_all_entities("suites", f"get_suites/{project_id}", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
 
     def __get_all_entities(self, entity: str, link=None, entities=[]) -> Tuple[List[Dict], str]:
         """
