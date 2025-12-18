@@ -39,7 +39,7 @@ class APIClient:
     PREFIX = "index.php?"
     VERSION = "/api/v2/"
     SUFFIX_API_V2_VERSION = f"{PREFIX}{VERSION}"
-    RETRY_ON = [429, 500, 502]
+    RETRY_ON = [429, 500, 502, 503, 504]  # Added 503 Service Unavailable and 504 Gateway Timeout
     USER_AGENT = "TRCLI"
 
     def __init__(
@@ -176,6 +176,12 @@ class APIClient:
                 if status_code == 429:
                     retry_time = float(response.headers["Retry-After"])
                     sleep(retry_time)
+                elif status_code in [500, 502, 503, 504] and i < self.retries:
+                    backoff_time = min(2**i, 30)  # Exponential backoff capped at 30 seconds
+                    self.logging_function(
+                        f"Server error {status_code}, retrying in {backoff_time}s (attempt {i+1}/{self.retries})..."
+                    )
+                    sleep(backoff_time)
                 try:
                     # workaround for buggy legacy TR server version response
                     if response.content.startswith(b"USER AUTHENTICATION SUCCESSFUL!\n"):

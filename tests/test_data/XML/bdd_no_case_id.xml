@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="2" failures="0" errors="0" time="2.0">
+  <testsuite name="New Feature" tests="2" failures="0" errors="0" time="2.0">
+    <!-- Error case: No case ID provided (should fail validation) -->
+    <testcase classname="New Feature" name="Test scenario 1" time="1.0"/>
+    <testcase classname="New Feature" name="Test scenario 2" time="1.0"/>
+  </testsuite>
+</testsuites>
