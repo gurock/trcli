@@ -286,8 +286,10 @@ class TestApiRequestHandlerLabelsCases:
     def test_add_labels_to_cases_success(self):
         """Test successful addition of labels to test cases"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
-        ) as mock_get_labels, patch.object(self.labels_handler, "add_label") as mock_add_label, patch.object(
+            self.labels_handler.label_manager, "get_labels"
+        ) as mock_get_labels, patch.object(
+            self.labels_handler.label_manager, "add_label"
+        ) as mock_add_label, patch.object(
             self.labels_handler.client, "send_get"
         ) as mock_send_get, patch.object(
             self.labels_handler.client, "send_post"
@@ -307,12 +309,16 @@ class TestApiRequestHandlerLabelsCases:
 
             # Mock get_case responses
             mock_send_get.side_effect = [
-                MagicMock(status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 1"}),  # Case 1
-                MagicMock(status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 2"}),  # Case 2
+                MagicMock(
+                    status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 1"}, error_message=""
+                ),  # Case 1
+                MagicMock(
+                    status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 2"}, error_message=""
+                ),  # Case 2
             ]
 
             # Mock update_cases batch response (for multiple cases)
-            mock_send_post.return_value = MagicMock(status_code=200)
+            mock_send_post.return_value = MagicMock(status_code=200, error_message="")
 
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
@@ -340,8 +346,10 @@ class TestApiRequestHandlerLabelsCases:
     def test_add_labels_to_cases_single_case(self):
         """Test adding labels to a single test case using update_case endpoint"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
-        ) as mock_get_labels, patch.object(self.labels_handler, "add_label") as mock_add_label, patch.object(
+            self.labels_handler.label_manager, "get_labels"
+        ) as mock_get_labels, patch.object(
+            self.labels_handler.label_manager, "add_label"
+        ) as mock_add_label, patch.object(
             self.labels_handler.client, "send_get"
         ) as mock_send_get, patch.object(
             self.labels_handler.client, "send_post"
@@ -358,11 +366,11 @@ class TestApiRequestHandlerLabelsCases:
 
             # Mock get_case response
             mock_send_get.return_value = MagicMock(
-                status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 1"}
+                status_code=200, response_text={"labels": [], "suite_id": 1, "title": "Case 1"}, error_message=""
             )
 
             # Mock update_case response (for single case)
-            mock_send_post.return_value = MagicMock(status_code=200)
+            mock_send_post.return_value = MagicMock(status_code=200, error_message="")
 
             # Test the method with single case
             results, error_message = self.labels_handler.add_labels_to_cases(
@@ -389,8 +397,10 @@ class TestApiRequestHandlerLabelsCases:
     def test_add_labels_to_cases_existing_label(self):
         """Test adding labels when label already exists"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
-        ) as mock_get_labels, patch.object(self.labels_handler, "add_label") as mock_add_label, patch.object(
+            self.labels_handler.label_manager, "get_labels"
+        ) as mock_get_labels, patch.object(
+            self.labels_handler.label_manager, "add_label"
+        ) as mock_add_label, patch.object(
             self.labels_handler.client, "send_get"
         ) as mock_send_get, patch.object(
             self.labels_handler.client, "send_post"
@@ -404,11 +414,11 @@ class TestApiRequestHandlerLabelsCases:
 
             # Mock get_case response
             mock_send_get.return_value = MagicMock(
-                status_code=200, response_text={"labels": [], "section_id": 1, "title": "Case 1"}
+                status_code=200, response_text={"labels": [], "section_id": 1, "title": "Case 1"}, error_message=""
             )
 
             # Mock add_label_to_case response
-            mock_send_post.return_value = MagicMock(status_code=200)
+            mock_send_post.return_value = MagicMock(status_code=200, error_message="")
 
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
@@ -428,7 +438,7 @@ class TestApiRequestHandlerLabelsCases:
     def test_add_labels_to_cases_max_labels_reached(self):
         """Test handling of maximum labels limit (10)"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
+            self.labels_handler.label_manager, "get_labels"
         ) as mock_get_labels, patch.object(self.labels_handler.client, "send_get") as mock_send_get:
 
             # Mock __get_all_cases response (case exists)
@@ -439,7 +449,9 @@ class TestApiRequestHandlerLabelsCases:
 
             # Mock get_case response with 10 existing labels (different from test-label)
             existing_labels = [{"id": i, "title": f"label-{i}"} for i in range(1, 11)]
-            mock_send_get.return_value = MagicMock(status_code=200, response_text={"labels": existing_labels})
+            mock_send_get.return_value = MagicMock(
+                status_code=200, response_text={"labels": existing_labels}, error_message=""
+            )
 
             # Test the method
             results, error_message = self.labels_handler.add_labels_to_cases(
@@ -459,7 +471,7 @@ class TestApiRequestHandlerLabelsCases:
     def test_add_labels_to_cases_label_already_on_case(self):
         """Test handling when label already exists on case"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
+            self.labels_handler.label_manager, "get_labels"
         ) as mock_get_labels, patch.object(self.labels_handler.client, "send_get") as mock_send_get:
 
             # Mock __get_all_cases response (case exists)
@@ -470,7 +482,7 @@ class TestApiRequestHandlerLabelsCases:
 
             # Mock get_case response with the label already present
             mock_send_get.return_value = MagicMock(
-                status_code=200, response_text={"labels": [{"id": 5, "title": "test-label"}]}
+                status_code=200, response_text={"labels": [{"id": 5, "title": "test-label"}]}, error_message=""
             )
 
             # Test the method
@@ -540,7 +552,7 @@ class TestApiRequestHandlerLabelsCases:
     def test_get_cases_by_label_with_title(self):
         """Test getting cases by label title"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
+            self.labels_handler.label_manager, "get_labels"
         ) as mock_get_labels:
 
             # Mock labels response
@@ -568,7 +580,7 @@ class TestApiRequestHandlerLabelsCases:
     def test_get_cases_by_label_title_not_found(self):
         """Test getting cases by non-existent label title"""
         with patch.object(self.labels_handler, "_ApiRequestHandler__get_all_cases") as mock_get_cases, patch.object(
-            self.labels_handler, "get_labels"
+            self.labels_handler.label_manager, "get_labels"
         ) as mock_get_labels:
 
             # Mock labels response (no matching label)
