@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="2" failures="2" errors="0" time="3.0">
+  <testsuite name="Feature All Fail" tests="2" failures="2" errors="0" time="3.0">
+    <properties>
+      <property name="testrail_case_id" value="C101"/>
+    </properties>
+    <testcase classname="Feature All Fail" name="Scenario 1" time="1.5">
+      <failure type="AssertionError" message="Scenario 1 failed"/>
+    </testcase>
+    <testcase classname="Feature All Fail" name="Scenario 2" time="1.5">
+      <failure type="AssertionError" message="Scenario 2 failed"/>
+    </testcase>
+  </testsuite>
+</testsuites>

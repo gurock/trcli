@@ -1,0 +1,234 @@
+[
+  {
+    "uri": "features/shopping_cart.feature",
+    "id": "shopping-cart",
+    "keyword": "Feature",
+    "name": "Shopping Cart",
+    "description": "  As a customer\n  I want to manage my shopping cart\n  So that I can purchase items",
+    "line": 1,
+    "tags": [
+      {
+        "name": "@shopping",
+        "line": 1
+      },
+      {
+        "name": "@cart",
+        "line": 1
+      }
+    ],
+    "elements": [
+      {
+        "id": "shopping-cart;background",
+        "keyword": "Background",
+        "name": "User is logged in",
+        "description": "",
+        "line": 5,
+        "type": "background",
+        "steps": [
+          {
+            "keyword": "Given ",
+            "name": "I am logged in as a customer",
+            "line": 6,
+            "match": {
+              "location": "step_definitions/auth_steps.js:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1000000000
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "my shopping cart is empty",
+            "line": 7,
+            "match": {
+              "location": "step_definitions/cart_steps.js:5"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 500000000
+            }
+          }
+        ]
+      },
+      {
+        "id": "shopping-cart;add-items-to-cart",
+        "keyword": "Scenario Outline",
+        "name": "Add items to cart",
+        "description": "",
+        "line": 10,
+        "type": "scenario_outline",
+        "tags": [
+          {
+            "name": "@positive",
+            "line": 9
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "When ",
+            "name": "I add \"<quantity>\" of \"<product>\" to my cart",
+            "line": 11,
+            "match": {
+              "location": "step_definitions/cart_steps.js:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2000000000
+            }
+          },
+          {
+            "keyword": "Then ",
+            "name": "my cart should contain \"<quantity>\" items",
+            "line": 12,
+            "match": {
+              "location": "step_definitions/cart_steps.js:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1000000000
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "the total price should be \"<price>\"",
+            "line": 13,
+            "match": {
+              "location": "step_definitions/cart_steps.js:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 500000000
+            }
+          }
+        ],
+        "examples": [
+          {
+            "keyword": "Examples",
+            "name": "Valid products",
+            "description": "",
+            "line": 15,
+            "tags": [
+              {
+                "name": "@products",
+                "line": 14
+              }
+            ],
+            "rows": [
+              {
+                "cells": ["quantity", "product", "price"],
+                "line": 16
+              },
+              {
+                "cells": ["1", "Laptop", "$1000"],
+                "line": 17
+              },
+              {
+                "cells": ["2", "Mouse", "$40"],
+                "line": 18
+              },
+              {
+                "cells": ["3", "Keyboard", "$150"],
+                "line": 19
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "uri": "features/payment.feature",
+    "id": "payment-processing",
+    "keyword": "Feature",
+    "name": "Payment Processing",
+    "description": "  Customers can pay using various methods",
+    "line": 1,
+    "tags": [
+      {
+        "name": "@payment",
+        "line": 1
+      }
+    ],
+    "elements": [
+      {
+        "id": "payment-processing;payment-validation",
+        "keyword": "Rule",
+        "name": "Payment validation",
+        "description": "  All payments must be validated before processing",
+        "line": 5,
+        "type": "rule",
+        "tags": [
+          {
+            "name": "@validation",
+            "line": 4
+          }
+        ],
+        "children": [
+          {
+            "id": "payment-processing;payment-validation;background",
+            "keyword": "Background",
+            "name": "Setup payment environment",
+            "description": "",
+            "line": 8,
+            "type": "background",
+            "steps": [
+              {
+                "keyword": "Given ",
+                "name": "the payment gateway is available",
+                "line": 9,
+                "match": {
+                  "location": "step_definitions/payment_steps.js:5"
+                },
+                "result": {
+                  "status": "passed",
+                  "duration": 1500000000
+                }
+              }
+            ]
+          },
+          {
+            "id": "payment-processing;payment-validation;valid-credit-card",
+            "keyword": "Scenario",
+            "name": "Valid credit card payment",
+            "description": "",
+            "line": 11,
+            "type": "scenario",
+            "tags": [
+              {
+                "name": "@credit-card",
+                "line": 10
+              }
+            ],
+            "steps": [
+              {
+                "keyword": "When ",
+                "name": "I pay with a valid credit card",
+                "line": 12,
+                "match": {
+                  "location": "step_definitions/payment_steps.js:10"
+                },
+                "result": {
+                  "status": "passed",
+                  "duration": 3000000000
+                }
+              },
+              {
+                "keyword": "Then ",
+                "name": "the payment should be approved",
+                "line": 13,
+                "match": {
+                  "location": "step_definitions/payment_steps.js:20"
+                },
+                "result": {
+                  "status": "passed",
+                  "duration": 1000000000
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

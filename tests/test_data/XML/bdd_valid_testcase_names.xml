@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="3" failures="0" errors="0" time="8.5">
+  <testsuite name="User Enrollment" tests="3" failures="0" errors="0" time="8.5">
+    <!-- Case IDs in testcase names (all same C42) -->
+    <testcase classname="User Enrollment" name="Enroll a student C42" time="5.0"/>
+    <testcase classname="User Enrollment" name="Unenroll a student C42" time="3.0"/>
+    <testcase classname="User Enrollment" name="Update student information C42" time="0.5"/>
+  </testsuite>
+</testsuites>
