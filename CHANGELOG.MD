@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.12.6]
+
+_released 01-05-2026
+
+### Added
+ - Allow parse_junit to update custom case fields in the same test run when using --update-existing-cases
+
 ## [1.12.5]
 
 _released 12-09-2025
