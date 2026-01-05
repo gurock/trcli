@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.12.6]
 
-_released 12-12-2025
+_released 01-05-2026
 
 ### Added
  - Allow parse_junit to update custom case fields in the same test run when using --update-existing-cases
