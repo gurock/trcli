@@ -35,7 +35,8 @@
                         "version": null,
                         "attachments": [],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -60,7 +61,8 @@
                         "version": null,
                         "attachments": [],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -88,7 +90,8 @@
                             "second.file"
                         ],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "section_id": null,
                     "template_id": null,
@@ -113,7 +116,8 @@
                         "version": null,
                         "attachments": [],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "section_id": null,
                     "template_id": null,

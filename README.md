@@ -40,6 +40,7 @@ Supported and loaded modules:
     - parse_cucumber: Cucumber JSON results (BDD)
     - import_gherkin: Upload .feature files to TestRail BDD
     - export_gherkin: Export BDD test cases as .feature files
+    - parse_gherkin: Parse Gherkin .feature file locally
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
@@ -360,6 +361,9 @@ Usage: trcli parse_cucumber [OPTIONS]
 
   Parse Cucumber JSON results and upload to TestRail
 
+  This command parses Cucumber JSON test results and uploads them to TestRail.
+  Uses BDD matching mode to match features by name and auto-create missing test cases.
+
 Options:
   -f, --file                 Filename and path.
   --close-run                Close the newly created run
@@ -377,8 +381,6 @@ Options:
   --case-fields              List of case fields and values for new test cases creation.
   --result-fields            List of result fields and values for test results creation.
   --allow-ms                 Allows using milliseconds for elapsed times.
-  --upload-feature           Generate and upload .feature file to create/update test cases via BDD endpoint.
-  --feature-section-id       Section ID for uploading .feature file (required if --upload-feature is used).  [x>=1]
   -v, --verbose              Enable verbose logging output.
   --help                     Show this message and exit.
 ```
@@ -443,86 +445,127 @@ Options:
 | `step` | Test Step | Steps with results become step results |
 | `tags` | Case Tags/Refs | Tags like @smoke, @C123 map to TestRail fields |
 
-#### Two Workflows for BDD Test Results
+#### BDD Matching Mode for Test Results
 
-##### Workflow 1: Upload Results Only (Code-First)
+The `parse_cucumber` command uses **BDD matching mode** to intelligently match Cucumber features to TestRail BDD test cases by feature name. This provides a seamless workflow for uploading BDD test results.
 
-Use this workflow when test cases already exist in TestRail and you want to match them using automation_id.
+**Key Features:**
+- **Feature Name Matching**: Automatically matches Cucumber features to TestRail BDD test cases by feature name
+- **Auto-Creation**: Automatically creates missing BDD test cases (can be controlled with flags)
+- **Section Auto-Creation**: Creates TestRail sections on-the-fly if they don't exist
+- **Batch Pre-fetching**: Efficiently fetches all BDD cases once and caches them for O(1) lookups
+- **Duplicate Detection**: Warns when multiple BDD cases have the same feature name
 
+#### Auto-Creation Flags
+
+Control how the TestRail CLI handles missing BDD test cases:
+
+| Flag | Behavior | Use Case |
+|------|----------|----------|
+| **No flag** (default) | Auto-creates missing BDD test cases | Recommended for most workflows - creates cases automatically |
+| `-y` or `--yes` | Auto-creates without prompting | CI/CD environments - same as default for BDD |
+| `-n` or `--no` | Strict matching only - errors if not found | When you want to ensure all features exist in TestRail first |
+
+#### Usage Examples
+
+**Default behavior (auto-create):**
 ```shell
-# Upload results to existing test cases
+# Auto-create missing BDD test cases (default)
+$ trcli parse_cucumber -f cucumber-results.json \
+  --project "Your Project" \
+  --suite-id 2 \
+  --title "BDD Test Run"
+```
+
+**Explicit auto-creation with -y flag:**
+```shell
+# Same as default - auto-create missing test cases
+$ trcli parse_cucumber -f cucumber-results.json \
+  --project "Your Project" \
+  --suite-id 2 \
+  --title "BDD Test Run" \
+  -y
+```
+
+**Strict matching mode with -n flag:**
+```shell
+# Only match existing BDD test cases - error if not found
 $ trcli parse_cucumber -f cucumber-results.json \
   --project "Your Project" \
   --suite-id 2 \
   --title "BDD Test Run" \
   -n
-
-# With automation (auto-create test cases if missing)
-$ trcli parse_cucumber -f cucumber-results.json \
-  --project "Your Project" \
-  --suite-id 2 \
-  --title "BDD Test Run" \
-  -y
 ```
 
-**How it works:**
-- Parser creates automation_id from feature name + scenario name
-- TestRail CLI matches scenarios to existing cases via automation_id
-- Results are uploaded to matched test cases
-- With `-y`: Creates new test cases if no match found
-- With `-n`: Skips scenarios without matching test cases
+**How BDD matching works:**
+1. Fetches all BDD test cases from the specified suite (one-time batch operation)
+2. Normalizes feature names for matching (case-insensitive, whitespace-normalized)
+3. For each feature in Cucumber JSON:
+   - Tries to find existing BDD test case by feature name
+   - If found: Uses that case ID and uploads scenario results
+   - If not found and auto-create enabled: Creates new BDD test case with complete Gherkin content
+   - If not found and auto-create disabled (-n): Shows error and exits
+4. Aggregates all scenario results per feature
+5. Uploads results to TestRail with scenario-level detail
 
-##### Workflow 2: Create BDD Test Cases + Upload Results (Specification-First)
-
-Use this workflow to automatically create BDD test cases from Cucumber results using TestRail's BDD endpoint.
-
-```shell
-# Create BDD test cases and upload results
-$ trcli parse_cucumber -f cucumber-results.json \
-  --project "Your Project" \
-  --suite-id 2 \
-  --upload-feature \
-  --feature-section-id 123 \
-  --title "BDD Test Run" \
-  -y
-```
-
-**How it works:**
-1. Parses Cucumber JSON results
-2. Generates complete .feature files (one per feature)
-3. Uploads .feature files to TestRail via `add_bdd` endpoint
-4. TestRail creates BDD test cases with Gherkin content
-5. Maps created case IDs to test results
-6. Uploads all scenario results to their respective test cases
-7. Sets automation_id on created test cases for future matching
+**Important Notes:**
+- Feature matching is done by **feature name** (not automation_id or case ID tags)
+- If multiple BDD cases have the same feature name, a warning is shown
+- Sections are created automatically if they don't exist
+- Each feature becomes one BDD test case with multiple scenario results
 
 #### Case Matching for BDD Tests
 
-BDD test matching works similarly to JUnit, with automation_id generated from your test structure:
+The `parse_cucumber` command uses **feature name matching** to link Cucumber features to TestRail BDD test cases. This is different from the automation_id approach used in JUnit.
 
-**Automation ID Format:**
-```
-<feature_name>.<scenario_name>
-```
+**Feature Name Matching:**
+- TestRail CLI normalizes and compares feature names from Cucumber JSON to BDD test case titles in TestRail
+- Normalization: case-insensitive, whitespace-normalized (e.g., "User Login" matches "user  login")
+- One feature = one BDD test case with multiple scenario results
 
 **Example:**
-```
+```gherkin
+# Cucumber JSON feature
 Feature: User Login
   Scenario: Successful login with valid credentials
+    Given I am on the login page
+    When I enter valid credentials
+    Then I should see the dashboard
 
-Automation ID: User Login.Successful login with valid credentials
+  Scenario: Failed login with invalid password
+    Given I am on the login page
+    When I enter invalid credentials
+    Then I should see an error message
+
+# TestRail
+# - One BDD test case with title "User Login"
+# - Contains both scenarios with individual pass/fail status
+# - Section name: "User Login" (auto-created if needed)
 ```
 
-You can also use Case ID matching with `@C<id>` tags:
+**Using @C<id> Tags (Optional):**
+
+You can also explicitly specify case IDs using `@C<id>` tags at the feature level:
 
 ```gherkin
+@C123
 Feature: User Login
-  @C123
   Scenario: Successful login with valid credentials
     Given I am on the login page
     When I enter valid credentials
     Then I should see the dashboard
 ```
+
+**Tag Priority:**
+1. `@C<id>` tags at feature level (if present)
+2. Feature name matching (default behavior)
+
+**Duplicate Name Handling:**
+
+If multiple BDD test cases have the same feature name, the CLI will:
+- Show a warning: `Warning: Multiple BDD cases found with title 'User Login': C101, C202, C303`
+- Use the last matching case ID
+- Recommend ensuring unique feature names in TestRail
 
 ### Importing Gherkin Feature Files
 

@@ -41,18 +41,12 @@ class TestResultsUploader:
         environment._validated_user_ids = []
 
         junit_file_parser = mocker.patch.object(JunitParser, "parse_file")
-        api_request_handler = mocker.patch(
-            "trcli.api.project_based_client.ApiRequestHandler"
-        )
-        results_uploader = ResultsUploader(
-            environment=environment, suite=junit_file_parser
-        )
+        api_request_handler = mocker.patch("trcli.api.project_based_client.ApiRequestHandler")
+        results_uploader = ResultsUploader(environment=environment, suite=junit_file_parser)
         yield environment, api_request_handler, results_uploader
 
     @pytest.mark.results_uploader
-    def test_project_name_missing_in_test_rail(
-        self, result_uploader_data_provider, mocker
-    ):
+    def test_project_name_missing_in_test_rail(self, result_uploader_data_provider, mocker):
         """The purpose of this test is to check that proper message will be printed and trcli will terminate
         with proper code when project with name provided does not exist in TestRail."""
         (
@@ -67,17 +61,13 @@ class TestResultsUploader:
             error_message=f"{environment.project} project doesn't exist.",
             failing=True,
         )
-        expected_elog_calls = [
-            mocker.call(f"\n{environment.project} project doesn't exist.")
-        ]
+        expected_elog_calls = [mocker.call(f"\n{environment.project} project doesn't exist.")]
 
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
         environment.elog.assert_has_calls(expected_elog_calls)
-        assert (
-            exception.type == SystemExit
-        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert exception.type == SystemExit, f"Expected SystemExit exception, but got {exception.type} instead."
         assert (
             exception.value.code == exit_code
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
@@ -94,9 +84,7 @@ class TestResultsUploader:
         ],
         ids=["Unknown error", "project name matches more than one result"],
     )
-    def test_error_during_checking_of_project(
-        self, error_type, error_message, result_uploader_data_provider, mocker
-    ):
+    def test_error_during_checking_of_project(self, error_type, error_message, result_uploader_data_provider, mocker):
         """The purpose of this test is to check that proper message would be printed and trcli tool will
         terminate with proper code when errors occurs during project name check."""
         (
@@ -112,20 +100,13 @@ class TestResultsUploader:
             failing=True,
         )
         expected_log_calls = [
-            mocker.call(
-                "\n"
-                + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=error_message
-                )
-            )
+            mocker.call("\n" + FAULT_MAPPING["error_checking_project"].format(error_message=error_message))
         ]
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
         environment.elog.assert_has_calls(expected_log_calls)
-        assert (
-            exception.type == SystemExit
-        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert exception.type == SystemExit, f"Expected SystemExit exception, but got {exception.type} instead."
         assert (
             exception.value.code == exit_code
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
@@ -136,9 +117,7 @@ class TestResultsUploader:
         TEST_UPLOAD_RESULTS_FLOW_TEST_DATA,
         ids=TEST_UPLOAD_RESULTS_FLOW_IDS,
     )
-    def test_upload_results_flow(
-        self, failing_function, result_uploader_data_provider, mocker
-    ):
+    def test_upload_results_flow(self, failing_function, result_uploader_data_provider, mocker):
         """The purpose of those tests is to check that proper message would be printed and trcli tool
         will terminate with proper code when one of the functions in the flow fails."""
         (
@@ -170,20 +149,14 @@ class TestResultsUploader:
         with pytest.raises(SystemExit) as exception:
             results_uploader.upload_results()
 
-        assert (
-            exception.type == SystemExit
-        ), f"Expected SystemExit exception, but got {exception.type} instead."
+        assert exception.type == SystemExit, f"Expected SystemExit exception, but got {exception.type} instead."
         assert (
             exception.value.code == exit_code
         ), f"Expected exit code {exit_code}, but got {exception.value.code} instead."
 
-    @pytest.mark.parametrize(
-        "run_id", [None, 101], ids=["No run ID provided", "Run ID provided"]
-    )
+    @pytest.mark.parametrize("run_id", [None, 101], ids=["No run ID provided", "Run ID provided"])
     @pytest.mark.results_uploader
-    def test_upload_results_successful(
-        self, run_id, result_uploader_data_provider, mocker
-    ):
+    def test_upload_results_successful(self, run_id, result_uploader_data_provider, mocker):
         """The purpose of this test is to check if during successful run of upload_results proper messages
         would be printed."""
         (
@@ -199,26 +172,22 @@ class TestResultsUploader:
             error_message="",
             failing=True,
         )
-        upload_results_inner_functions_mocker(
-            results_uploader=results_uploader, mocker=mocker, failing_functions=[]
-        )
+        upload_results_inner_functions_mocker(results_uploader=results_uploader, mocker=mocker, failing_functions=[])
         results_uploader.api_request_handler.check_automation_id_field.return_value = None
         results_uploader.api_request_handler.check_missing_test_cases_ids.return_value = ([], "")
         results_uploader.api_request_handler.delete_sections.return_value = ([], "")
         expected_log_calls = []
+        # Note: Empty section removal messages are no longer expected because
+        # the new logic skips section/case creation when all cases have IDs
         if not run_id:
             calls = {
-                2: mocker.call("Removing unnecessary empty sections that may have been created earlier. ", new_line=False),
-                3: mocker.call("Removed 1 unused/empty section(s)."),
-                4: mocker.call("Creating test run. ", new_line=False),
-                5: mocker.call("Closing run. ", new_line=False),
+                2: mocker.call("Creating test run. ", new_line=False),
+                3: mocker.call("Closing run. ", new_line=False),
             }
         else:
             calls = {
-                2: mocker.call("Removing unnecessary empty sections that may have been created earlier. ", new_line=False),
-                3: mocker.call("Removed 1 unused/empty section(s)."),
-                4: mocker.call("Updating test run. ", new_line=False),
-                5: mocker.call("Closing run. ", new_line=False),
+                2: mocker.call("Updating test run. ", new_line=False),
+                3: mocker.call("Closing run. ", new_line=False),
             }
 
         results_uploader.upload_results()
@@ -226,9 +195,7 @@ class TestResultsUploader:
             assert environment.log.call_args_list[index] == call
 
     @pytest.mark.results_uploader
-    def test_add_missing_sections_no_missing_sections(
-        self, result_uploader_data_provider
-    ):
+    def test_add_missing_sections_no_missing_sections(self, result_uploader_data_provider):
         """The purpose of this test is to check that add_missing_sections will return empty list
         and proper return code when there are no missing sections."""
         (
@@ -280,12 +247,8 @@ class TestResultsUploader:
             missing_sections,
             "",
         )
-        results_uploader.environment.get_prompt_response_for_auto_creation.return_value = (
-            user_response
-        )
-        results_uploader.api_request_handler.data_provider.check_section_names_duplicates.return_value = (
-            False
-        )
+        results_uploader.environment.get_prompt_response_for_auto_creation.return_value = user_response
+        results_uploader.api_request_handler.data_provider.check_section_names_duplicates.return_value = False
         results_uploader.api_request_handler.add_sections.return_value = (
             expected_added_sections,
             expected_add_sections_error,
@@ -313,15 +276,11 @@ class TestResultsUploader:
         environment.log.assert_has_calls(expected_log_calls)
         environment.elog.assert_has_calls(expected_elog_calls)
         environment.get_prompt_response_for_auto_creation.assert_called_with(
-            PROMPT_MESSAGES["create_missing_sections"].format(
-                project_name=environment.project
-            )
+            PROMPT_MESSAGES["create_missing_sections"].format(project_name=environment.project)
         )
 
     @pytest.mark.results_uploader
-    def test_add_missing_sections_error_checking(
-        self, result_uploader_data_provider, mocker
-    ):
+    def test_add_missing_sections_error_checking(self, result_uploader_data_provider, mocker):
         """The purpose of this test is to check that add_missing_sections will return empty list
         and -1 as a result code when check_missing_section_ids will fail. Proper message will be printed."""
         (
@@ -381,9 +340,7 @@ class TestResultsUploader:
             missing_test_cases,
             expected_message,
         )
-        results_uploader.environment.get_prompt_response_for_auto_creation.return_value = (
-            user_response
-        )
+        results_uploader.environment.get_prompt_response_for_auto_creation.return_value = user_response
         results_uploader.api_request_handler.add_cases.return_value = (
             expected_added_test_cases,
             expected_add_test_cases_error,
@@ -412,15 +369,11 @@ class TestResultsUploader:
         environment.log.assert_has_calls(expected_log_calls)
         environment.elog.assert_has_calls(expected_elog_calls)
         environment.get_prompt_response_for_auto_creation.assert_called_with(
-            PROMPT_MESSAGES["create_missing_test_cases"].format(
-                project_name=environment.project
-            )
+            PROMPT_MESSAGES["create_missing_test_cases"].format(project_name=environment.project)
         )
 
     @pytest.mark.results_uploader
-    def test_add_missing_test_cases_duplicated_case_names(
-        self, result_uploader_data_provider, mocker
-    ):
+    def test_add_missing_test_cases_duplicated_case_names(self, result_uploader_data_provider, mocker):
         """The purpose of this test is to check that proper warning will be printed when duplicated case
         names will be detected in result file."""
 
@@ -433,11 +386,7 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
 
-        results_uploader.project = ProjectData(
-            project_id=1,
-            suite_mode=SuiteModes.single_suite,
-            error_message=""
-        )
+        results_uploader.project = ProjectData(project_id=1, suite_mode=SuiteModes.single_suite, error_message="")
 
         assert (
             results_uploader.rollback_changes() == []
@@ -460,11 +409,7 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
 
-        results_uploader.project = ProjectData(
-            project_id=1,
-            suite_mode=SuiteModes.multiple_suites,
-            error_message=""
-        )
+        results_uploader.project = ProjectData(project_id=1, suite_mode=SuiteModes.multiple_suites, error_message="")
 
         api_request_handler_delete_mocker(
             results_uploader=results_uploader,
@@ -493,16 +438,10 @@ class TestResultsUploader:
             results_uploader,
         ) = result_uploader_data_provider
 
-        results_uploader.project = ProjectData(
-            project_id=1,
-            suite_mode=SuiteModes.multiple_suites,
-            error_message=""
-        )
+        results_uploader.project = ProjectData(project_id=1, suite_mode=SuiteModes.multiple_suites, error_message="")
 
         suite_id = 1234
-        results_uploader.api_request_handler.suites_data_from_provider.suite_id = (
-            suite_id
-        )
+        results_uploader.api_request_handler.suites_data_from_provider.suite_id = suite_id
         results_uploader.api_request_handler.check_suite_id.return_value = (True, "")
 
         api_request_handler_delete_mocker(
