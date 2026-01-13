@@ -20,14 +20,33 @@ class CucumberParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+        self._bdd_case_cache = None  # Cache for BDD cases (populated on first use)
+        self._api_handler = None  # Will be set when BDD matching mode is needed
 
-    def parse_file(self) -> List[TestRailSuite]:
+    def parse_file(
+        self,
+        bdd_matching_mode: bool = False,
+        project_id: Optional[int] = None,
+        suite_id: Optional[int] = None,
+        auto_create: bool = False,
+    ) -> List[TestRailSuite]:
         """Parse Cucumber JSON results file and convert to TestRailSuite structure
+
+        Args:
+            bdd_matching_mode: If True, use BDD matching mode (group scenarios under existing BDD cases)
+            project_id: TestRail project ID (required for BDD matching mode)
+            suite_id: TestRail suite ID (required for BDD matching mode)
+            auto_create: If True, mark features for auto-creation when not found (BDD matching mode only)
 
         Returns:
             List of TestRailSuite objects with test cases and results
         """
         self.env.log(f"Parsing Cucumber JSON file: {self.filename}")
+
+        if bdd_matching_mode:
+            self.env.log("Using BDD matching mode (matching against existing BDD test cases)")
+            if not project_id or not suite_id:
+                raise ValueError("project_id and suite_id are required for BDD matching mode")
 
         # Read and parse the JSON file
         with open(self.filepath, "r", encoding="utf-8") as f:
@@ -40,11 +59,26 @@ class CucumberParser(FileParser):
         # Parse features into TestRail structure
         sections = []
         for feature in cucumber_data:
-            feature_sections = self._parse_feature(feature)
+            feature_sections = self._parse_feature(feature, bdd_matching_mode, project_id, suite_id, auto_create)
             sections.extend(feature_sections)
 
-        cases_count = sum(len(section.testcases) for section in sections)
-        self.env.log(f"Processed {cases_count} test cases in {len(sections)} sections.")
+        # Generate appropriate message based on mode
+        if bdd_matching_mode:
+            # In BDD matching mode: count scenarios from original data
+            scenario_count = sum(
+                sum(
+                    1
+                    for element in feature.get("elements", [])
+                    if element.get("type", "") in ("scenario", "scenario_outline")
+                )
+                for feature in cucumber_data
+            )
+            feature_word = "feature file" if len(cucumber_data) == 1 else "feature files"
+            self.env.log(f"Processed {scenario_count} scenarios in {len(cucumber_data)} {feature_word}.")
+        else:
+            # Standard mode: count test cases and sections
+            cases_count = sum(len(section.testcases) for section in sections)
+            self.env.log(f"Processed {cases_count} test cases in {len(sections)} sections.")
 
         # Create suite
         suite_name = self.env.suite_name if self.env.suite_name else "Cucumber Test Results"
@@ -56,11 +90,22 @@ class CucumberParser(FileParser):
 
         return [testrail_suite]
 
-    def _parse_feature(self, feature: Dict[str, Any]) -> List[TestRailSection]:
+    def _parse_feature(
+        self,
+        feature: Dict[str, Any],
+        bdd_matching_mode: bool = False,
+        project_id: Optional[int] = None,
+        suite_id: Optional[int] = None,
+        auto_create: bool = False,
+    ) -> List[TestRailSection]:
         """Parse a single Cucumber feature into TestRail sections
 
         Args:
             feature: Feature object from Cucumber JSON
+            bdd_matching_mode: If True, parse as single BDD case (group scenarios)
+            project_id: TestRail project ID (required for BDD matching mode)
+            suite_id: TestRail suite ID (required for BDD matching mode)
+            auto_create: If True, mark cases for auto-creation when not found
 
         Returns:
             List of TestRailSection objects
@@ -71,14 +116,21 @@ class CucumberParser(FileParser):
         # Create a section for this feature
         section = TestRailSection(name=feature_name, testcases=[])
 
-        # Parse scenarios/scenario outlines
-        for element in feature.get("elements", []):
-            element_type = element.get("type", "")
+        # Branch: BDD matching mode vs. standard mode
+        if bdd_matching_mode:
+            # BDD Matching Mode: Parse feature as single BDD case with grouped scenarios
+            test_case = self._parse_feature_as_bdd_case(feature, project_id, suite_id, auto_create)
+            if test_case:
+                section.testcases.append(test_case)
+        else:
+            # Standard Mode: Parse each scenario as separate test case
+            for element in feature.get("elements", []):
+                element_type = element.get("type", "")
 
-            if element_type in ("scenario", "scenario_outline"):
-                test_case = self._parse_scenario(element, feature_name, feature_tags)
-                if test_case:
-                    section.testcases.append(test_case)
+                if element_type in ("scenario", "scenario_outline"):
+                    test_case = self._parse_scenario(element, feature_name, feature_tags)
+                    if test_case:
+                        section.testcases.append(test_case)
 
         return [section] if section.testcases else []
 
@@ -585,3 +637,340 @@ class CucumberParser(FileParser):
                     lines.append("  " + line if line else "")
 
         return "\n".join(lines)
+
+    def _normalize_title(self, title: str) -> str:
+        """Normalize title for robust matching
+
+        Converts to lowercase, strips whitespace, and removes special characters.
+        Hyphens, underscores, and special chars are converted to spaces for word boundaries.
+
+        Args:
+            title: The title to normalize
+
+        Returns:
+            Normalized title string
+        """
+        import re
+
+        # Convert to lowercase and strip
+        normalized = title.lower().strip()
+        # Replace hyphens, underscores, and special chars with spaces
+        normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+        # Collapse multiple spaces to single space
+        normalized = re.sub(r"\s+", " ", normalized)
+        # Final strip
+        return normalized.strip()
+
+    def set_api_handler(self, api_handler):
+        """Set API handler for BDD matching mode
+
+        Args:
+            api_handler: ApiRequestHandler instance for API calls
+        """
+        self._api_handler = api_handler
+
+    def _get_bdd_cases_cache(self, project_id: int, suite_id: int) -> Dict[str, int]:
+        """Fetch and cache all BDD cases in suite (one-time batch operation)
+
+        This method fetches all test cases once and caches BDD cases for fast lookups.
+        Performance: 40 API requests for 10K cases (due to pagination), then O(1) lookups.
+
+        Args:
+            project_id: TestRail project ID
+            suite_id: TestRail suite ID
+
+        Returns:
+            Dictionary mapping normalized_title → case_id for BDD cases only
+        """
+        if self._bdd_case_cache is not None:
+            return self._bdd_case_cache
+
+        if self._api_handler is None:
+            self.env.elog("Error: API handler not set. Cannot fetch BDD cases.")
+            return {}
+
+        self.env.vlog(f"Fetching all BDD cases for suite {suite_id} (one-time operation)...")
+
+        # Fetch ALL cases in suite (with pagination handled internally)
+        all_cases, error = self._api_handler._ApiRequestHandler__get_all_cases(project_id=project_id, suite_id=suite_id)
+
+        if error:
+            self.env.elog(f"Error fetching cases: {error}")
+            return {}
+
+        # Build hash table index: normalized_title → case_id (BDD cases only)
+        # Also track duplicates for warning
+        bdd_cache = {}
+        duplicate_tracker = {}  # normalized_title → list of case IDs
+        bdd_count = 0
+
+        for case in all_cases:
+            # Filter to BDD template cases only
+            if case.get("custom_testrail_bdd_scenario"):
+                normalized = self._normalize_title(case["title"])
+                case_id = case["id"]
+
+                # Track duplicates
+                if normalized in duplicate_tracker:
+                    duplicate_tracker[normalized].append(case_id)
+                else:
+                    duplicate_tracker[normalized] = [case_id]
+
+                bdd_cache[normalized] = case_id
+                bdd_count += 1
+
+        # Warn about duplicates
+        for normalized_title, case_ids in duplicate_tracker.items():
+            if len(case_ids) > 1:
+                # Find original title (use first case's title)
+                original_title = None
+                for case in all_cases:
+                    if case["id"] == case_ids[0]:
+                        original_title = case["title"]
+                        break
+
+                case_ids_str = ", ".join([f"C{cid}" for cid in case_ids])
+                self.env.elog(f"Warning: Multiple BDD cases found with title '{original_title}': {case_ids_str}")
+                self.env.elog(f"  Using case ID C{case_ids[-1]} (last match)")
+
+        self.env.vlog(f"Cached {bdd_count} BDD cases from {len(all_cases)} total cases")
+        self._bdd_case_cache = bdd_cache
+        return bdd_cache
+
+    def _find_case_by_title(self, feature_name: str, project_id: int, suite_id: int) -> Optional[int]:
+        """Find BDD case by feature name using cached index (O(1) lookup)
+
+        Args:
+            feature_name: Feature name from Cucumber JSON
+            project_id: TestRail project ID
+            suite_id: TestRail suite ID
+
+        Returns:
+            Case ID if found, None otherwise
+        """
+        cache = self._get_bdd_cases_cache(project_id, suite_id)
+        normalized = self._normalize_title(feature_name)
+        return cache.get(normalized)
+
+    def _extract_case_id_from_tags(self, feature_tags: List[str], scenario_tags: List[str]) -> Optional[int]:
+        """Extract case ID from @C<id> tags
+
+        Priority: Feature-level tags > Scenario-level tags
+        This ensures feature-level @C123 tag applies to all scenarios.
+
+        Args:
+            feature_tags: Tags from feature level
+            scenario_tags: Tags from scenario level
+
+        Returns:
+            Case ID if found, None otherwise
+        """
+        # Priority 1: Feature-level tags (applies to all scenarios)
+        for tag in feature_tags:
+            if tag.startswith("@C") or tag.startswith("@c"):
+                try:
+                    return int(tag[2:])
+                except ValueError:
+                    pass
+
+        # Priority 2: Scenario-level tags (fallback)
+        for tag in scenario_tags:
+            if tag.startswith("@C") or tag.startswith("@c"):
+                try:
+                    return int(tag[2:])
+                except ValueError:
+                    pass
+
+        return None
+
+    def _validate_bdd_case_exists(self, case_id: int) -> Tuple[bool, Optional[str]]:
+        """Validate that case exists and is a BDD template case
+
+        Args:
+            case_id: TestRail case ID to validate
+
+        Returns:
+            Tuple of (is_valid, error_message)
+            - is_valid: True if case exists and is BDD template
+            - error_message: Error description if validation fails, None otherwise
+        """
+        if self._api_handler is None:
+            return False, "API handler not set"
+
+        try:
+            # Fetch case details from TestRail API (use api_handler's client)
+            response = self._api_handler.client.send_get(f"get_case/{case_id}")
+
+            # Check if request failed or returned no data
+            if response.error_message or not response.response_text:
+                error_msg = response.error_message if response.error_message else "Case not found"
+                return False, f"Case C{case_id} not found: {error_msg}"
+
+            case_data = response.response_text
+
+            # Validate it's a BDD template case
+            if not case_data.get("custom_testrail_bdd_scenario"):
+                return False, f"Case C{case_id} is not a BDD template case"
+
+            return True, None
+
+        except Exception as e:
+            return False, f"Error validating case C{case_id}: {str(e)}"
+
+    def _parse_feature_as_bdd_case(
+        self, feature: Dict[str, Any], project_id: int, suite_id: int, auto_create: bool = False
+    ) -> Optional[TestRailCase]:
+        """Parse Cucumber feature as single BDD test case with multiple scenario results
+
+        This method is used in BDD matching mode (WITHOUT --upload-feature).
+        It groups all scenarios from a feature under a single BDD test case.
+
+        Workflow:
+        1. Extract case ID from @C<id> tags (feature > scenario priority)
+        2. Fallback to feature name matching via cached lookup
+        3. If not found and auto_create=True: Return special marker for auto-creation
+        4. Validate case exists and is BDD template
+        5. Parse all scenarios as BDD scenario results
+        6. Aggregate status (fail-fast: any scenario failure → feature fails)
+        7. Create single TestRailCase with custom_testrail_bdd_scenario_results
+
+        Args:
+            feature: Feature object from Cucumber JSON
+            project_id: TestRail project ID
+            suite_id: TestRail suite ID
+            auto_create: If True, mark for auto-creation when not found
+
+        Returns:
+            TestRailCase with BDD scenario results, or None if case not found and auto_create=False
+            Returns TestRailCase with case_id=-1 if not found and auto_create=True (marker for creation)
+        """
+        feature_name = feature.get("name", "Untitled Feature")
+        feature_tags = self._extract_tags(feature.get("tags", []))
+
+        # Step 1: Try to extract case ID from tags
+        case_id = None
+        for tag in feature_tags:
+            if tag.startswith("@C") or tag.startswith("@c"):
+                try:
+                    case_id = int(tag[2:])
+                    self.env.vlog(f"Found case ID from feature tag: C{case_id}")
+                    break
+                except ValueError:
+                    pass
+
+        # Step 2: Fallback to feature name matching (cached lookup)
+        if case_id is None:
+            case_id = self._find_case_by_title(feature_name, project_id, suite_id)
+            if case_id:
+                self.env.vlog(f"Found case ID from feature name '{feature_name}': C{case_id}")
+
+        # Step 3: Handle case not found
+        if case_id is None:
+            if auto_create:
+                self.env.log(f"Feature '{feature_name}' not found in TestRail - will auto-create")
+                # Return special marker (case_id=-1) to indicate this needs creation
+                # Store feature data for later creation
+                case_id = -1  # Marker for auto-creation
+            else:
+                self.env.elog(f"Error: No BDD case found for feature '{feature_name}'")
+                self.env.elog(f"  Add @C<id> tag to feature or ensure case exists with title '{feature_name}'")
+                return None
+
+        # Step 4: Validate case exists (skip validation if marked for creation)
+        if case_id != -1:
+            is_valid, error_message = self._validate_bdd_case_exists(case_id)
+            if not is_valid:
+                self.env.elog(f"Error validating case for feature '{feature_name}': {error_message}")
+                return None
+
+        # Step 4: Parse all scenarios as BDD scenario results
+        bdd_scenario_results = []
+        overall_status = 1  # Passed by default (fail-fast logic applied below)
+        total_elapsed = 0
+
+        for element in feature.get("elements", []):
+            element_type = element.get("type", "")
+
+            if element_type in ("scenario", "scenario_outline"):
+                scenario_name = element.get("name", "Untitled Scenario")
+                scenario_tags = self._extract_tags(element.get("tags", []))
+
+                # Parse steps to determine scenario status
+                steps = element.get("steps", [])
+                _, scenario_status = self._parse_steps(steps)
+
+                # Calculate elapsed time for this scenario
+                scenario_elapsed = 0
+                for step in steps:
+                    result = step.get("result", {})
+                    duration = result.get("duration", 0)
+                    if duration:
+                        scenario_elapsed += duration
+
+                total_elapsed += scenario_elapsed
+
+                # Create BDD scenario result (using TestRailSeparatedStep structure)
+                bdd_scenario = TestRailSeparatedStep(content=scenario_name)
+                bdd_scenario.status_id = scenario_status
+                bdd_scenario_results.append(bdd_scenario)
+
+                # Fail-fast: If any scenario fails, entire feature fails
+                if scenario_status == 5:  # Failed
+                    overall_status = 5
+                elif scenario_status == 4 and overall_status != 5:  # Skipped
+                    overall_status = 4
+                elif scenario_status == 3 and overall_status == 1:  # Untested/Pending
+                    overall_status = 3
+
+        # Step 5: Calculate elapsed time (pass as numeric seconds, TestRailResult.__post_init__ will format)
+        elapsed_time = None
+        if total_elapsed > 0:
+            total_seconds = total_elapsed / 1_000_000_000
+            elapsed_time = str(total_seconds)  # Pass as string number, will be formatted by __post_init__
+
+        # Step 6: Build comment from failures (aggregate all scenario failures)
+        comment_parts = []
+        for element in feature.get("elements", []):
+            if element.get("type", "") in ("scenario", "scenario_outline"):
+                scenario_name = element.get("name", "Untitled Scenario")
+                steps = element.get("steps", [])
+
+                # Check if scenario failed
+                scenario_failed = False
+                for step in steps:
+                    result = step.get("result", {})
+                    if result.get("status", "").lower() == "failed":
+                        scenario_failed = True
+                        break
+
+                if scenario_failed:
+                    failure_comment = self._build_comment_from_failures(steps)
+                    if failure_comment:
+                        comment_parts.append(f"Scenario: {scenario_name}\n{failure_comment}")
+
+        comment = "\n\n".join(comment_parts) if comment_parts else ""
+
+        # Step 7: Create result with BDD scenario results
+        result = TestRailResult(
+            case_id=case_id,
+            status_id=overall_status,
+            comment=comment,
+            elapsed=elapsed_time,
+            custom_testrail_bdd_scenario_results=bdd_scenario_results,  # Use BDD field
+        )
+
+        # Step 8: Create test case
+        test_case = TestRailCase(
+            title=TestRailCaseFieldsOptimizer.extract_last_words(
+                feature_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH
+            ),
+            case_id=case_id,
+            result=result,
+        )
+
+        self.env.vlog(
+            f"Parsed feature '{feature_name}' as BDD case C{case_id} "
+            f"with {len(bdd_scenario_results)} scenarios (status: {overall_status})"
+        )
+
+        return test_case

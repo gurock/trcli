@@ -49,7 +49,7 @@ class ProjectBasedClient:
             "proxy": proxy,
             "proxy_user": proxy_user,
             "noproxy": noproxy,
-            "uploader_metadata": uploader_metadata
+            "uploader_metadata": uploader_metadata,
         }
 
         if self.environment.timeout:
@@ -69,10 +69,13 @@ class ProjectBasedClient:
         """
         Gets and checks project settings.
         """
+        # Skip if project is already resolved (e.g., by parse_cucumber command)
+        if self.project is not None:
+            self.environment.vlog("Project already resolved, skipping project check")
+            return
+
         self.environment.log("Checking project. ", new_line=False)
-        self.project = self.api_request_handler.get_project_data(
-            self.environment.project, self.environment.project_id
-        )
+        self.project = self.api_request_handler.get_project_data(self.environment.project, self.environment.project_id)
         self._validate_project_id()
         if self.environment.auto_creation_response:
             if self.environment.case_matcher == MatchersParser.AUTO:
@@ -88,18 +91,12 @@ class ProjectBasedClient:
             exit(1)
         elif self.project.project_id == ProjectErrors.other_error:
             self.environment.elog(
-                "\n"
-                + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=self.project.error_message
-                )
+                "\n" + FAULT_MAPPING["error_checking_project"].format(error_message=self.project.error_message)
             )
             exit(1)
         elif self.project.project_id == ProjectErrors.multiple_project_same_name:
             self.environment.elog(
-                "\n"
-                + FAULT_MAPPING["error_checking_project"].format(
-                    error_message=self.project.error_message
-                )
+                "\n" + FAULT_MAPPING["error_checking_project"].format(error_message=self.project.error_message)
             )
             exit(1)
 
@@ -132,9 +129,7 @@ class ProjectBasedClient:
                     suite_name=self.api_request_handler.suites_data_from_provider.name,
                     project_name=self.environment.project,
                 )
-                adding_message = (
-                    f"Adding missing suites to project {self.environment.project}."
-                )
+                adding_message = f"Adding missing suites to project {self.environment.project}."
                 fault_message = FAULT_MAPPING["no_user_agreement"].format(type="suite")
                 added_suites, result_code = self.prompt_user_and_add_items(
                     prompt_message=prompt_message,
@@ -147,33 +142,27 @@ class ProjectBasedClient:
                     suite_id = added_suites[0]["suite_id"]
                     suite_added = True
             elif suite_mode == SuiteModes.single_suite_baselines:
-                suite_ids, error_message = self.api_request_handler.get_suite_ids(
-                    project_id=project_id
-                )
+                suite_ids, error_message = self.api_request_handler.get_suite_ids(project_id=project_id)
                 if error_message:
                     self.environment.elog(error_message)
                 else:
                     if len(suite_ids) > 1:
                         self.environment.elog(
-                            FAULT_MAPPING[
-                                "not_unique_suite_id_single_suite_baselines"
-                            ].format(project_name=self.environment.project)
+                            FAULT_MAPPING["not_unique_suite_id_single_suite_baselines"].format(
+                                project_name=self.environment.project
+                            )
                         )
                     else:
                         result_code = 1
             elif suite_mode == SuiteModes.single_suite:
-                suite_ids, error_message = self.api_request_handler.get_suite_ids(
-                    project_id=project_id
-                )
+                suite_ids, error_message = self.api_request_handler.get_suite_ids(project_id=project_id)
                 if error_message:
                     self.environment.elog(error_message)
                 else:
                     suite_id = suite_ids[0]
                     result_code = 1
             else:
-                self.environment.elog(
-                    FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode)
-                )
+                self.environment.elog(FAULT_MAPPING["unknown_suite_mode"].format(suite_mode=suite_mode))
         else:
             suite_id = self.api_request_handler.suites_data_from_provider.suite_id
             result_code = self.check_suite_id(project_id)
@@ -188,9 +177,7 @@ class ProjectBasedClient:
         result_code = -1
         if project_id is None:
             project_id = self._get_project_id()
-        suite_exists, error_message = self.api_request_handler.check_suite_id(
-            project_id
-        )
+        suite_exists, error_message = self.api_request_handler.check_suite_id(project_id)
         if suite_exists:
             result_code = 1
         else:
@@ -227,13 +214,13 @@ class ProjectBasedClient:
             self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
             run, error_message = self.api_request_handler.update_run(
-                run_id, 
-                self.run_name, 
+                run_id,
+                self.run_name,
                 start_date=self.environment.run_start_date,
                 end_date=self.environment.run_end_date,
                 milestone_id=self.environment.milestone_id,
                 refs=self.environment.run_refs,
-                refs_action=getattr(self.environment, 'run_refs_action', 'add')
+                refs_action=getattr(self.environment, "run_refs_action", "add"),
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)
