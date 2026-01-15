@@ -68,7 +68,6 @@ trcli_description = (
     "    - parse_cucumber: Cucumber JSON results (BDD)\n"
     "    - import_gherkin: Upload .feature files to TestRail BDD\n"
     "    - export_gherkin: Export BDD test cases as .feature files\n"
-    "    - parse_gherkin: Parse Gherkin .feature file locally\n"
     "    - parse_robot: Robot Framework XML Files\n"
     "    - parse_openapi: OpenAPI YML Files\n"
     "    - add_run: Create a new test run\n"

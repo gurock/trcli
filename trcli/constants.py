@@ -101,7 +101,6 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_cucumber: Cucumber JSON results (BDD)
     - import_gherkin: Upload .feature files to TestRail BDD
     - export_gherkin: Export BDD test cases as .feature files
-    - parse_gherkin: Parse Gherkin .feature file locally
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run

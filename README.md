@@ -40,7 +40,6 @@ Supported and loaded modules:
     - parse_cucumber: Cucumber JSON results (BDD)
     - import_gherkin: Upload .feature files to TestRail BDD
     - export_gherkin: Export BDD test cases as .feature files
-    - parse_gherkin: Parse Gherkin .feature file locally
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
@@ -92,7 +91,6 @@ Commands:
   import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
   parse_cucumber Parse Cucumber JSON results and upload to TestRail
-  parse_gherkin  Parse Gherkin .feature file locally
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
@@ -343,7 +341,6 @@ The TestRail CLI provides four commands for complete BDD workflow management:
 | `import_gherkin` | Import .feature files to create test cases | Create BDD test cases in TestRail from existing .feature files |
 | `export_gherkin` | Export test cases as .feature files | Extract test cases from TestRail for automation |
 | `parse_cucumber` | Parse Cucumber JSON and upload results | Upload test results from Cucumber/Behave/pytest-bdd execution |
-| `parse_gherkin` | Parse .feature files locally (no upload) | Validate syntax, convert to JSON, preview TestRail structure |
 
 ### Uploading Cucumber/BDD Test Results
 
@@ -687,64 +684,6 @@ Retrieving BDD test case 123...
 - Synchronize TestRail with version control
 - Generate documentation from test cases
 - Migrate test cases between projects
-
-### Parsing Gherkin Feature Files Locally
-
-The `parse_gherkin` command parses Gherkin .feature files locally and converts them into TestRail data structure format without uploading to TestRail. This is useful for validation, conversion, or integration with custom workflows.
-
-#### Reference
-```shell
-$ trcli parse_gherkin --help
-Usage: trcli parse_gherkin [OPTIONS]
-
-  Parse Gherkin .feature file locally
-
-  This command parses Gherkin/BDD .feature files and converts them into
-  TestRail data structure format without uploading to TestRail.
-
-Options:
-  -f, --file         Path to Gherkin .feature file to parse  [required]
-  --output           Optional output file path to save parsed JSON
-  --pretty           Pretty print JSON output with indentation
-  --help             Show this message and exit.
-```
-
-#### Usage Examples
-```shell
-# Parse a feature file and output to console
-$ trcli parse_gherkin -f features/login.feature
-
-# Parse and save to JSON file with pretty formatting
-$ trcli parse_gherkin -f features/login.feature \
-  --output parsed-output.json \
-  --pretty
-
-# Parse multiple feature files
-$ trcli parse_gherkin -f features/checkout.feature \
-  --output checkout.json \
-  --pretty
-```
-
-**Use cases:**
-- Validate Gherkin syntax locally before uploading
-- Convert .feature files to TestRail JSON format
-- Preview how features will be structured in TestRail
-- Integrate with custom automation workflows
-- Debug feature file parsing issues
-
-### BDD Mapping to TestRail
-
-When using parse_cucumber with `--upload-feature`, the following mapping rules apply:
-
-| Gherkin Element | TestRail Field | Description |
-|----------------|----------------|-------------|
-| `Feature:` name + description | Test Case title + Preconditions | Feature metadata becomes test case info |
-| `Background:` | BDD Scenario field | Shared setup steps |
-| `Scenario:` / `Scenario Outline:` | BDD Scenario field | Individual test scenarios |
-| `Given`/`When`/`Then`/`And`/`But` | BDD Scenario field | Test steps with keywords |
-| `Examples:` table | BDD Scenario field | Data table for scenario outlines |
-| `@tags` | References/BDD fields | Tags become references (e.g., @JIRA-123) |
-| `@C<id>` tags | Case ID | Map to existing test cases (e.g., @C456) |
 
 ### Exploring other features
 
