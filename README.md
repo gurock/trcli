@@ -573,34 +573,52 @@ The `import_gherkin` command allows you to upload BDD test cases in TestRail fro
 $ trcli import_gherkin --help
 Usage: trcli import_gherkin [OPTIONS]
 
-  Import Gherkin .feature file to create BDD test cases in TestRail
+  Upload or update Gherkin .feature file in TestRail
 
 Options:
   -f, --file            Path to .feature file to import [required]
-  --section-id          Section ID where test cases will be created  [x>=1] [required]
+  --section-id          Section ID where test cases will be created (required for create mode)  [x>=1]
+  --case-id             Case ID to update (required with --update flag)  [x>=1]
+  --json-output         Output case IDs in JSON format
+  --update              Update existing BDD test case instead of creating new one
   -v, --verbose         Enable verbose logging output
   --help                Show this message and exit.
 ```
 
-#### Usage Example
+#### Usage Examples
 ```shell
-# Import a single feature file
+# Create new test case (requires --section-id)
 $ trcli import_gherkin -f features/login.feature \
   --project "Your Project" \
   --section-id 456 \
   -y
 
-# Import with custom project settings
+# Update existing test case (requires --case-id)
+$ trcli import_gherkin -f features/login.feature \
+  --project "Your Project" \
+  --case-id 789 \
+  --update \
+  -y
+
+# Create with custom project settings
 $ trcli import_gherkin -f features/checkout.feature \
   --project-id 10 \
-  --section-id 789 \
+  --section-id 123 \
   -v -y
 ```
 
 **How it works:**
+
+**Create mode (default):**
 1. Reads the .feature file
-2. Uploads to TestRail via `add_bdd` endpoint
-3. TestRail creates test case(s) with complete Gherkin content
+2. Uploads to TestRail via `add_bdd/{section_id}` endpoint
+3. TestRail creates new test case(s) with complete Gherkin content
+4. Returns created case ID(s)
+
+**Update mode (--update):**
+1. Reads the .feature file
+2. Uploads to TestRail via `update_bdd/{case_id}` endpoint
+3. TestRail updates existing test case with new Gherkin content
 4. Returns created case ID(s)
 
 **Example .feature file:**

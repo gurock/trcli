@@ -256,3 +256,141 @@ class TestCmdImportGherkin:
             )
 
             assert result.exit_code == 0
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_update_mode(self, mock_api_client_class, mock_api_handler_class):
+        """Test feature file update with --update flag"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API request handler
+        mock_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_handler
+        mock_handler.update_bdd.return_value = ([456], "")  # Success: case ID 456, no error
+
+        with self.runner.isolated_filesystem():
+            # Create test feature file
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n  Scenario: Updated scenario\n    Given updated step\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli,
+                ["--file", "test.feature", "--case-id", "456", "--update"],
+                obj=self.environment,
+            )
+
+            assert result.exit_code == 0
+            assert "successfully updated" in result.output.lower()
+            assert "456" in result.output
+            # Verify update_bdd was called with case_id, not add_bdd
+            mock_handler.update_bdd.assert_called_once_with(456, mock.ANY)
+            mock_handler.add_bdd.assert_not_called()
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_update_mode_json_output(self, mock_api_client_class, mock_api_handler_class):
+        """Test feature file update with --update and JSON output"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API request handler
+        mock_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_handler
+        mock_handler.update_bdd.return_value = ([789], "")
+
+        with self.runner.isolated_filesystem():
+            # Create test feature file
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n  Scenario: Test\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli,
+                ["--file", "test.feature", "--case-id", "789", "--update", "--json-output"],
+                obj=self.environment,
+            )
+
+            assert result.exit_code == 0
+            # Extract JSON from output
+            json_start = result.output.find("{")
+            assert json_start >= 0, "No JSON found in output"
+            json_str = result.output[json_start:]
+            import json
+
+            output_data = json.loads(json_str)
+            assert "case_ids" in output_data
+            assert output_data["case_ids"] == [789]
+            # Verify update_bdd was called with case_id
+            mock_handler.update_bdd.assert_called_once_with(789, mock.ANY)
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_update_mode_api_error(self, mock_api_client_class, mock_api_handler_class):
+        """Test update mode with API error"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API request handler with error
+        mock_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_handler
+        mock_handler.update_bdd.return_value = ([], "TestRail API error: Case not found")
+
+        with self.runner.isolated_filesystem():
+            # Create test feature file
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli,
+                ["--file", "test.feature", "--case-id", "999", "--update"],
+                obj=self.environment,
+            )
+
+            assert result.exit_code == 1
+            assert "error" in result.output.lower()
+            assert "updating" in result.output.lower()
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_update_mode_verbose(self, mock_api_client_class, mock_api_handler_class):
+        """Test update mode with verbose logging shows correct endpoint"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API request handler
+        mock_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_handler
+        mock_handler.update_bdd.return_value = ([456], "")
+
+        # Enable verbose mode
+        self.environment.verbose = True
+
+        with self.runner.isolated_filesystem():
+            # Create test feature file
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli,
+                ["--file", "test.feature", "--case-id", "456", "--update"],
+                obj=self.environment,
+            )
+
+            assert result.exit_code == 0
+            # Verify verbose output shows update_bdd endpoint
+            assert "update_bdd" in result.output
+            assert "456" in result.output  # case_id in verbose log
+            # Verify update_bdd was called with case_id
+            mock_handler.update_bdd.assert_called_once_with(456, mock.ANY)
