@@ -358,29 +358,37 @@ Usage: trcli parse_cucumber [OPTIONS]
 
   Parse Cucumber JSON results and upload to TestRail
 
-  This command parses Cucumber JSON test results and uploads them to TestRail.
-  Uses BDD matching mode to match features by name and auto-create missing test cases.
+  This command parses Cucumber JSON test results and uploads them to TestRail
+  using BDD matching mode. Features are matched to TestRail BDD test cases by
+  feature name only (case-insensitive, whitespace-normalized).
+
+  BDD Matching:
+  - Matches Cucumber features to TestRail BDD test cases by feature name
+  - Auto-creates missing BDD test cases by default (use -n to disable)
+  - Sections are auto-created based on feature names
+  - Does not use automation_id or case-matcher (BDD uses feature name matching only)
 
 Options:
   -f, --file                 Filename and path.
   --close-run                Close the newly created run
   --title                    Title of Test Run to be created in TestRail.
-  --case-matcher             Mechanism to match cases between the report and
-                             TestRail.
   --suite-id                 Suite ID to submit results to.  [x>=1]
-  --suite-name               Suite name to submit results to.
   --run-id                   Run ID for the results they are reporting.  [x>=1]
   --plan-id                  Plan ID with which the Test Run will be associated.  [x>=1]
   --config-ids               Comma-separated configuration IDs to use along with Test Plans.
   --milestone-id             Milestone ID to which the Test Run should be associated to.  [x>=1]
-  --section-id               Section ID to create new sections with test cases under.  [x>=1]
   --run-description          Summary text to be added to the test run.
-  --case-fields              List of case fields and values for new test cases creation.
   --result-fields            List of result fields and values for test results creation.
   --allow-ms                 Allows using milliseconds for elapsed times.
   -v, --verbose              Enable verbose logging output.
   --help                     Show this message and exit.
 ```
+
+**Note:** The following options are NOT supported for `parse_cucumber` as they are not relevant for BDD matching:
+- `--case-matcher` - BDD always uses feature name matching
+- `--suite-name` - Use `--suite-id` instead
+- `--section-id` - Sections are auto-created based on feature names
+- `--case-fields` - BDD test cases are created via `.feature` file upload, not standard case creation
 
 #### Cucumber JSON Format Example
 ```json

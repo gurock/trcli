@@ -3,15 +3,14 @@ import json
 
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
-from trcli.commands.results_parser_helpers import results_parser_options, print_config
+from trcli.commands.results_parser_helpers import bdd_parser_options, print_config
 from trcli.constants import FAULT_MAPPING, ProjectErrors
-from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.validation_exception import ValidationException
 from trcli.readers.cucumber_json import CucumberParser
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
-@results_parser_options
+@bdd_parser_options
 @click.option(
     "-v",
     "--verbose",
@@ -23,8 +22,15 @@ from trcli.readers.cucumber_json import CucumberParser
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Parse Cucumber JSON results and upload to TestRail
 
-    This command parses Cucumber JSON test results and uploads them to TestRail.
-    Uses BDD matching mode to match features by name and auto-create missing test cases.
+    This command parses Cucumber JSON test results and uploads them to TestRail
+    using BDD matching mode. Features are matched to TestRail BDD test cases by
+    feature name only (case-insensitive, whitespace-normalized).
+
+    BDD Matching:
+    - Matches Cucumber features to TestRail BDD test cases by feature name
+    - Auto-creates missing BDD test cases by default (use -n to disable)
+    - Sections are auto-created based on feature names
+    - Does not use automation_id or case-matcher (BDD uses feature name matching only)
     """
     environment.cmd = "parse_cucumber"
     environment.set_parameters(context)
@@ -248,11 +254,6 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             if environment.suite_id and not suite.suite_id:
                 suite.suite_id = environment.suite_id
 
-        # For BDD mode, bypass automation_id check by using NAME matcher
-        # BDD cases already have case_id set, so we don't need automation_id
-        original_case_matcher = environment.case_matcher
-        environment.case_matcher = MatchersParser.NAME
-
         run_id = None
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
@@ -262,9 +263,6 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
 
             if run_id is None and hasattr(result_uploader, "last_run_id"):
                 run_id = result_uploader.last_run_id
-
-        # Restore original case matcher
-        environment.case_matcher = original_case_matcher
 
         # Summary
         if run_id:
