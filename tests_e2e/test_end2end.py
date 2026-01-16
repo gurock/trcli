@@ -1951,51 +1951,6 @@ trcli -y \\
 
     # ==================== BDD/GHERKIN FEATURE TESTS ====================
 
-    def test_parse_gherkin_local_parsing(self):
-        """Test parse_gherkin command for local .feature file parsing (no TestRail upload)"""
-        output = _run_cmd(
-            f"""
-trcli parse_gherkin \\
-  -f "reports_gherkin/sample_login.feature"
-        """
-        )
-        _assert_contains(
-            output,
-            [
-                "Parsing Gherkin feature file:",
-                "sample_login.feature",
-                '"suites"',
-                '"summary"',
-                '"total_suites"',
-                '"total_cases"',
-            ],
-        )
-
-    def test_parse_gherkin_with_output_file(self):
-        """Test parse_gherkin command with output file option"""
-        output = _run_cmd(
-            f"""
-trcli parse_gherkin \\
-  -f "reports_gherkin/sample_login.feature" \\
-  --output "parsed_gherkin.json"
-        """
-        )
-        _assert_contains(
-            output,
-            ["Parsing Gherkin feature file:", "sample_login.feature", "Parsed results saved to", "parsed_gherkin.json"],
-        )
-
-    def test_parse_gherkin_pretty_format(self):
-        """Test parse_gherkin command with pretty print formatting"""
-        output = _run_cmd(
-            f"""
-trcli parse_gherkin \\
-  -f "reports_gherkin/sample_login.feature" \\
-  --pretty
-        """
-        )
-        _assert_contains(output, ["Parsing Gherkin feature file:", "sample_login.feature", '"suites"', '"summary"'])
-
     def test_import_gherkin_upload_feature(self):
         """Test import_gherkin command to upload .feature file to TestRail"""
         output = _run_cmd(
@@ -2209,19 +2164,7 @@ trcli -y \\
 
         # Test main CLI help shows BDD commands
         main_help_output = _run_cmd("trcli --help")
-        _assert_contains(main_help_output, ["parse_gherkin", "import_gherkin", "export_gherkin", "parse_cucumber"])
-
-        # Test parse_gherkin help
-        parse_gherkin_help = _run_cmd("trcli parse_gherkin --help")
-        _assert_contains(
-            parse_gherkin_help,
-            [
-                "Parse Gherkin .feature file locally",
-                "-f, --file",
-                "--output",
-                "--pretty",
-            ],
-        )
+        _assert_contains(main_help_output, ["import_gherkin", "export_gherkin", "parse_cucumber"])
 
         # Test import_gherkin help
         import_gherkin_help = _run_cmd("trcli import_gherkin --help")
@@ -2257,15 +2200,6 @@ trcli -y \\
 
     def test_bdd_error_handling_invalid_file(self):
         """Test BDD commands with invalid file paths"""
-
-        # Test parse_gherkin with non-existent file
-        invalid_parse_output, return_code = _run_cmd_allow_failure(
-            """
-trcli parse_gherkin \\
-  -f "nonexistent.feature"
-        """
-        )
-        assert return_code != 0
 
         # Test import_gherkin with non-existent file
         invalid_import_output, return_code = _run_cmd_allow_failure(

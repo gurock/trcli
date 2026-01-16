@@ -31,7 +31,8 @@
                         "attachments": [],
                         "junit_result_unparsed": [],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "custom_automation_id": "Verify page structure.Component 1 Verify page structure"
                 }
@@ -77,7 +78,8 @@
                         "attachments": [],
                         "junit_result_unparsed": [],
                         "result_fields": {},
-                        "custom_step_results": []
+                        "custom_step_results": [],
+                        "custom_testrail_bdd_scenario_results": []
                     },
                     "custom_automation_id": "Verify page structure.Component 2 Verify page structure"
                 }

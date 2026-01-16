@@ -27,10 +27,28 @@ class TestCmdParseCucumber:
         self.environment.auto_creation_response = True  # Enable auto-creation for tests
 
     @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
-    def test_parse_cucumber_workflow1_results_only(self, mock_parser_class, mock_uploader_class):
+    def test_parse_cucumber_workflow1_results_only(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
         """Test Workflow 1: Parse and upload results only (no feature upload)"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        # Mock project data resolution
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
+
         # Mock parser
         mock_parser = MagicMock()
         mock_parser_class.return_value = mock_parser
@@ -55,6 +73,7 @@ class TestCmdParseCucumber:
 
     @pytest.mark.cmd_parse_cucumber
     @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
     @patch(
@@ -62,28 +81,14 @@ class TestCmdParseCucumber:
         new_callable=mock.mock_open,
         read_data='[{"name":"Test Feature","elements":[{"type":"scenario","name":"Test Scenario"}]}]',
     )
-    def test_parse_cucumber_workflow2_upload_feature(
-        self, mock_open, mock_parser_class, mock_uploader_class, mock_api_handler_class
+    def test_parse_cucumber_auto_create_missing_features(
+        self, mock_open, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
     ):
-        """Test Workflow 2: Create BDD test cases per feature, then upload results"""
-        # Mock parser
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-
-        # Mock suite with test cases
-        mock_suite = MagicMock()
-        mock_suite.name = "Test Suite"
-        mock_section = MagicMock()
-        mock_section.name = "Test Feature"
-        mock_case = MagicMock()
-        mock_case.case_id = None
-        mock_case.result = MagicMock()
-        mock_section.testcases = [mock_case]
-        mock_suite.testsections = [mock_section]
-        mock_parser.parse_file.return_value = [mock_suite]
-
-        # Mock _generate_feature_content to return Gherkin content
-        mock_parser._generate_feature_content.return_value = "Feature: Test\n  Scenario: Test\n    Given test step\n"
+        """Test auto-creation of missing BDD test cases (default behavior)"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
 
         # Mock API handler
         mock_api_handler = MagicMock()
@@ -94,9 +99,36 @@ class TestCmdParseCucumber:
         mock_project_data.project_id = 1
         mock_api_handler.get_project_data.return_value = mock_project_data
 
-        mock_api_handler.get_bdd_template_id.return_value = (2, "")  # BDD template ID = 2
-        mock_api_handler.add_bdd.return_value = ([101], "")  # Returns list with case ID = 101
-        mock_api_handler.update_case_automation_id.return_value = (True, "")  # Success updating automation_id
+        # Mock parser
+        mock_parser = MagicMock()
+        mock_parser_class.return_value = mock_parser
+
+        # First parse returns case_id=-1 (needs creation)
+        mock_suite = MagicMock()
+        mock_suite.name = "Test Suite"
+        mock_section = MagicMock()
+        mock_section.name = "Test Feature"
+        mock_case = MagicMock()
+        mock_case.case_id = -1  # Marker for auto-creation
+        mock_case.result = MagicMock()
+        mock_section.testcases = [mock_case]
+        mock_suite.testsections = [mock_section]
+        mock_parser.parse_file.return_value = [mock_suite]
+
+        # Mock _generate_feature_content to return Gherkin content
+        mock_parser._generate_feature_content.return_value = "Feature: Test\n  Scenario: Test\n    Given test step\n"
+        mock_parser._normalize_title.return_value = "test feature"
+
+        # Mock section fetch and creation
+        mock_api_handler._ApiRequestHandler__get_all_sections.return_value = ([], None)
+        mock_response = MagicMock()
+        mock_response.error_message = None
+        mock_response.response_text = {"id": 456}
+        mock_api_handler.client.send_post.return_value = mock_response
+
+        # Mock BDD template and add_bdd
+        mock_api_handler.get_bdd_template_id.return_value = (2, None)
+        mock_api_handler.add_bdd.return_value = ([101], None)
 
         # Mock uploader
         mock_uploader = MagicMock()
@@ -110,9 +142,6 @@ class TestCmdParseCucumber:
                 self.test_cucumber_path,
                 "--suite-id",
                 "2",
-                "--upload-feature",
-                "--feature-section-id",
-                "456",
                 "--title",
                 "Test Run",
             ],
@@ -122,35 +151,30 @@ class TestCmdParseCucumber:
         assert result.exit_code == 0
         mock_api_handler.get_bdd_template_id.assert_called_once()
         mock_api_handler.add_bdd.assert_called_once()
-        mock_api_handler.update_case_automation_id.assert_called_once()
-        mock_uploader.upload_results.assert_called()
 
     @pytest.mark.cmd_parse_cucumber
-    def test_parse_cucumber_upload_feature_requires_section_id(self):
-        """Test that --upload-feature requires --feature-section-id"""
-        result = self.runner.invoke(
-            cmd_parse_cucumber.cli,
-            [
-                "--file",
-                self.test_cucumber_path,
-                "--suite-id",
-                "2",
-                "--upload-feature",
-                # Missing --feature-section-id
-                "--title",
-                "Test Run",
-            ],
-            obj=self.environment,
-        )
-
-        assert result.exit_code == 1
-        assert "feature-section-id is required" in result.output.lower()
-
-    @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
-    def test_parse_cucumber_upload_feature_with_no_flag(self, mock_parser_class, mock_uploader_class):
-        """Test that -n flag skips test case creation with --upload-feature"""
+    def test_parse_cucumber_with_n_flag(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
+        """Test that -n flag only matches existing BDD test cases"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        # Mock project data resolution
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
+
         # Mock parser
         mock_parser = MagicMock()
         mock_parser_class.return_value = mock_parser
@@ -177,9 +201,6 @@ class TestCmdParseCucumber:
                 self.test_cucumber_path,
                 "--suite-id",
                 "2",
-                "--upload-feature",
-                "--feature-section-id",
-                "456",
                 "--title",
                 "Test Run",
             ],
@@ -187,9 +208,8 @@ class TestCmdParseCucumber:
         )
 
         assert result.exit_code == 0
-        assert "skipping bdd test case creation" in result.output.lower()
-        assert "auto-creation disabled" in result.output.lower()
-        mock_uploader.upload_results.assert_called()
+        # Verify auto_create=False was passed to parser
+        mock_parser.parse_file.assert_called_with(bdd_matching_mode=True, project_id=1, suite_id=2, auto_create=False)
 
     @pytest.mark.cmd_parse_cucumber
     def test_parse_cucumber_missing_file(self):
@@ -248,15 +268,31 @@ class TestCmdParseCucumber:
 
     @pytest.mark.cmd_parse_cucumber
     @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
     @patch("builtins.open", new_callable=mock.mock_open, read_data="[]")
-    def test_parse_cucumber_invalid_cucumber_json(self, mock_open, mock_parser_class, mock_api_handler_class):
+    def test_parse_cucumber_invalid_cucumber_json(
+        self, mock_open, mock_parser_class, mock_api_client_class, mock_api_handler_class
+    ):
         """Test with invalid Cucumber JSON structure (empty array)"""
-        # Mock parser
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        # Mock project data resolution
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
+
+        # Mock parser to raise error for empty JSON
         mock_parser = MagicMock()
         mock_parser_class.return_value = mock_parser
-        mock_suite = MagicMock()
-        mock_parser.parse_file.return_value = [mock_suite]
+        mock_parser.parse_file.side_effect = ValueError("Invalid Cucumber JSON format: empty array")
 
         result = self.runner.invoke(
             cmd_parse_cucumber.cli,
@@ -265,9 +301,6 @@ class TestCmdParseCucumber:
                 self.test_cucumber_path,
                 "--suite-id",
                 "2",
-                "--upload-feature",
-                "--feature-section-id",
-                "456",
                 "--title",
                 "Test Run",
             ],
@@ -276,27 +309,25 @@ class TestCmdParseCucumber:
 
         assert result.exit_code == 1
         # Check that it fails with any appropriate error (either JSON format or parsing error)
-        assert "invalid cucumber json format" in result.output.lower() or "error parsing" in result.output.lower()
+        assert "invalid" in result.output.lower() or "error parsing" in result.output.lower()
 
     @pytest.mark.cmd_parse_cucumber
     @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
     @patch(
         "builtins.open",
         new_callable=mock.mock_open,
         read_data='[{"name":"Test Feature","elements":[{"type":"scenario","name":"Test Scenario"}]}]',
     )
-    def test_parse_cucumber_api_error_during_feature_upload(self, mock_open, mock_parser_class, mock_api_handler_class):
-        """Test API error during BDD test case creation"""
-        # Mock parser
-        mock_parser = MagicMock()
-        mock_parser_class.return_value = mock_parser
-        mock_suite = MagicMock()
-        mock_section = MagicMock()
-        mock_section.name = "Test Feature"
-        mock_suite.testsections = [mock_section]
-        mock_parser.parse_file.return_value = [mock_suite]
-        mock_parser._generate_feature_content.return_value = "Feature: Test\n  Scenario: Test\n"
+    def test_parse_cucumber_api_error_during_auto_creation(
+        self, mock_open, mock_parser_class, mock_api_client_class, mock_api_handler_class
+    ):
+        """Test API error during BDD test case auto-creation"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
 
         # Mock API handler with error
         mock_api_handler = MagicMock()
@@ -307,7 +338,29 @@ class TestCmdParseCucumber:
         mock_project_data.project_id = 1
         mock_api_handler.get_project_data.return_value = mock_project_data
 
-        mock_api_handler.get_bdd_template_id.return_value = (2, "")
+        # Mock parser
+        mock_parser = MagicMock()
+        mock_parser_class.return_value = mock_parser
+        mock_suite = MagicMock()
+        mock_section = MagicMock()
+        mock_section.name = "Test Feature"
+        mock_case = MagicMock()
+        mock_case.case_id = -1  # Needs creation
+        mock_section.testcases = [mock_case]
+        mock_suite.testsections = [mock_section]
+        mock_parser.parse_file.return_value = [mock_suite]
+        mock_parser._generate_feature_content.return_value = "Feature: Test\n  Scenario: Test\n"
+        mock_parser._normalize_title.return_value = "test feature"
+
+        # Mock section fetch
+        mock_api_handler._ApiRequestHandler__get_all_sections.return_value = ([], None)
+        mock_response = MagicMock()
+        mock_response.error_message = None
+        mock_response.response_text = {"id": 456}
+        mock_api_handler.client.send_post.return_value = mock_response
+
+        # Mock BDD template and add_bdd with error
+        mock_api_handler.get_bdd_template_id.return_value = (2, None)
         mock_api_handler.add_bdd.return_value = ([], "API Error: Section not found")
 
         result = self.runner.invoke(
@@ -317,9 +370,6 @@ class TestCmdParseCucumber:
                 self.test_cucumber_path,
                 "--suite-id",
                 "2",
-                "--upload-feature",
-                "--feature-section-id",
-                "456",
                 "--title",
                 "Test Run",
             ],
@@ -327,7 +377,7 @@ class TestCmdParseCucumber:
         )
 
         assert result.exit_code == 1
-        assert "error creating" in result.output.lower()
+        assert "error" in result.output.lower()
 
     @pytest.mark.cmd_parse_cucumber
     def test_parse_cucumber_required_parameters(self):
@@ -345,11 +395,29 @@ class TestCmdParseCucumber:
         # Will fail
 
     @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
-    def test_parse_cucumber_validation_exception(self, mock_parser_class, mock_uploader_class):
+    def test_parse_cucumber_validation_exception(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
         """Test handling of ValidationException"""
         from trcli.data_classes.validation_exception import ValidationException
+
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        # Mock project data resolution
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
 
         # Mock parser to raise ValidationException
         mock_parser = MagicMock()
@@ -366,10 +434,28 @@ class TestCmdParseCucumber:
         assert "validation error" in result.output.lower()
 
     @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
-    def test_parse_cucumber_value_error(self, mock_parser_class, mock_uploader_class):
+    def test_parse_cucumber_value_error(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
         """Test handling of ValueError during parsing"""
+        # Mock API client
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        # Mock project data resolution
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
+
         # Mock parser to raise ValueError
         mock_parser = MagicMock()
         mock_parser_class.return_value = mock_parser

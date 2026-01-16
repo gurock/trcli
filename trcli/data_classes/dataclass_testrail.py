@@ -38,15 +38,14 @@ class TestRailResult:
     result_fields: Optional[dict] = field(default_factory=dict, skip=True)
     junit_result_unparsed: List = field(default=None, metadata={"serde_skip": True})
     custom_step_results: List[TestRailSeparatedStep] = field(default_factory=list, skip_if_default=True)
+    custom_testrail_bdd_scenario_results: List[TestRailSeparatedStep] = field(
+        default_factory=list, skip_if_default=True
+    )
 
     def __post_init__(self):
         if self.junit_result_unparsed is not None:
-            self.status_id = self.calculate_status_id_from_junit_element(
-                self.junit_result_unparsed
-            )
-            self.comment = self.get_comment_from_junit_element(
-                self.junit_result_unparsed
-            )
+            self.status_id = self.calculate_status_id_from_junit_element(self.junit_result_unparsed)
+            self.comment = self.get_comment_from_junit_element(self.junit_result_unparsed)
         if self.elapsed is not None:
             self.elapsed = self.proper_format_for_elapsed(self.elapsed)
 
@@ -71,9 +70,7 @@ class TestRailResult:
     def get_comment_from_junit_element(junit_result: List) -> str:
         if len(junit_result) == 0:
             return ""
-        elif not any(
-            [junit_result[0].type, junit_result[0].message, junit_result[0].text]
-        ):
+        elif not any([junit_result[0].type, junit_result[0].message, junit_result[0].text]):
             return ""
         else:
             return f"Type: {junit_result[0].type or ''}\nMessage: {junit_result[0].message or ''}\nText: {junit_result[0].text or ''}"
@@ -203,12 +200,8 @@ class TestRailSection:
     parent_id: int = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
     section_id: int = field(default=None, metadata={"serde_skip": True})
-    testcases: List[TestRailCase] = field(
-        default_factory=list, metadata={"serde_skip": True}
-    )
-    properties: List[TestRailProperty] = field(
-        default_factory=list, metadata={"serde_skip": True}
-    )
+    testcases: List[TestRailCase] = field(default_factory=list, metadata={"serde_skip": True})
+    properties: List[TestRailProperty] = field(default_factory=list, metadata={"serde_skip": True})
 
     def __getitem__(self, item):
         return getattr(self, item)
@@ -231,9 +224,7 @@ class TestRailSuite:
     name: str
     suite_id: int = field(default=None, skip_if_default=True)
     description: str = field(default=None, skip_if_default=True)
-    testsections: List[TestRailSection] = field(
-        default_factory=list, metadata={"serde_skip": True}
-    )
+    testsections: List[TestRailSection] = field(default_factory=list, metadata={"serde_skip": True})
     source: str = field(default=None, metadata={"serde_skip": True})
 
     def __post_init__(self):
