@@ -323,7 +323,7 @@ class TestBDDJunitParser:
         assert test_case is not None
         assert test_case.case_id == 100
         assert test_case.result.status_id == 1  # Passed
-        assert len(test_case.result.custom_step_results) == 2
+        assert len(test_case.result.custom_testrail_bdd_scenario_results) == 2
         assert "Total Scenarios: 2" in test_case.result.comment
         assert "Passed: 2" in test_case.result.comment
 
@@ -346,12 +346,12 @@ class TestBDDJunitParser:
         assert test_case is not None
         assert test_case.case_id == 25293
         assert test_case.result.status_id == 5  # Failed (fail-fast)
-        assert len(test_case.result.custom_step_results) == 3
+        assert len(test_case.result.custom_testrail_bdd_scenario_results) == 3
 
         # Check step statuses
-        assert test_case.result.custom_step_results[0].status_id == 1  # Passed
-        assert test_case.result.custom_step_results[1].status_id == 5  # Failed
-        assert test_case.result.custom_step_results[2].status_id == 4  # Skipped
+        assert test_case.result.custom_testrail_bdd_scenario_results[0].status_id == 1  # Passed
+        assert test_case.result.custom_testrail_bdd_scenario_results[1].status_id == 5  # Failed
+        assert test_case.result.custom_testrail_bdd_scenario_results[2].status_id == 4  # Skipped
 
         # Check comment contains summary and failure details
         assert "Total Scenarios: 3" in test_case.result.comment

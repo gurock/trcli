@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite - User Authentication" tests="2" failures="1" errors="0" skipped="0" time="3.45">
+  <testsuite name="User Authentication" tests="2" failures="1" errors="0" skipped="0" time="3.45">
+    <properties>
+      <!-- Feature-level case ID - maps to BDD test case C25295 in TestRail -->
+      <property name="testrail_case_id" value="C505289"/>
+    </properties>
+
+    <!-- Scenario 1: Successful login with valid credentials - PASSED -->
+    <testcase classname="User Authentication" name="Successful login with valid credentials" time="1.85">
+      <!-- This scenario executed all steps successfully -->
+    </testcase>
+
+    <!-- Scenario 2: Failed login with invalid password - FAILED -->
+    <testcase classname="User Authentication" name="Failed login with invalid password" time="1.60">
+      <failure type="AssertionError" message="Expected error message 'Invalid credentials' was not displayed">
+Step: Then I should see an error message "Invalid credentials"
+Expected: Error message displayed with text "Invalid credentials"
+Actual: No error message was found on the page
+
+Test execution details:
+  Given I am on the login page ✓
+  When I enter valid username "testuser" ✓
+  And I enter invalid password "wrongpass" ✓
+  And I click the login button ✓
+  Then I should see an error message "Invalid credentials" ✗
+  And I should remain on the login page (not executed)
+
+at features/step_definitions/authentication_steps.py:45
+at features/authentication.feature:23
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>

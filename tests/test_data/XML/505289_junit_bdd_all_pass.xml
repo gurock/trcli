@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite - User Authentication" tests="2" failures="0" errors="0" skipped="0" time="3.25">
+  <testsuite name="User Authentication" tests="2" failures="0" errors="0" skipped="0" time="3.25">
+    <properties>
+      <!-- Feature-level case ID - maps to BDD test case C25295 in TestRail -->
+      <property name="testrail_case_id" value="C505289"/>
+    </properties>
+
+    <!-- Scenario 1: Successful login with valid credentials - PASSED -->
+    <testcase classname="User Authentication" name="Successful login with valid credentials" time="1.75">
+      <!-- All steps passed successfully -->
+    </testcase>
+
+    <!-- Scenario 2: Failed login with invalid password - PASSED -->
+    <testcase classname="User Authentication" name="Failed login with invalid password" time="1.50">
+      <!-- All steps passed successfully -->
+    </testcase>
+  </testsuite>
+</testsuites>
