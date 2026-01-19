@@ -595,7 +595,7 @@ class JunitParser(FileParser):
         self.env.log(f"BDD: Case C{case_id} validated as BDD test case for feature '{feature_name}'")
 
         # Step 3: Parse all scenarios
-        scenarios = []
+        bdd_scenario_results = []
         scenario_statuses = []
         total_time = 0
         failure_messages = []
@@ -630,10 +630,10 @@ class JunitParser(FileParser):
             # Track status for aggregation
             scenario_statuses.append(scenario_status)
 
-            # Create step result for this scenario
-            step = TestRailSeparatedStep(content=f"Scenario {idx}: {clean_scenario_name}")
+            # Create BDD scenario result (matches Cucumber parser format)
+            step = TestRailSeparatedStep(content=clean_scenario_name)
             step.status_id = scenario_status
-            scenarios.append(step)
+            bdd_scenario_results.append(step)
 
             self.env.vlog(f"  - Scenario {idx}: {clean_scenario_name} → {scenario_status_label} " f"({scenario_time}s)")
 
@@ -667,7 +667,7 @@ class JunitParser(FileParser):
             case_id=case_id,
             status_id=overall_status,
             elapsed=total_time if total_time > 0 else None,  # Pass numeric value, not formatted string
-            custom_step_results=scenarios,
+            custom_testrail_bdd_scenario_results=bdd_scenario_results,
             comment=comment,
         )
 

@@ -639,7 +639,7 @@ class CucumberParser(FileParser):
         return "\n".join(lines)
 
     def _normalize_title(self, title: str) -> str:
-        """Normalize title for robust matching
+        """Normalize title for robust matching (delegates to API handler for consistency)
 
         Converts to lowercase, strips whitespace, and removes special characters.
         Hyphens, underscores, and special chars are converted to spaces for word boundaries.
@@ -650,16 +650,10 @@ class CucumberParser(FileParser):
         Returns:
             Normalized title string
         """
-        import re
+        # Use shared normalization from API handler for consistency
+        from trcli.api.api_request_handler import ApiRequestHandler
 
-        # Convert to lowercase and strip
-        normalized = title.lower().strip()
-        # Replace hyphens, underscores, and special chars with spaces
-        normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
-        # Collapse multiple spaces to single space
-        normalized = re.sub(r"\s+", " ", normalized)
-        # Final strip
-        return normalized.strip()
+        return ApiRequestHandler._normalize_feature_name(title)
 
     def set_api_handler(self, api_handler):
         """Set API handler for BDD matching mode
@@ -669,76 +663,8 @@ class CucumberParser(FileParser):
         """
         self._api_handler = api_handler
 
-    def _get_bdd_cases_cache(self, project_id: int, suite_id: int) -> Dict[str, int]:
-        """Fetch and cache all BDD cases in suite (one-time batch operation)
-
-        This method fetches all test cases once and caches BDD cases for fast lookups.
-        Performance: 40 API requests for 10K cases (due to pagination), then O(1) lookups.
-
-        Args:
-            project_id: TestRail project ID
-            suite_id: TestRail suite ID
-
-        Returns:
-            Dictionary mapping normalized_title → case_id for BDD cases only
-        """
-        if self._bdd_case_cache is not None:
-            return self._bdd_case_cache
-
-        if self._api_handler is None:
-            self.env.elog("Error: API handler not set. Cannot fetch BDD cases.")
-            return {}
-
-        self.env.vlog(f"Fetching all BDD cases for suite {suite_id} (one-time operation)...")
-
-        # Fetch ALL cases in suite (with pagination handled internally)
-        all_cases, error = self._api_handler._ApiRequestHandler__get_all_cases(project_id=project_id, suite_id=suite_id)
-
-        if error:
-            self.env.elog(f"Error fetching cases: {error}")
-            return {}
-
-        # Build hash table index: normalized_title → case_id (BDD cases only)
-        # Also track duplicates for warning
-        bdd_cache = {}
-        duplicate_tracker = {}  # normalized_title → list of case IDs
-        bdd_count = 0
-
-        for case in all_cases:
-            # Filter to BDD template cases only
-            if case.get("custom_testrail_bdd_scenario"):
-                normalized = self._normalize_title(case["title"])
-                case_id = case["id"]
-
-                # Track duplicates
-                if normalized in duplicate_tracker:
-                    duplicate_tracker[normalized].append(case_id)
-                else:
-                    duplicate_tracker[normalized] = [case_id]
-
-                bdd_cache[normalized] = case_id
-                bdd_count += 1
-
-        # Warn about duplicates
-        for normalized_title, case_ids in duplicate_tracker.items():
-            if len(case_ids) > 1:
-                # Find original title (use first case's title)
-                original_title = None
-                for case in all_cases:
-                    if case["id"] == case_ids[0]:
-                        original_title = case["title"]
-                        break
-
-                case_ids_str = ", ".join([f"C{cid}" for cid in case_ids])
-                self.env.elog(f"Warning: Multiple BDD cases found with title '{original_title}': {case_ids_str}")
-                self.env.elog(f"  Using case ID C{case_ids[-1]} (last match)")
-
-        self.env.vlog(f"Cached {bdd_count} BDD cases from {len(all_cases)} total cases")
-        self._bdd_case_cache = bdd_cache
-        return bdd_cache
-
     def _find_case_by_title(self, feature_name: str, project_id: int, suite_id: int) -> Optional[int]:
-        """Find BDD case by feature name using cached index (O(1) lookup)
+        """Find BDD case by feature name using cached index (delegates to API handler)
 
         Args:
             feature_name: Feature name from Cucumber JSON
@@ -746,11 +672,35 @@ class CucumberParser(FileParser):
             suite_id: TestRail suite ID
 
         Returns:
-            Case ID if found, None otherwise
+            Case ID if found, None otherwise (also None if error or duplicates)
         """
-        cache = self._get_bdd_cases_cache(project_id, suite_id)
-        normalized = self._normalize_title(feature_name)
-        return cache.get(normalized)
+        if self._api_handler is None:
+            self.env.elog("Error: API handler not set. Cannot find case by title.")
+            return None
+
+        # Use shared API handler method for consistency
+        case_id, error, duplicates = self._api_handler.find_bdd_case_by_name(
+            feature_name=feature_name, project_id=project_id, suite_id=suite_id
+        )
+
+        # Handle errors
+        if error:
+            self.env.elog(f"Error finding case by title: {error}")
+            return None
+
+        # Handle duplicates
+        if duplicates:
+            case_ids_str = ", ".join([f"C{cid}" for cid in duplicates])
+            self.env.elog(f"Warning: Multiple BDD cases found with title '{feature_name}': {case_ids_str}")
+            self.env.elog(f"  Cannot proceed - please ensure unique feature names in TestRail")
+            return None
+
+        # Handle not found (case_id == -1)
+        if case_id == -1:
+            return None
+
+        # Success
+        return case_id
 
     def _extract_case_id_from_tags(self, feature_tags: List[str], scenario_tags: List[str]) -> Optional[int]:
         """Extract case ID from @C<id> tags

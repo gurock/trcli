@@ -1,7 +1,7 @@
 import html, json, os
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from beartype.typing import List, Union, Tuple, Dict
+from beartype.typing import List, Union, Tuple, Dict, Optional
 
 from trcli.api.api_client import APIClient, APIClientResult
 from trcli.api.api_response_verify import ApiResponseVerify
@@ -45,6 +45,10 @@ class ApiRequestHandler:
         )
         self.suites_data_from_provider = self.data_provider.suites_input
         self.response_verifier = ApiResponseVerify(verify)
+
+        # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
+        # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
+        self._bdd_case_cache = {}
 
     def check_automation_id_field(self, project_id: int) -> Union[str, None]:
         """
@@ -2334,6 +2338,120 @@ class ApiRequestHandler:
         else:
             error_msg = response.error_message or f"Failed to get templates (HTTP {response.status_code})"
             return None, error_msg
+
+    def find_bdd_case_by_name(
+        self, feature_name: str, project_id: int, suite_id: int
+    ) -> Tuple[Optional[int], Optional[str], List[int]]:
+        """
+        Find a BDD test case by feature name (normalized matching).
+
+        This method is shared by CucumberParser and JunitParser for feature name matching.
+
+        Args:
+            feature_name: The feature name to search for
+            project_id: TestRail project ID
+            suite_id: TestRail suite ID
+
+        Returns:
+            Tuple of (case_id, error_message, duplicate_case_ids):
+            - case_id: The matched case ID, or -1 if not found, or None if error/duplicates
+            - error_message: Error message if operation failed, None otherwise
+            - duplicate_case_ids: List of case IDs if duplicates found, empty list otherwise
+        """
+        # Build cache if not already cached for this project/suite
+        cache_key = f"{project_id}_{suite_id}"
+        if cache_key not in self._bdd_case_cache:
+            error = self._build_bdd_case_cache(project_id, suite_id)
+            if error:
+                return None, error, []
+
+        # Normalize the feature name for matching
+        normalized_name = self._normalize_feature_name(feature_name)
+
+        # Look up in cache
+        cache = self._bdd_case_cache.get(cache_key, {})
+        matching_cases = cache.get(normalized_name, [])
+
+        if len(matching_cases) == 0:
+            # Not found
+            self.environment.vlog(f"Feature '{feature_name}' not found in TestRail")
+            return -1, None, []
+        elif len(matching_cases) == 1:
+            # Single match - success
+            case_id = matching_cases[0].get("id")
+            self.environment.vlog(f"Feature '{feature_name}' matched to case ID: C{case_id}")
+            return case_id, None, []
+        else:
+            # Multiple matches - duplicate error
+            duplicate_ids = [case.get("id") for case in matching_cases]
+            self.environment.vlog(f"Feature '{feature_name}' has {len(matching_cases)} duplicates: {duplicate_ids}")
+            return None, None, duplicate_ids
+
+    def _build_bdd_case_cache(self, project_id: int, suite_id: int) -> Optional[str]:
+        """
+        Build cache of BDD test cases for a project/suite.
+
+        Args:
+            project_id: TestRail project ID
+            suite_id: TestRail suite ID
+
+        Returns:
+            Error message if failed, None if successful
+        """
+        cache_key = f"{project_id}_{suite_id}"
+
+        self.environment.vlog(f"Building BDD case cache for project {project_id}, suite {suite_id}...")
+
+        # Fetch all cases for this suite
+        all_cases, error = self.__get_all_cases(project_id, suite_id)
+
+        if error:
+            return f"Error fetching cases for cache: {error}"
+
+        # Filter to BDD cases only (have custom_testrail_bdd_scenario field)
+        bdd_cases = [case for case in all_cases if case.get("custom_testrail_bdd_scenario")]
+
+        self.environment.vlog(f"Found {len(bdd_cases)} BDD cases out of {len(all_cases)} total cases")
+
+        # Build normalized name -> [case, case, ...] mapping
+        cache = {}
+        for case in bdd_cases:
+            title = case.get("title", "")
+            normalized = self._normalize_feature_name(title)
+
+            if normalized not in cache:
+                cache[normalized] = []
+            cache[normalized].append(case)
+
+        self._bdd_case_cache[cache_key] = cache
+        self.environment.vlog(f"Cached {len(cache)} unique feature name(s)")
+
+        return None
+
+    @staticmethod
+    def _normalize_feature_name(name: str) -> str:
+        """
+        Normalize a feature name for case-insensitive, whitespace-insensitive matching.
+
+        Converts to lowercase, strips whitespace, and removes special characters.
+        Hyphens, underscores, and special chars are converted to spaces for word boundaries.
+
+        Args:
+            name: The feature name to normalize
+
+        Returns:
+            Normalized name (lowercase, special chars removed, collapsed whitespace, stripped)
+        """
+        import re
+
+        # Convert to lowercase and strip
+        normalized = name.lower().strip()
+        # Replace hyphens, underscores, and special chars with spaces
+        normalized = re.sub(r"[^a-z0-9\s]", " ", normalized)
+        # Collapse multiple spaces to single space
+        normalized = re.sub(r"\s+", " ", normalized)
+        # Final strip
+        return normalized.strip()
 
     def add_case_bdd(
         self, section_id: int, title: str, bdd_content: str, template_id: int, tags: List[str] = None
