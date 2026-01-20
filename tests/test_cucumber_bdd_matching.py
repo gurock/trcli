@@ -172,108 +172,159 @@ class TestCucumberBDDMatching:
         assert case_id is None
 
     @pytest.mark.cucumber_bdd_matching
-    @patch("trcli.readers.cucumber_json.CucumberParser._get_bdd_cases_cache")
-    def test_find_case_by_title_found(self, mock_get_cache):
+    def test_find_case_by_title_found(self):
         """Test finding case by title using cached lookup"""
-        parser = CucumberParser(self.environment)
-
-        # Mock cache with normalized titles
-        mock_get_cache.return_value = {"user login": 101, "product search": 102, "checkout": 103}
-
-        case_id = parser._find_case_by_title("User Login", project_id=1, suite_id=2)
-        assert case_id == 101
-
-        # Verify cache was accessed
-        mock_get_cache.assert_called_once_with(1, 2)
-
-    @pytest.mark.cucumber_bdd_matching
-    @patch("trcli.readers.cucumber_json.CucumberParser._get_bdd_cases_cache")
-    def test_find_case_by_title_not_found(self, mock_get_cache):
-        """Test finding case by title returns None when not in cache"""
-        parser = CucumberParser(self.environment)
-
-        mock_get_cache.return_value = {"user login": 101, "product search": 102}
-
-        case_id = parser._find_case_by_title("Nonexistent Feature", project_id=1, suite_id=2)
-        assert case_id is None
-
-    @pytest.mark.cucumber_bdd_matching
-    @patch("trcli.readers.cucumber_json.CucumberParser._get_bdd_cases_cache")
-    def test_find_case_by_title_normalization(self, mock_get_cache):
-        """Test case matching with different formatting"""
-        parser = CucumberParser(self.environment)
-
-        mock_get_cache.return_value = {"user login": 101}
-
-        # Should match despite different formatting
-        assert parser._find_case_by_title("User Login", 1, 2) == 101
-        assert parser._find_case_by_title("User-Login", 1, 2) == 101
-        assert parser._find_case_by_title("user_login", 1, 2) == 101
-        assert parser._find_case_by_title("USER LOGIN", 1, 2) == 101
-
-    @pytest.mark.cucumber_bdd_matching
-    def test_get_bdd_cases_cache_builds_correctly(self):
-        """Test BDD cases cache is built correctly from API response"""
         parser = CucumberParser(self.environment)
 
         # Mock API handler
         mock_api_handler = MagicMock()
         parser._api_handler = mock_api_handler
 
-        # Mock API response with mix of BDD and non-BDD cases
+        # Mock find_bdd_case_by_name to return case ID 101
+        mock_api_handler.find_bdd_case_by_name.return_value = (101, None, [])
+
+        case_id = parser._find_case_by_title("User Login", project_id=1, suite_id=2)
+        assert case_id == 101
+
+        # Verify API handler was called correctly
+        mock_api_handler.find_bdd_case_by_name.assert_called_once_with(
+            feature_name="User Login", project_id=1, suite_id=2
+        )
+
+    @pytest.mark.cucumber_bdd_matching
+    def test_find_case_by_title_not_found(self):
+        """Test finding case by title returns None when not in cache"""
+        parser = CucumberParser(self.environment)
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        parser._api_handler = mock_api_handler
+
+        # Mock find_bdd_case_by_name to return -1 (not found)
+        mock_api_handler.find_bdd_case_by_name.return_value = (-1, None, [])
+
+        case_id = parser._find_case_by_title("Nonexistent Feature", project_id=1, suite_id=2)
+        assert case_id is None
+
+    @pytest.mark.cucumber_bdd_matching
+    def test_find_case_by_title_normalization(self):
+        """Test case matching with different formatting (normalization happens in API handler)"""
+        parser = CucumberParser(self.environment)
+
+        # Mock API handler
+        mock_api_handler = MagicMock()
+        parser._api_handler = mock_api_handler
+
+        # Mock find_bdd_case_by_name to always return case ID 101
+        # (normalization is tested in API handler tests)
+        mock_api_handler.find_bdd_case_by_name.return_value = (101, None, [])
+
+        # Should call API handler with each variation
+        assert parser._find_case_by_title("User Login", 1, 2) == 101
+        assert parser._find_case_by_title("User-Login", 1, 2) == 101
+        assert parser._find_case_by_title("user_login", 1, 2) == 101
+        assert parser._find_case_by_title("USER LOGIN", 1, 2) == 101
+
+        # Verify API handler was called 4 times
+        assert mock_api_handler.find_bdd_case_by_name.call_count == 4
+
+    @pytest.mark.cucumber_bdd_matching
+    def test_api_handler_builds_cache_correctly(self):
+        """Test API handler builds BDD cases cache correctly (integration test)"""
+        from trcli.api.api_request_handler import ApiRequestHandler
+        from trcli.api.api_client import APIClient
+
+        # Create mock environment and client
+        mock_env = MagicMock()
+        mock_env.vlog = MagicMock()
+        mock_client = MagicMock(spec=APIClient)
+        mock_client.VERSION = "v2"
+
+        # Create API handler with mock suite data
+        from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+        mock_suite = TestRailSuite(name="test", suite_id=2)
+
+        api_handler = ApiRequestHandler(
+            environment=mock_env, api_client=mock_client, suites_data=mock_suite, verify=False
+        )
+
+        # Mock __get_all_cases to return BDD and non-BDD cases
         mock_cases = [
             {"id": 101, "title": "User Login", "custom_testrail_bdd_scenario": "Scenario: Login"},
             {"id": 102, "title": "Product Search", "custom_testrail_bdd_scenario": None},  # Not BDD
             {"id": 103, "title": "Checkout Process", "custom_testrail_bdd_scenario": "Scenario: Checkout"},
         ]
-        mock_api_handler._ApiRequestHandler__get_all_cases.return_value = (mock_cases, None)
 
-        # Build cache
-        cache = parser._get_bdd_cases_cache(project_id=1, suite_id=2)
+        with patch.object(api_handler, "_ApiRequestHandler__get_all_cases", return_value=(mock_cases, None)):
+            # Call find_bdd_case_by_name which triggers cache build
+            case_id, error, duplicates = api_handler.find_bdd_case_by_name("User Login", 1, 2)
 
-        # Should only include BDD cases (101 and 103)
-        assert len(cache) == 2
-        assert cache["user login"] == 101
-        assert cache["checkout process"] == 103
-        assert "product search" not in cache
+            # Should find case 101
+            assert case_id == 101
+            assert error is None
+            assert duplicates == []
 
     @pytest.mark.cucumber_bdd_matching
-    def test_get_bdd_cases_cache_caching_behavior(self):
-        """Test cache is only fetched once"""
-        parser = CucumberParser(self.environment)
+    def test_api_handler_caching_behavior(self):
+        """Test API handler cache is only built once per project/suite"""
+        from trcli.api.api_request_handler import ApiRequestHandler
+        from trcli.api.api_client import APIClient
+        from trcli.data_classes.dataclass_testrail import TestRailSuite
 
-        mock_api_handler = MagicMock()
-        parser._api_handler = mock_api_handler
+        # Create mock environment and client
+        mock_env = MagicMock()
+        mock_env.vlog = MagicMock()
+        mock_client = MagicMock(spec=APIClient)
+        mock_client.VERSION = "v2"
+
+        mock_suite = TestRailSuite(name="test", suite_id=2)
+        api_handler = ApiRequestHandler(
+            environment=mock_env, api_client=mock_client, suites_data=mock_suite, verify=False
+        )
 
         mock_cases = [{"id": 101, "title": "User Login", "custom_testrail_bdd_scenario": "Scenario: Login"}]
-        mock_api_handler._ApiRequestHandler__get_all_cases.return_value = (mock_cases, None)
 
-        # First call - should fetch from API
-        cache1 = parser._get_bdd_cases_cache(1, 2)
-        assert mock_api_handler._ApiRequestHandler__get_all_cases.call_count == 1
+        with patch.object(
+            api_handler, "_ApiRequestHandler__get_all_cases", return_value=(mock_cases, None)
+        ) as mock_get_cases:
+            # First call - should build cache
+            case_id1, _, _ = api_handler.find_bdd_case_by_name("User Login", 1, 2)
+            assert mock_get_cases.call_count == 1
 
-        # Second call - should use cache
-        cache2 = parser._get_bdd_cases_cache(1, 2)
-        assert mock_api_handler._ApiRequestHandler__get_all_cases.call_count == 1  # No additional call
+            # Second call with same project/suite - should use cache
+            case_id2, _, _ = api_handler.find_bdd_case_by_name("User Login", 1, 2)
+            assert mock_get_cases.call_count == 1  # No additional call
 
-        # Verify same cache returned
-        assert cache1 is cache2
+            # Both calls should find the same case
+            assert case_id1 == case_id2 == 101
 
     @pytest.mark.cucumber_bdd_matching
-    def test_get_bdd_cases_cache_api_error(self):
-        """Test cache handles API errors gracefully"""
-        parser = CucumberParser(self.environment)
+    def test_api_handler_handles_api_error(self):
+        """Test API handler handles API errors gracefully"""
+        from trcli.api.api_request_handler import ApiRequestHandler
+        from trcli.api.api_client import APIClient
+        from trcli.data_classes.dataclass_testrail import TestRailSuite
 
-        mock_api_handler = MagicMock()
-        parser._api_handler = mock_api_handler
+        # Create mock environment and client
+        mock_env = MagicMock()
+        mock_env.vlog = MagicMock()
+        mock_client = MagicMock(spec=APIClient)
+        mock_client.VERSION = "v2"
+
+        mock_suite = TestRailSuite(name="test", suite_id=2)
+        api_handler = ApiRequestHandler(
+            environment=mock_env, api_client=mock_client, suites_data=mock_suite, verify=False
+        )
 
         # Mock API error
-        mock_api_handler._ApiRequestHandler__get_all_cases.return_value = ([], "API Error")
+        with patch.object(api_handler, "_ApiRequestHandler__get_all_cases", return_value=([], "API Error")):
+            case_id, error, duplicates = api_handler.find_bdd_case_by_name("User Login", 1, 2)
 
-        cache = parser._get_bdd_cases_cache(1, 2)
-
-        # Should return empty cache on error
-        assert cache == {}
+            # Should return None with error message
+            assert case_id is None
+            assert "API Error" in error
+            assert duplicates == []
 
     @pytest.mark.cucumber_bdd_matching
     def test_validate_bdd_case_exists_valid(self):
