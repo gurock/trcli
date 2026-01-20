@@ -224,7 +224,7 @@ class APIClient:
 
             # Add Proxy-Authorization header
             headers["Proxy-Authorization"] = f"Basic {user_pass_encoded}"
-            print(f"Proxy authentication header added: {headers['Proxy-Authorization']}")
+            self.verbose_logging_function("Proxy authentication configured")
 
         return headers
 
@@ -256,7 +256,7 @@ class APIClient:
             if isinstance(self.noproxy, str):
                 self.noproxy = self.noproxy.split(",")
             if host in self.noproxy:
-                print(f"Bypassing proxy for host: {host}")
+                self.verbose_logging_function(f"Bypassing proxy for host: {host}")
                 return None
 
         # Ensure proxy has a scheme (either http or https)
