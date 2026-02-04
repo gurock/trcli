@@ -93,6 +93,14 @@ class TestCucumberBDDMatching:
         if hasattr(self, "temp_file") and os.path.exists(self.temp_file.name):
             os.unlink(self.temp_file.name)
 
+    def _create_mock_api_handler(self):
+        """Helper to create mock API handler with BDD field resolution"""
+        mock_api_handler = MagicMock()
+        # Mock BDD field name resolution (returns default field names)
+        mock_api_handler.get_bdd_case_field_name.return_value = "custom_testrail_bdd_scenario"
+        mock_api_handler.get_bdd_result_field_name.return_value = "custom_testrail_bdd_scenario_results"
+        return mock_api_handler
+
     @pytest.mark.cucumber_bdd_matching
     def test_normalize_title_basic(self):
         """Test title normalization removes special characters and normalizes case"""
@@ -331,7 +339,7 @@ class TestCucumberBDDMatching:
         """Test validation succeeds for valid BDD case"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock valid BDD case - mock send_get response
@@ -354,7 +362,7 @@ class TestCucumberBDDMatching:
         """Test validation fails when case not found"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock case not found - mock send_get response
@@ -373,7 +381,7 @@ class TestCucumberBDDMatching:
         """Test validation fails when case is not BDD template"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock non-BDD case - mock send_get response
@@ -392,7 +400,7 @@ class TestCucumberBDDMatching:
         """Test parsing feature as BDD case using @C tag"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock validation - mock send_get response
@@ -419,7 +427,7 @@ class TestCucumberBDDMatching:
         """Test parsing feature as BDD case using title matching"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock title matching
@@ -442,7 +450,7 @@ class TestCucumberBDDMatching:
         """Test BDD scenario results have correct statuses"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock validation - mock send_get response
@@ -471,7 +479,7 @@ class TestCucumberBDDMatching:
         """Test elapsed time calculation for BDD case"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock validation - mock send_get response
@@ -493,7 +501,7 @@ class TestCucumberBDDMatching:
         """Test parsing returns None when case not found"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock no case found (no tag, no title match)
@@ -507,7 +515,7 @@ class TestCucumberBDDMatching:
         """Test parsing returns None when validation fails"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock validation failure (not BDD template) - mock send_get response
@@ -528,7 +536,7 @@ class TestCucumberBDDMatching:
         """Test _parse_feature branches correctly to BDD matching mode"""
         parser = CucumberParser(self.environment)
 
-        mock_api_handler = MagicMock()
+        mock_api_handler = self._create_mock_api_handler()
         parser._api_handler = mock_api_handler
 
         # Mock validation - mock send_get response

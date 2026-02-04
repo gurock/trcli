@@ -219,27 +219,15 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                     environment.log(f"Created case ID: C{case_id}")
 
                 environment.log(f"Successfully created {len(created_case_ids)} BDD test case(s)")
+                environment.vlog("Clearing BDD cache to include newly created cases...")
+                api_handler._bdd_case_cache.clear()
 
-                # Re-parse with the newly created case IDs in cache
-                environment.vlog("\nRe-parsing to match newly created cases...")
+                # Re-parse with the newly created case IDs
+                environment.vlog("Re-parsing to match newly created cases...")
                 parser_for_results = CucumberParser(environment)
                 parser_for_results.set_api_handler(api_handler)
 
-                # Build cache with newly created case IDs
-                temp_cache = created_case_ids.copy()
-
-                # Also include existing cases from original parse
-                for suite in parsed_suites:
-                    for section in suite.testsections:
-                        for test_case in section.testcases:
-                            if test_case.case_id != -1:
-                                normalized = parser_for_results._normalize_title(section.name)
-                                temp_cache[normalized] = test_case.case_id
-
-                # Override cache
-                parser_for_results._bdd_case_cache = temp_cache
-
-                # Re-parse in BDD matching mode with updated cache
+                # Re-parse in BDD matching mode (cache will rebuild with new cases)
                 parsed_suites = parser_for_results.parse_file(
                     bdd_matching_mode=True,
                     project_id=resolved_project_id,
@@ -247,7 +235,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                     auto_create=False,  # No need to mark for creation again
                 )
 
-                environment.vlog(f"Re-parsed with {len(temp_cache)} cached case(s)")
+                environment.vlog(f"Re-parsed successfully with {len(created_case_ids)} newly created case(s)")
 
         # Ensure all suites have suite_id set from environment
         for suite in parsed_suites:

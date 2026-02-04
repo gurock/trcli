@@ -49,6 +49,9 @@ class TestBDDJunitParser:
             }
 
             mock_api_handler.client.send_get.return_value = mock_response
+            # Mock BDD field name resolution (returns default names)
+            mock_api_handler.get_bdd_case_field_name.return_value = "custom_testrail_bdd_scenario"
+            mock_api_handler.get_bdd_result_field_name.return_value = "custom_testrail_bdd_scenario_results"
             mock_client.api_request_handler = mock_api_handler
             mock_client_class.return_value = mock_client
 
@@ -243,6 +246,7 @@ class TestBDDJunitParser:
         }
 
         mock_api_handler.client.send_get.return_value = mock_response
+        mock_api_handler.get_bdd_case_field_name.return_value = "custom_testrail_bdd_scenario"  # Mock field resolution
         mock_client.api_request_handler = mock_api_handler
         mock_client_class.return_value = mock_client
 
@@ -294,6 +298,7 @@ class TestBDDJunitParser:
         }
 
         mock_api_handler.client.send_get.return_value = mock_response
+        mock_api_handler.get_bdd_case_field_name.return_value = "custom_testrail_bdd_scenario"  # Mock field resolution
         mock_client.api_request_handler = mock_api_handler
         mock_client_class.return_value = mock_client
 
