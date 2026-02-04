@@ -758,9 +758,12 @@ class CucumberParser(FileParser):
 
             case_data = response.response_text
 
-            # Validate it's a BDD template case
-            if not case_data.get("custom_testrail_bdd_scenario"):
-                return False, f"Case C{case_id} is not a BDD template case"
+            # Resolve BDD case field name dynamically
+            bdd_field_name = self._api_handler.get_bdd_case_field_name()
+
+            # Validate it's a BDD template case (has BDD scenarios field with content)
+            if not case_data.get(bdd_field_name):
+                return False, f"Case C{case_id} is not a BDD template case (missing field: {bdd_field_name})"
 
             return True, None
 
@@ -901,13 +904,18 @@ class CucumberParser(FileParser):
         comment = "\n\n".join(comment_parts) if comment_parts else ""
 
         # Step 7: Create result with BDD scenario results
+        # Resolve BDD result field name dynamically
+        bdd_result_field_name = self._api_handler.get_bdd_result_field_name()
+
         result = TestRailResult(
             case_id=case_id,
             status_id=overall_status,
             comment=comment,
             elapsed=elapsed_time,
-            custom_testrail_bdd_scenario_results=bdd_scenario_results,  # Use BDD field
         )
+
+        # Set BDD scenario results using dynamically resolved field name
+        setattr(result, bdd_result_field_name, bdd_scenario_results)
 
         # Step 8: Create test case
         test_case = TestRailCase(

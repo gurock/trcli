@@ -459,7 +459,9 @@ class JunitParser(FileParser):
             case_data = response.response_text
 
             # Step 2: Validate it's a BDD test case
-            bdd_scenario_field = case_data.get("custom_testrail_bdd_scenario")
+            # Resolve BDD case field name dynamically
+            bdd_field_name = api_handler.get_bdd_case_field_name()
+            bdd_scenario_field = case_data.get(bdd_field_name)
 
             if not bdd_scenario_field:
                 return (
@@ -468,7 +470,7 @@ class JunitParser(FileParser):
                         f"BDD Validation Error: Case C{case_id} is NOT a BDD test case.\n"
                         f"Feature: '{feature_name}'\n"
                         f"Case Title: '{case_data.get('title', 'Unknown')}'\n\n"
-                        f"Reason: The 'custom_testrail_bdd_scenario' field is empty or null.\n"
+                        f"Reason: The '{bdd_field_name}' field is empty or null.\n"
                         f"This indicates the case is using a regular template, not the BDD template.\n\n"
                         f"Action Required:\n"
                         f"  Option 1: Upload this case using standard mode (remove --special-parser bdd)\n"
@@ -663,13 +665,23 @@ class JunitParser(FileParser):
             comment = summary
 
         # Step 6: Create aggregated result
+        # Get API handler to resolve BDD result field name
+        from trcli.api.project_based_client import ProjectBasedClient
+        from trcli.data_classes.dataclass_testrail import TestRailSuite as TRSuite
+
+        temp_suite = TRSuite(name="temp", suite_id=1)
+        project_client = ProjectBasedClient(environment=self.env, suite=temp_suite)
+        bdd_result_field_name = project_client.api_request_handler.get_bdd_result_field_name()
+
         result = TestRailResult(
             case_id=case_id,
             status_id=overall_status,
             elapsed=total_time if total_time > 0 else None,  # Pass numeric value, not formatted string
-            custom_testrail_bdd_scenario_results=bdd_scenario_results,
             comment=comment,
         )
+
+        # Set BDD scenario results using dynamically resolved field name
+        setattr(result, bdd_result_field_name, bdd_scenario_results)
 
         # Step 7: Create test case
         test_case = TestRailCase(

@@ -50,6 +50,10 @@ class ApiRequestHandler:
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
         self._bdd_case_cache = {}
 
+        # Cache for resolved BDD field names (resolved from TestRail API)
+        self._bdd_case_field_name = None  # BDD Scenarios field (type_id=13)
+        self._bdd_result_field_name = None  # BDD Scenario Results field (type_id=14)
+
     def check_automation_id_field(self, project_id: int) -> Union[str, None]:
         """
         Checks if the automation_id field (custom_automation_id or custom_case_automation_id) is available for the project
@@ -2408,10 +2412,15 @@ class ApiRequestHandler:
         if error:
             return f"Error fetching cases for cache: {error}"
 
-        # Filter to BDD cases only (have custom_testrail_bdd_scenario field)
-        bdd_cases = [case for case in all_cases if case.get("custom_testrail_bdd_scenario")]
+        # Resolve BDD case field name dynamically
+        bdd_field_name = self.get_bdd_case_field_name()
 
-        self.environment.vlog(f"Found {len(bdd_cases)} BDD cases out of {len(all_cases)} total cases")
+        # Filter to BDD cases only (have BDD scenarios field with content)
+        bdd_cases = [case for case in all_cases if case.get(bdd_field_name)]
+
+        self.environment.vlog(
+            f"Found {len(bdd_cases)} BDD cases out of {len(all_cases)} total cases (using field: {bdd_field_name})"
+        )
 
         # Build normalized name -> [case, case, ...] mapping
         cache = {}
@@ -2452,6 +2461,64 @@ class ApiRequestHandler:
         normalized = re.sub(r"\s+", " ", normalized)
         # Final strip
         return normalized.strip()
+
+    def get_bdd_case_field_name(self) -> str:
+        """Resolve BDD Scenarios case field name from TestRail API
+
+        Dynamically resolves the actual field name for BDD Scenarios (type_id=13).
+        This supports custom field names when users rename the default field in TestRail.
+
+        Returns:
+            Resolved system_name of BDD Scenarios field, or default name if resolution fails
+        """
+        # Return cached value if already resolved
+        if self._bdd_case_field_name is not None:
+            return self._bdd_case_field_name
+
+        try:
+            response = self.client.send_get("get_case_fields")
+            if not response.error_message and response.response_text:
+                for field in response.response_text:
+                    if field.get("type_id") == 13:  # BDD Scenarios type
+                        self._bdd_case_field_name = field.get("system_name")
+                        self.environment.vlog(f"Resolved BDD case field name: {self._bdd_case_field_name}")
+                        return self._bdd_case_field_name
+        except Exception as e:
+            self.environment.vlog(f"Error resolving BDD case field name: {e}")
+
+        # Fallback to default name
+        self._bdd_case_field_name = "custom_testrail_bdd_scenario"
+        self.environment.vlog(f"Using default BDD case field name: {self._bdd_case_field_name}")
+        return self._bdd_case_field_name
+
+    def get_bdd_result_field_name(self) -> str:
+        """Resolve BDD Scenario Results result field name from TestRail API
+
+        Dynamically resolves the actual field name for BDD Scenario Results (type_id=14).
+        This supports custom field names when users rename the default field in TestRail.
+
+        Returns:
+            Resolved system_name of BDD Scenario Results field, or default name if resolution fails
+        """
+        # Return cached value if already resolved
+        if self._bdd_result_field_name is not None:
+            return self._bdd_result_field_name
+
+        try:
+            response = self.client.send_get("get_result_fields")
+            if not response.error_message and response.response_text:
+                for field in response.response_text:
+                    if field.get("type_id") == 14:  # BDD Scenario Results type
+                        self._bdd_result_field_name = field.get("system_name")
+                        self.environment.vlog(f"Resolved BDD result field name: {self._bdd_result_field_name}")
+                        return self._bdd_result_field_name
+        except Exception as e:
+            self.environment.vlog(f"Error resolving BDD result field name: {e}")
+
+        # Fallback to default name
+        self._bdd_result_field_name = "custom_testrail_bdd_scenario_results"
+        self.environment.vlog(f"Using default BDD result field name: {self._bdd_result_field_name}")
+        return self._bdd_result_field_name
 
     def add_case_bdd(
         self, section_id: int, title: str, bdd_content: str, template_id: int, tags: List[str] = None
