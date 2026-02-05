@@ -418,7 +418,12 @@ class TestCucumberBDDMatching:
         assert test_case is not None
         assert test_case.case_id == 123
         assert test_case.result.case_id == 123
-        assert len(test_case.result.custom_testrail_bdd_scenario_results) == 2  # Two scenarios
+
+        # Check BDD scenario results are in result_fields dict
+        bdd_field_name = "custom_testrail_bdd_scenario_results"
+        assert bdd_field_name in test_case.result.result_fields
+        assert len(test_case.result.result_fields[bdd_field_name]) == 2  # Two scenarios
+
         assert test_case.result.status_id == 5  # Failed (one scenario failed)
 
     @pytest.mark.cucumber_bdd_matching
@@ -464,15 +469,18 @@ class TestCucumberBDDMatching:
 
         test_case = parser._parse_feature_as_bdd_case(feature_with_tag, project_id=1, suite_id=2)
 
-        scenarios = test_case.result.custom_testrail_bdd_scenario_results
+        # Check BDD scenario results are in result_fields dict
+        bdd_field_name = "custom_testrail_bdd_scenario_results"
+        assert bdd_field_name in test_case.result.result_fields
+        scenarios = test_case.result.result_fields[bdd_field_name]
 
-        # First scenario: passed
-        assert scenarios[0].content == "Successful login"
-        assert scenarios[0].status_id == 1
+        # First scenario: passed (results are stored as dicts)
+        assert scenarios[0]["content"] == "Successful login"
+        assert scenarios[0]["status_id"] == 1
 
-        # Second scenario: failed
-        assert scenarios[1].content == "Failed login"
-        assert scenarios[1].status_id == 5
+        # Second scenario: failed (results are stored as dicts)
+        assert scenarios[1]["content"] == "Failed login"
+        assert scenarios[1]["status_id"] == 5
 
     @pytest.mark.cucumber_bdd_matching
     def test_parse_feature_as_bdd_case_elapsed_time(self):

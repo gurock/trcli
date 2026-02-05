@@ -328,7 +328,12 @@ class TestBDDJunitParser:
         assert test_case is not None
         assert test_case.case_id == 100
         assert test_case.result.status_id == 1  # Passed
-        assert len(test_case.result.custom_testrail_bdd_scenario_results) == 2
+
+        # Check BDD scenario results are in result_fields dict
+        bdd_field_name = "custom_testrail_bdd_scenario_results"
+        assert bdd_field_name in test_case.result.result_fields
+        assert len(test_case.result.result_fields[bdd_field_name]) == 2
+
         assert "Total Scenarios: 2" in test_case.result.comment
         assert "Passed: 2" in test_case.result.comment
 
@@ -351,12 +356,17 @@ class TestBDDJunitParser:
         assert test_case is not None
         assert test_case.case_id == 25293
         assert test_case.result.status_id == 5  # Failed (fail-fast)
-        assert len(test_case.result.custom_testrail_bdd_scenario_results) == 3
 
-        # Check step statuses
-        assert test_case.result.custom_testrail_bdd_scenario_results[0].status_id == 1  # Passed
-        assert test_case.result.custom_testrail_bdd_scenario_results[1].status_id == 5  # Failed
-        assert test_case.result.custom_testrail_bdd_scenario_results[2].status_id == 4  # Skipped
+        # Check BDD scenario results are in result_fields dict
+        bdd_field_name = "custom_testrail_bdd_scenario_results"
+        assert bdd_field_name in test_case.result.result_fields
+        assert len(test_case.result.result_fields[bdd_field_name]) == 3
+
+        # Check step statuses (results are stored as dicts in result_fields)
+        bdd_results = test_case.result.result_fields[bdd_field_name]
+        assert bdd_results[0]["status_id"] == 1  # Passed
+        assert bdd_results[1]["status_id"] == 5  # Failed
+        assert bdd_results[2]["status_id"] == 4  # Skipped
 
         # Check comment contains summary and failure details
         assert "Total Scenarios: 3" in test_case.result.comment
