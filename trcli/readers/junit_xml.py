@@ -680,8 +680,11 @@ class JunitParser(FileParser):
             comment=comment,
         )
 
-        # Set BDD scenario results using dynamically resolved field name
-        setattr(result, bdd_result_field_name, bdd_scenario_results)
+        # Add BDD scenario results to result_fields dict (for serialization)
+        # Convert TestRailSeparatedStep objects to dicts for API
+        result.result_fields[bdd_result_field_name] = [
+            {"content": step.content, "status_id": step.status_id} for step in bdd_scenario_results
+        ]
 
         # Step 7: Create test case
         test_case = TestRailCase(
