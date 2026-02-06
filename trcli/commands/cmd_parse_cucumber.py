@@ -222,6 +222,11 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 environment.vlog("Clearing BDD cache to include newly created cases...")
                 api_handler._bdd_case_cache.clear()
 
+                # Also clear the RequestCache for get_cases so fresh data is fetched
+                # The RequestCache caches get_cases API responses, so newly created cases
+                # won't be visible until we invalidate this cache
+                api_handler._cache.invalidate_pattern(f"get_cases/{resolved_project_id}")
+
                 # Re-parse with the newly created case IDs
                 environment.vlog("Re-parsing to match newly created cases...")
                 parser_for_results = CucumberParser(environment)
