@@ -30,6 +30,8 @@ def handler_maker():
         json_string = json.dumps(json.load(file_json))
         test_input = from_json(TestRailSuite, json_string)
         api_request = ApiRequestHandler(environment, api_client, test_input, verify)
+        # Clear cache for each test to ensure isolation
+        api_request._cache.clear()
         return api_request
 
     return _make_handler
@@ -37,18 +39,27 @@ def handler_maker():
 
 @pytest.fixture(scope="function")
 def api_request_handler(handler_maker):
-    yield handler_maker()
+    handler = handler_maker()
+    yield handler
+    # Clean up cache after test
+    handler._cache.clear()
 
 
 @pytest.fixture(scope="function")
 def api_request_handler_verify(handler_maker):
-    yield handler_maker(verify=True)
+    handler = handler_maker(verify=True)
+    yield handler
+    # Clean up cache after test
+    handler._cache.clear()
 
 
 @pytest.fixture(scope="function")
 def api_request_handler_update_case_json(handler_maker):
     json_path = Path(__file__).parent / "test_data/json/update_case_result_single_with_id.json"
-    yield handler_maker(custom_json=json_path, verify=False)
+    handler = handler_maker(custom_json=json_path, verify=False)
+    yield handler
+    # Clean up cache after test
+    handler._cache.clear()
 
 
 class TestApiRequestHandler:
@@ -1191,3 +1202,68 @@ class TestApiRequestHandler:
 
         # Call upload_attachments - should not raise exception
         api_request_handler.upload_attachments(report_results, results, run_id)
+
+    @pytest.mark.api_handler
+    def test_caching_reduces_api_calls(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that caching reduces the number of API calls for repeated requests"""
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "projects": [
+                {"id": 1, "name": "DataHub", "suite_mode": 1},
+                {"id": 2, "name": "Test Project", "suite_mode": 1},
+            ],
+        }
+
+        # Set up mock
+        mock_get = requests_mock.get(create_url("get_projects"), json=mocked_response)
+
+        # First call should hit the API
+        result1 = api_request_handler.get_project_data("Test Project")
+        assert result1.project_id == 2
+        assert mock_get.call_count == 1, "First call should hit the API"
+
+        # Second call should use cache
+        result2 = api_request_handler.get_project_data("Test Project")
+        assert result2.project_id == 2
+        assert mock_get.call_count == 1, "Second call should use cache, not hit API again"
+
+        # Third call with different name should still use cache (same endpoint)
+        result3 = api_request_handler.get_project_data("DataHub")
+        assert result3.project_id == 1
+        assert mock_get.call_count == 1, "Third call should still use cached data"
+
+    @pytest.mark.api_handler
+    def test_cache_stats(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that cache statistics are tracked correctly"""
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "projects": [{"id": 1, "name": "Test Project", "suite_mode": 1}],
+        }
+
+        requests_mock.get(create_url("get_projects"), json=mocked_response)
+
+        # Check initial stats
+        stats = api_request_handler._cache.get_stats()
+        assert stats["hit_count"] == 0
+        assert stats["miss_count"] == 0
+        assert stats["size"] == 0
+
+        # Make first call (cache miss)
+        api_request_handler.get_project_data("Test Project")
+        stats = api_request_handler._cache.get_stats()
+        assert stats["miss_count"] == 1
+        assert stats["hit_count"] == 0
+        assert stats["size"] == 1
+
+        # Make second call (cache hit)
+        api_request_handler.get_project_data("Test Project")
+        stats = api_request_handler._cache.get_stats()
+        assert stats["miss_count"] == 1
+        assert stats["hit_count"] == 1
+        assert stats["hit_rate"] == 50.0  # 1 hit out of 2 total requests
