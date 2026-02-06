@@ -58,7 +58,7 @@ class TestRotatingFileHandler(unittest.TestCase):
         handler.close()
 
         # File should contain messages
-        content = self.log_file.read_text()
+        content = self.log_file.read_text(encoding="utf-8")
         self.assertIn("Test message 1", content)
         self.assertIn("Test message 2", content)
 
@@ -103,7 +103,7 @@ class TestRotatingFileHandler(unittest.TestCase):
         handler.flush()
 
         # File should be written immediately
-        content = self.log_file.read_text()
+        content = self.log_file.read_text(encoding="utf-8")
         self.assertIn("Test message", content)
 
         handler.close()
@@ -115,7 +115,7 @@ class TestRotatingFileHandler(unittest.TestCase):
 
         # File should be closed and content written
         self.assertTrue(self.log_file.exists())
-        content = self.log_file.read_text()
+        content = self.log_file.read_text(encoding="utf-8")
         self.assertIn("Test message", content)
 
     def test_multiple_writes_same_file(self):
@@ -128,7 +128,7 @@ class TestRotatingFileHandler(unittest.TestCase):
 
         handler.close()
 
-        content = self.log_file.read_text()
+        content = self.log_file.read_text(encoding="utf-8")
         for msg in messages:
             self.assertIn(msg.strip(), content)
 
@@ -142,7 +142,7 @@ class TestRotatingFileHandler(unittest.TestCase):
 
         handler.close()
 
-        content = self.log_file.read_text()
+        content = self.log_file.read_text(encoding="utf-8")
         self.assertIn("🎉", content)
         self.assertIn("你好世界", content)
         self.assertIn("مرحبا بالعالم", content)
@@ -174,12 +174,12 @@ class TestRotatingFileHandler(unittest.TestCase):
         # Collect all content from all files
         all_content = ""
         if self.log_file.exists():
-            all_content += self.log_file.read_text()
+            all_content += self.log_file.read_text(encoding="utf-8")
 
         for i in range(1, 6):
             backup = Path(f"{self.log_file}.{i}")
             if backup.exists():
-                all_content += backup.read_text()
+                all_content += backup.read_text(encoding="utf-8")
 
         # All messages should be somewhere
         for msg in messages:
@@ -209,8 +209,8 @@ class TestMultiFileHandler(unittest.TestCase):
         multi.close()
 
         # Both files should have the message
-        content1 = self.log_file1.read_text()
-        content2 = self.log_file2.read_text()
+        content1 = self.log_file1.read_text(encoding="utf-8")
+        content2 = self.log_file2.read_text(encoding="utf-8")
 
         self.assertIn("Test message", content1)
         self.assertIn("Test message", content2)
@@ -238,8 +238,8 @@ class TestMultiFileHandler(unittest.TestCase):
         self.assertTrue(self.log_file1.exists())
         self.assertTrue(self.log_file2.exists())
 
-        content1 = self.log_file1.read_text()
-        content2 = self.log_file2.read_text()
+        content1 = self.log_file1.read_text(encoding="utf-8")
+        content2 = self.log_file2.read_text(encoding="utf-8")
 
         self.assertIn("Test message", content1)
         self.assertIn("Test message", content2)
