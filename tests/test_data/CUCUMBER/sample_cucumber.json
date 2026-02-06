@@ -1,0 +1,175 @@
+[
+  {
+    "uri": "features/login.feature",
+    "id": "user-login",
+    "keyword": "Feature",
+    "name": "User Login",
+    "description": "  As a user\n  I want to log into the application\n  So that I can access my account",
+    "line": 1,
+    "tags": [
+      {
+        "name": "@smoke",
+        "line": 1
+      },
+      {
+        "name": "@authentication",
+        "line": 1
+      }
+    ],
+    "elements": [
+      {
+        "id": "user-login;successful-login-with-valid-credentials",
+        "keyword": "Scenario",
+        "name": "Successful login with valid credentials",
+        "description": "",
+        "line": 7,
+        "type": "scenario",
+        "tags": [
+          {
+            "name": "@positive",
+            "line": 6
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "name": "I am on the login page",
+            "line": 8,
+            "match": {
+              "location": "step_definitions/login_steps.js:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1234567890
+            }
+          },
+          {
+            "keyword": "When ",
+            "name": "I enter valid username \"testuser\"",
+            "line": 9,
+            "match": {
+              "location": "step_definitions/login_steps.js:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 987654321
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "I enter valid password \"password123\"",
+            "line": 10,
+            "match": {
+              "location": "step_definitions/login_steps.js:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 876543210
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "I click the login button",
+            "line": 11,
+            "match": {
+              "location": "step_definitions/login_steps.js:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2345678901
+            }
+          },
+          {
+            "keyword": "Then ",
+            "name": "I should be redirected to the dashboard",
+            "line": 12,
+            "match": {
+              "location": "step_definitions/login_steps.js:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 543210987
+            }
+          }
+        ]
+      },
+      {
+        "id": "user-login;failed-login-with-invalid-credentials",
+        "keyword": "Scenario",
+        "name": "Failed login with invalid credentials",
+        "description": "",
+        "line": 15,
+        "type": "scenario",
+        "tags": [
+          {
+            "name": "@negative",
+            "line": 14
+          }
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "name": "I am on the login page",
+            "line": 16,
+            "match": {
+              "location": "step_definitions/login_steps.js:10"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 1234567890
+            }
+          },
+          {
+            "keyword": "When ",
+            "name": "I enter invalid username \"baduser\"",
+            "line": 17,
+            "match": {
+              "location": "step_definitions/login_steps.js:15"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 987654321
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "I enter invalid password \"wrongpass\"",
+            "line": 18,
+            "match": {
+              "location": "step_definitions/login_steps.js:20"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 876543210
+            }
+          },
+          {
+            "keyword": "And ",
+            "name": "I click the login button",
+            "line": 19,
+            "match": {
+              "location": "step_definitions/login_steps.js:25"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 2345678901
+            }
+          },
+          {
+            "keyword": "Then ",
+            "name": "I should see an error message \"Invalid credentials\"",
+            "line": 20,
+            "match": {
+              "location": "step_definitions/login_steps.js:35"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 543210987,
+              "error_message": "AssertionError: expected 'Please try again' to equal 'Invalid credentials'"
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

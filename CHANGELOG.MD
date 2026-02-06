@@ -6,6 +6,22 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.0]
+
+_released 12-01-2025
+
+### Added
+ - **New Command: `parse_cucumber`** - Parse Cucumber JSON reports and upload to TestRail
+ - **New Command: `import_gherkin`** - Import Gherkin .feature files as BDD test cases with `--update` flag to update existing cases
+ - **New Command: `export_gherkin`** - Export TestRail BDD test cases as Gherkin .feature files
+ - **Enhanced `parse_junit` command**: Added `--special-parser bdd` option to parse JUnit XML as BDD scenarios with custom case and result field support
+ - **Centralized Logging Module**: Structured logging framework with JSON/text formatting, file rotation, and configuration options for better production observability.
+
+### Fixed/Improved
+ - Improved caching to reduce redundant API calls during command execution, combined with existing N+1 query optimizations to improve performance for large report processing.
+ - Decomposed monolithic class (ApiRequestHandler) into specialized handler modules.
+
+
 ## [1.12.6]
 
 _released 01-05-2026

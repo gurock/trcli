@@ -33,21 +33,25 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.12.6
+TestRail CLI v1.13.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
+    - parse_cucumber: Cucumber JSON results (BDD)
+    - import_gherkin: Upload .feature files to TestRail BDD
+    - export_gherkin: Export BDD test cases as .feature files
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
-    - add_run: Create a new empty test run
+    - add_run: Create a new test run
     - labels: Manage labels (add, update, delete, list)
+    - references: Manage references (cases and runs)
 ```
 
 CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.12.6
+TestRail CLI v1.13.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -85,7 +89,10 @@ Options:
 
 Commands:
   add_run        Add a new test run in TestRail
+  export_gherkin Export BDD test case from TestRail as .feature file
+  import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
+  parse_cucumber Parse Cucumber JSON results and upload to TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
@@ -322,6 +329,389 @@ Adding results: 100%|████████████| 25/25 [00:02<00:00, 1
 Assigning failed results: 3/3, Done.
 Submitted 25 test results in 2.1 secs.
 ```
+
+## Behavior-Driven Development (BDD) Support
+
+The TestRail CLI provides comprehensive support for Behavior-Driven Development workflows using Gherkin syntax. The BDD features enable you to manage test cases written in Gherkin format, execute BDD tests with various frameworks (Cucumber, Behave, pytest-bdd, etc.), and seamlessly upload results to TestRail.
+
+### BDD Commands Overview
+
+The TestRail CLI provides four commands for complete BDD workflow management:
+
+| Command | Purpose | Use Case |
+|---------|---------|----------|
+| `import_gherkin` | Import .feature files to create test cases | Create BDD test cases in TestRail from existing .feature files |
+| `export_gherkin` | Export test cases as .feature files | Extract test cases from TestRail for automation |
+| `parse_cucumber` | Parse Cucumber JSON and upload results | Upload test results from Cucumber/Behave/pytest-bdd execution |
+
+### Uploading Cucumber/BDD Test Results
+
+The `parse_cucumber` command allows you to upload automated test results from BDD frameworks that generate Cucumber JSON format, including:
+- **Cucumber (Java, JavaScript, Ruby)**
+- **Behave (Python)**
+- **pytest-bdd (Python)**
+- **SpecFlow (.NET)** (with Cucumber JSON output)
+- **Cucumber-JVM (Java)**
+
+#### Reference
+```shell
+$ trcli parse_cucumber --help
+Usage: trcli parse_cucumber [OPTIONS]
+
+  Parse Cucumber JSON results and upload to TestRail
+
+  This command parses Cucumber JSON test results and uploads them to TestRail
+  using BDD matching mode. Features are matched to TestRail BDD test cases by
+  feature name only (case-insensitive, whitespace-normalized).
+
+  BDD Matching:
+  - Matches Cucumber features to TestRail BDD test cases by feature name
+  - Auto-creates missing BDD test cases by default (use -n to disable)
+  - Sections are auto-created based on feature names
+  - Does not use automation_id or case-matcher (BDD uses feature name matching only)
+
+Options:
+  -f, --file                 Filename and path.
+  --close-run                Close the newly created run
+  --title                    Title of Test Run to be created in TestRail.
+  --suite-id                 Suite ID to submit results to.  [x>=1]
+  --run-id                   Run ID for the results they are reporting.  [x>=1]
+  --plan-id                  Plan ID with which the Test Run will be associated.  [x>=1]
+  --config-ids               Comma-separated configuration IDs to use along with Test Plans.
+  --milestone-id             Milestone ID to which the Test Run should be associated to.  [x>=1]
+  --run-description          Summary text to be added to the test run.
+  --result-fields            List of result fields and values for test results creation.
+  --allow-ms                 Allows using milliseconds for elapsed times.
+  -v, --verbose              Enable verbose logging output.
+  --help                     Show this message and exit.
+```
+
+**Note:** The following options are NOT supported for `parse_cucumber` as they are not relevant for BDD matching:
+- `--case-matcher` - BDD always uses feature name matching
+- `--suite-name` - Use `--suite-id` instead
+- `--section-id` - Sections are auto-created based on feature names
+- `--case-fields` - BDD test cases are created via `.feature` file upload, not standard case creation
+
+#### Cucumber JSON Format Example
+```json
+[
+  {
+    "id": "user-login",
+    "name": "User Login",
+    "description": "As a registered user\n\tI want to log in to the application\n\tSo that I can access my account",
+    "uri": "features/login.feature",
+    "elements": [
+      {
+        "id": "user-login;successful-login-with-valid-credentials",
+        "name": "Successful login with valid credentials",
+        "type": "scenario",
+        "description": "",
+        "keyword": "Scenario",
+        "tags": [
+          {"name": "@smoke"},
+          {"name": "@authentication"}
+        ],
+        "steps": [
+          {
+            "keyword": "Given ",
+            "name": "I have a valid username \"testuser\"",
+            "result": {
+              "status": "passed",
+              "duration": 1500000000
+            }
+          },
+          {
+            "keyword": "When ",
+            "name": "I enter my credentials",
+            "result": {
+              "status": "passed",
+              "duration": 500000000
+            }
+          },
+          {
+            "keyword": "Then ",
+            "name": "I should be redirected to the dashboard",
+            "result": {
+              "status": "passed",
+              "duration": 300000000
+            }
+          }
+        ]
+      }
+    ]
+  }
+]
+```
+
+**Mapping Cucumber JSON to TestRail entities:**
+
+| Cucumber JSON Element | TestRail Entity | Notes |
+|----------------------|-----------------|-------|
+| `feature` | Section | Feature name becomes section name |
+| `scenario` / `scenario outline` | Test Case | Each scenario creates a test case |
+| `step` | Test Step | Steps with results become step results |
+| `tags` | Case Tags/Refs | Tags like @smoke, @C123 map to TestRail fields |
+
+#### BDD Matching Mode for Test Results
+
+The `parse_cucumber` command uses **BDD matching mode** to intelligently match Cucumber features to TestRail BDD test cases by feature name. This provides a seamless workflow for uploading BDD test results.
+
+**Key Features:**
+- **Feature Name Matching**: Automatically matches Cucumber features to TestRail BDD test cases by feature name
+- **Auto-Creation**: Automatically creates missing BDD test cases (can be controlled with flags)
+- **Section Auto-Creation**: Creates TestRail sections on-the-fly if they don't exist
+- **Batch Pre-fetching**: Efficiently fetches all BDD cases once and caches them for O(1) lookups
+- **Duplicate Detection**: Warns when multiple BDD cases have the same feature name
+
+#### Auto-Creation Flags
+
+Control how the TestRail CLI handles missing BDD test cases:
+
+| Flag | Behavior | Use Case |
+|------|----------|----------|
+| **No flag** (default) | Auto-creates missing BDD test cases | Recommended for most workflows - creates cases automatically |
+| `-y` or `--yes` | Auto-creates without prompting | CI/CD environments - same as default for BDD |
+| `-n` or `--no` | Strict matching only - errors if not found | When you want to ensure all features exist in TestRail first |
+
+#### Usage Examples
+
+**Default behavior (auto-create):**
+```shell
+# Auto-create missing BDD test cases (default)
+$ trcli parse_cucumber -f cucumber-results.json \
+  --project "Your Project" \
+  --suite-id 2 \
+  --title "BDD Test Run"
+```
+
+**Explicit auto-creation with -y flag:**
+```shell
+# Same as default - auto-create missing test cases
+$ trcli parse_cucumber -f cucumber-results.json \
+  --project "Your Project" \
+  --suite-id 2 \
+  --title "BDD Test Run" \
+  -y
+```
+
+**Strict matching mode with -n flag:**
+```shell
+# Only match existing BDD test cases - error if not found
+$ trcli parse_cucumber -f cucumber-results.json \
+  --project "Your Project" \
+  --suite-id 2 \
+  --title "BDD Test Run" \
+  -n
+```
+
+**How BDD matching works:**
+1. Fetches all BDD test cases from the specified suite (one-time batch operation)
+2. Normalizes feature names for matching (case-insensitive, whitespace-normalized)
+3. For each feature in Cucumber JSON:
+   - Tries to find existing BDD test case by feature name
+   - If found: Uses that case ID and uploads scenario results
+   - If not found and auto-create enabled: Creates new BDD test case with complete Gherkin content
+   - If not found and auto-create disabled (-n): Shows error and exits
+4. Aggregates all scenario results per feature
+5. Uploads results to TestRail with scenario-level detail
+
+**Important Notes:**
+- Feature matching is done by **feature name** (not automation_id or case ID tags)
+- If multiple BDD cases have the same feature name, a warning is shown
+- Sections are created automatically if they don't exist
+- Each feature becomes one BDD test case with multiple scenario results
+
+#### Case Matching for BDD Tests
+
+The `parse_cucumber` command uses **feature name matching** to link Cucumber features to TestRail BDD test cases. This is different from the automation_id approach used in JUnit.
+
+**Feature Name Matching:**
+- TestRail CLI normalizes and compares feature names from Cucumber JSON to BDD test case titles in TestRail
+- Normalization: case-insensitive, whitespace-normalized (e.g., "User Login" matches "user  login")
+- One feature = one BDD test case with multiple scenario results
+
+**Example:**
+```gherkin
+# Cucumber JSON feature
+Feature: User Login
+  Scenario: Successful login with valid credentials
+    Given I am on the login page
+    When I enter valid credentials
+    Then I should see the dashboard
+
+  Scenario: Failed login with invalid password
+    Given I am on the login page
+    When I enter invalid credentials
+    Then I should see an error message
+
+# TestRail
+# - One BDD test case with title "User Login"
+# - Contains both scenarios with individual pass/fail status
+# - Section name: "User Login" (auto-created if needed)
+```
+
+**Using @C<id> Tags (Optional):**
+
+You can also explicitly specify case IDs using `@C<id>` tags at the feature level:
+
+```gherkin
+@C123
+Feature: User Login
+  Scenario: Successful login with valid credentials
+    Given I am on the login page
+    When I enter valid credentials
+    Then I should see the dashboard
+```
+
+**Tag Priority:**
+1. `@C<id>` tags at feature level (if present)
+2. Feature name matching (default behavior)
+
+**Duplicate Name Handling:**
+
+If multiple BDD test cases have the same feature name, the CLI will:
+- Show a warning: `Warning: Multiple BDD cases found with title 'User Login': C101, C202, C303`
+- Use the last matching case ID
+- Recommend ensuring unique feature names in TestRail
+
+### Importing Gherkin Feature Files
+
+The `import_gherkin` command allows you to upload BDD test cases in TestRail from existing .feature files.
+
+#### Reference
+```shell
+$ trcli import_gherkin --help
+Usage: trcli import_gherkin [OPTIONS]
+
+  Upload or update Gherkin .feature file in TestRail
+
+Options:
+  -f, --file            Path to .feature file to import [required]
+  --section-id          Section ID where test cases will be created (required for create mode)  [x>=1]
+  --case-id             Case ID to update (required with --update flag)  [x>=1]
+  --json-output         Output case IDs in JSON format
+  --update              Update existing BDD test case instead of creating new one
+  -v, --verbose         Enable verbose logging output
+  --help                Show this message and exit.
+```
+
+#### Usage Examples
+```shell
+# Create new test case (requires --section-id)
+$ trcli import_gherkin -f features/login.feature \
+  --project "Your Project" \
+  --section-id 456 \
+  -y
+
+# Update existing test case (requires --case-id)
+$ trcli import_gherkin -f features/login.feature \
+  --project "Your Project" \
+  --case-id 789 \
+  --update \
+  -y
+
+# Create with custom project settings
+$ trcli import_gherkin -f features/checkout.feature \
+  --project-id 10 \
+  --section-id 123 \
+  -v -y
+```
+
+**How it works:**
+
+**Create mode (default):**
+1. Reads the .feature file
+2. Uploads to TestRail via `add_bdd/{section_id}` endpoint
+3. TestRail creates new test case(s) with complete Gherkin content
+4. Returns created case ID(s)
+
+**Update mode (--update):**
+1. Reads the .feature file
+2. Uploads to TestRail via `update_bdd/{case_id}` endpoint
+3. TestRail updates existing test case with new Gherkin content
+4. Returns created case ID(s)
+
+**Example .feature file:**
+```gherkin
+Feature: User Login
+  As a registered user
+  I want to log in to the application
+  So that I can access my account
+
+  Background:
+    Given the application is running
+    And I am on the login page
+
+  @smoke @authentication
+  Scenario: Successful login with valid credentials
+    Given I have a valid username "testuser"
+    And I have a valid password "password123"
+    When I enter my credentials
+    And I click the login button
+    Then I should be redirected to the dashboard
+    And I should see a welcome message "Welcome, testuser"
+
+  @negative @authentication
+  Scenario: Failed login with invalid password
+    Given I have a valid username "testuser"
+    And I have an invalid password "wrongpassword"
+    When I enter my credentials
+    And I click the login button
+    Then I should see an error message "Invalid credentials"
+    And I should remain on the login page
+```
+
+### Exporting BDD Test Cases
+
+The `export_gherkin` command allows you to export existing BDD test cases from TestRail as .feature files.
+
+#### Reference
+```shell
+$ trcli export_gherkin --help
+Usage: trcli export_gherkin [OPTIONS]
+
+  Export BDD test case from TestRail as .feature file
+
+Options:
+  --case-id    TestRail test case ID to export  [x>=1] [required]
+  --output     Output path for the .feature file (prints to stdout if not specified)
+  -v, --verbose  Enable verbose logging output
+  --help       Show this message and exit.
+```
+
+#### Usage Examples
+```shell
+# Export to stdout
+$ trcli export_gherkin --case-id 123 \
+  --project "Your Project"
+
+# Export to file
+$ trcli export_gherkin --case-id 123 \
+  --project "Your Project" \
+  --output features/exported-login.feature
+
+# Export with verbose logging
+$ trcli export_gherkin --case-id 456 \
+  --project-id 10 \
+  --output features/checkout.feature \
+  -v
+```
+
+**Output example:**
+```
+Connecting to TestRail...
+Retrieving BDD test case 123...
+
+✓ Successfully exported test case 123
+  File: features/exported-login.feature
+  Size: 1247 characters
+```
+
+**Use cases:**
+- Extract test cases for automation
+- Synchronize TestRail with version control
+- Generate documentation from test cases
+- Migrate test cases between projects
 
 ### Exploring other features
 
@@ -1096,7 +1486,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.12.6
+TestRail CLI v1.13.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1220,7 +1610,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.12.6
+TestRail CLI v1.13.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
@@ -1387,6 +1777,164 @@ You can also enable this feature globally by setting `ENABLE_PARALLEL_PAGINATION
 - For smaller projects with few test cases, the performance improvement may be negligible
 - This is an experimental feature - please report any issues you encounter
 
+
+Logging and Observability
+--------------------------
+
+The TestRail CLI includes a comprehensive logging infrastructure designed specifically for CLI tools. It provides structured logging with automatic credential sanitization, making it easy to integrate with CI/CD pipelines and observability tools.
+
+### Key Features
+
+- **Structured Logging**: JSON (NDJSON) and text formats for machine-parseable logs
+- **Credential Sanitization**: Automatic masking of sensitive fields (passwords, API keys, tokens)
+- **File Rotation**: Automatic log rotation based on file size with configurable backup counts
+- **Flexible Configuration**: CLI flags, environment variables, YAML config files
+
+#### Automatic Logging
+
+TRCLI now automatically logs all operations using structured logging. Simply configure using environment variables:
+
+```bash
+# Enable JSON logs on stderr (default)
+export TRCLI_LOG_LEVEL=INFO
+export TRCLI_LOG_FORMAT=json
+
+# Run any TRCLI command - logging happens automatically
+trcli parse_junit --file report.xml --project "My Project" \
+  --host https://example.testrail.io --username user --password pass
+```
+
+#### Direct API Usage (Advanced)
+
+For custom integrations or scripts:
+
+```python
+from trcli.cli import Environment
+from trcli.logging.config import LoggingConfig
+
+# Initialize logging (reads from env vars)
+LoggingConfig.setup_logging()
+
+# Use TRCLI Environment with automatic logging
+env = Environment("my_command")
+env.logger.info("Operation completed", items=100, duration=1.5)
+
+# Or get a standalone logger
+from trcli.logging import get_logger
+logger = get_logger("trcli.custom")
+logger.info("Custom operation", status="success")
+```
+
+**JSON Output:**
+```json
+{"timestamp":"2024-01-20T10:15:30Z","level":"INFO","logger":"trcli.module","message":"Operation completed","items":100,"duration":1.5}
+```
+
+#### Configuration
+
+Configure logging using environment variables:
+
+```bash
+# Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+export TRCLI_LOG_LEVEL=INFO
+
+# Set output format (json or text)
+export TRCLI_LOG_FORMAT=json
+
+# Set output destination (stderr, stdout, or file)
+export TRCLI_LOG_OUTPUT=stderr
+
+# For file output, specify path and rotation settings
+export TRCLI_LOG_FILE=/var/log/trcli/app.log
+export TRCLI_LOG_MAX_BYTES=10485760  # 10MB
+export TRCLI_LOG_BACKUP_COUNT=5
+
+# Run TRCLI
+trcli parse_junit --file report.xml
+```
+
+Or use a YAML configuration file:
+
+```yaml
+# trcli_config.yml
+logging:
+  level: INFO
+  format: json
+  output: file
+  file_path: /var/log/trcli/app.log
+  max_bytes: 10485760
+  backup_count: 5
+```
+
+Then reference it:
+```bash
+trcli -c trcli_config.yml parse_junit --file report.xml
+```
+
+#### Automatic Credential Sanitization
+
+Credentials are automatically sanitized in logs to prevent security leaks:
+
+```python
+logger.info("Auth configured",
+    password="secret123",
+    api_key="sk_live_abc123",
+    token="bearer_xyz"
+)
+
+# Output automatically sanitizes:
+# {"password":"se***23","api_key":"sk***23","token":"be***yz"}
+```
+
+**Protected Fields:**
+- `password`, `passwd`, `pwd`
+- `api_key`, `apikey`, `key`
+- `token`, `auth_token`, `access_token`
+- `secret`, `credential`
+
+#### CI/CD Integration
+
+Output JSON logs for easy parsing in CI/CD pipelines:
+
+```bash
+# Output JSON logs for parsing
+export TRCLI_LOG_FORMAT=json
+trcli parse_junit --file report.xml 2>&1 | tee logs.json
+
+# Parse logs with jq
+cat logs.json | jq 'select(.level == "ERROR")'
+cat logs.json | jq 'select(.duration_seconds > 30)'
+cat logs.json | jq '.run_id' | sort | uniq
+```
+
+#### File Logging with Rotation
+
+For long-running processes, enable file logging with automatic rotation:
+
+```bash
+# Via environment variables
+export TRCLI_LOG_FILE=/var/log/trcli/app.log
+export TRCLI_LOG_MAX_BYTES=10485760  # 10MB
+export TRCLI_LOG_BACKUP_COUNT=5
+
+trcli parse_junit --file report.xml
+```
+
+**Benefits:**
+- Long-running processes don't fill disk
+- Automatic cleanup of old logs
+- Easy log management
+
+### Environment Variables Reference
+
+| Variable | Description | Values | Default |
+|----------|-------------|--------|---------|
+| `TRCLI_LOG_LEVEL` | Minimum log level | DEBUG, INFO, WARNING, ERROR, CRITICAL | INFO |
+| `TRCLI_LOG_FORMAT` | Output format | json, text | json |
+| `TRCLI_LOG_OUTPUT` | Output destination | stderr, stdout, file | stderr |
+| `TRCLI_LOG_FILE` | Log file path (when output=file) | File path | None |
+| `TRCLI_LOG_MAX_BYTES` | Max file size before rotation | Bytes | 10485760 |
+| `TRCLI_LOG_BACKUP_COUNT` | Number of backup files to keep | Integer | 5 |
 
 Contributing
 ------------

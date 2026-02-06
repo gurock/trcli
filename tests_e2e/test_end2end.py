@@ -1948,3 +1948,268 @@ trcli -y \\
                 "Assigning failed results: 4/4, Done.",
             ],
         )
+
+    # ==================== BDD/GHERKIN FEATURE TESTS ====================
+
+    def test_import_gherkin_upload_feature(self):
+        """Test import_gherkin command to upload .feature file to TestRail"""
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  import_gherkin \\
+  -f "reports_gherkin/sample_bdd.feature" \\
+  --section-id 2388
+        """
+        )
+        _assert_contains(
+            output,
+            [
+                "Connecting to TestRail...",
+                "Uploading feature file to TestRail...",
+                "Successfully uploaded feature file!",
+                "Created/updated",
+                "test case(s)",
+                "Case IDs:",
+            ],
+        )
+
+    def test_import_gherkin_with_json_output(self):
+        """Test import_gherkin command with JSON output format"""
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  import_gherkin \\
+  -f "reports_gherkin/sample_bdd.feature" \\
+  --section-id 2388 \\
+  --json-output
+        """
+        )
+        _assert_contains(
+            output, ["Connecting to TestRail...", "Uploading feature file to TestRail...", '"case_ids"', '"count"']
+        )
+
+    def test_import_gherkin_with_verbose(self):
+        """Test import_gherkin command with verbose logging"""
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  -v \\
+  import_gherkin \\
+  -f "reports_gherkin/sample_bdd.feature" \\
+  --section-id 2388
+        """
+        )
+        _assert_contains(
+            output,
+            [
+                "Connecting to TestRail...",
+                "Uploading feature file to TestRail...",
+                "Successfully uploaded feature file!",
+            ],
+        )
+
+    def test_export_gherkin_download_to_stdout(self):
+        """Test export_gherkin command to download BDD test case to stdout"""
+        # First, import a feature file to ensure we have a case to export
+        import_output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  import_gherkin \\
+  -f "reports_gherkin/sample_bdd.feature" \\
+  --section-id 2388 \\
+  --json-output
+        """
+        )
+
+        # Extract case ID from JSON output
+        import re
+        import json
+
+        json_start = import_output.find("{")
+        if json_start >= 0:
+            json_str = import_output[json_start:]
+            # Remove "DONE" and any trailing text after the JSON
+            json_end = json_str.find("}")
+            if json_end >= 0:
+                json_str = json_str[: json_end + 1]
+            output_data = json.loads(json_str)
+            case_id = output_data.get("case_ids", [])[0] if output_data.get("case_ids") else None
+
+            if case_id:
+                # Now export the case
+                export_output = _run_cmd(
+                    f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  export_gherkin \\
+  --case-id {case_id}
+                """
+                )
+                _assert_contains(export_output, ["Connecting to TestRail...", "Retrieving BDD test case", "Feature:"])
+
+    def test_export_gherkin_download_to_file(self):
+        """Test export_gherkin command to download BDD test case to file"""
+        # First, import a feature file to ensure we have a case to export
+        import_output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  import_gherkin \\
+  -f "reports_gherkin/sample_bdd.feature" \\
+  --section-id 2388 \\
+  --json-output
+        """
+        )
+
+        # Extract case ID from JSON output
+        import re
+        import json
+
+        json_start = import_output.find("{")
+        if json_start >= 0:
+            json_str = import_output[json_start:]
+            # Remove "DONE" and any trailing text after the JSON
+            json_end = json_str.find("}")
+            if json_end >= 0:
+                json_str = json_str[: json_end + 1]
+            output_data = json.loads(json_str)
+            case_id = output_data.get("case_ids", [])[0] if output_data.get("case_ids") else None
+
+            if case_id:
+                # Now export the case to a file
+                export_output = _run_cmd(
+                    f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  export_gherkin \\
+  --case-id {case_id} \\
+  --output "exported_bdd.feature"
+                """
+                )
+                _assert_contains(
+                    export_output,
+                    [
+                        "Connecting to TestRail...",
+                        "Retrieving BDD test case",
+                        "Successfully exported test case",
+                        "exported_bdd.feature",
+                    ],
+                )
+
+    def test_parse_cucumber_workflow1_results_only(self):
+        """Test parse_cucumber Workflow 1: Parse and upload results only (no feature upload)"""
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_cucumber \\
+  --title "[CLI-E2E-Tests] Cucumber Parser - Results Only" \\
+  --suite-id 86 \\
+  -f "reports_cucumber/sample_cucumber.json"
+        """
+        )
+        _assert_contains(
+            output,
+            [
+                "Parsing Cucumber",
+                "Processed",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted",
+                "Results uploaded successfully",
+            ],
+        )
+
+    def test_parse_cucumber_workflow2_with_feature_upload(self):
+        """Test parse_cucumber Workflow 2: Generate feature, upload, then upload results"""
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_cucumber \\
+  --title "[CLI-E2E-Tests] Cucumber Parser - With Feature Upload" \\
+  --suite-id 86 \\
+  --upload-feature \\
+  --feature-section-id 2388 \\
+  -f "reports_cucumber/sample_cucumber.json"
+        """
+        )
+        _assert_contains(
+            output,
+            [
+                "Creating BDD test cases from features...",
+                "Successfully created",
+                "BDD test case",
+                "Proceeding to upload test results...",
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                "Submitted",
+                "Results uploaded successfully",
+            ],
+        )
+
+    def test_bdd_help_commands(self):
+        """Test that all BDD commands appear in help documentation"""
+
+        # Test main CLI help shows BDD commands
+        main_help_output = _run_cmd("trcli --help")
+        _assert_contains(main_help_output, ["import_gherkin", "export_gherkin", "parse_cucumber"])
+
+        # Test import_gherkin help
+        import_gherkin_help = _run_cmd("trcli import_gherkin --help")
+        _assert_contains(
+            import_gherkin_help,
+            [
+                "Upload Gherkin .feature file to TestRail",
+                "-f, --file",
+                "--section-id",
+                "--json-output",
+            ],
+        )
+
+        # Test export_gherkin help
+        export_gherkin_help = _run_cmd("trcli export_gherkin --help")
+        _assert_contains(
+            export_gherkin_help,
+            ["Export BDD test case from TestRail as .feature file", "--case-id", "--output"],
+        )
+
+        # Test parse_cucumber help
+        parse_cucumber_help = _run_cmd("trcli parse_cucumber --help")
+        _assert_contains(
+            parse_cucumber_help,
+            [
+                "Parse Cucumber JSON results and upload to TestRail",
+                "--upload-feature",
+                "--feature-section-id",
+                "--title",
+                "--suite-id",
+            ],
+        )
+
+    def test_bdd_error_handling_invalid_file(self):
+        """Test BDD commands with invalid file paths"""
+
+        # Test import_gherkin with non-existent file
+        invalid_import_output, return_code = _run_cmd_allow_failure(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  import_gherkin \\
+  -f "nonexistent.feature" \\
+  --section-id 2388
+        """
+        )
+        assert return_code != 0

@@ -18,8 +18,8 @@ from trcli.readers.junit_xml import JunitParser
     "--special-parser",
     metavar="",
     default="junit",
-    type=click.Choice(["junit", "saucectl"], case_sensitive=False),
-    help="Optional special parser option for specialized JUnit reports.",
+    type=click.Choice(["junit", "saucectl", "bdd"], case_sensitive=False),
+    help="Optional special parser option for specialized JUnit reports. Use 'bdd' for BDD framework JUnit output.",
 )
 @click.option(
     "-a",

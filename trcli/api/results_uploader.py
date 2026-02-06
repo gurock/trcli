@@ -43,19 +43,35 @@ class ResultsUploader(ProjectBasedClient):
         self.resolve_project()
         suite_id, suite_added = self.resolve_suite()
 
-        # Resolve missing test cases and sections
-        missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
-            self.project.project_id
+        # Check if all test cases already have case_id set (BDD mode or pre-existing cases)
+        # Note: In BDD mode, case_id can be -1 (marker for auto-creation) or a real ID
+        suite_data = self.api_request_handler.suites_data_from_provider
+        all_cases_have_ids = all(
+            test_case.case_id is not None and test_case.case_id != 0
+            for section in suite_data.testsections
+            for test_case in section.testcases
         )
-        if error_message:
-            self.environment.elog(
-                FAULT_MAPPING["error_checking_missing_item"].format(
-                    missing_item="missing test cases", error_message=error_message
-                )
+
+        if all_cases_have_ids:
+            self.environment.vlog("All test cases have IDs - skipping section/case creation checks")
+
+        # Resolve missing test cases and sections
+        # Skip this check if all cases already have IDs (BDD mode)
+        missing_test_cases = False
+        if not all_cases_have_ids:
+            missing_test_cases, error_message = self.api_request_handler.check_missing_test_cases_ids(
+                self.project.project_id
             )
+            if error_message:
+                self.environment.elog(
+                    FAULT_MAPPING["error_checking_missing_item"].format(
+                        missing_item="missing test cases", error_message=error_message
+                    )
+                )
+
         added_sections = None
         added_test_cases = None
-        if self.environment.auto_creation_response:
+        if self.environment.auto_creation_response and not all_cases_have_ids:
             added_sections, result_code = self.add_missing_sections(self.project.project_id)
             if result_code == -1:
                 revert_logs = self.rollback_changes(
@@ -107,27 +123,17 @@ class ResultsUploader(ProjectBasedClient):
                 else:
                     self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
-        # Update existing cases with JUnit references and custom fields if enabled
+        # Update existing cases with JUnit references if enabled
         case_update_results = None
         case_update_failed = []
         if hasattr(self.environment, "update_existing_cases") and self.environment.update_existing_cases == "yes":
-            self.environment.log("Updating existing cases with references and custom fields...")
+            self.environment.log("Updating existing cases with JUnit references...")
             case_update_results, case_update_failed = self.update_existing_cases_with_junit_refs(added_test_cases)
 
             if case_update_results.get("updated_cases"):
-                updated_count = len(case_update_results["updated_cases"])
-                # Count how many had refs vs fields updated
-                refs_updated = sum(1 for case in case_update_results["updated_cases"] if case.get("added_refs"))
-                fields_updated = sum(1 for case in case_update_results["updated_cases"] if case.get("updated_fields"))
-
-                msg_parts = []
-                if refs_updated:
-                    msg_parts.append(f"{refs_updated} with references")
-                if fields_updated:
-                    msg_parts.append(f"{fields_updated} with custom fields")
-
-                detail = f" ({', '.join(msg_parts)})" if msg_parts else ""
-                self.environment.log(f"Updated {updated_count} existing case(s){detail}.")
+                self.environment.log(
+                    f"Updated {len(case_update_results['updated_cases'])} existing case(s) with references."
+                )
             if case_update_results.get("failed_cases"):
                 self.environment.elog(f"Failed to update {len(case_update_results['failed_cases'])} case(s).")
 
@@ -238,7 +244,7 @@ class ResultsUploader(ProjectBasedClient):
 
     def update_existing_cases_with_junit_refs(self, added_test_cases: List[Dict] = None) -> Tuple[Dict, List]:
         """
-        Update existing test cases with references and custom fields from JUnit properties.
+        Update existing test cases with references from JUnit properties.
         Excludes newly created cases to avoid unnecessary API calls.
 
         :param added_test_cases: List of cases that were just created (to be excluded)
@@ -261,39 +267,39 @@ class ResultsUploader(ProjectBasedClient):
         # Process all test cases in all sections
         for section in self.api_request_handler.suites_data_from_provider.testsections:
             for test_case in section.testcases:
-                # Get refs and case fields for this test case
-                junit_refs = getattr(test_case, "_junit_case_refs", None)
-                case_fields = getattr(test_case, "case_fields", {})
-
-                # Only process cases that have a case_id (existing cases) and either JUnit refs or case fields
+                # Only process cases that have a case_id (existing cases) and JUnit refs
                 # AND exclude newly created cases
                 if (
                     test_case.case_id
-                    and (junit_refs or case_fields)
+                    and hasattr(test_case, "_junit_case_refs")
+                    and test_case._junit_case_refs
                     and int(test_case.case_id) not in newly_created_case_ids
                 ):
                     try:
-                        success, error_msg, added_refs, skipped_refs, updated_fields = (
+                        success, error_msg, added_refs, skipped_refs = (
                             self.api_request_handler.update_existing_case_references(
-                                test_case.case_id, junit_refs or "", case_fields, strategy
+                                test_case.case_id, test_case._junit_case_refs, strategy
                             )
                         )
 
                         if success:
-                            if added_refs or updated_fields:
-                                # Count as "updated" if references were added or fields were updated
+                            if added_refs:
+                                # Only count as "updated" if references were actually added
                                 update_results["updated_cases"].append(
                                     {
                                         "case_id": test_case.case_id,
                                         "case_title": test_case.title,
                                         "added_refs": added_refs,
                                         "skipped_refs": skipped_refs,
-                                        "updated_fields": updated_fields,
                                     }
                                 )
                             else:
-                                # If nothing was updated (all refs were duplicates and no fields), count as skipped
-                                reason = "All references already present" if skipped_refs else "No changes to apply"
+                                # If no refs were added (all were duplicates or no valid refs), count as skipped
+                                reason = (
+                                    "All references already present"
+                                    if skipped_refs
+                                    else "No valid references to process"
+                                )
                                 update_results["skipped_cases"].append(
                                     {
                                         "case_id": test_case.case_id,
@@ -320,15 +326,16 @@ class ResultsUploader(ProjectBasedClient):
 
                 elif (
                     test_case.case_id
-                    and (junit_refs or case_fields)
+                    and hasattr(test_case, "_junit_case_refs")
+                    and test_case._junit_case_refs
                     and int(test_case.case_id) in newly_created_case_ids
                 ):
-                    # Skip newly created cases - they already have their fields set during creation
+                    # Skip newly created cases - they already have their references set
                     update_results["skipped_cases"].append(
                         {
                             "case_id": test_case.case_id,
                             "case_title": test_case.title,
-                            "reason": "Newly created case - fields already set during creation",
+                            "reason": "Newly created case - references already set during creation",
                         }
                     )
 

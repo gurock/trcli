@@ -12,10 +12,11 @@ setup(
         "trcli.data_providers",
         "trcli.data_classes",
         "trcli.api",
+        "trcli.logging",
     ],
     include_package_data=True,
     install_requires=[
-        "click>=8.1.0,<8.2.2", # Note: click version 8.2.2 is yanked as of Aug 2, 2025!
+        "click>=8.1.0,<8.2.2",  # Note: click version 8.2.2 is yanked as of Aug 2, 2025!
         "pyyaml>=6.0.0,<7.0.0",
         "junitparser>=3.1.0,<4.0.0",
         "pyserde==0.12.*",
@@ -24,7 +25,7 @@ setup(
         "humanfriendly>=10.0.0,<11.0.0",
         "openapi-spec-validator>=0.5.0,<1.0.0",
         "beartype>=0.17.0,<1.0.0",
-        "prance"  # Does not use semantic versioning
+        "prance",  # Does not use semantic versioning
     ],
     entry_points="""
         [console_scripts]
