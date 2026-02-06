@@ -21,6 +21,7 @@ _released 12-01-2025
  - Improved caching to reduce redundant API calls during command execution, combined with existing N+1 query optimizations to improve performance for large report processing.
  - Decomposed monolithic class (ApiRequestHandler) into specialized handler modules.
 
+
 ## [1.12.6]
 
 _released 01-05-2026

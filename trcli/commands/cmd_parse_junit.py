@@ -46,7 +46,7 @@ from trcli.readers.junit_xml import JunitParser
     type=click.Choice(["append", "replace"], case_sensitive=False),
     default="append",
     metavar="",
-    help="Strategy for combining incoming values with existing case field values, whether to append or replace (default: append).",
+    help="Strategy for combining incoming values with existing case field values, whether to append or replace (Note: only applies to references default: append).",
 )
 @click.pass_context
 @pass_environment

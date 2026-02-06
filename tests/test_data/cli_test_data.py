@@ -71,7 +71,7 @@ trcli_description = (
     "    - parse_robot: Robot Framework XML Files\n"
     "    - parse_openapi: OpenAPI YML Files\n"
     "    - add_run: Create a new test run\n"
-    "    - labels: Manage labels (add, update, delete, list)\n"
+    "    - labels: Manage labels (projects, cases, and tests)\n"
     "    - references: Manage references (cases and runs)\n"
 )
 

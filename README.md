@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.12.5
+TestRail CLI v1.12.6
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.12.5
+TestRail CLI v1.12.6
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -155,7 +155,7 @@ Options:
                             JUnit properties (default: no).
   --update-strategy         Strategy for combining incoming values with
                             existing case field values, whether to append or
-                            replace (default: append).
+                            replace (Note: only applies to references default: append).
   --help              Show this message and exit.
 ```
 
@@ -1486,7 +1486,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.12.5
+TestRail CLI v1.12.6
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1610,7 +1610,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.12.5
+TestRail CLI v1.12.6
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

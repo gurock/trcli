@@ -107,7 +107,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
-    - labels: Manage labels (add, update, delete, list)
+    - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
