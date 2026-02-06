@@ -1778,6 +1778,164 @@ You can also enable this feature globally by setting `ENABLE_PARALLEL_PAGINATION
 - This is an experimental feature - please report any issues you encounter
 
 
+Logging and Observability
+--------------------------
+
+The TestRail CLI includes a comprehensive logging infrastructure designed specifically for CLI tools. It provides structured logging with automatic credential sanitization, making it easy to integrate with CI/CD pipelines and observability tools.
+
+### Key Features
+
+- **Structured Logging**: JSON (NDJSON) and text formats for machine-parseable logs
+- **Credential Sanitization**: Automatic masking of sensitive fields (passwords, API keys, tokens)
+- **File Rotation**: Automatic log rotation based on file size with configurable backup counts
+- **Flexible Configuration**: CLI flags, environment variables, YAML config files
+
+#### Automatic Logging
+
+TRCLI now automatically logs all operations using structured logging. Simply configure using environment variables:
+
+```bash
+# Enable JSON logs on stderr (default)
+export TRCLI_LOG_LEVEL=INFO
+export TRCLI_LOG_FORMAT=json
+
+# Run any TRCLI command - logging happens automatically
+trcli parse_junit --file report.xml --project "My Project" \
+  --host https://example.testrail.io --username user --password pass
+```
+
+#### Direct API Usage (Advanced)
+
+For custom integrations or scripts:
+
+```python
+from trcli.cli import Environment
+from trcli.logging.config import LoggingConfig
+
+# Initialize logging (reads from env vars)
+LoggingConfig.setup_logging()
+
+# Use TRCLI Environment with automatic logging
+env = Environment("my_command")
+env.logger.info("Operation completed", items=100, duration=1.5)
+
+# Or get a standalone logger
+from trcli.logging import get_logger
+logger = get_logger("trcli.custom")
+logger.info("Custom operation", status="success")
+```
+
+**JSON Output:**
+```json
+{"timestamp":"2024-01-20T10:15:30Z","level":"INFO","logger":"trcli.module","message":"Operation completed","items":100,"duration":1.5}
+```
+
+#### Configuration
+
+Configure logging using environment variables:
+
+```bash
+# Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+export TRCLI_LOG_LEVEL=INFO
+
+# Set output format (json or text)
+export TRCLI_LOG_FORMAT=json
+
+# Set output destination (stderr, stdout, or file)
+export TRCLI_LOG_OUTPUT=stderr
+
+# For file output, specify path and rotation settings
+export TRCLI_LOG_FILE=/var/log/trcli/app.log
+export TRCLI_LOG_MAX_BYTES=10485760  # 10MB
+export TRCLI_LOG_BACKUP_COUNT=5
+
+# Run TRCLI
+trcli parse_junit --file report.xml
+```
+
+Or use a YAML configuration file:
+
+```yaml
+# trcli_config.yml
+logging:
+  level: INFO
+  format: json
+  output: file
+  file_path: /var/log/trcli/app.log
+  max_bytes: 10485760
+  backup_count: 5
+```
+
+Then reference it:
+```bash
+trcli -c trcli_config.yml parse_junit --file report.xml
+```
+
+#### Automatic Credential Sanitization
+
+Credentials are automatically sanitized in logs to prevent security leaks:
+
+```python
+logger.info("Auth configured",
+    password="secret123",
+    api_key="sk_live_abc123",
+    token="bearer_xyz"
+)
+
+# Output automatically sanitizes:
+# {"password":"se***23","api_key":"sk***23","token":"be***yz"}
+```
+
+**Protected Fields:**
+- `password`, `passwd`, `pwd`
+- `api_key`, `apikey`, `key`
+- `token`, `auth_token`, `access_token`
+- `secret`, `credential`
+
+#### CI/CD Integration
+
+Output JSON logs for easy parsing in CI/CD pipelines:
+
+```bash
+# Output JSON logs for parsing
+export TRCLI_LOG_FORMAT=json
+trcli parse_junit --file report.xml 2>&1 | tee logs.json
+
+# Parse logs with jq
+cat logs.json | jq 'select(.level == "ERROR")'
+cat logs.json | jq 'select(.duration_seconds > 30)'
+cat logs.json | jq '.run_id' | sort | uniq
+```
+
+#### File Logging with Rotation
+
+For long-running processes, enable file logging with automatic rotation:
+
+```bash
+# Via environment variables
+export TRCLI_LOG_FILE=/var/log/trcli/app.log
+export TRCLI_LOG_MAX_BYTES=10485760  # 10MB
+export TRCLI_LOG_BACKUP_COUNT=5
+
+trcli parse_junit --file report.xml
+```
+
+**Benefits:**
+- Long-running processes don't fill disk
+- Automatic cleanup of old logs
+- Easy log management
+
+### Environment Variables Reference
+
+| Variable | Description | Values | Default |
+|----------|-------------|--------|---------|
+| `TRCLI_LOG_LEVEL` | Minimum log level | DEBUG, INFO, WARNING, ERROR, CRITICAL | INFO |
+| `TRCLI_LOG_FORMAT` | Output format | json, text | json |
+| `TRCLI_LOG_OUTPUT` | Output destination | stderr, stdout, file | stderr |
+| `TRCLI_LOG_FILE` | Log file path (when output=file) | File path | None |
+| `TRCLI_LOG_MAX_BYTES` | Max file size before rotation | Bytes | 10485760 |
+| `TRCLI_LOG_BACKUP_COUNT` | Number of backup files to keep | Integer | 5 |
+
 Contributing
 ------------
 Interested in contributing and helping improve the TestRail CLI client? Please start by looking into [CONTRIBUTING.md](https://github.com/gurock/trcli/blob/main/CONTRIBUTING.md) and creating an issue.

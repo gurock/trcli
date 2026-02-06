@@ -20,6 +20,10 @@ from trcli.constants import (
 from trcli.data_classes.data_parsers import FieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
+# Import structured logging infrastructure
+from trcli.logging import get_logger
+from trcli.logging.config import LoggingConfig
+
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
 trcli_folder = Path(__file__).parent
@@ -79,6 +83,20 @@ class Environment:
         self.proxy_user = None
         self.parallel_pagination = None
 
+        # Structured logger - lazy initialization
+        self._logger = None
+
+    @property
+    def logger(self):
+        """Get structured logger for this environment.
+
+        Lazy initialization - logger is created on first access.
+        Returns a StructuredLogger instance for the current command.
+        """
+        if self._logger is None:
+            self._logger = get_logger(f"trcli.{self.cmd}")
+        return self._logger
+
     @property
     def case_fields(self):
         return self._case_fields
@@ -104,23 +122,56 @@ class Environment:
         self._result_fields = fields_dict
 
     def log(self, msg: str, new_line=True, *args):
-        """Logs a message to stdout only if silent mode is disabled."""
+        """Logs a message to stdout only if silent mode is disabled.
+
+        Also logs to structured logger for observability.
+        """
         if not self.silent:
             if args:
                 msg %= args
             click.echo(msg, file=sys.stdout, nl=new_line)
 
+            # Also log to structured logger (backward compatible)
+            try:
+                self.logger.info(msg)
+            except Exception:
+                # Silently fail if structured logging has issues
+                pass
+
     def vlog(self, msg: str, *args):
-        """Logs a message to stdout only if the verbose option is enabled."""
+        """Logs a message to stdout only if the verbose option is enabled.
+
+        Also logs to structured logger at DEBUG level.
+        """
         if self.verbose:
-            self.log(msg, *args)
+            if args:
+                msg %= args
+            click.echo(msg, file=sys.stdout)
+
+            # Also log to structured logger
+            try:
+                self.logger.debug(msg)
+            except Exception:
+                # Silently fail if structured logging has issues
+                pass
 
     @staticmethod
     def elog(msg: str, new_line=True, *args):
-        """Logs a message to stderr."""
+        """Logs a message to stderr.
+
+        Also logs to structured logger at ERROR level.
+        """
         if args:
             msg %= args
         click.echo(msg, file=sys.stderr, nl=new_line)
+
+        # Also log to structured logger
+        try:
+            error_logger = get_logger("trcli.error")
+            error_logger.error(msg)
+        except Exception:
+            # Silently fail if structured logging has issues
+            pass
 
     def get_progress_bar(self, results_amount: int, prefix: str):
         disabled = True if self.silent else False
@@ -361,3 +412,13 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
 
     environment.parse_config_file(context)
     environment.set_parameters(context)
+
+    # Initialize structured logging system
+    # This reads configuration from:
+    # 1. Environment variables (TRCLI_LOG_LEVEL, TRCLI_LOG_FORMAT, etc.)
+    # 2. Config file (if 'logging' section exists)
+    try:
+        LoggingConfig.setup_logging(environment.config)
+    except Exception as e:
+        # Fallback to stderr if logging setup fails - don't block execution
+        click.echo(f"Warning: Failed to initialize logging: {e}", file=sys.stderr)

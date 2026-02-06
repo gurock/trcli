@@ -12,6 +12,7 @@ setup(
         "trcli.data_providers",
         "trcli.data_classes",
         "trcli.api",
+        "trcli.logging",
     ],
     include_package_data=True,
     install_requires=[
