@@ -117,66 +117,98 @@ class CaseHandler:
         return response
 
     def update_existing_case_references(
-        self, case_id: int, junit_refs: str, strategy: str = "append"
-    ) -> Tuple[bool, str, List[str], List[str]]:
+        self, case_id: int, junit_refs: str, case_fields: dict = None, strategy: str = "append"
+    ) -> Tuple[bool, str, List[str], List[str], List[str]]:
         """
-        Update existing case references with values from JUnit properties.
+        Update existing case references and custom fields with values from JUnit properties.
 
         :param case_id: ID of the test case
         :param junit_refs: References from JUnit testrail_case_field property
-        :param strategy: 'append' or 'replace'
-        :returns: Tuple with (success, error_message, added_refs, skipped_refs)
+        :param case_fields: Dictionary of custom case fields to update (e.g., {'custom_preconds': 'value'})
+        :param strategy: 'append' or 'replace' (applies to refs field only)
+        :returns: Tuple with (success, error_message, added_refs, skipped_refs, updated_fields)
         """
+        updated_fields = []
+
+        # Handle case where there are no refs but there are case fields to update
+        if (not junit_refs or not junit_refs.strip()) and not case_fields:
+            return True, None, [], [], []  # Nothing to process
+
         if not junit_refs or not junit_refs.strip():
-            return True, None, [], []  # No references to process
-
-        # Parse and deduplicate JUnit references using utility function
-        junit_ref_list = deduplicate_references(parse_references(junit_refs))
-
-        if not junit_ref_list:
-            return False, "No valid references found in JUnit property", [], []
-
-        # Get current case data
-        case_response = self.client.send_get(f"get_case/{case_id}")
-        if case_response.error_message:
-            return False, case_response.error_message, [], []
-
-        existing_refs = case_response.response_text.get("refs", "") or ""
-
-        if strategy == "replace":
-            # Replace strategy: use JUnit refs as-is
-            new_refs = join_references(junit_ref_list)
-            added_refs = junit_ref_list
+            # No refs to process, but we have case fields to update
+            new_refs = None
+            added_refs = []
             skipped_refs = []
         else:
-            # Append strategy: combine with existing refs, avoiding duplicates
-            existing_ref_list = parse_references(existing_refs)
+            # Parse and deduplicate JUnit references using utility function
+            junit_ref_list = deduplicate_references(parse_references(junit_refs))
 
-            # Determine which references are new vs duplicates
-            added_refs = [ref for ref in junit_ref_list if ref not in existing_ref_list]
-            skipped_refs = [ref for ref in junit_ref_list if ref in existing_ref_list]
+            if not junit_ref_list:
+                # If we have case fields, continue; otherwise return error
+                if not case_fields:
+                    return False, "No valid references found in JUnit property", [], [], []
+                new_refs = None
+                added_refs = []
+                skipped_refs = []
+            else:
+                # Get current case data
+                case_response = self.client.send_get(f"get_case/{case_id}")
+                if case_response.error_message:
+                    return False, case_response.error_message, [], [], []
 
-            # If no new references to add, return current state
-            if not added_refs:
-                return True, None, added_refs, skipped_refs
+                existing_refs = case_response.response_text.get("refs", "") or ""
 
-            # Combine references
-            combined_list = existing_ref_list + added_refs
-            new_refs = join_references(combined_list)
+                if strategy == "replace":
+                    # Replace strategy: use JUnit refs as-is
+                    new_refs = join_references(junit_ref_list)
+                    added_refs = junit_ref_list
+                    skipped_refs = []
+                else:
+                    # Append strategy: combine with existing refs, avoiding duplicates
+                    existing_ref_list = parse_references(existing_refs)
 
-        # Validate 2000 character limit for test case references
-        is_valid, error_msg = validate_references_length(new_refs, self.MAX_CASE_REFERENCES_LENGTH)
-        if not is_valid:
-            return False, error_msg, [], []
+                    # Determine which references are new vs duplicates
+                    added_refs = [ref for ref in junit_ref_list if ref not in existing_ref_list]
+                    skipped_refs = [ref for ref in junit_ref_list if ref in existing_ref_list]
+
+                    # If no new references to add and no case fields, return current state
+                    if not added_refs and not case_fields:
+                        return True, None, added_refs, skipped_refs, []
+
+                    # Combine references
+                    combined_list = existing_ref_list + added_refs
+                    new_refs = join_references(combined_list)
+
+                # Validate 2000 character limit for test case references
+                if new_refs:
+                    is_valid, error_msg = validate_references_length(new_refs, self.MAX_CASE_REFERENCES_LENGTH)
+                    if not is_valid:
+                        return False, error_msg, [], [], []
+
+        # Build update data with refs and custom case fields
+        update_data = {}
+        if new_refs is not None:
+            update_data["refs"] = new_refs
+
+        # Add custom case fields to the update
+        if case_fields:
+            for field_name, field_value in case_fields.items():
+                # Skip special internal fields that shouldn't be updated
+                if field_name not in ["case_id", "section_id", "result"]:
+                    update_data[field_name] = field_value
+                    updated_fields.append(field_name)
+
+        # Only update if we have data to send
+        if not update_data:
+            return True, None, added_refs, skipped_refs, updated_fields
 
         # Update the case
-        update_data = {"refs": new_refs}
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
 
         if update_response.error_message:
-            return False, update_response.error_message, [], []
+            return False, update_response.error_message, [], [], []
 
-        return True, None, added_refs, skipped_refs
+        return True, None, added_refs, skipped_refs, updated_fields
 
     def delete_cases(self, suite_id: int, added_cases: List[Dict]) -> Tuple[Dict, str]:
         """
