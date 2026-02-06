@@ -77,6 +77,7 @@ class Environment:
         self.assign_failed_to = None  # Add proxy related attributes
         self.noproxy = None
         self.proxy_user = None
+        self.parallel_pagination = None
 
     @property
     def case_fields(self):
@@ -90,7 +91,7 @@ class Environment:
             exit(1)
         self._case_fields = fields_dict
 
-    @property 
+    @property
     def result_fields(self):
         return self._result_fields
 
@@ -143,6 +144,21 @@ class Environment:
             param_sources_types = [ParameterSource.DEFAULT]
         else:
             param_sources_types = [ParameterSource.DEFAULT, ParameterSource.ENVIRONMENT]
+
+        # First, get parameters from parent context (global options like --verbose)
+        if context.parent:
+            for param, value in context.parent.params.items():
+                if param == "config":
+                    continue
+                param_config_value = self.params_from_config.get(param, None)
+                param_source = context.parent.get_parameter_source(param)
+
+                if param_source in param_sources_types and param_config_value is not None:
+                    setattr(self, param, param_config_value)
+                else:
+                    setattr(self, param, value)
+
+        # Then, process current context parameters (subcommand-specific options)
         for param, value in context.params.items():
             # Don't set config again
             # Skip setting config again
@@ -202,18 +218,11 @@ class Environment:
                 for page_content in file_content:
                     if page_content:
                         self.params_from_config.update(page_content)
-                        if (
-                            self.params_from_config.get("config") is not None
-                            and self.default_config_file
-                        ):
+                        if self.params_from_config.get("config") is not None and self.default_config_file:
                             self.default_config_file = False
-                            self.parse_params_from_config_file(
-                                self.params_from_config["config"]
-                            )
+                            self.parse_params_from_config_file(self.params_from_config["config"])
         except (yaml.YAMLError, ValueError, TypeError) as e:
-            self.elog(
-                FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path)
-            )
+            self.elog(FAULT_MAPPING["yaml_file_parse_issue"].format(file_path=file_path))
             self.elog(f"Error details:\n{e}")
             if not self.default_config_file:
                 exit(1)
@@ -280,10 +289,13 @@ class TRCLI(click.MultiCommand):
 )
 @click.option("-u", "--username", type=click.STRING, metavar="", help="Username.")
 @click.option("-p", "--password", type=click.STRING, metavar="", help="Password.")
-@click.option("-k", "--key", metavar="", help="API key used for authenticating with TestRail. This must be used in conjunction with --username. If provided, --password is not required.")
 @click.option(
-    "-v", "--verbose", is_flag=True, help="Output all API calls and their results."
+    "-k",
+    "--key",
+    metavar="",
+    help="API key used for authenticating with TestRail. This must be used in conjunction with --username. If provided, --password is not required.",
 )
+@click.option("-v", "--verbose", is_flag=True, help="Output all API calls and their results.")
 @click.option("--verify", is_flag=True, help="Verify the data was added correctly.")
 @click.option("--insecure", is_flag=True, help="Allow insecure requests.")
 @click.option(
@@ -328,22 +340,14 @@ class TRCLI(click.MultiCommand):
     help="Silence stdout",
     default=False,
 )
+@click.option("--proxy", metavar="", help="Proxy address and port (e.g., http://proxy.example.com:8080).")
+@click.option("--proxy-user", metavar="", help="Proxy username and password in the format 'username:password'.")
 @click.option(
-    "--proxy",
-    metavar="",
-    help="Proxy address and port (e.g., http://proxy.example.com:8080)."
+    "--noproxy", metavar="", help="Comma-separated list of hostnames to bypass the proxy (e.g., localhost,127.0.0.1)."
 )
 @click.option(
-    "--proxy-user",
-    metavar="",
-    help="Proxy username and password in the format 'username:password'."
+    "--parallel-pagination", is_flag=True, help="Enable parallel pagination for faster case fetching (experimental)."
 )
-@click.option(
-    "--noproxy",
-    metavar="",
-    help="Comma-separated list of hostnames to bypass the proxy (e.g., localhost,127.0.0.1)."
-)
-
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""
     if not sys.argv[1:]:
@@ -354,6 +358,6 @@ def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     if not context.invoked_subcommand:
         print(MISSING_COMMAND_SLOGAN)
         exit(2)
-    
+
     environment.parse_config_file(context)
     environment.set_parameters(context)

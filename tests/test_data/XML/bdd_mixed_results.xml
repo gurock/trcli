@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="BDD Test Suite" tests="3" failures="1" errors="0" skipped="1" time="2.5">
+  <testsuite name="User Login" tests="3" failures="1" errors="0" skipped="1" time="2.5">
+    <properties>
+      <property name="testrail_case_id" value="C25293"/>
+    </properties>
+
+    <!-- Scenario 1: Passed -->
+    <testcase classname="User Login" name="Successful login with valid credentials" time="1.0"/>
+
+    <!-- Scenario 2: Failed -->
+    <testcase classname="User Login" name="Invalid password" time="1.5">
+      <failure type="AssertionError" message="Expected error message but got success">
+Expected: Login denied with error "Invalid credentials"
+Actual: Login successful
+at test_login.py:45
+      </failure>
+    </testcase>
+
+    <!-- Scenario 3: Skipped -->
+    <testcase classname="User Login" name="Locked account" time="0.0">
+      <skipped message="Feature not implemented yet"/>
+    </testcase>
+  </testsuite>
+</testsuites>

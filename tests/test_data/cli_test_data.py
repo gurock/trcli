@@ -62,11 +62,17 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
     "key": "key_from_custom_config",
 }
 
-trcli_description = ('Supported and loaded modules:\n'
-                     '    - parse_junit: JUnit XML Files (& Similar)\n'
-                     '    - parse_robot: Robot Framework XML Files\n'
-                     '    - parse_openapi: OpenAPI YML Files\n'
-                     '    - add_run: Create a new test run\n'
-                     '    - labels: Manage labels (projects, cases, and tests)\n')
+trcli_description = (
+    "Supported and loaded modules:\n"
+    "    - parse_junit: JUnit XML Files (& Similar)\n"
+    "    - parse_cucumber: Cucumber JSON results (BDD)\n"
+    "    - import_gherkin: Upload .feature files to TestRail BDD\n"
+    "    - export_gherkin: Export BDD test cases as .feature files\n"
+    "    - parse_robot: Robot Framework XML Files\n"
+    "    - parse_openapi: OpenAPI YML Files\n"
+    "    - add_run: Create a new test run\n"
+    "    - labels: Manage labels (add, update, delete, list)\n"
+    "    - references: Manage references (cases and runs)\n"
+)
 
 trcli_help_description = "TestRail CLI"
