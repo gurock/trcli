@@ -87,8 +87,21 @@ class RunHandler:
             include_all=include_all,
             refs=refs,
         )
+
+        # Validate that we have test cases to include in the run
+        # Empty runs are not allowed unless include_all is True
+        if not include_all and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0):
+            error_msg = (
+                "Cannot create test run: No test cases were matched.\n"
+                "  - For parse_junit: Ensure tests have automation_id/test ids that matches existing cases in TestRail\n"
+                "  - For parse_cucumber: Ensure features have names or @C test id tag matching the existing BDD cases"
+            )
+            return None, error_msg
+
         if not plan_id:
             response = self.client.send_post(f"add_run/{project_id}", add_run_data)
+            if response.error_message:
+                return None, response.error_message
             run_id = response.response_text.get("id")
         else:
             if config_ids:
@@ -102,6 +115,8 @@ class RunHandler:
             else:
                 entry_data = add_run_data
             response = self.client.send_post(f"add_plan_entry/{plan_id}", entry_data)
+            if response.error_message:
+                return None, response.error_message
             run_id = response.response_text["runs"][0]["id"]
         return run_id, response.error_message
 
