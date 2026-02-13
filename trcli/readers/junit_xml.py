@@ -107,10 +107,69 @@ class JunitParser(FileParser):
             for case_props in case.iterchildren(Properties):
                 for prop in case_props.iterchildren(Property):
                     if prop.name == "test_id":
-                        case_id = int(prop.value.lower().replace("c", ""))
+                        case_id = self._parse_multiple_case_ids(prop.value)
                         return case_id, case_name
 
         return case_id, case_name
+
+    @staticmethod
+    def _parse_multiple_case_ids(test_id_value: str) -> Union[int, List[int], None]:
+        """
+        Parse single or multiple case IDs from a test_id property value.
+
+        Supports comma-separated case IDs for mapping multiple TestRail cases to one JUnit test.
+
+        Examples:
+          - "C123" -> 123 (int)
+          - "C123, C456, C789" -> [123, 456, 789] (list)
+          - "123, 456, 789" -> [123, 456, 789] (list)
+          - " C123 , C456 " -> [123, 456] (list)
+          - "C123, C123" -> 123 (int, deduplicated)
+
+        :param test_id_value: Value of the test_id property
+        :return: Single case ID (int), multiple case IDs (List[int]), or None if invalid
+        """
+        if not test_id_value or not isinstance(test_id_value, str):
+            return None
+
+        test_id_value = test_id_value.strip()
+        if not test_id_value:
+            return None
+
+        # Check if comma-separated (multiple IDs)
+        if "," in test_id_value:
+            case_ids = []
+            parts = [part.strip() for part in test_id_value.split(",")]
+
+            for part in parts:
+                if not part:
+                    continue
+
+                # Remove 'C' or 'c' prefix if present
+                cleaned = part.lower().replace("c", "", 1).strip()
+
+                # Check if it's a valid numeric ID
+                if cleaned.isdigit():
+                    case_id = int(cleaned)
+                    # Deduplicate
+                    if case_id not in case_ids:
+                        case_ids.append(case_id)
+
+            # Return None if no valid IDs found
+            if not case_ids:
+                return None
+            # Return int for single ID (backwards compatibility after deduplication)
+            elif len(case_ids) == 1:
+                return case_ids[0]
+            # Return list for multiple IDs
+            else:
+                return case_ids
+        else:
+            # Single case ID (original behavior)
+            cleaned = test_id_value.lower().replace("c", "", 1).strip()
+            if cleaned.isdigit():
+                return int(cleaned)
+            return None
 
     def _get_status_id_for_case_result(self, case: JUnitTestCase) -> Union[int, None]:
         if case.is_passed:
@@ -202,47 +261,93 @@ class JunitParser(FileParser):
             result_fields_dict, case_fields_dict = self._resolve_case_fields(result_fields, case_fields)
             status_id = self._get_status_id_for_case_result(case)
             comment = self._get_comment_for_case_result(case)
-            result = TestRailResult(
-                case_id=case_id,
-                elapsed=case.time,
-                attachments=attachments,
-                result_fields=result_fields_dict,
-                custom_step_results=result_steps,
-                status_id=status_id,
-                comment=comment,
-            )
 
-            for comment in reversed(comments):
-                result.prepend_comment(comment)
-            if sauce_session:
-                result.prepend_comment(f"SauceLabs session: {sauce_session}")
-
-            automation_id = case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None) or case._elem.get(
+            # Prepare data that will be shared across all case IDs (if multiple)
+            base_automation_id = case_fields_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID, None) or case._elem.get(
                 OLD_SYSTEM_NAME_AUTOMATION_ID, automation_id
             )
+            base_title = TestRailCaseFieldsOptimizer.extract_last_words(
+                case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH
+            )
 
-            # Create TestRailCase kwargs
-            case_kwargs = {
-                "title": TestRailCaseFieldsOptimizer.extract_last_words(
-                    case_name, TestRailCaseFieldsOptimizer.MAX_TESTCASE_TITLE_LENGTH
-                ),
-                "case_id": case_id,
-                "result": result,
-                "custom_automation_id": automation_id,
-                "case_fields": case_fields_dict,
-            }
+            # Check if case_id is a list (multiple IDs) or single value
+            if isinstance(case_id, list):
+                # Multiple case IDs: create a TestRailCase for each ID with same result data
+                for individual_case_id in case_id:
+                    # Create a new result object for each case (avoid sharing references)
+                    result = TestRailResult(
+                        case_id=individual_case_id,
+                        elapsed=case.time,
+                        attachments=attachments.copy() if attachments else [],
+                        result_fields=result_fields_dict.copy(),
+                        custom_step_results=result_steps.copy() if result_steps else [],
+                        status_id=status_id,
+                        comment=comment,
+                    )
 
-            # Only set refs field if case_refs has actual content
-            if case_refs and case_refs.strip():
-                case_kwargs["refs"] = case_refs
+                    # Apply comment prepending
+                    for comment_text in reversed(comments):
+                        result.prepend_comment(comment_text)
+                    if sauce_session:
+                        result.prepend_comment(f"SauceLabs session: {sauce_session}")
 
-            test_case = TestRailCase(**case_kwargs)
+                    # Create TestRailCase kwargs
+                    case_kwargs = {
+                        "title": base_title,
+                        "case_id": individual_case_id,
+                        "result": result,
+                        "custom_automation_id": base_automation_id,
+                        "case_fields": case_fields_dict.copy(),
+                    }
 
-            # Store JUnit references as a temporary attribute for case updates (not serialized)
-            if case_refs and case_refs.strip():
-                test_case._junit_case_refs = case_refs
+                    # Only set refs field if case_refs has actual content
+                    if case_refs and case_refs.strip():
+                        case_kwargs["refs"] = case_refs
 
-            test_cases.append(test_case)
+                    test_case = TestRailCase(**case_kwargs)
+
+                    # Store JUnit references as a temporary attribute for case updates (not serialized)
+                    if case_refs and case_refs.strip():
+                        test_case._junit_case_refs = case_refs
+
+                    test_cases.append(test_case)
+            else:
+                # Single case ID: existing behavior (backwards compatibility)
+                result = TestRailResult(
+                    case_id=case_id,
+                    elapsed=case.time,
+                    attachments=attachments,
+                    result_fields=result_fields_dict,
+                    custom_step_results=result_steps,
+                    status_id=status_id,
+                    comment=comment,
+                )
+
+                for comment_text in reversed(comments):
+                    result.prepend_comment(comment_text)
+                if sauce_session:
+                    result.prepend_comment(f"SauceLabs session: {sauce_session}")
+
+                # Create TestRailCase kwargs
+                case_kwargs = {
+                    "title": base_title,
+                    "case_id": case_id,
+                    "result": result,
+                    "custom_automation_id": base_automation_id,
+                    "case_fields": case_fields_dict,
+                }
+
+                # Only set refs field if case_refs has actual content
+                if case_refs and case_refs.strip():
+                    case_kwargs["refs"] = case_refs
+
+                test_case = TestRailCase(**case_kwargs)
+
+                # Store JUnit references as a temporary attribute for case updates (not serialized)
+                if case_refs and case_refs.strip():
+                    test_case._junit_case_refs = case_refs
+
+                test_cases.append(test_case)
 
         return test_cases
 
