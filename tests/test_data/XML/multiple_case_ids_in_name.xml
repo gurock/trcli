@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Multiple Case IDs - Name-Based Matching" tests="5" failures="0" errors="0" time="20.0">
+  <testsuite name="Combined Test Suite for Names" tests="5" failures="0" errors="0" time="20.0">
+
+    <!-- Example 1: Multiple IDs in brackets at the beginning -->
+    <testcase classname="com.example.LoginTest" name="[C1050389, C1050390, C1050391] test_login_flow" time="5.0">
+      <system-out>Combined test for login scenarios: valid credentials, invalid password, locked account</system-out>
+    </testcase>
+
+    <!-- Example 2: Multiple IDs in brackets at the end -->
+    <testcase classname="com.example.LogoutTest" name="test_logout_scenarios [C1050392, C1050393]" time="3.0">
+      <system-out>Combined test for logout scenarios: normal logout, session timeout</system-out>
+    </testcase>
+
+    <!-- Example 3: Multiple IDs using underscore-separated format -->
+    <testcase classname="com.example.APITest" name="C1050394_C1050395_C1050396_test_api_endpoints" time="7.0">
+       <failure type="AssertionError" message="API endpoint did not return expected response for one of the cases">
+        Expected: API endpoint should return expected response for all cases
+        Actual: API endpoint returned expected response for C1050394 and C1050395, but failed for C1050396
+      </failure>
+    </testcase>
+
+    <!-- Example 4: Single case ID (backwards compatibility - bracket format) -->
+    <testcase classname="com.example.SingleTest" name="test_registration [C1050397]" time="2.0">
+      <failure type="AssertionError" message="Expected error message 'Invalid credentials' was not displayed">
+        Expected: Registration failed with error "Invalid credentials"
+        Actual: Registration succeeded without error
+      </failure>
+    </testcase>
+
+    <!-- Example 5: Single case ID (backwards compatibility - underscore format) -->
+    <testcase classname="com.example.SingleTest" name="C1050398_test_password_reset" time="3.0">
+      <system-out>Single test case using underscore format</system-out>
+    </testcase>
+
+  </testsuite>
+</testsuites>

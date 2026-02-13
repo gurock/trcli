@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Multiple Case IDs Test Suite" tests="3" failures="0" errors="0" time="10.0">
+  <testsuite name="Combined Test Suite" tests="3" failures="0" errors="0" time="10.0">
+    <!-- Test 1: Single case ID (backwards compatibility) -->
+    <testcase classname="com.example.SingleTest" name="test_single_case" time="2.0">
+      <properties>
+        <property name="test_id" value="C1050381"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Multiple case IDs -->
+    <testcase classname="com.example.CombinedTest" name="test_combined_scenarios" time="5.0">
+      <properties>
+        <property name="test_id" value="C1050382, C1050383, C1050384"/>
+        <property name="testrail_result_comment" value="Combined test covering multiple scenarios"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 3: Multiple case IDs with various whitespace -->
+    <testcase classname="com.example.ParamTest" name="test_parameterized" time="3.0">
+      <properties>
+        <property name="test_id" value="C1050385,C1050386,C1050387,C1050388"/>
+      </properties>
+      <failure type="AssertionError" message="Some assertions failed in parameterized test">
+          Expected: Login failed
+          Actual: Login succeeded
+      </failure>
+    </testcase>
+  </testsuite>
+</testsuites>
