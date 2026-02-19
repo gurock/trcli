@@ -6,9 +6,19 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.1]
+
+_released 02-19-2025
+
+### Added
+ - Added support for multiple case ids in a single test execution.
+
+### Fixed
+ - Fixed an issue where TRCLI crashes with an error if there are no matching cases and plan id is specified.
+
 ## [1.13.0]
 
-_released 12-01-2025
+_released 02-06-2025
 
 ### Added
  - **New Command: `parse_cucumber`** - Parse Cucumber JSON reports and upload to TestRail

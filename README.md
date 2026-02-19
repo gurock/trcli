@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.13.0
+TestRail CLI v1.13.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.13.0
+TestRail CLI v1.13.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -255,6 +255,17 @@ From an implementation perspective, you can do this in one of two ways:
 </testsuites>
 ```
 
+   **Multiple Case IDs (name-based):**
+   You can map a single test to multiple TestRail case IDs using comma-separated values in brackets:
+   ```xml
+   <testcase classname="tests.LoginTests" name="[C123, C456, C789] test_case_1" time="650" />
+   ```
+   Or using underscore-separated format:
+   ```xml
+   <testcase classname="tests.APITests" name="C200_C201_C202_test_api_endpoints" time="500" />
+   ```
+   When a test with multiple case IDs executes, all mapped case IDs receive the same result status.
+
 2. Map by setting the case ID in a test case property, using case-matcher `property`:
 ```xml
 <testsuites name="test suites root">
@@ -267,6 +278,18 @@ From an implementation perspective, you can do this in one of two ways:
   </testsuite>
 </testsuites>
 ```
+
+   **Multiple Case IDs (property-based):**
+   You can map a single test to multiple TestRail case IDs using comma-separated values:
+   ```xml
+   <testcase classname="tests.LoginTests" name="test_combined_scenarios" time="650">
+     <properties>
+         <property name="test_id" value="C123, C456, C789"/>
+     </properties>
+   </testcase>
+   ```
+   When a test with multiple case IDs executes, all mapped case IDs receive the same result status.
+
 > **Important usage notes:**
 > - We recommend using the `-n` option to skip creating new test cases due to the potential risk of duplication 
 
@@ -1486,7 +1509,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.13.0
+TestRail CLI v1.13.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1610,7 +1633,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.13.0
+TestRail CLI v1.13.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
