@@ -8,13 +8,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.13.1]
 
-_released 02-17-2025
+_released 02-19-2025
 
 ### Added
- - 
+ - Added support for multiple case ids in a single test execution.
 
 ### Fixed
- - Fixed an issue where TRCLI crashes if there are no cases to add to run and plan id is specified
+ - Fixed an issue where TRCLI crashes with an error if there are no matching cases and plan id is specified.
 
 ## [1.13.0]
 
