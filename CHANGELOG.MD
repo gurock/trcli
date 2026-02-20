@@ -6,6 +6,15 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.2]
+
+_released 02-30-2025
+
+### Added
+ - Enhanced version update support
+ - Improved attachment handling
+ - Improved glob support for multi-file processing
+
 ## [1.13.1]
 
 _released 02-19-2025
