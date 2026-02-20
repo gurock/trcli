@@ -25,6 +25,7 @@ setup(
         "humanfriendly>=10.0.0,<11.0.0",
         "openapi-spec-validator>=0.5.0,<1.0.0",
         "beartype>=0.17.0,<1.0.0",
+        "packaging>=20.0",
         "prance",  # Does not use semantic versioning
     ],
     entry_points="""
