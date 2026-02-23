@@ -16,8 +16,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Check if release branch
+        id: check_release
+        run: |
+          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+
+          if echo "$SOURCE_BRANCH" | grep -qE "^release/"; then
+            echo "is_release=true" >> "$GITHUB_OUTPUT"
+            echo "Release branch detected: $SOURCE_BRANCH"
+          else
+            echo "is_release=false" >> "$GITHUB_OUTPUT"
+            echo "Non-release branch: $SOURCE_BRANCH"
+          fi
+
       - name: Check for Issue Reference
         id: check_issue
+        if: steps.check_release.outputs.is_release == 'false'
         run: |
           PR_TITLE="${{ github.event.pull_request.title }}"
           PR_BODY="${{ github.event.pull_request.body }}"
@@ -51,7 +65,7 @@ jobs:
           fi
 
       - name: Comment on PR if issue reference missing
-        if: steps.check_issue.outputs.issue_found == 'false'
+        if: steps.check_release.outputs.is_release == 'false' && steps.check_issue.outputs.issue_found == 'false'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -101,6 +115,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
+            const isRelease = '${{ steps.check_release.outputs.is_release }}' === 'true';
             const issueFound = '${{ steps.check_issue.outputs.issue_found }}' === 'true';
             const issueKey = '${{ steps.check_issue.outputs.issue_key }}';
             const issueType = '${{ steps.check_issue.outputs.issue_type }}';
@@ -109,7 +124,9 @@ jobs:
             const hasSolution = '${{ steps.check_description.outputs.has_solution }}' === 'true';
             const hasTestSteps = '${{ steps.check_description.outputs.has_test_steps }}' === 'true';
 
-            const issueStatus = issueFound
+            const issueStatus = isRelease
+              ? '➖ Skipped (Release Branch)'
+              : issueFound
               ? `✅ Found: ${issueKey} (${issueType})`
               : '⚠️ Missing';
 
@@ -122,9 +139,11 @@ jobs:
             | Solution Description | ${hasSolution ? '✅ Present' : '⚠️ Missing'} |
             | Test Steps | ${hasTestSteps ? '✅ Present' : '⚠️ Missing'} |
 
-            ${issueFound && hasSolution && hasTestSteps
-              ? '✅ All checks passed!'
-              : '⚠️ Some optional sections are missing.'}
+            ${isRelease
+              ? '➖ Release branch - issue reference check skipped.'
+              : (issueFound && hasSolution && hasTestSteps
+                ? '✅ All checks passed!'
+                : '⚠️ Some optional sections are missing.')}
             `;
 
             await core.summary.addRaw(summary).write();
