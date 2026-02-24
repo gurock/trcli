@@ -229,6 +229,7 @@ class TestConfigIntegration(unittest.TestCase):
         config_file.write_text(
             f"""
 logging:
+  enabled: true
   level: DEBUG
   format: json
   output: file
@@ -262,6 +263,7 @@ logging:
         """Test environment variable configuration"""
         log_file = Path(self.temp_dir) / "env_test.log"
 
+        os.environ["TRCLI_LOG_ENABLED"] = "true"
         os.environ["TRCLI_LOG_LEVEL"] = "WARNING"
         os.environ["TRCLI_LOG_FORMAT"] = "json"
         os.environ["TRCLI_LOG_OUTPUT"] = "file"
