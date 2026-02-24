@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.13.1
+TestRail CLI v1.13.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.13.1
+TestRail CLI v1.13.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -1509,7 +1509,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.13.1
+TestRail CLI v1.13.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1633,7 +1633,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.13.1
+TestRail CLI v1.13.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
@@ -1815,17 +1815,22 @@ The TestRail CLI includes a comprehensive logging infrastructure designed specif
 
 #### Automatic Logging
 
-TRCLI now automatically logs all operations using structured logging. Simply configure using environment variables:
+TRCLI supports structured logging (disabled by default). To enable logging, configure using environment variables:
 
 ```bash
-# Enable JSON logs on stderr (default)
+# Enable logging
+export TRCLI_LOG_ENABLED=true
+
+# Configure log level and format
 export TRCLI_LOG_LEVEL=INFO
 export TRCLI_LOG_FORMAT=json
 
-# Run any TRCLI command - logging happens automatically
+# Run any TRCLI command - logging will be active
 trcli parse_junit --file report.xml --project "My Project" \
   --host https://example.testrail.io --username user --password pass
 ```
+
+**Note:** Logging is disabled by default. Set `TRCLI_LOG_ENABLED=true` to enable structured logging output.
 
 #### Direct API Usage (Advanced)
 
@@ -1855,9 +1860,12 @@ logger.info("Custom operation", status="success")
 
 #### Configuration
 
-Configure logging using environment variables:
+Logging is **disabled by default**. To enable, configure using environment variables:
 
 ```bash
+# Enable logging (master switch - required)
+export TRCLI_LOG_ENABLED=true  # true/false, yes/no, 1/0, on/off (default: false)
+
 # Set log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 export TRCLI_LOG_LEVEL=INFO
 
@@ -1872,7 +1880,7 @@ export TRCLI_LOG_FILE=/var/log/trcli/app.log
 export TRCLI_LOG_MAX_BYTES=10485760  # 10MB
 export TRCLI_LOG_BACKUP_COUNT=5
 
-# Run TRCLI
+# Run TRCLI with logging enabled
 trcli parse_junit --file report.xml
 ```
 
@@ -1881,6 +1889,7 @@ Or use a YAML configuration file:
 ```yaml
 # trcli_config.yml
 logging:
+  enabled: true       # Must be true to enable logging (default: false)
   level: INFO
   format: json
   output: file
@@ -1952,6 +1961,7 @@ trcli parse_junit --file report.xml
 
 | Variable | Description | Values | Default |
 |----------|-------------|--------|---------|
+| `TRCLI_LOG_ENABLED` | Enable/disable all logging (master switch) | true, false, yes, no, 1, 0, on, off | **false** |
 | `TRCLI_LOG_LEVEL` | Minimum log level | DEBUG, INFO, WARNING, ERROR, CRITICAL | INFO |
 | `TRCLI_LOG_FORMAT` | Output format | json, text | json |
 | `TRCLI_LOG_OUTPUT` | Output destination | stderr, stdout, file | stderr |

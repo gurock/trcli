@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.2]
+
+_released 02-24-2025
+
+### Fixed
+ - Fixed an issue where automation_id matching fails due to wrapped values in HTML paragraph tags, causing case mismatch and duplicate test cases
+
 ## [1.13.1]
 
 _released 02-19-2025

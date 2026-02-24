@@ -21,6 +21,7 @@ class LoggingConfig:
 
     Example configuration file (trcli_config.yml):
         logging:
+          enabled: true       # Must be true to enable logging (default: false)
           level: INFO
           format: json        # json or text
           output: file        # stderr, stdout, file
@@ -30,6 +31,7 @@ class LoggingConfig:
     """
 
     DEFAULT_CONFIG = {
+        "enabled": False,
         "level": "INFO",
         "format": "json",  # json or text
         "output": "stderr",  # stderr, stdout, file
@@ -142,6 +144,7 @@ class LoggingConfig:
         Apply environment variable overrides.
 
         Environment variables:
+            TRCLI_LOG_ENABLED: Enable/disable logging (true, false, yes, no, 1, 0)
             TRCLI_LOG_LEVEL: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
             TRCLI_LOG_FORMAT: Output format (json, text)
             TRCLI_LOG_OUTPUT: Output destination (stderr, stdout, file)
@@ -155,6 +158,11 @@ class LoggingConfig:
         Returns:
             Updated configuration dictionary
         """
+        # Boolean override for enabled flag
+        if "TRCLI_LOG_ENABLED" in os.environ:
+            enabled_value = os.environ["TRCLI_LOG_ENABLED"].lower()
+            config["enabled"] = enabled_value in ("true", "yes", "1", "on")
+
         # Simple overrides
         env_mappings = {
             "TRCLI_LOG_LEVEL": "level",
@@ -239,6 +247,14 @@ class LoggingConfig:
         # Load configuration
         config = cls.load(config_path)
         config.update(overrides)
+
+        if not config.get("enabled", True):
+            from trcli.logging.structured_logger import LoggerFactory, LogLevel
+            import os
+
+            # Set log level to maximum to effectively disable all logging
+            LoggerFactory.configure(level="CRITICAL", format_style="json", stream=open(os.devnull, "w"))
+            return
 
         # Determine output stream
         output_type = config.get("output", "stderr")
