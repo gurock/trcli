@@ -8,12 +8,10 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.13.2]
 
-_released 02-30-2025
+_released 02-24-2025
 
-### Added
- - Enhanced version update support
- - Improved attachment handling
- - Improved glob support for multi-file processing
+### Fixed
+ - Fixed an issue where automation_id matching fails due to wrapped values in HTML paragraph tags, causing case mismatch and duplicate test cases
 
 ## [1.13.1]
 
