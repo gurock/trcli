@@ -551,5 +551,235 @@ class TestPerformanceComparison:
         print("=" * 60)
 
 
+class TestFroalaParagraphTagStripping:
+    """Test suite for Froala HTML paragraph tag stripping in automation_id matching"""
+
+    @pytest.mark.parametrize(
+        "input_value,expected_output",
+        [
+            # Basic Froala wrapping
+            ("<p>com.example.Test.method</p>", "com.example.Test.method"),
+            ("<p>automation_id_value</p>", "automation_id_value"),
+            # Case insensitive tags
+            ("<P>value</P>", "value"),
+            ("<p>value</P>", "value"),
+            ("<P>value</p>", "value"),
+            # With whitespace
+            ("<p>value</p>\n", "value"),
+            ("<p> value </p>", "value"),
+            ("  <p>value</p>  ", "value"),
+            ("<p>\nvalue\n</p>", "value"),
+            # Without tags (should pass through)
+            ("plain_value", "plain_value"),
+            ("com.example.Test.method", "com.example.Test.method"),
+            # Partial tags (still stripped for safety - unlikely to have legitimate automation IDs with these)
+            ("<p>value", "value"),
+            ("value</p>", "value"),
+            # Empty/None values
+            ("", ""),
+            (None, None),
+            # Complex automation IDs
+            ("<p>com.example.MyTests.test_name_C120013()</p>", "com.example.MyTests.test_name_C120013()"),
+            ("<p>User Login.@positive.@smoke.Valid credentials</p>", "User Login.@positive.@smoke.Valid credentials"),
+            ("<p>Sub-Tests.Subtests 1.Subtest 1a</p>", "Sub-Tests.Subtests 1.Subtest 1a"),
+            # HTML entities (already unescaped before this function)
+            ("<p>test&amp;value</p>", "test&amp;value"),  # Should be handled by html.unescape first
+        ],
+    )
+    def test_strip_froala_paragraph_tags_unit(self, input_value, expected_output):
+        """
+        Unit test for _strip_froala_paragraph_tags static method.
+        Tests various scenarios of Froala HTML wrapping.
+        """
+        from trcli.api.case_matcher import AutomationIdMatcher
+
+        result = AutomationIdMatcher._strip_froala_paragraph_tags(input_value)
+        assert result == expected_output, f"Expected '{expected_output}', got '{result}'"
+
+    @pytest.mark.api_handler
+    def test_auto_matcher_matches_cases_with_froala_tags(self, environment, api_client, mocker):
+        """
+        Integration test: AUTO matcher correctly matches cases even when TestRail returns
+        automation_id values wrapped in Froala <p> tags.
+
+        Simulates the real scenario:
+        1. Test report has automation_id: "com.example.Test.method1"
+        2. TestRail returns: "<p>com.example.Test.method1</p>" (after user edited the case)
+        3. Should still match correctly
+        """
+        # Setup: AUTO matcher
+        environment.case_matcher = MatchersParser.AUTO
+
+        # Create test suite with plain automation IDs (as they come from test reports)
+        test_case_1 = TestRailCase(
+            title="Test Method 1",
+            custom_automation_id="com.example.Test.method1",
+            result=TestRailResult(status_id=1),
+        )
+        test_case_2 = TestRailCase(
+            title="Test Method 2",
+            custom_automation_id="com.example.Test.method2",
+            result=TestRailResult(status_id=1),
+        )
+        test_case_3 = TestRailCase(
+            title="Test Method 3",
+            custom_automation_id="com.example.Test.method3",
+            result=TestRailResult(status_id=1),
+        )
+
+        section = TestRailSection(name="Test Section", section_id=1, testcases=[test_case_1, test_case_2, test_case_3])
+        test_suite = TestRailSuite(name="Test Suite", suite_id=1, testsections=[section])
+
+        api_request_handler = ApiRequestHandler(environment, api_client, test_suite)
+
+        # Mock TestRail responses: return automation_id values wrapped in Froala <p> tags
+        # (simulates what happens when user edits cases in TestRail with Text field type)
+        mock_cases = [
+            {
+                "id": 1,
+                "custom_automation_id": "<p>com.example.Test.method1</p>",  # Froala wrapped
+                "title": "Test Method 1",
+                "section_id": 1,
+            },
+            {
+                "id": 2,
+                "custom_automation_id": "<p>com.example.Test.method2</p>\n",  # With newline
+                "title": "Test Method 2",
+                "section_id": 1,
+            },
+            {
+                "id": 3,
+                "custom_automation_id": "com.example.Test.method3",  # Plain (not edited yet)
+                "title": "Test Method 3",
+                "section_id": 1,
+            },
+        ]
+
+        mocker.patch.object(api_request_handler, "_ApiRequestHandler__get_all_cases", return_value=(mock_cases, None))
+
+        mock_update_data = mocker.patch.object(api_request_handler.data_provider, "update_data")
+
+        # Execute
+        project_id = 1
+        has_missing, error = api_request_handler.check_missing_test_cases_ids(project_id)
+
+        # Assert: All 3 cases should match successfully (no missing cases)
+        assert not has_missing, "Should not have missing cases - Froala tags should be stripped"
+        assert error == "", "Should not have errors"
+
+        # Verify that update_data was called with all 3 matched cases
+        mock_update_data.assert_called_once()
+        call_args = mock_update_data.call_args[1]
+        matched_cases = call_args["case_data"]
+
+        assert len(matched_cases) == 3, "All 3 cases should be matched"
+
+        # Verify correct case IDs were matched
+        matched_ids = {case["case_id"] for case in matched_cases}
+        assert matched_ids == {1, 2, 3}, "Should match all case IDs correctly"
+
+    @pytest.mark.api_handler
+    def test_auto_matcher_handles_both_automation_id_field_names(self, environment, api_client, mocker):
+        """
+        Test that Froala tag stripping works for both automation_id field names:
+        - custom_automation_id (legacy)
+        - custom_case_automation_id (current)
+        """
+        # Setup: AUTO matcher
+        environment.case_matcher = MatchersParser.AUTO
+
+        test_case_1 = TestRailCase(
+            title="Test 1",
+            custom_automation_id="test.method1",
+            result=TestRailResult(status_id=1),
+        )
+        test_case_2 = TestRailCase(
+            title="Test 2",
+            custom_automation_id="test.method2",
+            result=TestRailResult(status_id=1),
+        )
+
+        section = TestRailSection(name="Test Section", section_id=1, testcases=[test_case_1, test_case_2])
+        test_suite = TestRailSuite(name="Test Suite", suite_id=1, testsections=[section])
+
+        api_request_handler = ApiRequestHandler(environment, api_client, test_suite)
+
+        # Mock cases: one with legacy name, one with current name (both Froala wrapped)
+        mock_cases = [
+            {
+                "id": 1,
+                "custom_automation_id": "<p>test.method1</p>",  # Legacy field name
+                "title": "Test 1",
+                "section_id": 1,
+            },
+            {
+                "id": 2,
+                "custom_case_automation_id": "<p>test.method2</p>",  # Current field name
+                "title": "Test 2",
+                "section_id": 1,
+            },
+        ]
+
+        mocker.patch.object(api_request_handler, "_ApiRequestHandler__get_all_cases", return_value=(mock_cases, None))
+
+        mock_update_data = mocker.patch.object(api_request_handler.data_provider, "update_data")
+
+        # Execute
+        project_id = 1
+        has_missing, error = api_request_handler.check_missing_test_cases_ids(project_id)
+
+        # Assert: Both cases should match
+        assert not has_missing, "Should match cases with both field name variants"
+        assert error == "", "Should not have errors"
+
+        matched_cases = mock_update_data.call_args[1]["case_data"]
+        assert len(matched_cases) == 2, "Both cases should be matched"
+
+    @pytest.mark.api_handler
+    def test_froala_tags_cause_mismatch_without_fix(self, environment, api_client, mocker):
+        """
+        Negative test: Demonstrate that WITHOUT the fix, Froala tags would cause mismatches.
+        This test documents the bug being fixed.
+        """
+        # Setup
+        environment.case_matcher = MatchersParser.AUTO
+
+        test_case = TestRailCase(
+            title="Test Method",
+            custom_automation_id="com.example.Test.method",
+            result=TestRailResult(status_id=1),
+        )
+
+        section = TestRailSection(name="Test Section", section_id=1, testcases=[test_case])
+        test_suite = TestRailSuite(name="Test Suite", suite_id=1, testsections=[section])
+
+        api_request_handler = ApiRequestHandler(environment, api_client, test_suite)
+
+        # Return automation_id with tags from TestRail
+        mock_cases = [
+            {
+                "id": 1,
+                "custom_automation_id": "<p>com.example.Test.method</p>",
+                "title": "Test Method",
+                "section_id": 1,
+            }
+        ]
+
+        mocker.patch.object(api_request_handler, "_ApiRequestHandler__get_all_cases", return_value=(mock_cases, None))
+
+        mock_update_data = mocker.patch.object(api_request_handler.data_provider, "update_data")
+
+        # Execute
+        has_missing, _ = api_request_handler.check_missing_test_cases_ids(1)
+
+        # Assert: With the fix, this should NOT have missing cases
+        assert not has_missing, "With fix applied, Froala tags should be stripped and case should match"
+
+        # Without the fix, this test would fail because:
+        # - Report has: "com.example.Test.method"
+        # - TestRail returns: "<p>com.example.Test.method</p>"
+        # - No match → missing case → new duplicate case created
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v", "-s"])

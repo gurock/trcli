@@ -56,6 +56,31 @@ class CaseMatcher(ABC):
 class AutomationIdMatcher(CaseMatcher):
     """Matches test cases by automation_id field"""
 
+    @staticmethod
+    def _strip_froala_paragraph_tags(value: str) -> str:
+        """
+        Strip Froala HTML paragraph tags from automation_id values.
+
+        :param value: Automation ID value from TestRail
+        :returns: Value with leading <p> and trailing </p> tags removed
+        """
+        if not value:
+            return value
+
+        # Strip whitespace first
+        value = value.strip()
+
+        # Remove leading <p> tag (case-insensitive)
+        if value.lower().startswith("<p>"):
+            value = value[3:]
+
+        # Remove trailing </p> tag (case-insensitive)
+        if value.lower().endswith("</p>"):
+            value = value[:-4]
+
+        # Strip any remaining whitespace after tag removal
+        return value.strip()
+
     def check_missing_cases(
         self,
         project_id: int,
@@ -87,6 +112,7 @@ class AutomationIdMatcher(CaseMatcher):
             aut_case_id = case.get(OLD_SYSTEM_NAME_AUTOMATION_ID) or case.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
             if aut_case_id:
                 aut_case_id = html.unescape(aut_case_id)
+                aut_case_id = self._strip_froala_paragraph_tags(aut_case_id)
                 test_cases_by_aut_id[aut_case_id] = case
 
         # Match test cases from report with TestRail cases
