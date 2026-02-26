@@ -67,7 +67,7 @@ class JunitParser(FileParser):
         filepath = Path(filepath)
         files = glob.glob(str(filepath))
         if not files:
-            raise FileNotFoundError("File not found.")
+            raise FileNotFoundError(f"File not found: {filepath}")
         elif len(files) == 1:
             return Path().cwd().joinpath(files[0])
         sub_suites = []

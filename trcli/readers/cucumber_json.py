@@ -1,6 +1,7 @@
 import json
+import glob
 from pathlib import Path
-from beartype.typing import List, Dict, Any, Optional, Tuple
+from beartype.typing import List, Dict, Any, Optional, Tuple, Union
 
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser, TestRailCaseFieldsOptimizer
@@ -22,6 +23,57 @@ class CucumberParser(FileParser):
         self.case_matcher = environment.case_matcher
         self._bdd_case_cache = None  # Cache for BDD cases (populated on first use)
         self._api_handler = None  # Will be set when BDD matching mode is needed
+
+    @staticmethod
+    def check_file(filepath: Union[str, Path]) -> Path:
+        """
+        Check and process file path, supporting glob patterns for multiple files.
+
+        If glob pattern matches multiple files, they are merged into a single Cucumber JSON report.
+
+        Args:
+            filepath: File path or glob pattern (e.g., "reports/*.json", "cucumber.json")
+
+        Returns:
+            Path to the file (or merged file if multiple matches)
+
+        Raises:
+            FileNotFoundError: If no files match the pattern
+            ValueError: If JSON file is not valid Cucumber format (array of features)
+        """
+        filepath = Path(filepath)
+        files = glob.glob(str(filepath))
+
+        if not files:
+            raise FileNotFoundError(f"File not found: {filepath}")
+        elif len(files) == 1:
+            # Single file match - return it directly
+            return Path().cwd().joinpath(files[0])
+
+        # Multiple files - merge them into single Cucumber JSON report
+        merged_features = []
+
+        for file in files:
+            with open(file, "r", encoding="utf-8") as f:
+                features = json.load(f)
+
+                # Validate Cucumber JSON format (must be array of features)
+                if not isinstance(features, list):
+                    raise ValueError(
+                        f"Invalid Cucumber JSON format in {file}: "
+                        f"Expected array of features, got {type(features).__name__}"
+                    )
+
+                # Merge features from this file
+                merged_features.extend(features)
+
+        # Write merged report
+        merged_report_path = Path().cwd().joinpath("Merged-Cucumber-report.json")
+
+        with open(merged_report_path, "w", encoding="utf-8") as f:
+            json.dump(merged_features, f, indent=2, ensure_ascii=False)
+
+        return merged_report_path
 
     def parse_file(
         self,
