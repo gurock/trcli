@@ -263,8 +263,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
         else:
             environment.log("Results processing completed")
 
-    except FileNotFoundError:
-        environment.elog(f"Error: Cucumber JSON file not found: {environment.file}")
+    except FileNotFoundError as e:
+        environment.elog(str(e))
         exit(1)
     except json.JSONDecodeError as e:
         environment.elog(f"Error: Invalid JSON format in file: {environment.file}")
