@@ -275,3 +275,247 @@ class TestMultipleCaseIdsEndToEnd:
         # All should have same automation_id
         automation_ids = [tc.custom_automation_id for tc in combined_cases]
         assert len(set(automation_ids)) == 1, "All cases should have the same automation_id"
+
+    def test_multiple_case_ids_attachments_duplicated(self, mock_environment):
+        """Verify that attachments are duplicated for each case ID"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050400, C1050401, C1050402 (test with attachments)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        attachment_cases = [tc for tc in all_test_cases if tc.case_id in [1050400, 1050401, 1050402]]
+        assert len(attachment_cases) == 3, "Should have 3 test cases with attachments"
+
+        # Verify all cases have the same attachments
+        for case in attachment_cases:
+            assert len(case.result.attachments) == 3, f"Case {case.case_id} should have 3 attachments"
+            assert "/path/to/screenshot.png" in case.result.attachments
+            assert "/path/to/log.txt" in case.result.attachments
+            assert "/path/to/video.mp4" in case.result.attachments
+
+        # Verify attachment lists are independent (different list objects)
+        assert attachment_cases[0].result.attachments is not attachment_cases[1].result.attachments
+        assert attachment_cases[0].result.attachments is not attachment_cases[2].result.attachments
+        assert attachment_cases[1].result.attachments is not attachment_cases[2].result.attachments
+
+    def test_multiple_case_ids_result_fields_duplicated(self, mock_environment):
+        """Verify that result fields are duplicated for each case ID"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050410, C1050411, C1050412 (test with result fields)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        result_field_cases = [tc for tc in all_test_cases if tc.case_id in [1050410, 1050411, 1050412]]
+        assert len(result_field_cases) == 3, "Should have 3 test cases with result fields"
+
+        # Verify all cases have the same result fields
+        for case in result_field_cases:
+            assert "version" in case.result.result_fields
+            assert case.result.result_fields["version"] == "1.2.3"
+            assert "environment" in case.result.result_fields
+            assert case.result.result_fields["environment"] == "staging"
+            assert "browser" in case.result.result_fields
+            assert case.result.result_fields["browser"] == "chrome"
+
+        # Verify result_fields dicts are independent (different dict objects)
+        assert result_field_cases[0].result.result_fields is not result_field_cases[1].result.result_fields
+        assert result_field_cases[0].result.result_fields is not result_field_cases[2].result.result_fields
+        assert result_field_cases[1].result.result_fields is not result_field_cases[2].result.result_fields
+
+    def test_multiple_case_ids_case_fields_duplicated(self, mock_environment):
+        """Verify that case fields are duplicated for each case ID"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050420, C1050421 (test with case fields)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        case_field_cases = [tc for tc in all_test_cases if tc.case_id in [1050420, 1050421]]
+        assert len(case_field_cases) == 2, "Should have 2 test cases with case fields"
+
+        # Verify all cases have the same case fields
+        for case in case_field_cases:
+            assert "custom_preconds" in case.case_fields
+            assert case.case_fields["custom_preconds"] == "Setup database and test users"
+            assert "custom_automation_type" in case.case_fields
+            assert case.case_fields["custom_automation_type"] == "e2e"
+            assert "custom_steps" in case.case_fields
+            assert "1. Login to application" in case.case_fields["custom_steps"]
+            assert "2. Navigate to dashboard" in case.case_fields["custom_steps"]
+
+        # Verify case_fields dicts are independent (different dict objects)
+        assert case_field_cases[0].case_fields is not case_field_cases[1].case_fields
+
+    def test_multiple_case_ids_step_results_duplicated(self, mock_environment):
+        """Verify that step results are duplicated for each case ID"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050430, C1050431, C1050432, C1050433 (test with step results)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        step_result_cases = [tc for tc in all_test_cases if tc.case_id in [1050430, 1050431, 1050432, 1050433]]
+        assert len(step_result_cases) == 4, "Should have 4 test cases with step results"
+
+        # Verify all cases have the same step results
+        for case in step_result_cases:
+            assert len(case.result.custom_step_results) == 3, f"Case {case.case_id} should have 3 step results"
+
+            # Verify step content and statuses
+            assert case.result.custom_step_results[0].content == "Login successful"
+            assert case.result.custom_step_results[0].status_id == 1  # passed
+
+            assert case.result.custom_step_results[1].content == "Navigate to checkout"
+            assert case.result.custom_step_results[1].status_id == 1  # passed
+
+            assert case.result.custom_step_results[2].content == "Payment processing failed"
+            assert case.result.custom_step_results[2].status_id == 5  # failed
+
+        # Verify step result lists are independent (different list objects)
+        assert step_result_cases[0].result.custom_step_results is not step_result_cases[1].result.custom_step_results
+        assert step_result_cases[0].result.custom_step_results is not step_result_cases[2].result.custom_step_results
+
+    def test_multiple_case_ids_all_features_combined_passing(self, mock_environment):
+        """Verify all features work together for passing tests"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050440, C1050441, C1050442 (kitchen sink passing test)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        kitchen_sink_cases = [tc for tc in all_test_cases if tc.case_id in [1050440, 1050441, 1050442]]
+        assert len(kitchen_sink_cases) == 3, "Should have 3 test cases for kitchen sink test"
+
+        for case in kitchen_sink_cases:
+            # Verify status
+            assert case.result.status_id == 1, f"Case {case.case_id} should be passed"
+
+            # Verify attachments
+            assert len(case.result.attachments) == 2
+            assert "/evidence/test_screenshot.png" in case.result.attachments
+            assert "/evidence/debug.log" in case.result.attachments
+
+            # Verify result fields
+            assert case.result.result_fields["version"] == "2.0.0"
+            assert case.result.result_fields["browser"] == "firefox"
+
+            # Verify case fields
+            assert case.case_fields["custom_automation_type"] == "integration"
+
+            # Verify comment
+            assert "Full integration test executed successfully" in case.result.comment
+
+            # Verify step results
+            assert len(case.result.custom_step_results) == 2
+            assert case.result.custom_step_results[0].content == "Setup complete"
+            assert case.result.custom_step_results[0].status_id == 1
+
+    def test_multiple_case_ids_all_features_combined_failing(self, mock_environment):
+        """Verify all features work together for failing tests (failure info + attachments)"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050450, C1050451 (kitchen sink failing test)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        failing_cases = [tc for tc in all_test_cases if tc.case_id in [1050450, 1050451]]
+        assert len(failing_cases) == 2, "Should have 2 test cases for failing kitchen sink test"
+
+        for case in failing_cases:
+            # Verify status
+            assert case.result.status_id == 5, f"Case {case.case_id} should be failed"
+
+            # Verify failure information in comment
+            assert "Type: AssertionError" in case.result.comment
+            assert "Message: Payment gateway returned error" in case.result.comment
+            assert "Payment failed with error code 500" in case.result.comment
+
+            # Verify attachments (should be present alongside failure info)
+            assert len(case.result.attachments) == 2
+            assert "/failure/error_screenshot.png" in case.result.attachments
+            assert "/failure/stack_trace.txt" in case.result.attachments
+
+            # Verify result fields
+            assert case.result.result_fields["version"] == "2.0.0"
+            assert case.result.result_fields["environment"] == "production"
+
+            # Verify case fields
+            assert case.case_fields["custom_preconds"] == "User must be logged in"
+
+            # Verify prepended comment
+            assert "Test failed during checkout" in case.result.comment
+
+            # Verify step results
+            assert len(case.result.custom_step_results) == 2
+            assert case.result.custom_step_results[1].content == "Checkout failed"
+            assert case.result.custom_step_results[1].status_id == 5  # failed
+
+    def test_multiple_case_ids_data_independence_mutation(self, mock_environment):
+        """Verify that modifying one case's data doesn't affect other cases"""
+        mock_environment.file = "tests/test_data/XML/multiple_case_ids_with_attachments.xml"
+        parser = JunitParser(mock_environment)
+        suites = parser.parse_file()
+
+        # Get test cases for C1050400, C1050401, C1050402 (test with attachments)
+        all_test_cases = []
+        for suite in suites:
+            for section in suite.testsections:
+                all_test_cases.extend(section.testcases)
+
+        test_cases = [tc for tc in all_test_cases if tc.case_id in [1050400, 1050401, 1050402]]
+        assert len(test_cases) == 3
+
+        # Store original attachment counts
+        original_counts = [len(tc.result.attachments) for tc in test_cases]
+
+        # Mutate first case's attachments
+        test_cases[0].result.attachments.append("/mutated/new_file.txt")
+
+        # Verify other cases are unchanged
+        assert (
+            len(test_cases[0].result.attachments) == original_counts[0] + 1
+        ), "First case should have one more attachment"
+        assert len(test_cases[1].result.attachments) == original_counts[1], "Second case should be unchanged"
+        assert len(test_cases[2].result.attachments) == original_counts[2], "Third case should be unchanged"
+
+        # Verify the mutated attachment is only in first case
+        assert "/mutated/new_file.txt" in test_cases[0].result.attachments
+        assert "/mutated/new_file.txt" not in test_cases[1].result.attachments
+        assert "/mutated/new_file.txt" not in test_cases[2].result.attachments
+
+        # Test result_fields independence
+        result_field_cases = [tc for tc in all_test_cases if tc.case_id in [1050410, 1050411, 1050412]]
+        if len(result_field_cases) == 3:
+            # Mutate first case's result fields
+            result_field_cases[0].result.result_fields["new_field"] = "mutated_value"
+
+            # Verify other cases don't have the new field
+            assert "new_field" in result_field_cases[0].result.result_fields
+            assert "new_field" not in result_field_cases[1].result.result_fields
+            assert "new_field" not in result_field_cases[2].result.result_fields
