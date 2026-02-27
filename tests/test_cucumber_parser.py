@@ -254,3 +254,92 @@ class TestCucumberParser:
         # Examples should be indented with 4 spaces
         examples_lines = [l for l in lines if "Examples:" in l]
         assert any(l.startswith("    Examples:") for l in examples_lines)
+
+    @pytest.mark.parse_cucumber
+    def test_cucumber_json_parser_glob_pattern_single_file(self):
+        """Test glob pattern that matches single file"""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.suite_name = None
+        # Use single file path
+        env.file = Path(__file__).parent / "test_data/CUCUMBER/sample_cucumber.json"
+
+        # This should work just like a regular file path
+        parser = CucumberParser(env)
+        result = parser.parse_file()
+
+        assert len(result) == 1
+        from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+        assert isinstance(result[0], TestRailSuite)
+        # Verify it has test sections and cases
+        assert len(result[0].testsections) > 0
+
+    @pytest.mark.parse_cucumber
+    def test_cucumber_json_parser_glob_pattern_multiple_files(self):
+        """Test glob pattern that matches multiple files and merges them"""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.suite_name = None
+        # Use glob pattern that matches multiple Cucumber JSON files
+        env.file = Path(__file__).parent / "test_data/CUCUMBER/testglob/*.json"
+
+        parser = CucumberParser(env)
+        result = parser.parse_file()
+
+        # Should return a merged result
+        assert len(result) == 1
+        from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+        assert isinstance(result[0], TestRailSuite)
+
+        # Verify merged file was created
+        merged_file = Path.cwd() / "Merged-Cucumber-report.json"
+        assert merged_file.exists(), "Merged Cucumber report should be created"
+
+        # Verify the merged result contains test cases from both files
+        total_cases = sum(len(section.testcases) for section in result[0].testsections)
+        assert total_cases > 0, "Merged result should contain test cases"
+
+        # Clean up merged file
+        if merged_file.exists():
+            merged_file.unlink()
+
+    @pytest.mark.parse_cucumber
+    def test_cucumber_json_parser_glob_pattern_no_matches(self):
+        """Test glob pattern that matches no files"""
+        with pytest.raises(FileNotFoundError):
+            env = Environment()
+            env.case_matcher = MatchersParser.AUTO
+            env.suite_name = None
+            # Use glob pattern that matches no files
+            env.file = Path(__file__).parent / "test_data/CUCUMBER/nonexistent_*.json"
+            CucumberParser(env)
+
+    @pytest.mark.parse_cucumber
+    def test_cucumber_check_file_glob_returns_path(self):
+        """Test that check_file method returns valid Path for glob pattern"""
+        # Test single file match
+        single_file_glob = Path(__file__).parent / "test_data/CUCUMBER/sample_cucumber.json"
+        result = CucumberParser.check_file(single_file_glob)
+        assert isinstance(result, Path)
+        assert result.exists()
+
+        # Test multiple file match (returns merged file path)
+        multi_file_glob = Path(__file__).parent / "test_data/CUCUMBER/testglob/*.json"
+        result = CucumberParser.check_file(multi_file_glob)
+        assert isinstance(result, Path)
+        assert result.name == "Merged-Cucumber-report.json"
+        assert result.exists()
+
+        # Verify merged file contains valid JSON array
+        import json
+
+        with open(result, "r", encoding="utf-8") as f:
+            merged_data = json.load(f)
+        assert isinstance(merged_data, list), "Merged Cucumber JSON should be an array"
+        assert len(merged_data) > 0, "Merged array should contain features"
+
+        # Clean up
+        if result.exists() and result.name == "Merged-Cucumber-report.json":
+            result.unlink()
