@@ -339,6 +339,49 @@ trcli -y \\
             ],
         )
 
+    def test_cli_multiple_case_ids(self):
+        """Test multiple case IDs feature - one test updates multiple TestRail cases
+
+        This test verifies that when a single JUnit test specifies multiple case IDs
+        using comma-separated values in the test_id property, TRCLI correctly:
+        1. Creates separate results for each case ID
+        2. Duplicates attachments for each case ID
+        3. Applies custom fields to each case ID
+        4. Uploads all results to TestRail successfully
+
+        Test data breakdown:
+        - Test 1: Single case ID (C505288) - baseline
+        - Test 2: Multiple IDs (C505289, C505290, C505291) with attachments - passing
+        - Test 3: Multiple IDs (C505292, C505293) with attachments - failing
+
+        Expected results: 6 total case results (1 + 3 + 2)
+        Expected attachments: 5 total uploads (0 + 3 + 2)
+        """
+        output = _run_cmd(
+            f"""
+trcli -y \\
+  -h {self.TR_INSTANCE} \\
+  --project "SA - (DO NOT DELETE) TRCLI-E2E-Tests" \\
+  parse_junit \\
+  --title "[CLI-E2E-Tests] Multiple Case IDs" \\
+  --case-matcher property \\
+  -f "reports_junit/multiple_case_ids.xml"
+        """
+        )
+        _assert_contains(
+            output,
+            [
+                # Parser processes 6 testcases from XML
+                "Processed 6 test cases in section [MULTIPLE-CASE-IDS]",
+                # Creates test run in TestRail
+                f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
+                # Uploads attachments: Test 2 (1 × 3 cases) + Test 3 (1 × 2 cases) = 5
+                "Uploading 5 attachments for 5 test results",
+                # Submits results: 1 (single) + 3 (test 2) + 2 (test 3) = 6 total
+                "Submitted 6 test results in",
+            ],
+        )
+
     def test_cli_multisuite_with_suite_id(self):
         output = _run_cmd(
             f"""

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Multiple Case IDs E2E Test" tests="3" failures="1" time="4.5">
+  <testsuite name="[MULTIPLE-CASE-IDS] Combined Tests" tests="3" failures="1" time="4.5">
+
+    <!-- Test 1: Single case ID (baseline for backwards compatibility) -->
+    <testcase classname="[MULTIPLE-CASE-IDS] com.example.SingleTest" name="Single Case Test" time="1.0">
+      <properties>
+        <property name="test_id" value="C27690"/>
+        <property name="testrail_result_comment" value="Baseline single case test"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Multiple case IDs with attachments and custom fields (PASSING) -->
+    <testcase classname="[MULTIPLE-CASE-IDS] com.example.CombinedTest" name="Multiple Cases With Attachments" time="2.0">
+      <properties>
+        <property name="test_id" value="C27692, C27694, C27695"/>
+        <property name="testrail_attachment" value="./attachments/testrail.jpg"/>
+        <property name="testrail_result_comment" value="Combined test execution - all scenarios passed"/>
+        <property name="testrail_result_field" value="version:1.0.0"/>
+        <property name="testrail_result_field" value="browser:chrome"/>
+        <property name="testrail_case_field" value="custom_automation_type:1"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 3: Multiple case IDs with failure and attachments (FAILING) -->
+    <testcase classname="[MULTIPLE-CASE-IDS] com.example.FailedTest" name="Multiple Cases Failed" time="1.5">
+      <failure type="AssertionError" message="Test failed during execution">
+Expected: All scenarios pass
+Actual: Scenario failed with assertion error
+Stack trace:
+  at com.example.FailedTest.testScenario(FailedTest.java:42)
+  at com.example.TestRunner.run(TestRunner.java:15)
+      </failure>
+      <properties>
+        <property name="test_id" value="C27691, C27693"/>
+        <property name="testrail_attachment" value="./attachments/evidence.json"/>
+        <property name="testrail_result_comment" value="Test failed - see attachment for details"/>
+        <property name="testrail_result_field" value="browser:firefox"/>
+        <property name="testrail_result_field" value="environment:staging"/>
+      </properties>
+    </testcase>
+
+  </testsuite>
+</testsuites>
