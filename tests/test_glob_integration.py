@@ -146,37 +146,6 @@ class TestGlobIntegration:
         if merged_file.exists():
             merged_file.unlink()
 
-    @pytest.mark.parse_robot
-    def test_glob_robot_duplicate_automation_ids(self):
-        """Test Robot Framework glob pattern with duplicate automation_ids."""
-        env = Environment()
-        env.case_matcher = MatchersParser.AUTO
-        env.file = Path(__file__).parent / "test_data/XML/testglob_robot/*.xml"
-
-        # Check if test files exist
-        if not list(Path(__file__).parent.glob("test_data/XML/testglob_robot/*.xml")):
-            pytest.skip("Robot test data not available")
-
-        parser = RobotParser(env)
-        parsed_suites = parser.parse_file()
-        suite = parsed_suites[0]
-
-        # Similar verification as JUnit tests
-        data_provider = ApiDataProvider(suite)
-        cases_to_add = data_provider.add_cases()
-
-        # Verify deduplication occurred if there were duplicates
-        total_cases = sum(len(section.testcases) for section in suite.testsections)
-        automation_ids = [c.custom_automation_id for c in cases_to_add if c.custom_automation_id]
-
-        # Cases to add should have unique automation_ids
-        assert len(automation_ids) == len(set(automation_ids)), "Cases to add should have unique automation_ids"
-
-        # Clean up merged file
-        merged_file = Path.cwd() / "Merged-Robot-report.xml"
-        if merged_file.exists():
-            merged_file.unlink()
-
     @pytest.mark.parse_cucumber
     def test_cucumber_glob_filepath_not_pattern(self):
         """Test Scenario 3: Cucumber glob pattern uses correct filepath (not pattern string).

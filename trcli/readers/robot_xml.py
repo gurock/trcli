@@ -1,8 +1,6 @@
 from datetime import datetime, timedelta
-from beartype.typing import List, Union
-from pathlib import Path
+from beartype.typing import List
 from xml.etree import ElementTree
-import glob
 
 from trcli.backports import removeprefix
 from trcli.cli import Environment
@@ -22,59 +20,6 @@ class RobotParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
-
-    @staticmethod
-    def check_file(filepath: Union[str, Path]) -> Path:
-        """
-        Check and process file path, supporting glob patterns for multiple files.
-
-        If glob pattern matches multiple files, they are merged into a single Robot XML report.
-
-        Args:
-            filepath: File path or glob pattern (e.g., "reports/*.xml", "output.xml")
-
-        Returns:
-            Path to the file (or merged file if multiple matches)
-
-        Raises:
-            FileNotFoundError: If no files match the pattern
-        """
-        filepath = Path(filepath)
-        files = glob.glob(str(filepath))
-
-        if not files:
-            raise FileNotFoundError(f"File not found: {filepath}")
-        elif len(files) == 1:
-            # Single file match - return it directly
-            return Path().cwd().joinpath(files[0])
-
-        # Multiple files - merge them into single Robot XML report
-        merged_root = ElementTree.Element("robot")
-        merged_root.set("generator", "TRCLI-Merger")
-        merged_root.set("generated", datetime.now().strftime("%Y%m%d %H:%M:%S.%f"))
-
-        for file in files:
-            tree = ElementTree.parse(file)
-            root = tree.getroot()
-
-            # Copy all suite elements from this file to merged root
-            for suite_element in root.findall("suite"):
-                merged_root.append(suite_element)
-
-        # Write merged report
-        merged_tree = ElementTree.ElementTree(merged_root)
-        merged_report_path = Path().cwd().joinpath("Merged-Robot-report.xml")
-
-        # Use ElementTree.indent for pretty printing (Python 3.9+)
-        try:
-            ElementTree.indent(merged_tree, space="  ")
-        except AttributeError:
-            # Python < 3.9 doesn't have indent, write without formatting
-            pass
-
-        merged_tree.write(merged_report_path, encoding="utf-8", xml_declaration=True)
-
-        return merged_report_path
 
     def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing Robot Framework report.")
