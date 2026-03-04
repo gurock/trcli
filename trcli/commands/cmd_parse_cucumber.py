@@ -152,6 +152,11 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                     feature_name = feature.get("name", "Untitled Feature")
                     normalized_name = parser._normalize_title(feature_name)
 
+                    # Skip if already created (handles duplicate features from merged files)
+                    if normalized_name in created_case_ids:
+                        environment.vlog(f"Feature '{feature_name}' already created, skipping duplicate")
+                        continue
+
                     # Check if this feature needs creation
                     needs_creation = any(
                         parser._normalize_title(item["section"].name) == normalized_name for item in features_to_create

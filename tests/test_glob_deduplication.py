@@ -314,3 +314,67 @@ class TestGlobDeduplication:
         assert len(login_case._duplicates) == 1, "testLogin should have 1 duplicate"
         assert len(logout_case._duplicates) == 2, "testLogout should have 2 duplicates"
         assert not hasattr(register_case, "_duplicates"), "testRegister should have no duplicates"
+
+    @pytest.mark.data_provider
+    def test_update_case_data_updates_all_duplicates(self):
+        """Test that __update_case_data() updates ALL cases with matching automation_id.
+
+        This is the fix for Scenario 2: When cases already exist in TestRail (-n flag),
+        and glob merges multiple files with the same test, ALL instances should get the case_id assigned.
+        """
+        # Create suite with duplicate automation_ids (from glob merging)
+        section = TestRailSection(
+            name="Test Section",
+            section_id=1,
+            testcases=[
+                TestRailCase(
+                    title="Test Login",
+                    case_id=None,  # Not assigned yet
+                    custom_automation_id="com.example.LoginTest.testLogin",
+                    result=TestRailResult(case_id=None, status_id=1, comment="Run 1"),
+                ),
+                TestRailCase(
+                    title="Test Login",
+                    case_id=None,  # Not assigned yet (duplicate)
+                    custom_automation_id="com.example.LoginTest.testLogin",  # Same!
+                    result=TestRailResult(case_id=None, status_id=5, comment="Run 2"),
+                ),
+                TestRailCase(
+                    title="Test Login",
+                    case_id=None,  # Not assigned yet (duplicate)
+                    custom_automation_id="com.example.LoginTest.testLogin",  # Same!
+                    result=TestRailResult(case_id=None, status_id=1, comment="Run 3"),
+                ),
+            ],
+        )
+
+        suite = TestRailSuite(name="Test Suite", suite_id=1, testsections=[section])
+        data_provider = ApiDataProvider(suite)
+
+        # Simulate case matcher finding existing case in TestRail
+        case_data = [
+            {
+                "case_id": 999,
+                "section_id": 1,
+                "title": "Test Login",
+                "custom_automation_id": "com.example.LoginTest.testLogin",
+            }
+        ]
+
+        # Call update_data (this is what case matcher does)
+        data_provider.update_data(case_data=case_data)
+
+        # Verify ALL three test cases got the case_id assigned (not just first one)
+        testcases = section.testcases
+        assert len(testcases) == 3, "Should have 3 test cases"
+
+        for i, testcase in enumerate(testcases):
+            assert testcase.case_id == 999, f"Test case {i+1} should have case_id=999 from matcher"
+            assert testcase.result.case_id == 999, f"Test case {i+1} result should have case_id=999"
+            assert testcase.section_id == 1, f"Test case {i+1} should have section_id=1"
+
+        # Verify comments are preserved (each test case keeps its unique result)
+        comments = [tc.result.comment for tc in testcases]
+        assert "Run 1" in comments
+        assert "Run 2" in comments
+        assert "Run 3" in comments

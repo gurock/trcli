@@ -243,30 +243,26 @@ class ApiDataProvider:
         """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         for case_updater in case_data:
-            matched_case = next(
-                (
-                    case
-                    for sublist in testcases
-                    for case in sublist
-                    if case.custom_automation_id == case_updater[OLD_SYSTEM_NAME_AUTOMATION_ID]
-                ),
-                None,
-            )
-            if matched_case is None:
-                matched_case = next(
-                    (
-                        case
-                        for sublist in testcases
-                        for case in sublist
-                        if hasattr(case, UPDATED_SYSTEM_NAME_AUTOMATION_ID)
-                        and case.custom_case_automation_id == case_updater.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
-                    ),
-                    None,
-                )
-            if matched_case is not None:
-                matched_case.case_id = case_updater["case_id"]
-                matched_case.result.case_id = case_updater["case_id"]
-                matched_case.section_id = case_updater["section_id"]
+            # Update ALL cases with matching automation_id (not just first match)
+            # This is critical for glob pattern support where multiple files contain the same test
+            automation_id = case_updater.get(OLD_SYSTEM_NAME_AUTOMATION_ID)
+            updated_automation_id = case_updater.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
+
+            for sublist in testcases:
+                for case in sublist:
+                    # Check both old and new automation_id field names
+                    matches = False
+                    if automation_id and case.custom_automation_id == automation_id:
+                        matches = True
+                    elif updated_automation_id and hasattr(case, UPDATED_SYSTEM_NAME_AUTOMATION_ID):
+                        if case.custom_case_automation_id == updated_automation_id:
+                            matches = True
+
+                    if matches:
+                        # Update this case (may be one of many duplicates)
+                        case.case_id = case_updater["case_id"]
+                        case.result.case_id = case_updater["case_id"]
+                        case.section_id = case_updater["section_id"]
 
     @staticmethod
     def divide_list_into_bulks(input_list: List, bulk_size: int) -> List:
