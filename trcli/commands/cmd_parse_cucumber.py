@@ -132,7 +132,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 environment.log(f"\n=== Auto-Creating {len(features_to_create)} Missing BDD Test Case(s) ===")
 
                 # Load Cucumber JSON to access raw feature data
-                with open(environment.file, "r", encoding="utf-8") as f:
+                with open(parser.filepath, "r", encoding="utf-8") as f:
                     cucumber_data = json.load(f)
 
                 # Get BDD template ID
