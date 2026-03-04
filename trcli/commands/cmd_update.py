@@ -9,8 +9,9 @@ import subprocess
 import click
 
 from trcli.cli import CONTEXT_SETTINGS
-from trcli.version_checker import _query_pypi, _compare_and_format
+from trcli.version_checker import _query_pypi, _compare_and_format, _save_cache
 from trcli import __version__
+from datetime import datetime
 
 
 @click.command(context_settings=CONTEXT_SETTINGS)
@@ -30,10 +31,6 @@ def cli(check_only: bool, force: bool):
     This command checks PyPI for the latest version and updates TRCLI
     using pip. It will show what version will be installed before proceeding.
 
-    Examples:
-        trcli update                # Update to latest version
-        trcli update --check-only   # Only check for updates
-        trcli update --force        # Force reinstall current version
     """
     click.echo(f"Current version: {__version__}")
     click.echo()
@@ -45,6 +42,9 @@ def cli(check_only: bool, force: bool):
     if latest_version is None:
         click.secho("✗ Failed to query PyPI. Check your network connection.", fg="red", err=True)
         sys.exit(1)
+
+    # Update cache with the latest version information
+    _save_cache({"last_check": datetime.now().isoformat(), "latest_version": latest_version})
 
     click.echo(f"Latest version on PyPI: {latest_version}")
     click.echo()

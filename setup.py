@@ -21,6 +21,8 @@ setup(
         "junitparser>=3.1.0,<4.0.0",
         "pyserde==0.12.*",
         "requests>=2.31.0,<3.0.0",
+        "urllib3>=1.26.0,<3.0.0",
+        "charset-normalizer>=2.0.0,<4.0.0",
         "tqdm>=4.65.0,<5.0.0",
         "humanfriendly>=10.0.0,<11.0.0",
         "openapi-spec-validator>=0.5.0,<1.0.0",
