@@ -89,6 +89,7 @@ jobs:
 
       - name: Check PR Description Completeness
         id: check_description
+        if: steps.check_release.outputs.is_release == 'false'
         run: |
           PR_BODY="${{ github.event.pull_request.body }}"
 
@@ -124,23 +125,37 @@ jobs:
             const hasSolution = '${{ steps.check_description.outputs.has_solution }}' === 'true';
             const hasTestSteps = '${{ steps.check_description.outputs.has_test_steps }}' === 'true';
 
+            const skippedStatus = '➖ Skipped (Release Branch)';
+
             const issueStatus = isRelease
-              ? '➖ Skipped (Release Branch)'
+              ? skippedStatus
               : issueFound
               ? `✅ Found: ${issueKey} (${issueType})`
               : '⚠️ Missing';
+
+            const issueSectionStatus = isRelease
+              ? skippedStatus
+              : hasIssue ? '✅ Present' : '⚠️ Missing';
+
+            const solutionStatus = isRelease
+              ? skippedStatus
+              : hasSolution ? '✅ Present' : '⚠️ Missing';
+
+            const testStepsStatus = isRelease
+              ? skippedStatus
+              : hasTestSteps ? '✅ Present' : '⚠️ Missing';
 
             const summary = `## 📋 PR Validation Summary
 
             | Check | Status |
             |-------|--------|
             | Issue Reference | ${issueStatus} |
-            | Issue Section | ${hasIssue ? '✅ Present' : '⚠️ Missing'} |
-            | Solution Description | ${hasSolution ? '✅ Present' : '⚠️ Missing'} |
-            | Test Steps | ${hasTestSteps ? '✅ Present' : '⚠️ Missing'} |
+            | Issue Section | ${issueSectionStatus} |
+            | Solution Description | ${solutionStatus} |
+            | Test Steps | ${testStepsStatus} |
 
             ${isRelease
-              ? '➖ Release branch - issue reference check skipped.'
+              ? '➖ Release branch - all validation checks skipped.'
               : (issueFound && hasSolution && hasTestSteps
                 ? '✅ All checks passed!'
                 : '⚠️ Some optional sections are missing.')}
