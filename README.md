@@ -97,6 +97,7 @@ Commands:
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
+  update         Update TRCLI to the latest version from PyPI.
 ```
 
 Uploading automated test results
