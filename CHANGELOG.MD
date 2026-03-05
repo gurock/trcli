@@ -8,12 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.13.3]
 
-_released 03-03-2026
+_released 03-05-2026
 
 ### Added
- - Added version notification system and a new update command for easier updating
- - Improved blob support for handling multiple test result files for efficient automation
- - Attachment handling and custom fields refactor for more efficient test data handling
+ - Added version notification system and a new `update` command to simplify upgrading to the latest version.
+ - Added comprehensive blob support to handle multiple test result files, improving automation workflows.
+
+### Improved
+ - Improved attachment handling and validation for custom fields.
 
 ## [1.13.2]
 
