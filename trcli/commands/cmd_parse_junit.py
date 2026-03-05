@@ -89,8 +89,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             # Exit with error if there were case update failures (after reporting)
             if case_update_results.get("failed_cases"):
                 exit(1)
-    except FileNotFoundError:
-        environment.elog(FAULT_MAPPING["missing_file"])
+    except FileNotFoundError as e:
+        environment.elog(str(e))
         exit(1)
     except (JUnitXmlError, ParseError):
         environment.elog(FAULT_MAPPING["invalid_file"])

@@ -18,7 +18,7 @@ class ApiDataProvider:
         case_fields: dict = None,
         run_description: str = None,
         result_fields: dict = None,
-        parent_section_id: int = None
+        parent_section_id: int = None,
     ):
         self.suites_input = suites_input
         self.case_fields = case_fields
@@ -42,13 +42,32 @@ class ApiDataProvider:
         ]
 
     def add_cases(self, return_all_items=False) -> list:
-        """Return list of bodies for adding test cases."""
+        """Return list of bodies for adding test cases.
+
+        Deduplicates by automation_id to prevent creating duplicate cases when
+        merged files contain the same test multiple times (glob pattern support).
+        Duplicates are linked so they receive the same case_id after creation.
+        """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         bodies = []
+        seen_automation_ids = {}
+
         for sublist in testcases:
             for case in sublist:
                 if case.case_id is None or return_all_items:
                     case.add_global_case_fields(self.case_fields)
+
+                    # Deduplicate by automation_id to avoid creating duplicate cases
+                    if case.custom_automation_id:
+                        if case.custom_automation_id in seen_automation_ids:
+                            master_case = seen_automation_ids[case.custom_automation_id]
+                            if not hasattr(master_case, "_duplicates"):
+                                master_case._duplicates = []
+                            master_case._duplicates.append(case)
+                            continue
+                        else:
+                            seen_automation_ids[case.custom_automation_id] = case
+
                     bodies.append(case)
         return bodies
 
@@ -64,23 +83,20 @@ class ApiDataProvider:
         return bodies
 
     def add_run(
-            self,
-            run_name: Optional[str],
-            case_ids=None,
-            start_date=None,
-            end_date=None,
-            milestone_id=None,
-            assigned_to_id=None,
-            include_all=None,
-            refs=None,
+        self,
+        run_name: Optional[str],
+        case_ids=None,
+        start_date=None,
+        end_date=None,
+        milestone_id=None,
+        assigned_to_id=None,
+        include_all=None,
+        refs=None,
     ):
         """Return body for adding or updating a run."""
         if case_ids is None:
             case_ids = [
-                int(case)
-                for section in self.suites_input.testsections
-                for case in section.testcases
-                if int(case) > 0
+                int(case) for section in self.suites_input.testsections for case in section.testcases if int(case) > 0
             ]
         properties = [
             str(prop)
@@ -90,11 +106,7 @@ class ApiDataProvider:
         ]
         if self.run_description:
             properties.insert(0, f"{self.run_description}\n")
-        body = {
-            "suite_id": self.suites_input.suite_id,
-            "description": "\n".join(properties),
-            "case_ids": case_ids
-        }
+        body = {"suite_id": self.suites_input.suite_id, "description": "\n".join(properties), "case_ids": case_ids}
         if isinstance(start_date, list) and start_date is not None:
             try:
                 dt = datetime(start_date[2], start_date[0], start_date[1], tzinfo=timezone.utc)
@@ -132,17 +144,17 @@ class ApiDataProvider:
             for case in sublist:
                 if case.case_id is not None:
                     case.result.add_global_result_fields(self.result_fields)
-                    
+
                     # Count failed tests
                     if case.result.status_id == 5:  # status_id 5 = Failed
                         total_failed_count += 1
-                        
+
                         # Assign failed tests to users in round-robin fashion if user_ids provided
                         if user_ids:
                             case.result.assignedto_id = user_ids[user_index % len(user_ids)]
                             user_index += 1
                             assigned_count += 1
-                    
+
                     bodies.append(case.result.to_dict())
 
         # Store counts for logging (we'll access this from the api_request_handler)
@@ -205,11 +217,7 @@ class ApiDataProvider:
         """
         for section_updater in section_data:
             matched_section = next(
-                (
-                    section
-                    for section in self.suites_input.testsections
-                    if section["name"] == section_updater["name"]
-                ),
+                (section for section in self.suites_input.testsections if section["name"] == section_updater["name"]),
                 None,
             )
             if matched_section is not None:
@@ -235,33 +243,27 @@ class ApiDataProvider:
         """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
         for case_updater in case_data:
-            matched_case = next(
-                (
-                    case
-                    for sublist in testcases
-                    for case in sublist
-                    if case.custom_automation_id == case_updater[OLD_SYSTEM_NAME_AUTOMATION_ID]
-                ),
-                None,
-            )
-            if matched_case is None:
-                matched_case = next(
-                    (
-                        case
-                        for sublist in testcases
-                        for case in sublist
-                        if hasattr(case, UPDATED_SYSTEM_NAME_AUTOMATION_ID)
-                        and case.custom_case_automation_id == case_updater.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
-                    ),
-                    None,
-                )
-            if matched_case is not None:
-                matched_case.case_id = case_updater["case_id"]
-                matched_case.result.case_id = case_updater["case_id"]
-                matched_case.section_id = case_updater["section_id"]
+            # Update ALL cases with matching automation_id (not just first match)
+            # This is critical for glob pattern support where multiple files contain the same test
+            automation_id = case_updater.get(OLD_SYSTEM_NAME_AUTOMATION_ID)
+            updated_automation_id = case_updater.get(UPDATED_SYSTEM_NAME_AUTOMATION_ID)
+
+            for sublist in testcases:
+                for case in sublist:
+                    # Check both old and new automation_id field names
+                    matches = False
+                    if automation_id and case.custom_automation_id == automation_id:
+                        matches = True
+                    elif updated_automation_id and hasattr(case, UPDATED_SYSTEM_NAME_AUTOMATION_ID):
+                        if case.custom_case_automation_id == updated_automation_id:
+                            matches = True
+
+                    if matches:
+                        # Update this case (may be one of many duplicates)
+                        case.case_id = case_updater["case_id"]
+                        case.result.case_id = case_updater["case_id"]
+                        case.section_id = case_updater["section_id"]
 
     @staticmethod
     def divide_list_into_bulks(input_list: List, bulk_size: int) -> List:
-        return [
-            input_list[i : i + bulk_size] for i in range(0, len(input_list), bulk_size)
-        ]
+        return [input_list[i : i + bulk_size] for i in range(0, len(input_list), bulk_size)]
