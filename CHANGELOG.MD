@@ -6,16 +6,27 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.3]
+
+_released 03-05-2026
+
+### Added
+ - Added version notification system and a new `update` command to simplify upgrading to the latest version.
+ - Added comprehensive blob support to handle multiple test result files, improving automation workflows.
+
+### Improved
+ - Improved attachment handling and validation for custom fields.
+
 ## [1.13.2]
 
-_released 02-24-2025
+_released 02-24-2026
 
 ### Fixed
  - Fixed an issue where automation_id matching fails due to wrapped values in HTML paragraph tags, causing case mismatch and duplicate test cases
 
 ## [1.13.1]
 
-_released 02-19-2025
+_released 02-19-2026
 
 ### Added
  - Added support for multiple case ids in a single test execution.
@@ -25,7 +36,7 @@ _released 02-19-2025
 
 ## [1.13.0]
 
-_released 02-06-2025
+_released 02-06-2026
 
 ### Added
  - **New Command: `parse_cucumber`** - Parse Cucumber JSON reports and upload to TestRail

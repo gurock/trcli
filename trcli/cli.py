@@ -24,6 +24,10 @@ from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 from trcli.logging import get_logger
 from trcli.logging.config import LoggingConfig
 
+# Import version checker
+from trcli import __version__
+from trcli.version_checker import check_for_updates
+
 CONTEXT_SETTINGS = dict(auto_envvar_prefix="TR_CLI")
 
 trcli_folder = Path(__file__).parent
@@ -293,6 +297,15 @@ class TRCLI(click.MultiCommand):
         # Use invoke_without_command=True to be able to print
         # short tool description when starting without parameters
         print(TOOL_VERSION)
+
+        # Check for updates (non-blocking)
+        try:
+            update_message = check_for_updates(__version__)
+            if update_message:
+                click.secho(update_message, fg="yellow", err=True)
+        except Exception:
+            pass
+
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
     def list_commands(self, context: click.Context):

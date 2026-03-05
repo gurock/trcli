@@ -27,8 +27,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()
-    except FileNotFoundError:
-        environment.elog(FAULT_MAPPING["missing_file"])
+    except FileNotFoundError as e:
+        environment.elog(str(e))
         exit(1)
     except ParseError:
         environment.elog(FAULT_MAPPING["invalid_file"])
@@ -42,4 +42,3 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             )
         )
         exit(1)
-

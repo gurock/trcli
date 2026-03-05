@@ -30,8 +30,8 @@ class TestJunitParser:
                 Path(__file__).parent / "test_data/json/root.json",
             ),
             (
-                    Path(__file__).parent / "test_data/XML/ro*t.xml",
-                    Path(__file__).parent / "test_data/json/root.json",
+                Path(__file__).parent / "test_data/XML/ro*t.xml",
+                Path(__file__).parent / "test_data/json/root.json",
             ),
             (
                 Path(__file__).parent / "test_data/XML/required_only.xml",
@@ -40,7 +40,7 @@ class TestJunitParser:
             (
                 Path(__file__).parent / "test_data/XML/custom_automation_id_in_property.xml",
                 Path(__file__).parent / "test_data/json/custom_automation_id_in_property.json",
-            )
+            ),
         ],
         ids=[
             "XML without testsuites root",
@@ -51,9 +51,7 @@ class TestJunitParser:
         ],
     )
     @pytest.mark.parse_junit
-    def test_junit_xml_parser_valid_files(
-        self, input_xml_path: Union[str, Path], expected_path: str, freezer
-    ):
+    def test_junit_xml_parser_valid_files(self, input_xml_path: Union[str, Path], expected_path: str, freezer):
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
         env.case_matcher = MatchersParser.AUTO
@@ -64,8 +62,9 @@ class TestJunitParser:
         print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
-        assert DeepDiff(parsing_result_json, expected_json) == {}, \
-            f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+        assert (
+            DeepDiff(parsing_result_json, expected_json) == {}
+        ), f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_junit
     def test_junit_xml_elapsed_milliseconds(self, freezer):
@@ -80,8 +79,9 @@ class TestJunitParser:
         parsing_result_json = asdict(read_junit)
         file_json = open(Path(__file__).parent / "test_data/json/milliseconds.json")
         expected_json = json.load(file_json)
-        assert DeepDiff(parsing_result_json, expected_json) == {}, \
-            f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+        assert (
+            DeepDiff(parsing_result_json, expected_json) == {}
+        ), f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_sauce(self, freezer):
@@ -90,8 +90,10 @@ class TestJunitParser:
             parsing_result_json = asdict(read_junit)
             file_json = open(expected_path)
             expected_json = json.load(file_json)
-            assert DeepDiff(parsing_result_json, expected_json) == {}, \
-                f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+            assert (
+                DeepDiff(parsing_result_json, expected_json) == {}
+            ), f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
         env.case_matcher = MatchersParser.AUTO
@@ -99,29 +101,35 @@ class TestJunitParser:
         env.special_parser = "saucectl"
         file_reader = JunitParser(env)
         junit_outputs = file_reader.parse_file()
-        _compare(junit_outputs[0], Path(__file__).parent / "test_data/json/sauce1.json",)
-        _compare(junit_outputs[1], Path(__file__).parent / "test_data/json/sauce2.json", )
+        _compare(
+            junit_outputs[0],
+            Path(__file__).parent / "test_data/json/sauce1.json",
+        )
+        _compare(
+            junit_outputs[1],
+            Path(__file__).parent / "test_data/json/sauce2.json",
+        )
 
     @pytest.mark.parse_junit
     @pytest.mark.parametrize(
         "matcher, input_xml_path, expected_path",
         [
             (
-                    MatchersParser.NAME,
-                    Path(__file__).parent / "test_data/XML/root_id_in_name.xml",
-                    Path(__file__).parent / "test_data/json/root_id_in_name.json",
+                MatchersParser.NAME,
+                Path(__file__).parent / "test_data/XML/root_id_in_name.xml",
+                Path(__file__).parent / "test_data/json/root_id_in_name.json",
             ),
             (
-                    MatchersParser.PROPERTY,
-                    Path(__file__).parent / "test_data/XML/root_id_in_property.xml",
-                    Path(__file__).parent / "test_data/json/root_id_in_property.json",
-            )
+                MatchersParser.PROPERTY,
+                Path(__file__).parent / "test_data/XML/root_id_in_property.xml",
+                Path(__file__).parent / "test_data/json/root_id_in_property.json",
+            ),
         ],
         ids=["Case Matcher Name", "Case Matcher Property"],
     )
     @pytest.mark.parse_junit
     def test_junit_xml_parser_id_matcher_name(
-            self, matcher: str, input_xml_path: Union[str, Path], expected_path: str, freezer
+        self, matcher: str, input_xml_path: Union[str, Path], expected_path: str, freezer
     ):
         freezer.move_to("2020-05-20 01:00:00")
         env = Environment()
@@ -132,8 +140,9 @@ class TestJunitParser:
         parsing_result_json = asdict(read_junit)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
-        assert DeepDiff(parsing_result_json, expected_json) == {}, \
-            f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+        assert (
+            DeepDiff(parsing_result_json, expected_json) == {}
+        ), f"Result of parsing Junit XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_invalid_file(self):
@@ -166,15 +175,131 @@ class TestJunitParser:
         with pytest.raises(ValidationException):
             file_reader.parse_file()
 
-    def __clear_unparsable_junit_elements(
-        self, test_rail_suite: TestRailSuite
-    ) -> TestRailSuite:
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_glob_pattern_single_file(self):
+        """Test glob pattern that matches single file"""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        # Use glob pattern that matches only one file
+        env.file = Path(__file__).parent / "test_data/XML/root.xml"
+
+        # This should work just like a regular file path
+        file_reader = JunitParser(env)
+        result = file_reader.parse_file()
+
+        assert len(result) == 1
+        assert isinstance(result[0], TestRailSuite)
+        # Verify it has test sections and cases
+        assert len(result[0].testsections) > 0
+
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_glob_pattern_multiple_files(self):
+        """Test glob pattern that matches multiple files and merges them"""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        # Use glob pattern that matches multiple JUnit XML files
+        env.file = Path(__file__).parent / "test_data/XML/testglob/*.xml"
+
+        file_reader = JunitParser(env)
+        result = file_reader.parse_file()
+
+        # Should return a merged result
+        assert len(result) == 1
+        assert isinstance(result[0], TestRailSuite)
+
+        # Verify merged file was created
+        merged_file = Path.cwd() / "Merged-JUnit-report.xml"
+        assert merged_file.exists(), "Merged JUnit report should be created"
+
+        # Verify the merged result contains test cases from both files
+        total_cases = sum(len(section.testcases) for section in result[0].testsections)
+        assert total_cases > 0, "Merged result should contain test cases"
+
+        # Clean up merged file
+        if merged_file.exists():
+            merged_file.unlink()
+
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_glob_pattern_no_matches(self):
+        """Test glob pattern that matches no files"""
+        with pytest.raises(FileNotFoundError):
+            env = Environment()
+            env.case_matcher = MatchersParser.AUTO
+            # Use glob pattern that matches no files
+            env.file = Path(__file__).parent / "test_data/XML/nonexistent_*.xml"
+            JunitParser(env)
+
+    @pytest.mark.parse_junit
+    def test_junit_check_file_glob_returns_path(self):
+        """Test that check_file method returns valid Path for glob pattern"""
+        # Test single file match
+        single_file_glob = Path(__file__).parent / "test_data/XML/root.xml"
+        result = JunitParser.check_file(single_file_glob)
+        assert isinstance(result, Path)
+        assert result.exists()
+
+        # Test multiple file match (returns merged file path)
+        multi_file_glob = Path(__file__).parent / "test_data/XML/testglob/*.xml"
+        result = JunitParser.check_file(multi_file_glob)
+        assert isinstance(result, Path)
+        assert result.name == "Merged-JUnit-report.xml"
+        assert result.exists()
+
+        # Verify merged file contains valid XML
+        from xml.etree import ElementTree
+
+        tree = ElementTree.parse(result)
+        root = tree.getroot()
+        assert root.tag == "testsuites", "Merged file should have testsuites root"
+
+        # Clean up
+        if result.exists() and result.name == "Merged-JUnit-report.xml":
+            result.unlink()
+
+    @pytest.mark.parse_junit
+    def test_junit_xml_parser_glob_pattern_merges_content(self):
+        """Test that glob pattern properly merges content from multiple files"""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        # Use glob pattern that matches multiple files
+        env.file = Path(__file__).parent / "test_data/XML/testglob/*.xml"
+
+        file_reader = JunitParser(env)
+        result = file_reader.parse_file()
+
+        # Count total test cases across all sections
+        total_cases = sum(len(section.testcases) for section in result[0].testsections)
+
+        # Parse individual files to compare
+        env1 = Environment()
+        env1.case_matcher = MatchersParser.AUTO
+        env1.file = Path(__file__).parent / "test_data/XML/testglob/junit-test-1.xml"
+        result1 = JunitParser(env1).parse_file()
+        cases1 = sum(len(section.testcases) for section in result1[0].testsections)
+
+        env2 = Environment()
+        env2.case_matcher = MatchersParser.AUTO
+        env2.file = Path(__file__).parent / "test_data/XML/testglob/junit-test-2.xml"
+        result2 = JunitParser(env2).parse_file()
+        cases2 = sum(len(section.testcases) for section in result2[0].testsections)
+
+        # Merged result should contain all test cases from both files
+        assert (
+            total_cases == cases1 + cases2
+        ), f"Merged result should contain {cases1 + cases2} cases, but got {total_cases}"
+
+        # Clean up merged file
+        merged_file = Path.cwd() / "Merged-JUnit-report.xml"
+        if merged_file.exists():
+            merged_file.unlink()
+
+    def __clear_unparsable_junit_elements(self, test_rail_suite: TestRailSuite) -> TestRailSuite:
         """helper method to delete junit_result_unparsed field and temporary junit_case_refs attribute,
         which asdict() method of dataclass can't handle"""
         for section in test_rail_suite.testsections:
             for case in section.testcases:
                 case.result.junit_result_unparsed = []
                 # Remove temporary junit_case_refs attribute if it exists
-                if hasattr(case, '_junit_case_refs'):
-                    delattr(case, '_junit_case_refs')
+                if hasattr(case, "_junit_case_refs"):
+                    delattr(case, "_junit_case_refs")
         return test_rail_suite

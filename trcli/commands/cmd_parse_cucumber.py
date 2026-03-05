@@ -132,7 +132,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 environment.log(f"\n=== Auto-Creating {len(features_to_create)} Missing BDD Test Case(s) ===")
 
                 # Load Cucumber JSON to access raw feature data
-                with open(environment.file, "r", encoding="utf-8") as f:
+                with open(parser.filepath, "r", encoding="utf-8") as f:
                     cucumber_data = json.load(f)
 
                 # Get BDD template ID
@@ -151,6 +151,11 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 for feature in cucumber_data:
                     feature_name = feature.get("name", "Untitled Feature")
                     normalized_name = parser._normalize_title(feature_name)
+
+                    # Skip if already created (handles duplicate features from merged files)
+                    if normalized_name in created_case_ids:
+                        environment.vlog(f"Feature '{feature_name}' already created, skipping duplicate")
+                        continue
 
                     # Check if this feature needs creation
                     needs_creation = any(
@@ -263,8 +268,8 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
         else:
             environment.log("Results processing completed")
 
-    except FileNotFoundError:
-        environment.elog(f"Error: Cucumber JSON file not found: {environment.file}")
+    except FileNotFoundError as e:
+        environment.elog(str(e))
         exit(1)
     except json.JSONDecodeError as e:
         environment.elog(f"Error: Invalid JSON format in file: {environment.file}")

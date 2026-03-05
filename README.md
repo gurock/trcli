@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.13.2
+TestRail CLI v1.13.3
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.13.2
+TestRail CLI v1.13.3
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -97,6 +97,7 @@ Commands:
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
+  update         Update TRCLI to the latest version from PyPI.
 ```
 
 Uploading automated test results
@@ -190,8 +191,121 @@ Options:
 | `<testsuite>`      | section         |
 | `<testcase>`       | case            |
 
-For further detail, please refer to the 
+For further detail, please refer to the
 [JUnit to TestRail mapping](https://support.gurock.com/hc/en-us/articles/12989737200276) documentation.
+
+### Using Glob Patterns for Multiple Files
+
+TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML** and **Cucumber JSON** parsers.
+
+#### Important: Shell Quoting Requirement
+
+**Glob patterns must be quoted** to prevent shell from expanding them prematurely. Without quotes, the shell will expand the pattern before passing it to TRCLI, causing unexpected errors.
+
+```bash
+# CORRECT - Pattern quoted (TRCLI handles the expansion)
+trcli parse_junit -f "reports/*.xml" --title "Test Results"
+```
+
+#### Supported Glob Patterns
+
+**Standard wildcards:**
+```bash
+# Match all XML files in directory
+-f "reports/*.xml"
+
+# Match files with specific prefix
+-f "target/surefire-reports/TEST-*.xml"
+
+# Match files with specific suffix
+-f "build/test-results/*-report.xml"
+```
+
+**Recursive search** (matches subdirectories):
+```bash
+# Search all subdirectories recursively
+-f "test-results/**/*.xml"
+
+# Match specific pattern in any subdirectory
+-f "**/robot-output-*.xml"
+```
+
+#### How File Merging Works
+
+When a glob pattern matches **multiple files**, TRCLI automatically:
+
+1. **Expands the pattern** to find all matching files
+2. **Parses each file** individually
+3. **Merges test results** into a single combined report
+4. **Writes merged file** to current directory:
+   - JUnit: `Merged-JUnit-report.xml`
+   - Cucumber: `merged_cucumber.json`
+5. **Processes the merged file** as a single test run upload
+
+When a pattern matches **only one file**, TRCLI processes it directly without merging.
+
+#### Examples
+
+**JUnit XML - Multiple test suites:**
+```bash
+# Merge all JUnit XML files from Maven surefire reports
+trcli -y \
+  -h https://example.testrail.com \
+  --project "My Project" \
+  parse_junit \
+  -f "target/surefire-reports/junitreports/*.xml" \
+  --title "Merged Test Results"
+
+# Merge test results from multiple modules
+trcli parse_junit \
+  -f "build/test-results/**/*.xml" \
+  --title "All Module Tests" \
+  --case-matcher auto
+```
+
+**Cucumber JSON - Multiple test runs:**
+```bash
+# Merge multiple Cucumber JSON reports
+trcli -y \
+  -h https://example.testrail.com \
+  --project "My Project" \
+  parse_cucumber \
+  -f "reports/cucumber-*.json" \
+  --title "Merged Cucumber Tests"
+
+# Recursive search for all Cucumber JSON results
+trcli parse_cucumber \
+  -f "test-results/**/cucumber.json" \
+  --title "All Cucumber Results" \
+  --case-matcher auto
+```
+
+#### Troubleshooting
+
+**Error: "Got unexpected extra argument"**
+- **Cause:** Glob pattern not quoted - shell expanded it before TRCLI
+- **Solution:** Add quotes around the pattern: `-f "reports/*.xml"`
+
+**Error: "File not found"**
+- **Cause:** No files match the glob pattern
+- **Solution:** Verify the pattern and file paths:
+  ```bash
+  # Check what files match your pattern
+  ls reports/*.xml
+
+  # Use absolute path if relative path doesn't work
+  trcli parse_junit -f "/full/path/to/reports/*.xml"
+  ```
+
+**Pattern matches nothing in subdirectories:**
+- **Cause:** Need recursive glob (`**`)
+- **Solution:** Use `**` for recursive matching: `-f "reports/**/*.xml"`
+
+#### Limitations
+
+1. Glob patterns are expanded by Python's `glob` module (not shell), so some advanced bash features may not work
+2. Very large numbers of files (100+) may cause performance issues during merging
+3. Merged files are created in the current working directory
 
 ### Uploading test results
 To submit test case results, the TestRail CLI will attempt to match the test cases in your automation suite to test cases in TestRail.
@@ -1509,7 +1623,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.13.2
+TestRail CLI v1.13.3
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1633,7 +1747,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.13.2
+TestRail CLI v1.13.3
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

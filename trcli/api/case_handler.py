@@ -114,6 +114,14 @@ class CaseHandler:
             case.case_id = response.response_text["id"]
             case.result.case_id = response.response_text["id"]
             case.section_id = response.response_text["section_id"]
+
+            # Propagate case_id to all duplicate cases
+            if hasattr(case, "_duplicates"):
+                for duplicate_case in case._duplicates:
+                    duplicate_case.case_id = response.response_text["id"]
+                    duplicate_case.result.case_id = response.response_text["id"]
+                    duplicate_case.section_id = response.response_text["section_id"]
+
         return response
 
     def update_existing_case_references(
