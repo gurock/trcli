@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Multiple Case IDs - Attachments and Custom Fields" tests="6" failures="1" errors="0" time="18.5">
+  <testsuite name="Attachment and Field Tests" tests="6" failures="1" errors="0" time="18.5">
+
+    <!-- Test 1: Multiple case IDs with attachments -->
+    <testcase classname="com.example.AttachmentTest" name="test_with_attachments" time="2.0">
+      <properties>
+        <property name="test_id" value="C1050400, C1050401, C1050402"/>
+        <property name="testrail_attachment" value="/path/to/screenshot.png"/>
+        <property name="testrail_attachment" value="/path/to/log.txt"/>
+        <property name="testrail_attachment" value="/path/to/video.mp4"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Multiple case IDs with result fields -->
+    <testcase classname="com.example.ResultFieldTest" name="test_with_result_fields" time="3.0">
+      <properties>
+        <property name="test_id" value="C1050410, C1050411, C1050412"/>
+        <property name="testrail_result_field" value="version:1.2.3"/>
+        <property name="testrail_result_field" value="environment:staging"/>
+        <property name="testrail_result_field" value="browser:chrome"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 3: Multiple case IDs with case fields -->
+    <testcase classname="com.example.CaseFieldTest" name="test_with_case_fields" time="2.5">
+      <properties>
+        <property name="test_id" value="C1050420, C1050421"/>
+        <property name="testrail_case_field" value="custom_preconds:Setup database and test users"/>
+        <property name="testrail_case_field" value="custom_automation_type:e2e"/>
+        <property name="testrail_case_field"><![CDATA[custom_steps:1. Login to application
+2. Navigate to dashboard
+3. Verify data loaded]]>
+        </property>
+      </properties>
+    </testcase>
+
+    <!-- Test 4: Multiple case IDs with step results -->
+    <testcase classname="com.example.StepResultTest" name="test_with_step_results" time="4.0">
+      <properties>
+        <property name="test_id" value="C1050430, C1050431, C1050432, C1050433"/>
+        <property name="testrail_result_step" value="passed:Login successful"/>
+        <property name="testrail_result_step" value="passed:Navigate to checkout"/>
+        <property name="testrail_result_step" value="failed:Payment processing failed"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 5: Kitchen sink - all features combined (PASSING) -->
+    <testcase classname="com.example.KitchenSinkTest" name="test_all_features_passing" time="5.0">
+      <properties>
+        <property name="test_id" value="C1050440, C1050441, C1050442"/>
+        <property name="testrail_attachment" value="/evidence/test_screenshot.png"/>
+        <property name="testrail_attachment" value="/evidence/debug.log"/>
+        <property name="testrail_result_field" value="version:2.0.0"/>
+        <property name="testrail_result_field" value="browser:firefox"/>
+        <property name="testrail_case_field" value="custom_automation_type:integration"/>
+        <property name="testrail_result_comment" value="Full integration test executed successfully"/>
+        <property name="testrail_result_step" value="passed:Setup complete"/>
+        <property name="testrail_result_step" value="passed:Execution complete"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 6: Kitchen sink - all features combined (FAILING) -->
+    <testcase classname="com.example.KitchenSinkTest" name="test_all_features_failing" time="2.0">
+      <properties>
+        <property name="test_id" value="C1050450, C1050451"/>
+        <property name="testrail_attachment" value="/failure/error_screenshot.png"/>
+        <property name="testrail_attachment" value="/failure/stack_trace.txt"/>
+        <property name="testrail_result_field" value="version:2.0.0"/>
+        <property name="testrail_result_field" value="environment:production"/>
+        <property name="testrail_case_field" value="custom_preconds:User must be logged in"/>
+        <property name="testrail_result_comment" value="Test failed during checkout"/>
+        <property name="testrail_result_step" value="passed:Login succeeded"/>
+        <property name="testrail_result_step" value="failed:Checkout failed"/>
+      </properties>
+      <failure type="AssertionError" message="Payment gateway returned error">
+Expected: Payment successful
+Actual: Payment failed with error code 500
+Stack trace:
+  at com.example.PaymentTest.testCheckout(PaymentTest.java:45)
+  at com.example.BaseTest.runTest(BaseTest.java:12)
+      </failure>
+    </testcase>
+
+  </testsuite>
+</testsuites>
