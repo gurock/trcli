@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
-from beartype.typing import List
+from beartype.typing import List, Union
+from pathlib import Path
 from xml.etree import ElementTree
+import glob
 
 from trcli.backports import removeprefix
 from trcli.cli import Environment
@@ -20,6 +22,54 @@ class RobotParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+
+    @staticmethod
+    def check_file(filepath: Union[str, Path]) -> Path:
+        """Check and process file path, supporting glob patterns.
+
+        If the filepath contains glob patterns (*, ?, []), expand them:
+        - Single file match: Return that file path
+        - Multiple file matches: Merge the files and return merged file path
+        - No matches: Raise FileNotFoundError
+        """
+        filepath = Path(filepath)
+
+        # Check if this is a glob pattern (contains wildcards)
+        filepath_str = str(filepath)
+        if any(char in filepath_str for char in ["*", "?", "["]):
+            # Expand glob pattern
+            files = glob.glob(filepath_str, recursive=True)
+
+            if not files:
+                raise FileNotFoundError(f"File not found: {filepath}")
+            elif len(files) == 1:
+                # Single file match - return it directly
+                return Path().cwd().joinpath(files[0])
+            else:
+                # Multiple files - merge them
+                merged_root = ElementTree.Element("robot", generator="Robot 7.0 (merged)")
+
+                for file_path in files:
+                    tree = ElementTree.parse(file_path)
+                    root = tree.getroot()
+
+                    # Merge all <suite> elements from each file
+                    for suite in root.findall("suite"):
+                        merged_root.append(suite)
+
+                # Write merged XML to a file
+                merged_tree = ElementTree.ElementTree(merged_root)
+                merged_file_path = Path.cwd() / "Merged-Robot-report.xml"
+
+                # Use UTF-8 encoding explicitly
+                merged_tree.write(merged_file_path, encoding="utf-8", xml_declaration=True)
+
+                return merged_file_path
+        else:
+            # Not a glob pattern - use parent class behavior
+            if not filepath.is_file():
+                raise FileNotFoundError(f"File not found: {filepath}")
+            return filepath
 
     def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing Robot Framework report.")
@@ -46,8 +96,14 @@ class RobotParser(FileParser):
         namespace += f".{name}" if namespace else name
         tests = suite_element.findall("test")
         if tests:
-            section = TestRailSection(namespace)
-            sections_list.append(section)
+            # Check if section with this namespace already exists (for merged files with duplicate suites)
+            section = next((s for s in sections_list if s.name == namespace), None)
+            if section is None:
+                # Create new section if it doesn't exist
+                section = TestRailSection(namespace)
+                sections_list.append(section)
+            # else: reuse existing section and add tests to it
+
             for test in tests:
                 case_id = None
                 case_name = test.get("name")
