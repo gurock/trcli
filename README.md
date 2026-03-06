@@ -196,7 +196,7 @@ For further detail, please refer to the
 
 ### Using Glob Patterns for Multiple Files
 
-TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML** and **Cucumber JSON** parsers.
+TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML**, **Robot Framework**, and **Cucumber JSON** parsers.
 
 #### Important: Shell Quoting Requirement
 
@@ -239,6 +239,7 @@ When a glob pattern matches **multiple files**, TRCLI automatically:
 3. **Merges test results** into a single combined report
 4. **Writes merged file** to current directory:
    - JUnit: `Merged-JUnit-report.xml`
+   - Robot Framework: `Merged-Robot-report.xml`
    - Cucumber: `merged_cucumber.json`
 5. **Processes the merged file** as a single test run upload
 
@@ -261,6 +262,23 @@ trcli parse_junit \
   -f "build/test-results/**/*.xml" \
   --title "All Module Tests" \
   --case-matcher auto
+```
+
+**Robot Framework - Multiple output files:**
+```bash
+# Merge multiple Robot Framework test runs
+trcli -y \
+  -h https://example.testrail.com \
+  --project "My Project" \
+  parse_robot \
+  -f "reports/robot-*.xml" \
+  --title "Merged Robot Tests"
+
+# Recursive search for all Robot outputs
+trcli parse_robot \
+  -f "test-results/**/output.xml" \
+  --title "All Robot Results" \
+  --case-matcher property
 ```
 
 **Cucumber JSON - Multiple test runs:**
