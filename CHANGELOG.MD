@@ -6,6 +6,16 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.13.4]
+
+_released 03-17-2026
+
+### Added
+ - Extended glob support for robot parser
+
+### Fixed
+ - Cannot add empty runs via add_run command due to empty test case validation.
+
 ## [1.13.3]
 
 _released 03-05-2026
