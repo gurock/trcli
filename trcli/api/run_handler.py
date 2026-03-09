@@ -89,8 +89,14 @@ class RunHandler:
         )
 
         # Validate that we have test cases to include in the run
-        # Empty runs are not allowed unless include_all is True
-        if not include_all and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0):
+        # Empty runs are not allowed for parse commands unless include_all is True
+        # However, add_run command explicitly allows empty runs for later result uploads
+        is_add_run_command = self.environment.cmd == "add_run"
+        if (
+            not is_add_run_command
+            and not include_all
+            and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0)
+        ):
             error_msg = (
                 "Cannot create test run: No test cases were matched.\n"
                 "  - For parse_junit: Ensure tests have automation_id/test ids that matches existing cases in TestRail\n"
