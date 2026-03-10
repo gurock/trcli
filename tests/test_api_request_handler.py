@@ -1267,3 +1267,60 @@ class TestApiRequestHandler:
         assert stats["miss_count"] == 1
         assert stats["hit_count"] == 1
         assert stats["hit_rate"] == 50.0  # 1 hit out of 2 total requests
+
+    @pytest.mark.api_handler
+    def test_get_plans_returns_paginated_list(self, api_request_handler: ApiRequestHandler, requests_mock):
+        project_id = 1
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "plans": [
+                {"id": 10, "name": "Plan A"},
+                {"id": 11, "name": "Plan B"},
+            ],
+        }
+        requests_mock.get(create_url(f"get_plans/{project_id}"), json=mocked_response)
+        plans, error = api_request_handler.get_plans(project_id)
+        assert plans == [{"id": 10, "name": "Plan A"}, {"id": 11, "name": "Plan B"}]
+        assert error == ""
+
+    @pytest.mark.api_handler
+    def test_get_plans_cache_hit(self, api_request_handler: ApiRequestHandler, requests_mock):
+        project_id = 1
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "plans": [{"id": 10, "name": "Plan A"}],
+        }
+        requests_mock.get(create_url(f"get_plans/{project_id}"), json=mocked_response)
+        # First call — cache miss
+        api_request_handler.get_plans(project_id)
+        # Second call — should be served from cache
+        plans, error = api_request_handler.get_plans(project_id)
+        assert plans == [{"id": 10, "name": "Plan A"}]
+        assert error == ""
+        # Verify only one HTTP request was made (second was cached)
+        assert requests_mock.call_count == 1
+        # Verify correct cache key was used
+        stats = api_request_handler._cache.get_stats()
+        assert stats["hit_count"] == 1
+
+    @pytest.mark.api_handler
+    def test_get_plan_returns_single_plan(self, api_request_handler: ApiRequestHandler, requests_mock):
+        plan_id = 42
+        plan_dict = {"id": 42, "name": "Release Plan", "entries": []}
+        requests_mock.get(create_url(f"get_plan/{plan_id}"), json=plan_dict)
+        result, error = api_request_handler.get_plan(plan_id)
+        assert result == plan_dict
+        assert error == ""
+
+    @pytest.mark.api_handler
+    def test_get_plan_returns_error_message(self, api_request_handler: ApiRequestHandler, requests_mock):
+        plan_id = 999
+        requests_mock.get(create_url(f"get_plan/{plan_id}"), status_code=400, json={"error": "Field :plan_id is not a valid test plan."})
+        result, error = api_request_handler.get_plan(plan_id)
+        assert error != ""

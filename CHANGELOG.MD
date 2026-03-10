@@ -6,6 +6,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [Unreleased]
+
+### Added
+ - **New Read Commands:** `get_plans`, `get_plan`, `get_suites`, `get_cases`, and `get_case` for retrieving test plans, suites, and cases from TestRail as JSON output. Supports environment variables and all standard authentication flags. (Issue #401)
+
 ## [1.13.3]
 
 _released 03-05-2026
