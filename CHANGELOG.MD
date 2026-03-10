@@ -67,7 +67,6 @@ _released 03-18-2026
 
 ### Fixed
  - Cannot add empty runs via add_run command due to empty test case validation.
-
 ## [1.13.3]
 
 _released 03-05-2026
