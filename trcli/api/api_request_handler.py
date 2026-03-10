@@ -184,6 +184,15 @@ class ApiRequestHandler:
     def get_suite_ids(self, project_id: int) -> Tuple[List[int], str]:
         return self.suite_handler.get_suite_ids(project_id)
 
+    def get_plans(self, project_id: int) -> Tuple[List[dict], str]:
+        """Get all plans for a project (paginated)."""
+        return self.__get_all_plans(project_id)
+
+    def get_plan(self, plan_id: int) -> Tuple[dict, str]:
+        """Get a single plan by ID."""
+        response = self.client.send_get(f"get_plan/{plan_id}")
+        return response.response_text, response.error_message
+
     def add_suites(self, project_id: int) -> Tuple[List[Dict], str]:
         return self.suite_handler.add_suites(project_id, verify_callback=self.response_verifier.verify_returned_data)
 
@@ -452,6 +461,18 @@ class ApiRequestHandler:
 
         def fetch():
             return self.__get_all_entities("suites", f"get_suites/{project_id}", entities=[])
+
+        return self._cache.get_or_fetch(cache_key, fetch, params)
+
+    def __get_all_plans(self, project_id) -> Tuple[List[dict], str]:
+        """
+        Get all plans from all pages (with caching)
+        """
+        cache_key = f"get_plans/{project_id}"
+        params = (project_id,)
+
+        def fetch():
+            return self.__get_all_entities("plans", f"get_plans/{project_id}", entities=[])
 
         return self._cache.get_or_fetch(cache_key, fetch, params)
 

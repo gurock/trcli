@@ -12,6 +12,7 @@ The TestRail CLI currently supports:
 - **Auto-generating test cases from OpenAPI specifications**
 - **Creating new test runs for results to be uploaded to**
 - **Managing project labels for better organization and categorization**
+- **Reading plans, suites, and cases from TestRail as JSON**
 
 To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
@@ -1836,6 +1837,78 @@ expand your test cases to cover specific business logic and workflows.
 | Pattern                               | Test case title example                           |
 |---------------------------------------|---------------------------------------------------|
 | `VERB /path -> status_code (summary)` | `GET /pet/{petId} -> 200 (Successful operation) ` |
+
+Reading data from TestRail
+-----------------
+
+The TestRail CLI provides read-only commands to retrieve plans, suites, and cases from TestRail as JSON.
+These commands output JSON directly to stdout, making them easy to integrate with other tools
+via piping (e.g., `jq`).
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `get_plans` | List all test plans for a project |
+| `get_plan` | Get a single test plan by ID |
+| `get_suites` | List all test suites for a project |
+| `get_cases` | List test cases for a project and suite |
+| `get_case` | Get a single test case by ID |
+
+### Usage Examples
+
+**List all test plans for a project:**
+```shell
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_plans --project-id 1
+```
+
+**Get a single test plan:**
+```shell
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_plan --plan-id 42
+```
+
+**List all test suites for a project:**
+```shell
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_suites --project-id 1
+```
+
+**List test cases (with optional section filter):**
+```shell
+# All cases in a suite
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_cases --project-id 1 --suite-id 3
+
+# Cases in a specific section
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_cases --project-id 1 --suite-id 3 --section-id 10
+```
+
+**Get a single test case:**
+```shell
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_case --case-id 5001
+```
+
+**Using environment variables instead of flags:**
+```shell
+export TR_CLI_HOST=https://example.testrail.io
+export TR_CLI_USERNAME=user@example.com
+export TR_CLI_KEY=YOUR_API_KEY
+
+trcli get_plans --project-id 1
+trcli get_case --case-id 5001
+```
+
+**Piping output to jq:**
+```shell
+trcli get_cases --project-id 1 --suite-id 3 | jq '.[].title'
+```
+
+All read commands output a JSON array or object to stdout. Errors and warnings are printed to stderr,
+so they will not interfere with piped JSON output.
 
 Parameter sources
 -----------------
