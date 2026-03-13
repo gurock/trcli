@@ -1114,6 +1114,157 @@ class TestApiRequestHandler:
         assert 50 in payload["case_ids"], "Should include existing case ID"
 
     @pytest.mark.api_handler
+    def test_update_run_with_assignedto_id_set(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test update_run sends assignedto_id when provided as integer"""
+        run_id = 123
+        run_name = "Updated Run"
+
+        # Mock get_run
+        requests_mock.get(
+            create_url(f"get_run/{run_id}"),
+            json={
+                "id": run_id,
+                "name": "Old Name",
+                "description": "Old description",
+                "refs": "",
+                "plan_id": None,
+                "config_ids": [],
+                "include_all": False,
+            },
+        )
+        # Mock get_tests
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json={"offset": 0, "limit": 250, "size": 0, "_links": {"next": None}, "tests": []},
+        )
+        # Mock update_run
+        requests_mock.post(create_url(f"update_run/{run_id}"), json={"id": run_id, "name": run_name})
+
+        run_data, error = api_request_handler.update_run(
+            run_id=run_id, run_name=run_name, assignedto_id=42  # Setting assignee
+        )
+
+        # Verify API was called with assignedto_id
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if f"update_run/{run_id}" in r.url][0]
+        assert update_request.json()["assignedto_id"] == 42
+        assert error == "", "No error should occur"
+
+    @pytest.mark.api_handler
+    def test_update_run_with_assignedto_id_clear(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test update_run sends assignedto_id as null when clearing"""
+        run_id = 123
+        run_name = "Updated Run"
+
+        # Mock get_run
+        requests_mock.get(
+            create_url(f"get_run/{run_id}"),
+            json={
+                "id": run_id,
+                "name": "Old Name",
+                "description": "Old description",
+                "refs": "",
+                "plan_id": None,
+                "config_ids": [],
+                "include_all": False,
+            },
+        )
+        # Mock get_tests
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json={"offset": 0, "limit": 250, "size": 0, "_links": {"next": None}, "tests": []},
+        )
+        # Mock update_run
+        requests_mock.post(create_url(f"update_run/{run_id}"), json={"id": run_id, "name": run_name})
+
+        run_data, error = api_request_handler.update_run(
+            run_id=run_id, run_name=run_name, assignedto_id=None  # Clearing assignee
+        )
+
+        # Verify API was called with assignedto_id: null
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if f"update_run/{run_id}" in r.url][0]
+        assert update_request.json()["assignedto_id"] is None
+        assert error == "", "No error should occur"
+
+    @pytest.mark.api_handler
+    def test_update_run_without_assignedto_id(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test update_run does NOT send assignedto_id when not provided"""
+        run_id = 123
+        run_name = "Updated Run"
+
+        # Mock get_run
+        requests_mock.get(
+            create_url(f"get_run/{run_id}"),
+            json={
+                "id": run_id,
+                "name": "Old Name",
+                "description": "Old description",
+                "refs": "",
+                "plan_id": None,
+                "config_ids": [],
+                "include_all": False,
+            },
+        )
+        # Mock get_tests
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json={"offset": 0, "limit": 250, "size": 0, "_links": {"next": None}, "tests": []},
+        )
+        # Mock update_run
+        requests_mock.post(create_url(f"update_run/{run_id}"), json={"id": run_id, "name": run_name})
+
+        run_data, error = api_request_handler.update_run(
+            run_id=run_id,
+            run_name=run_name,
+            # assignedto_id not provided (uses sentinel default)
+        )
+
+        # Verify API was called WITHOUT assignedto_id in payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if f"update_run/{run_id}" in r.url][0]
+        assert "assignedto_id" not in update_request.json()
+        assert error == "", "No error should occur"
+
+    @pytest.mark.api_handler
+    def test_update_run_backward_compatibility(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that existing calls without assignedto_id still work"""
+        run_id = 123
+        run_name = "Updated Run"
+
+        # Mock get_run
+        requests_mock.get(
+            create_url(f"get_run/{run_id}"),
+            json={
+                "id": run_id,
+                "name": "Old Name",
+                "description": "Old description",
+                "refs": "REF-OLD",
+                "plan_id": None,
+                "config_ids": [],
+                "include_all": False,
+            },
+        )
+        # Mock get_tests
+        requests_mock.get(
+            create_url(f"get_tests/{run_id}"),
+            json={"offset": 0, "limit": 250, "size": 0, "_links": {"next": None}, "tests": []},
+        )
+        # Mock update_run
+        requests_mock.post(create_url(f"update_run/{run_id}"), json={"id": run_id, "name": run_name})
+
+        # Old-style call without assignedto_id parameter
+        run_data, error = api_request_handler.update_run(
+            run_id=run_id, run_name=run_name, description="Updated description"
+        )
+
+        assert error == "", "No error should occur"
+        assert run_data["id"] == run_id, "Run ID should match"
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if f"update_run/{run_id}" in r.url][0]
+        assert "assignedto_id" not in update_request.json(), "assignedto_id should not be in payload"
+
+    @pytest.mark.api_handler
     def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
         """Test that 413 errors (file too large) are properly reported."""
         run_id = 1

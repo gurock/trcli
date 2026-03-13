@@ -871,6 +871,49 @@ tests are run across parallel, independent test nodes, all nodes should report t
 First, use the `add_run` command to create a new run; then, pass the run title and id to each of the test nodes, which
 will be used to upload all results into the same test run.
 
+#### Update Run Command
+
+The `update_run` command allows you to update an existing test run in TestRail, including managing run assignment.
+
+##### Basic Usage
+
+```bash
+trcli update_run --run-id <run_id> [options]
+```
+
+##### Examples
+
+**Update run title and description:**
+```bash
+trcli -h https://example.testrail.io \
+  --project "My Project" \
+  -u user@example.com \
+  -p password \
+  update_run \
+  --run-id 456 \
+  --title "Regression - Release 2.3" \
+  --run-description "Automated nightly regression suite"
+```
+
+**Assign run to a user:**
+```bash
+trcli update_run --run-id 456 --assignedto 42
+```
+
+**Clear run assignee:**
+```bash
+trcli update_run --run-id 456 --clear-assignee
+```
+
+**Multi-field update:**
+```bash
+trcli update_run \
+  --run-id 456 \
+  --title "Sprint 10 - API Tests" \
+  --run-description "Full regression suite for API endpoints" \
+  --assignedto 42
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.

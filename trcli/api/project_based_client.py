@@ -213,15 +213,19 @@ class ProjectBasedClient:
         else:
             self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
-            run, error_message = self.api_request_handler.update_run(
-                run_id,
-                self.run_name,
-                start_date=self.environment.run_start_date,
-                end_date=self.environment.run_end_date,
-                milestone_id=self.environment.milestone_id,
-                refs=self.environment.run_refs,
-                refs_action=getattr(self.environment, "run_refs_action", "add"),
-            )
+
+            # Build kwargs for update_run
+            update_kwargs = {
+                "run_id": run_id,
+                "run_name": self.run_name,
+                "description": self.environment.run_description,
+            }
+
+            # Only add assignedto_id if it was explicitly set by the command
+            if hasattr(self.environment, "assignedto_id"):
+                update_kwargs["assignedto_id"] = self.environment.assignedto_id
+
+            run, error_message = self.api_request_handler.update_run(**update_kwargs)
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)
             close_run, error_message = self.api_request_handler.close_run(run_id)

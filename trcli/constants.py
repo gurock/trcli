@@ -75,6 +75,7 @@ FAULT_MAPPING = dict(
 
 COMMAND_FAULT_MAPPING = dict(
     add_run=dict(**FAULT_MAPPING, **ADD_RUN_FAULT_MAPPING),
+    update_run=dict(**FAULT_MAPPING),
     parse_junit=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING, **PARSE_JUNIT_OR_ROBOT_FAULT_MAPPING),
     import_gherkin=dict(**FAULT_MAPPING, **PARSE_COMMON_FAULT_MAPPING),
     export_gherkin=dict(**FAULT_MAPPING),
@@ -107,6 +108,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
+    - update_run: Update an existing test run
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)"""
 

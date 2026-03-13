@@ -384,6 +384,71 @@ class TestProjectBasedClient:
         assert run_id == 1, f"Expected run_id to be 1 but got {run_id} instead."
         assert error_message == "", f"Expected error message to be None but got {error_message} instead."
 
+    def test_create_or_update_test_run_with_assignedto_id(self, project_based_client_data_provider):
+        """Test that assignedto_id is passed to update_run when set on environment"""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.run_id = 123  # Update mode
+        environment.assignedto_id = 42  # Set assignee
+        environment.auto_close_run = False
+        api_request_handler.update_run.return_value = ({"id": 123}, None)
+        project_based_client.resolve_project()
+
+        run_id, error = project_based_client.create_or_update_test_run()
+
+        # Verify update_run was called
+        assert api_request_handler.update_run.called, "update_run should have been called"
+
+        # Get the kwargs passed to update_run
+        call_kwargs = api_request_handler.update_run.call_args[1]
+
+        # Verify assignedto_id was passed
+        assert "assignedto_id" in call_kwargs, "assignedto_id should be in kwargs"
+        assert (
+            call_kwargs["assignedto_id"] == 42
+        ), f"Expected assignedto_id to be 42 but got {call_kwargs['assignedto_id']}"
+        assert run_id == 123, f"Expected run_id to be 123 but got {run_id}"
+        assert error is None, f"Expected no error but got {error}"
+
+    def test_create_or_update_test_run_without_assignedto_id(self, project_based_client_data_provider, mocker):
+        """Test that assignedto_id is NOT passed when not set on environment"""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.run_id = 123  # Update mode
+        environment.auto_close_run = False
+
+        # Configure hasattr to return False for assignedto_id
+        original_hasattr = hasattr
+
+        def custom_hasattr(obj, name):
+            if obj is environment and name == "assignedto_id":
+                return False
+            return original_hasattr(obj, name)
+
+        mocker.patch("builtins.hasattr", side_effect=custom_hasattr)
+
+        api_request_handler.update_run.return_value = ({"id": 123}, None)
+        project_based_client.resolve_project()
+
+        run_id, error = project_based_client.create_or_update_test_run()
+
+        # Verify update_run was called
+        assert api_request_handler.update_run.called, "update_run should have been called"
+
+        # Get the kwargs passed to update_run
+        call_kwargs = api_request_handler.update_run.call_args[1]
+
+        # Verify assignedto_id was NOT passed
+        assert "assignedto_id" not in call_kwargs, "assignedto_id should NOT be in kwargs when not set"
+        assert run_id == 123, f"Expected run_id to be 123 but got {run_id}"
+        assert error is None, f"Expected no error but got {error}"
+
     def test_get_project_id(self, project_based_client_data_provider):
         """The purpose of this test is to check that the _get_project_id() will fall back to the environment.project_id
         when environment.project does not contain the project_id."""

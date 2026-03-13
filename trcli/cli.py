@@ -78,6 +78,8 @@ class Environment:
         self.auto_close_run = None
         self.run_refs = None
         self.test_run_ref = None
+        self.assignedto = None  # NEW: --assignedto flag value for update_run
+        self.clear_assignee = None  # NEW: --clear-assignee flag value for update_run
         self.json_output = None
         self.update_existing_cases = None
         self.update_strategy = None
@@ -313,7 +315,20 @@ class TRCLI(click.MultiCommand):
         for filename in cmd_folder.iterdir():
             if filename.name.endswith(".py") and filename.name.startswith("cmd_"):
                 commands.append(filename.name[4:-3])
-        commands.sort()
+
+        preferred_order = [
+            "add_run",
+            "update_run",
+        ]
+
+        # Sort with custom priority: preferred commands first, then alphabetical
+        def sort_key(cmd):
+            if cmd in preferred_order:
+                return (0, preferred_order.index(cmd))
+            else:
+                return (1, cmd)
+
+        commands.sort(key=sort_key)
         return commands
 
     def get_command(self, context: click.Context, name: str):

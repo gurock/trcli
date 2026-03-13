@@ -8,7 +8,7 @@ It manages all test run operations including:
 - Closing and deleting runs
 """
 
-from beartype.typing import List, Tuple, Dict
+from beartype.typing import List, Tuple, Dict, Union
 
 from trcli.api.api_client import APIClient
 from trcli.api.api_utils import (
@@ -89,8 +89,14 @@ class RunHandler:
         )
 
         # Validate that we have test cases to include in the run
-        # Empty runs are not allowed unless include_all is True
-        if not include_all and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0):
+        # Empty runs are not allowed for parse commands unless include_all is True
+        # However, add_run command explicitly allows empty runs for later result uploads
+        is_add_run_command = self.environment.cmd == "add_run"
+        if (
+            not is_add_run_command
+            and not include_all
+            and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0)
+        ):
             error_msg = (
                 "Cannot create test run: No test cases were matched.\n"
                 "  - For parse_junit: Ensure tests have automation_id/test ids that matches existing cases in TestRail\n"
@@ -124,42 +130,41 @@ class RunHandler:
         self,
         run_id: int,
         run_name: str,
-        start_date: str = None,
-        end_date: str = None,
-        milestone_id: int = None,
-        refs: str = None,
-        refs_action: str = "add",
+        description: str = None,
+        assignedto_id: Union[int, None] = ...,
     ) -> Tuple[dict, str]:
         """
         Updates an existing run
 
         :param run_id: run id
-        :param run_name: run name
-        :param start_date: start date
-        :param end_date: end date
-        :param milestone_id: milestone id
-        :param refs: references to manage
-        :param refs_action: action to perform ('add', 'update', 'delete')
+        :param run_name: run name (title)
+        :param description: run description
+        :param assignedto_id: user ID to assign (int), None to clear, or ... to leave unchanged
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
         if run_response.error_message:
             return None, run_response.error_message
 
-        existing_description = run_response.response_text.get("description", "")
+        # Get existing values to preserve what's not being updated
+        existing_milestone_id = run_response.response_text.get("milestone_id")
         existing_refs = run_response.response_text.get("refs", "")
 
-        add_run_data = self.data_provider.add_run(
-            run_name, start_date=start_date, end_date=end_date, milestone_id=milestone_id
-        )
-        add_run_data["description"] = existing_description  # Retain the current description
+        add_run_data = self.data_provider.add_run(run_name, milestone_id=existing_milestone_id)
 
-        # Handle references based on action
-        if refs is not None:
-            updated_refs = self._manage_references(existing_refs, refs, refs_action)
-            add_run_data["refs"] = updated_refs
+        # Set description - use provided value or keep existing
+        if description is not None:
+            add_run_data["description"] = description
         else:
-            add_run_data["refs"] = existing_refs  # Keep existing refs if none provided
+            add_run_data["description"] = run_response.response_text.get("description", "")
+
+        # Preserve existing refs
+        add_run_data["refs"] = existing_refs
+
+        # Handle assignedto_id - only add to payload if explicitly provided
+        if assignedto_id is not ...:
+            add_run_data["assignedto_id"] = assignedto_id  # Can be None (clears) or int (sets)
+        # else: Don't include assignedto_id in payload (no change to existing assignee)
 
         existing_include_all = run_response.response_text.get("include_all", False)
         add_run_data["include_all"] = existing_include_all
