@@ -1746,8 +1746,6 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
 
 - **Update Mode Only**: The `--clear-run-assigned-to-id` flag can only be used when updating an existing run (requires `--run-id`)
 - **Mutually Exclusive**: You cannot use both `--run-assigned-to-id` and `--clear-run-assigned-to-id` in the same command
-- **No Change**: If neither flag is provided during an update, the existing assignee remains unchanged
-- **User ID Format**: User IDs must be positive integers (x>=1)
 
 #### Examples
 
