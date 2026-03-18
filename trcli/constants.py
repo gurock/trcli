@@ -71,6 +71,12 @@ FAULT_MAPPING = dict(
     attachment_upload_failed="Failed to upload attachment '{file_path}' for case {case_id}: {error_message}",
     attachment_too_large="Failed to upload attachment '{file_name}' for case {case_id}: "
     "File size exceeds TestRail's maximum limit of 250 MB. Please reduce the file size or exclude this attachment.",
+    multisuite_requires_name_or_property="ERROR: --special-parser multisuite requires --case-matcher to be 'name' or 'property'.",
+    multisuite_run_id_not_supported="ERROR: --run-id cannot be used with --special-parser multisuite. Use --plan-id to add runs to an existing plan.",
+    multisuite_missing_case_ids="ERROR: All test cases must have case IDs when using multisuite parser. Found {count} case(s) without IDs.",
+    multisuite_cross_project_cases="WARNING: Skipped {count} test case(s) belonging to different project(s). Case IDs: {case_ids}",
+    multisuite_plan_creation_failed="ERROR: Failed to create test plan: {error_message}",
+    multisuite_fetch_case_failed="ERROR: Failed to fetch case information for case ID {case_id}: {error_message}",
 )
 
 COMMAND_FAULT_MAPPING = dict(

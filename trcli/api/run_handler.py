@@ -318,3 +318,36 @@ class RunHandler:
         """
         response = self.client.send_post(f"delete_run/{run_id}", payload={})
         return response.response_text, response.error_message
+
+    def add_plan(
+        self,
+        project_id: int,
+        plan_name: str,
+        entries: List[Dict],
+        description: str = None,
+        milestone_id: int = None,
+    ) -> Tuple[dict, str]:
+        """
+        Creates a new test plan with multiple test runs (one per suite).
+
+        :param project_id: project id
+        :param plan_name: name for the test plan
+        :param entries: list of entry dictionaries, each containing suite_id and case_ids
+            Example: [{"suite_id": 1, "include_all": False, "case_ids": [1, 2, 3]}]
+        :param description: optional description for the plan
+        :param milestone_id: optional milestone id to associate with the plan
+        :returns: Tuple with plan response dict and error string.
+        """
+        plan_data = {
+            "name": plan_name,
+            "entries": entries,
+        }
+
+        if description:
+            plan_data["description"] = description
+
+        if milestone_id:
+            plan_data["milestone_id"] = milestone_id
+
+        response = self.client.send_post(f"add_plan/{project_id}", plan_data)
+        return response.response_text, response.error_message
