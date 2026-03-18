@@ -256,8 +256,11 @@ class ApiRequestHandler:
         milestone_id: int = None,
         refs: str = None,
         refs_action: str = "add",
+        assigned_to_id: Union[int, None] = ...,
     ) -> Tuple[dict, str]:
-        return self.run_handler.update_run(run_id, run_name, start_date, end_date, milestone_id, refs, refs_action)
+        return self.run_handler.update_run(
+            run_id, run_name, start_date, end_date, milestone_id, refs, refs_action, assigned_to_id
+        )
 
     def _manage_references(self, existing_refs: str, new_refs: str, action: str) -> str:
         return self.run_handler._manage_references(existing_refs, new_refs, action)

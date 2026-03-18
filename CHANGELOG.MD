@@ -12,6 +12,7 @@ _released 03-17-2026
 
 ### Added
  - Extended glob support for robot parser
+ - Added `--clear-run-assigned-to-id` flag to `add_run` command for clearing test run assignees during updates
 
 ### Fixed
  - Cannot add empty runs via add_run command due to empty test case validation.

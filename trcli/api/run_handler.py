@@ -8,7 +8,7 @@ It manages all test run operations including:
 - Closing and deleting runs
 """
 
-from beartype.typing import List, Tuple, Dict
+from beartype.typing import List, Tuple, Dict, Union
 
 from trcli.api.api_client import APIClient
 from trcli.api.api_utils import (
@@ -135,6 +135,7 @@ class RunHandler:
         milestone_id: int = None,
         refs: str = None,
         refs_action: str = "add",
+        assigned_to_id: Union[int, None] = ...,
     ) -> Tuple[dict, str]:
         """
         Updates an existing run
@@ -142,10 +143,11 @@ class RunHandler:
         :param run_id: run id
         :param run_name: run name
         :param start_date: start date
-        :param end_date: end date
+        :param end_date: end_date: end date
         :param milestone_id: milestone id
         :param refs: references to manage
         :param refs_action: action to perform ('add', 'update', 'delete')
+        :param assigned_to_id: user ID to assign (int), None to clear, or ... to leave unchanged
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
@@ -166,6 +168,11 @@ class RunHandler:
             add_run_data["refs"] = updated_refs
         else:
             add_run_data["refs"] = existing_refs  # Keep existing refs if none provided
+
+        # Handle assigned_to_id - only add to payload if explicitly provided
+        if assigned_to_id is not ...:
+            add_run_data["assignedto_id"] = assigned_to_id  # Can be None (clears) or int (sets)
+        # else: Don't include assignedto_id in payload (no change to existing assignee)
 
         existing_include_all = run_response.response_text.get("include_all", False)
         add_run_data["include_all"] = existing_include_all
