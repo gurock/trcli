@@ -213,6 +213,15 @@ class ProjectBasedClient:
         else:
             self.environment.log(f"Updating test run. ", new_line=False)
             run_id = self.environment.run_id
+
+            # Determine assigned_to_id value based on flags
+            if hasattr(self.environment, "clear_run_assigned_to_id") and self.environment.clear_run_assigned_to_id:
+                assigned_to_id = None  # Clear the assignee
+            elif self.environment.run_assigned_to_id:
+                assigned_to_id = self.environment.run_assigned_to_id  # Set new assignee
+            else:
+                assigned_to_id = ...  # Don't change (sentinel value)
+
             run, error_message = self.api_request_handler.update_run(
                 run_id,
                 self.run_name,
@@ -221,6 +230,7 @@ class ProjectBasedClient:
                 milestone_id=self.environment.milestone_id,
                 refs=self.environment.run_refs,
                 refs_action=getattr(self.environment, "run_refs_action", "add"),
+                assigned_to_id=assigned_to_id,
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)

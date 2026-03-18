@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.13.3
+TestRail CLI v1.13.4
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.13.3
+TestRail CLI v1.13.4
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -196,7 +196,7 @@ For further detail, please refer to the
 
 ### Using Glob Patterns for Multiple Files
 
-TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML** and **Cucumber JSON** parsers.
+TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML**, **Robot Framework**, and **Cucumber JSON** parsers.
 
 #### Important: Shell Quoting Requirement
 
@@ -239,6 +239,7 @@ When a glob pattern matches **multiple files**, TRCLI automatically:
 3. **Merges test results** into a single combined report
 4. **Writes merged file** to current directory:
    - JUnit: `Merged-JUnit-report.xml`
+   - Robot Framework: `Merged-Robot-report.xml`
    - Cucumber: `merged_cucumber.json`
 5. **Processes the merged file** as a single test run upload
 
@@ -261,6 +262,23 @@ trcli parse_junit \
   -f "build/test-results/**/*.xml" \
   --title "All Module Tests" \
   --case-matcher auto
+```
+
+**Robot Framework - Multiple output files:**
+```bash
+# Merge multiple Robot Framework test runs
+trcli -y \
+  -h https://example.testrail.com \
+  --project "My Project" \
+  parse_robot \
+  -f "reports/robot-*.xml" \
+  --title "Merged Robot Tests"
+
+# Recursive search for all Robot outputs
+trcli parse_robot \
+  -f "test-results/**/output.xml" \
+  --title "All Robot Results" \
+  --case-matcher property
 ```
 
 **Cucumber JSON - Multiple test runs:**
@@ -1623,7 +1641,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.13.3
+TestRail CLI v1.13.4
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1640,6 +1658,8 @@ Options:
   --run-end-date         The expected or scheduled end date of this test run in MM/DD/YYYY format
   --run-assigned-to-id   The ID of the user the test run should be assigned
                          to.  [x>=1]
+  --clear-run-assigned-to-id  Clear the assignee of the test run (only valid
+                         when updating with --run-id).
   --run-include-all      Use this option to include all test cases in this test run.
   --auto-close-run       Use this option to automatically close the created run.
   --run-case-ids         Comma separated list of test case IDs to include in
@@ -1712,6 +1732,39 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
 - **Action Requirements**: `update` and `delete` actions require an existing run (--run-id must be provided)
 - **Validation**: Invalid reference formats are rejected with clear error messages
 
+### Managing Assignees in Test Runs
+
+The `add_run` command supports comprehensive assignee management for test runs. You can assign runs to users when creating or updating them, and clear assignees when needed.
+
+#### Assigning Runs to Users
+
+When creating a new test run or updating an existing one, you can assign it to a user using the `--run-assigned-to-id` option:
+
+```bash
+# Create a new run and assign to user ID 5
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "My Test Run" --run-assigned-to-id 5
+
+# Update an existing run and change the assignee
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --run-assigned-to-id 10
+```
+
+#### Clearing Assignees from Test Runs
+
+To remove the assignee from an existing test run, use the `--clear-run-assigned-to-id` flag:
+
+```bash
+# Clear the assignee from an existing run
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-assigned-to-id
+```
+
+#### Assignee Management Rules
+
+- **Update Mode Only**: The `--clear-run-assigned-to-id` flag can only be used when updating an existing run (requires `--run-id`)
+- **Mutually Exclusive**: You cannot use both `--run-assigned-to-id` and `--clear-run-assigned-to-id` in the same command
+
 #### Examples
 
 **Complete Workflow Example:**
@@ -1747,7 +1800,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.13.3
+TestRail CLI v1.13.4
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
