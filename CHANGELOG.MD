@@ -13,6 +13,7 @@ _released 03-17-2026
 ### Added
  - Extended glob support for robot parser
  - Added `--clear-run-assigned-to-id` flag to `add_run` command for clearing test run assignees during updates
+ - Added `multisuite` special-parser for creating cross-suite test plans from JUnit reports (automatically groups test cases by suite and creates one test run per suite within a single test plan; supports `--plan-id` for adding to existing plans)
 
 ### Fixed
  - Cannot add empty runs via add_run command due to empty test case validation.

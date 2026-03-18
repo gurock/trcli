@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Multisuite Test Report" tests="9" failures="2" errors="0" time="45.0">
+  <testsuite name="Cross-Suite Tests" tests="9" failures="2" errors="0" time="45.0">
+
+    <!-- Cases from Suite A (Authentication Suite) -->
+    <testcase classname="com.example.auth.LoginTest" name="test_login_valid_credentials" time="2.5">
+      <properties>
+        <property name="test_id" value="C100"/>
+        <property name="testrail_result_comment" value="Login test passed successfully"/>
+        <property name="testrail_attachment" value="/path/to/screenshot1.png"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="com.example.auth.LoginTest" name="test_login_invalid_password" time="1.8">
+      <properties>
+        <property name="test_id" value="C101"/>
+      </properties>
+      <failure type="AssertionError" message="Expected error message not displayed">
+        Expected: "Invalid password" message to be displayed
+        Actual: No error message shown
+      </failure>
+    </testcase>
+
+    <testcase classname="com.example.auth.LogoutTest" name="test_logout_normal" time="1.2">
+      <properties>
+        <property name="test_id" value="C102"/>
+      </properties>
+    </testcase>
+
+    <!-- Cases from Suite B (Shopping Cart Suite) -->
+    <testcase classname="com.example.cart.AddItemTest" name="test_add_single_item" time="3.5">
+      <properties>
+        <property name="test_id" value="C200"/>
+        <property name="testrail_result_field" value="custom_steps:Step 1: Add item\nStep 2: Verify cart"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="com.example.cart.AddItemTest" name="test_add_multiple_items" time="5.0">
+      <properties>
+        <property name="test_id" value="C201"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="com.example.cart.RemoveItemTest" name="test_remove_item" time="2.8">
+      <properties>
+        <property name="test_id" value="C202"/>
+      </properties>
+      <failure type="AssertionError" message="Item not removed from cart">
+        Expected: Cart count to decrease by 1
+        Actual: Cart count unchanged
+      </failure>
+    </testcase>
+
+    <!-- Cases from Suite C (Payment Suite) -->
+    <testcase classname="com.example.payment.CheckoutTest" name="test_checkout_credit_card" time="7.5">
+      <properties>
+        <property name="test_id" value="C300"/>
+        <property name="testrail_case_field" value="custom_preconds:User must be logged in with items in cart"/>
+        <property name="testrail_attachment" value="/path/to/payment_screenshot.png"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="com.example.payment.CheckoutTest" name="test_checkout_paypal" time="8.2">
+      <properties>
+        <property name="test_id" value="C301"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="com.example.payment.RefundTest" name="test_process_refund" time="12.5">
+      <properties>
+        <property name="test_id" value="C302"/>
+        <property name="testrail_result_comment" value="Refund processing test completed"/>
+      </properties>
+    </testcase>
+
+  </testsuite>
+</testsuites>
