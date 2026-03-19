@@ -8,12 +8,11 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.13.4]
 
-_released 03-17-2026
+_released 03-18-2026
 
 ### Added
- - Extended glob support for robot parser
- - Added `--clear-run-assigned-to-id` flag to `add_run` command for clearing test run assignees during updates
- - Added `multisuite` special-parser for creating cross-suite test plans from JUnit reports (automatically groups test cases by suite and creates one test run per suite within a single test plan; supports `--plan-id` for adding to existing plans)
+ - Extended glob support for robot parser for efficient multiple test result file processing
+ - Added `--run-assigned-to-id` and `--clear-run-assigned-to-id` options to `add_run` command for clearing and setting test run assignees during run creation and updates
 
 ### Fixed
  - Cannot add empty runs via add_run command due to empty test case validation.
