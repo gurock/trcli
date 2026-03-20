@@ -257,9 +257,20 @@ class ApiRequestHandler:
         refs: str = None,
         refs_action: str = "add",
         assigned_to_id: Union[int, None] = ...,
+        include_all: Union[bool, type(...)] = ...,
+        case_ids: Union[List[int], type(...)] = ...,
     ) -> Tuple[dict, str]:
         return self.run_handler.update_run(
-            run_id, run_name, start_date, end_date, milestone_id, refs, refs_action, assigned_to_id
+            run_id,
+            run_name,
+            start_date,
+            end_date,
+            milestone_id,
+            refs,
+            refs_action,
+            assigned_to_id,
+            include_all,
+            case_ids,
         )
 
     def _manage_references(self, existing_refs: str, new_refs: str, action: str) -> str:

@@ -145,6 +145,10 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     if environment.run_refs_action == "delete" and not environment.run_refs and environment.run_id:
         environment.run_refs = ""
 
+    if environment.run_case_ids and environment.run_include_all:
+        environment.elog("Error: --run-case-ids and --run-include-all cannot be used together.")
+        exit(1)
+
     print_config(environment)
 
     project_client = ProjectBasedClient(
