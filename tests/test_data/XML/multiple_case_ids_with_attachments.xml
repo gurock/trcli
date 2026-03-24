@@ -27,7 +27,7 @@
       <properties>
         <property name="test_id" value="C1050420, C1050421"/>
         <property name="testrail_case_field" value="custom_preconds:Setup database and test users"/>
-        <property name="testrail_case_field" value="custom_automation_type:e2e"/>
+        <property name="testrail_case_field" value="custom_automation_type:1"/>
         <property name="testrail_case_field"><![CDATA[custom_steps:1. Login to application
 2. Navigate to dashboard
 3. Verify data loaded]]>
@@ -53,7 +53,7 @@
         <property name="testrail_attachment" value="/evidence/debug.log"/>
         <property name="testrail_result_field" value="version:2.0.0"/>
         <property name="testrail_result_field" value="browser:firefox"/>
-        <property name="testrail_case_field" value="custom_automation_type:integration"/>
+        <property name="testrail_case_field" value="custom_automation_type:1"/>
         <property name="testrail_result_comment" value="Full integration test executed successfully"/>
         <property name="testrail_result_step" value="passed:Setup complete"/>
         <property name="testrail_result_step" value="passed:Execution complete"/>

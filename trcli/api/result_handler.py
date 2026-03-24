@@ -44,61 +44,60 @@ class ResultHandler:
         self.__get_all_tests_in_run = get_all_tests_in_run_callback
         self.handle_futures = handle_futures_callback
 
-    def upload_attachments(self, report_results: List[Dict], results: List[Dict], run_id: int):
+    def upload_attachments(self, report_results: List[Dict], case_id_to_result_id: Dict[int, int]):
         """
-        Getting test result id and upload attachments for it.
+        Upload attachments to test results.
 
         :param report_results: List of test results with attachments from report
-        :param results: List of created results from TestRail
-        :param run_id: Run ID
+        :param case_id_to_result_id: Mapping from case_id to result_id
         """
-        tests_in_run, error = self.__get_all_tests_in_run(run_id)
-        if not error:
-            failed_uploads = []
-            for report_result in report_results:
-                case_id = report_result["case_id"]
-                test_id = next((test["id"] for test in tests_in_run if test["case_id"] == case_id), None)
-                result_id = next((result["id"] for result in results if result["test_id"] == test_id), None)
-                for file_path in report_result.get("attachments"):
-                    try:
-                        with open(file_path, "rb") as file:
-                            response = self.client.send_post(
-                                f"add_attachment_to_result/{result_id}", files={"attachment": file}
-                            )
+        failed_uploads = []
+        for report_result in report_results:
+            case_id = report_result["case_id"]
+            result_id = case_id_to_result_id.get(case_id)
 
-                            # Check if upload was successful
-                            if response.status_code != 200:
-                                file_name = os.path.basename(file_path)
+            if result_id is None:
+                self.environment.elog(f"Unable to find result_id for case {case_id}, skipping attachments.")
+                continue
 
-                                # Handle 413 Request Entity Too Large specifically
-                                if response.status_code == 413:
-                                    error_msg = FAULT_MAPPING["attachment_too_large"].format(
-                                        file_name=file_name, case_id=case_id
-                                    )
-                                    self.environment.elog(error_msg)
-                                    failed_uploads.append(f"{file_name} (case {case_id})")
-                                else:
-                                    # Handle other HTTP errors
-                                    error_msg = FAULT_MAPPING["attachment_upload_failed"].format(
-                                        file_path=file_name,
-                                        case_id=case_id,
-                                        error_message=response.error_message or f"HTTP {response.status_code}",
-                                    )
-                                    self.environment.elog(error_msg)
-                                    failed_uploads.append(f"{file_name} (case {case_id})")
-                    except FileNotFoundError:
-                        self.environment.elog(f"Attachment file not found: {file_path} (case {case_id})")
-                        failed_uploads.append(f"{file_path} (case {case_id})")
-                    except Exception as ex:
-                        file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
-                        self.environment.elog(f"Error uploading attachment '{file_name}' for case {case_id}: {ex}")
-                        failed_uploads.append(f"{file_name} (case {case_id})")
+            for file_path in report_result.get("attachments"):
+                try:
+                    with open(file_path, "rb") as file:
+                        response = self.client.send_post(
+                            f"add_attachment_to_result/{result_id}", files={"attachment": file}
+                        )
 
-            # Provide a summary if there were failed uploads
-            if failed_uploads:
-                self.environment.log(f"\nWarning: {len(failed_uploads)} attachment(s) failed to upload.")
-        else:
-            self.environment.elog(f"Unable to upload attachments due to API request error: {error}")
+                        # Check if upload was successful
+                        if response.status_code != 200:
+                            file_name = os.path.basename(file_path)
+
+                            # Handle 413 Request Entity Too Large specifically
+                            if response.status_code == 413:
+                                error_msg = FAULT_MAPPING["attachment_too_large"].format(
+                                    file_name=file_name, case_id=case_id
+                                )
+                                self.environment.elog(error_msg)
+                                failed_uploads.append(f"{file_name} (case {case_id})")
+                            else:
+                                # Handle other HTTP errors
+                                error_msg = FAULT_MAPPING["attachment_upload_failed"].format(
+                                    file_path=file_name,
+                                    case_id=case_id,
+                                    error_message=response.error_message or f"HTTP {response.status_code}",
+                                )
+                                self.environment.elog(error_msg)
+                                failed_uploads.append(f"{file_name} (case {case_id})")
+                except FileNotFoundError:
+                    self.environment.elog(f"Attachment file not found: {file_path} (case {case_id})")
+                    failed_uploads.append(f"{file_path} (case {case_id})")
+                except Exception as ex:
+                    file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
+                    self.environment.elog(f"Error uploading attachment '{file_name}' for case {case_id}: {ex}")
+                    failed_uploads.append(f"{file_name} (case {case_id})")
+
+        # Provide a summary if there were failed uploads
+        if failed_uploads:
+            self.environment.log(f"\nWarning: {len(failed_uploads)} attachment(s) failed to upload.")
 
     def add_results(self, run_id: int) -> Tuple[List, str, int]:
         """
@@ -135,6 +134,18 @@ class ResultHandler:
                 responses = ResultHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
         results = [result for results_list in responses for result in results_list]
+
+        # Build case_id to result_id mapping based on order correspondence
+        # TestRail API preserves order, so we can match requests to responses
+        case_id_to_result_id = {}
+        for request_body, response_results in zip(add_results_data_chunks, responses):
+            # Match request case_ids to response result_ids by order
+            for request_result, response_result in zip(request_body["results"], response_results):
+                case_id = request_result.get("case_id")
+                result_id = response_result.get("id")
+                if case_id and result_id:
+                    case_id_to_result_id[case_id] = result_id
+
         report_results_w_attachments = []
         for results_data_chunk in add_results_data_chunks:
             for test_result in results_data_chunk["results"]:
@@ -147,7 +158,7 @@ class ResultHandler:
             self.environment.log(
                 f"Uploading {attachments_count} attachments " f"for {len(report_results_w_attachments)} test results."
             )
-            self.upload_attachments(report_results_w_attachments, results, run_id)
+            self.upload_attachments(report_results_w_attachments, case_id_to_result_id)
         else:
             self.environment.log(f"No attachments found to upload.")
 
