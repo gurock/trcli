@@ -1660,6 +1660,16 @@ Options:
                          to.  [x>=1]
   --clear-run-assigned-to-id  Clear the assignee of the test run (only valid
                          when updating with --run-id).
+  --clear-run-description  Clear the description of the test run (only valid
+                         when updating with --run-id).
+  --clear-milestone-id   Clear the milestone association of the test run (only
+                         valid when updating with --run-id).
+  --clear-run-start-date  Clear the start date of the test run (only valid
+                         when updating with --run-id).
+  --clear-run-end-date   Clear the end date of the test run (only valid when
+                         updating with --run-id).
+  --clear-run-case-ids   Clear all case IDs from the test run (only valid when
+                         updating with --run-id).
   --run-include-all      Use this option to include all test cases in this test run.
   --auto-close-run       Use this option to automatically close the created run.
   --run-case-ids         Comma separated list of test case IDs to include in
@@ -1765,29 +1775,70 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
 - **Update Mode Only**: The `--clear-run-assigned-to-id` flag can only be used when updating an existing run (requires `--run-id`)
 - **Mutually Exclusive**: You cannot use both `--run-assigned-to-id` and `--clear-run-assigned-to-id` in the same command
 
-#### Examples
+### Clearing Run Attributes
 
-**Complete Workflow Example:**
+The `add_run` command provides `--clear-*` flags to remove (set to null) various run attributes during updates. All clear flags require `--run-id` and are mutually exclusive with their corresponding set parameters.
+
+#### Available Clear Flags
+
+| Flag | Clears | API Effect | Mutually Exclusive With |
+|------|--------|------------|------------------------|
+| `--clear-run-description` | Description text | Sets `description: null` | `--run-description` |
+| `--clear-milestone-id` | Milestone association | Sets `milestone_id: null` | `--milestone-id` |
+| `--clear-run-start-date` | Start date | Sets `start_on: null` | `--run-start-date` |
+| `--clear-run-end-date` | End date | Sets `due_on: null` | `--run-end-date` |
+| `--clear-run-case-ids` | All case selections | Sets `include_all: false, case_ids: []` | `--run-case-ids`, `--run-include-all` |
+
+#### Clear Description Example
+
 ```bash
-# 1. Create run with initial references
-trcli -y -h https://example.testrail.io/ <--username and --password or --key> --project "My Project" \
-  add_run --title "Sprint 1 Tests" --run-refs "JIRA-100,JIRA-200" -f "run_config.yml"
+# Clear the description from a run
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-description
+```
 
-# 2. Add more references (from the config file)
-trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
-  -c run_config.yml add_run --run-refs "JIRA-300,REQ-001" --run-refs-action "add"
+#### Clear Milestone Example
 
-# 3. Replace all references with new ones
-trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
-  -c run_config.yml add_run --run-refs "FINAL-100,FINAL-200" --run-refs-action "update"
+```bash
+# Remove milestone association
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-milestone-id
+```
 
-# 4. Remove specific references
-trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
-  -c run_config.yml add_run --run-refs "FINAL-100" --run-refs-action "delete"
+#### Clear Dates Example
 
-# 5. Clear all references
-trcli -y -h https://example.testrail.io/ <--username and --password or --key>  --project "My Project" \
-  -c run_config.yml add_run --run-refs-action "delete"
+```bash
+# Clear start date
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-start-date
+
+# Clear end date
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-end-date
+
+# Clear both dates at once
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-start-date --clear-run-end-date
+```
+
+#### Clear Case Selection Example
+
+```bash
+# Clear all case selections (empty run)
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "My Test Run" --clear-run-case-ids
+```
+
+#### Clear Multiple Attributes Example
+
+```bash
+# Clear multiple attributes in one command
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --run-id 123 --title "Clean Run" \
+  --clear-run-description \
+  --clear-milestone-id \
+  --clear-run-start-date \
+  --clear-run-end-date
 ```
 
 Generating test cases from OpenAPI specs
