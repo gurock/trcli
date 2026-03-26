@@ -130,28 +130,30 @@ class RunHandler:
         self,
         run_id: int,
         run_name: str,
-        start_date: str = None,
-        end_date: str = None,
-        milestone_id: int = None,
+        start_date: Union[str, None, type(...)] = ...,
+        end_date: Union[str, None, type(...)] = ...,
+        milestone_id: Union[int, None, type(...)] = ...,
         refs: str = None,
         refs_action: str = "add",
-        assigned_to_id: Union[int, None] = ...,
+        assigned_to_id: Union[int, None, type(...)] = ...,
         include_all: Union[bool, type(...)] = ...,
         case_ids: Union[List[int], type(...)] = ...,
+        description: Union[str, None, type(...)] = ...,
     ) -> Tuple[dict, str]:
         """
         Updates an existing run
 
         :param run_id: run id
         :param run_name: run name
-        :param start_date: start date
-        :param end_date: end_date: end date
-        :param milestone_id: milestone id
+        :param start_date: start date (str), None to clear, or ... to leave unchanged
+        :param end_date: end date (str), None to clear, or ... to leave unchanged
+        :param milestone_id: milestone ID (int), None to clear, or ... to leave unchanged
         :param refs: references to manage
         :param refs_action: action to perform ('add', 'update', 'delete')
         :param assigned_to_id: user ID to assign (int), None to clear, or ... to leave unchanged
         :param include_all: include all cases (bool) or ... to leave unchanged
-        :param case_ids: specific case IDs (List[int]) or ... to leave unchanged
+        :param case_ids: specific case IDs (List[int]), [] to clear, or ... to leave unchanged
+        :param description: description text (str), None to clear, or ... to leave unchanged
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
@@ -161,10 +163,47 @@ class RunHandler:
         existing_description = run_response.response_text.get("description", "")
         existing_refs = run_response.response_text.get("refs", "")
 
+        # Handle start_date with sentinel pattern
+        if start_date is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_start_date = None
+        else:
+            # Use provided value (can be None to clear, or actual date)
+            actual_start_date = start_date
+
+        # Handle end_date with sentinel pattern
+        if end_date is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_end_date = None
+        else:
+            # Use provided value (can be None to clear, or actual date)
+            actual_end_date = end_date
+
+        # Handle milestone_id with sentinel pattern
+        if milestone_id is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_milestone_id = None
+        else:
+            # Use provided value (can be None to clear, or actual ID)
+            actual_milestone_id = milestone_id
+
         add_run_data = self.data_provider.add_run(
-            run_name, start_date=start_date, end_date=end_date, milestone_id=milestone_id
+            run_name, start_date=actual_start_date, end_date=actual_end_date, milestone_id=actual_milestone_id
         )
-        add_run_data["description"] = existing_description  # Retain the current description
+
+        # Handle description with sentinel pattern
+        if description is not ...:
+            add_run_data["description"] = description  # Can be None (clears) or str (sets)
+        else:
+            add_run_data["description"] = existing_description  # Preserve existing
+
+        # Manually set dates/milestone to null if clearing
+        if start_date is None and start_date is not ...:
+            add_run_data["start_on"] = None
+        if end_date is None and end_date is not ...:
+            add_run_data["due_on"] = None
+        if milestone_id is None and milestone_id is not ...:
+            add_run_data["milestone_id"] = None
 
         # Handle references based on action
         if refs is not None:

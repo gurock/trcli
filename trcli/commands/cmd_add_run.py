@@ -92,6 +92,36 @@ def write_run_to_file(environment: Environment, run_id: int):
     help="Clear the assignee of the test run (only valid when updating with --run-id).",
 )
 @click.option(
+    "--clear-run-description",
+    is_flag=True,
+    default=False,
+    help="Clear the description of the test run (only valid when updating with --run-id).",
+)
+@click.option(
+    "--clear-milestone-id",
+    is_flag=True,
+    default=False,
+    help="Clear the milestone association of the test run (only valid when updating with --run-id).",
+)
+@click.option(
+    "--clear-run-start-date",
+    is_flag=True,
+    default=False,
+    help="Clear the start date of the test run (only valid when updating with --run-id).",
+)
+@click.option(
+    "--clear-run-end-date",
+    is_flag=True,
+    default=False,
+    help="Clear the end date of the test run (only valid when updating with --run-id).",
+)
+@click.option(
+    "--clear-run-case-ids",
+    is_flag=True,
+    default=False,
+    help="Clear all case IDs from the test run (only valid when updating with --run-id).",
+)
+@click.option(
     "--run-include-all", is_flag=True, default=False, help="Use this option to include all test cases in this test run."
 )
 @click.option(
@@ -147,6 +177,63 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
 
     if environment.run_case_ids and environment.run_include_all:
         environment.elog("Error: --run-case-ids and --run-include-all cannot be used together.")
+        exit(1)
+
+    # Validation: clear-run-description requires --run-id and is mutually exclusive
+    if hasattr(environment, "clear_run_description") and environment.clear_run_description and not environment.run_id:
+        environment.elog(
+            "Error: --clear-run-description can only be used when updating an existing run (--run-id required)."
+        )
+        exit(1)
+    if (
+        environment.run_description
+        and hasattr(environment, "clear_run_description")
+        and environment.clear_run_description
+    ):
+        environment.elog("Error: --run-description and --clear-run-description cannot be used together.")
+        exit(1)
+
+    # Validation: clear-milestone-id requires --run-id and is mutually exclusive
+    if hasattr(environment, "clear_milestone_id") and environment.clear_milestone_id and not environment.run_id:
+        environment.elog(
+            "Error: --clear-milestone-id can only be used when updating an existing run (--run-id required)."
+        )
+        exit(1)
+    if environment.milestone_id and hasattr(environment, "clear_milestone_id") and environment.clear_milestone_id:
+        environment.elog("Error: --milestone-id and --clear-milestone-id cannot be used together.")
+        exit(1)
+
+    # Validation: clear-run-start-date requires --run-id and is mutually exclusive
+    if hasattr(environment, "clear_run_start_date") and environment.clear_run_start_date and not environment.run_id:
+        environment.elog(
+            "Error: --clear-run-start-date can only be used when updating an existing run (--run-id required)."
+        )
+        exit(1)
+    if environment.run_start_date and hasattr(environment, "clear_run_start_date") and environment.clear_run_start_date:
+        environment.elog("Error: --run-start-date and --clear-run-start-date cannot be used together.")
+        exit(1)
+
+    # Validation: clear-run-end-date requires --run-id and is mutually exclusive
+    if hasattr(environment, "clear_run_end_date") and environment.clear_run_end_date and not environment.run_id:
+        environment.elog(
+            "Error: --clear-run-end-date can only be used when updating an existing run (--run-id required)."
+        )
+        exit(1)
+    if environment.run_end_date and hasattr(environment, "clear_run_end_date") and environment.clear_run_end_date:
+        environment.elog("Error: --run-end-date and --clear-run-end-date cannot be used together.")
+        exit(1)
+
+    # Validation: clear-run-case-ids requires --run-id and is mutually exclusive with other case selection flags
+    if hasattr(environment, "clear_run_case_ids") and environment.clear_run_case_ids and not environment.run_id:
+        environment.elog(
+            "Error: --clear-run-case-ids can only be used when updating an existing run (--run-id required)."
+        )
+        exit(1)
+    if environment.run_case_ids and hasattr(environment, "clear_run_case_ids") and environment.clear_run_case_ids:
+        environment.elog("Error: --run-case-ids and --clear-run-case-ids cannot be used together.")
+        exit(1)
+    if environment.run_include_all and hasattr(environment, "clear_run_case_ids") and environment.clear_run_case_ids:
+        environment.elog("Error: --run-include-all and --clear-run-case-ids cannot be used together.")
         exit(1)
 
     print_config(environment)
