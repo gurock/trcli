@@ -390,7 +390,7 @@ class MultisuiteUploader(ProjectBasedClient):
             self.api_request_handler.suites_data_from_provider.testsections = [temp_section]
 
             # Upload results for this run
-            results, error, results_count = self.api_request_handler.result_handler.add_results(run_id)
+            responses, error, results_count = self.api_request_handler.result_handler.add_results(run_id)
 
             if error:
                 self.environment.elog(f"Error uploading results to run {run_id}: {error}")
@@ -406,7 +406,8 @@ class MultisuiteUploader(ProjectBasedClient):
             ]
 
             if report_results:
-                self.api_request_handler.result_handler.upload_attachments(report_results, results, run_id)
+                flattened_results = [result for results_list in responses for result in results_list]
+                self.api_request_handler.result_handler.upload_attachments(report_results, flattened_results, run_id)
 
         # Restore original testsections
         self.api_request_handler.suites_data_from_provider.testsections = original_testsections
