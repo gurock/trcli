@@ -183,20 +183,21 @@ class MultisuiteUploader(ProjectBasedClient):
         """
         Validate that all suites belong to the target project.
         Filters out cases from other projects.
+        Also caches suite information for later use.
 
         :param case_suite_mapping: Dictionary {case_id: suite_id}
         :returns: Tuple (filtered_mapping, skipped_count)
         """
         valid_mapping = {}
         skipped_cases = []
-        suite_project_cache = {}  # {suite_id: project_id}
+        self.suite_info_cache = {}  # {suite_id: suite_data} - Cache for suite names
 
         target_project_id = self.project.project_id
 
         for case_id, suite_id in case_suite_mapping.items():
             # Check cache first
-            if suite_id in suite_project_cache:
-                project_id = suite_project_cache[suite_id]
+            if suite_id in self.suite_info_cache:
+                project_id = self.suite_info_cache[suite_id].get("project_id")
             else:
                 # Fetch suite info
                 response = self.api_request_handler.client.send_get(f"get_suite/{suite_id}")
@@ -205,8 +206,9 @@ class MultisuiteUploader(ProjectBasedClient):
                     skipped_cases.append(case_id)
                     continue
 
+                # Cache full suite data (includes project_id and name)
+                self.suite_info_cache[suite_id] = response.response_text
                 project_id = response.response_text.get("project_id")
-                suite_project_cache[suite_id] = project_id
 
             if project_id == target_project_id:
                 valid_mapping[case_id] = suite_id
@@ -250,16 +252,25 @@ class MultisuiteUploader(ProjectBasedClient):
         :returns: Tuple (plan_id, {suite_id: run_id}, error_message)
         """
         # Build plan description with suite names and test counts
+        # Use cached suite info to avoid duplicate API calls
         description_parts = []
         suite_names = {}  # Cache suite names
 
         for suite_id in suite_groups.keys():
-            response = self.api_request_handler.client.send_get(f"get_suite/{suite_id}")
-            if not response.error_message:
-                suite_name = response.response_text.get("name", f"Suite {suite_id}")
-                suite_names[suite_id] = suite_name
-                test_count = len(suite_groups[suite_id])
-                description_parts.append(f"{suite_name} ({test_count} test(s))")
+            # Check if we have cached suite info
+            if hasattr(self, "suite_info_cache") and suite_id in self.suite_info_cache:
+                suite_name = self.suite_info_cache[suite_id].get("name", f"Suite {suite_id}")
+            else:
+                # Fallback: fetch suite info if not cached
+                response = self.api_request_handler.client.send_get(f"get_suite/{suite_id}")
+                if not response.error_message:
+                    suite_name = response.response_text.get("name", f"Suite {suite_id}")
+                else:
+                    suite_name = f"Suite {suite_id}"
+
+            suite_names[suite_id] = suite_name
+            test_count = len(suite_groups[suite_id])
+            description_parts.append(f"{suite_name} ({test_count} test(s))")
 
         description = ", ".join(description_parts)
 
@@ -360,14 +371,23 @@ class MultisuiteUploader(ProjectBasedClient):
         """
         total_results = 0
 
+        # Store original testcases to restore later
+        original_testsections = self.api_request_handler.suites_data_from_provider.testsections
+
         for suite_id, cases in suite_groups.items():
             run_id = run_mapping.get(suite_id)
             if not run_id:
                 self.environment.log(f"Warning: No run ID found for suite {suite_id}, skipping.")
                 continue
 
-            # Prepare data provider with cases for this suite
-            self.api_request_handler.data_provider.suites_input.testsections[0].testcases = cases
+            # Create a temporary test section with ONLY the cases for this suite
+            # This prevents contamination from other suites
+            from trcli.data_classes.dataclass_testrail import TestRailSection
+
+            temp_section = TestRailSection(name="temp", testcases=cases)
+
+            # Temporarily replace the entire testsections list with only this suite's cases
+            self.api_request_handler.suites_data_from_provider.testsections = [temp_section]
 
             # Upload results for this run
             results, error, results_count = self.api_request_handler.result_handler.add_results(run_id)
@@ -387,5 +407,8 @@ class MultisuiteUploader(ProjectBasedClient):
 
             if report_results:
                 self.api_request_handler.result_handler.upload_attachments(report_results, results, run_id)
+
+        # Restore original testsections
+        self.api_request_handler.suites_data_from_provider.testsections = original_testsections
 
         return total_results
