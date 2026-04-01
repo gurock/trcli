@@ -18,8 +18,8 @@ from trcli.readers.junit_xml import JunitParser
     "--special-parser",
     metavar="",
     default="junit",
-    type=click.Choice(["junit", "saucectl", "bdd"], case_sensitive=False),
-    help="Optional special parser option for specialized JUnit reports. Use 'bdd' for BDD framework JUnit output.",
+    type=click.Choice(["junit", "saucectl", "bdd", "multisuite"], case_sensitive=False),
+    help="Optional special parser option for specialized JUnit reports. Use 'bdd' for BDD framework JUnit output, 'multisuite' for cross-suite test plans.",
 )
 @click.option(
     "-a",
@@ -62,22 +62,45 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             environment.elog(validation_error)
             exit(1)
 
+    # Validate multisuite requirements
+    if environment.special_parser == "multisuite":
+        if environment.case_matcher not in ["name", "property"]:
+            environment.elog(FAULT_MAPPING["multisuite_requires_name_or_property"])
+            exit(1)
+
+        # Reject --run-id with multisuite (use --plan-id instead)
+        if environment.run_id:
+            environment.elog(FAULT_MAPPING["multisuite_run_id_not_supported"])
+            exit(1)
+
     settings.ALLOW_ELAPSED_MS = environment.allow_ms
     print_config(environment)
     try:
         parsed_suites = JunitParser(environment).parse_file()
         run_id = None
         case_update_results = {}
-        for suite in parsed_suites:
-            result_uploader = ResultsUploader(environment=environment, suite=suite)
-            result_uploader.upload_results()
 
-            if run_id is None and hasattr(result_uploader, "last_run_id"):
-                run_id = result_uploader.last_run_id
+        # Multisuite mode: use MultisuiteUploader for cross-suite plans
+        if environment.special_parser == "multisuite":
+            from trcli.api.multisuite_uploader import MultisuiteUploader
 
-            # Collect case update results
-            if hasattr(result_uploader, "case_update_results"):
-                case_update_results = result_uploader.case_update_results
+            multisuite_uploader = MultisuiteUploader(environment=environment, suite=parsed_suites[0])
+            multisuite_uploader.upload_results()
+
+            # Use plan_id for reference handling
+            run_id = multisuite_uploader.last_plan_id
+        else:
+            # Normal mode: process each suite separately
+            for suite in parsed_suites:
+                result_uploader = ResultsUploader(environment=environment, suite=suite)
+                result_uploader.upload_results()
+
+                if run_id is None and hasattr(result_uploader, "last_run_id"):
+                    run_id = result_uploader.last_run_id
+
+                # Collect case update results
+                if hasattr(result_uploader, "case_update_results"):
+                    case_update_results = result_uploader.case_update_results
 
         if environment.test_run_ref and run_id:
             _handle_test_run_references(environment, run_id)

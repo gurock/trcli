@@ -882,6 +882,40 @@ the `--special-parser saucectl` command line option.
 Please refer to the [SauceLabs and saucectl reports](https://support.gurock.com/hc/en-us/articles/12719558686484)
 documentation for further information.
 
+#### Cross-suite test plans with multisuite parser
+
+If your test automation spans multiple TestRail suites, the multisuite parser allows you to create a single test plan with one run per suite from a single JUnit XML report. The CLI automatically detects which suite each test case belongs to, groups them accordingly, and creates or updates a test plan with the appropriate structure.
+
+**Requirements:**
+- All test cases must have case IDs (C123 format in test names or `test_id` properties)
+- Must use `--case-matcher name` or `--case-matcher property` (not `auto`)
+- All cases must belong to the same project (cross-project cases are skipped with warnings)
+
+**Basic usage (create new plan):**
+```bash
+trcli parse_junit \
+  --special-parser multisuite \
+  --title "Cross-Suite Test Plan" \
+  --file results.xml \
+  --case-matcher property
+```
+
+**Add to existing plan:**
+```bash
+trcli parse_junit \
+  --special-parser multisuite \
+  --plan-id 1234 \
+  --file results.xml \
+  --case-matcher property
+```
+
+The parser automatically:
+- Fetches suite information for each case ID concurrently (fast performance)
+- Groups cases by their suite
+- Creates a test plan with one run per suite
+- Uploads results to the correct run within the plan
+- Includes suite names and test counts in the plan description
+
 #### Creating new test runs
 
 When a test run MUST created before using one of the parse commands, use the `add_run` command. For example, if

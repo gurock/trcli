@@ -401,6 +401,14 @@ class JunitParser(FileParser):
         """
         return self._special == "bdd"
 
+    def _is_multisuite_mode(self) -> bool:
+        """Check if multisuite mode is enabled
+
+        Returns:
+            True if special parser is 'multisuite', False otherwise
+        """
+        return self._special == "multisuite"
+
     def _extract_feature_case_id_from_property(self, testsuite) -> Union[int, None]:
         """Extract case ID from testsuite-level properties
 
