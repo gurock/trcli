@@ -1116,18 +1116,6 @@ class TestApiRequestHandler:
     @pytest.mark.api_handler
     def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
         """Test that 413 errors (file too large) are properly reported."""
-        run_id = 1
-
-        # Mock get_tests endpoint
-        mocked_tests_response = {
-            "offset": 0,
-            "limit": 250,
-            "size": 1,
-            "_links": {"next": None, "prev": None},
-            "tests": [{"id": 1001, "case_id": 100}],
-        }
-        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
-
         # Create a temporary test file
         test_file = tmp_path / "large_attachment.jpg"
         test_file.write_text("test content")
@@ -1141,10 +1129,10 @@ class TestApiRequestHandler:
 
         # Prepare test data
         report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
-        results = [{"id": 2001, "test_id": 1001}]
+        case_id_to_result_id = {100: 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, results, run_id)
+        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1152,18 +1140,6 @@ class TestApiRequestHandler:
     @pytest.mark.api_handler
     def test_upload_attachments_success(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
         """Test that successful attachment uploads work correctly."""
-        run_id = 1
-
-        # Mock get_tests endpoint
-        mocked_tests_response = {
-            "offset": 0,
-            "limit": 250,
-            "size": 1,
-            "_links": {"next": None, "prev": None},
-            "tests": [{"id": 1001, "case_id": 100}],
-        }
-        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
-
         # Create a temporary test file
         test_file = tmp_path / "test_attachment.jpg"
         test_file.write_text("test content")
@@ -1173,10 +1149,10 @@ class TestApiRequestHandler:
 
         # Prepare test data
         report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
-        results = [{"id": 2001, "test_id": 1001}]
+        case_id_to_result_id = {100: 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, results, run_id)
+        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1184,24 +1160,55 @@ class TestApiRequestHandler:
     @pytest.mark.api_handler
     def test_upload_attachments_file_not_found(self, api_request_handler: ApiRequestHandler, requests_mock):
         """Test that missing attachment files are properly reported."""
-        run_id = 1
-
-        # Mock get_tests endpoint
-        mocked_tests_response = {
-            "offset": 0,
-            "limit": 250,
-            "size": 1,
-            "_links": {"next": None, "prev": None},
-            "tests": [{"id": 1001, "case_id": 100}],
-        }
-        requests_mock.get(create_url(f"get_tests/{run_id}"), json=mocked_tests_response)
-
         # Prepare test data with non-existent file
         report_results = [{"case_id": 100, "attachments": ["/path/to/nonexistent/file.jpg"]}]
-        results = [{"id": 2001, "test_id": 1001}]
+        case_id_to_result_id = {100: 2001}
 
         # Call upload_attachments - should not raise exception
-        api_request_handler.upload_attachments(report_results, results, run_id)
+        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_empty_run_scenario(
+        self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path
+    ):
+        """Test that attachments work correctly when results are added to an empty run.
+
+        This test covers the bug fix for issue where TRCLI failed to upload attachments
+        when using --run-id with an empty run (created via API with include_all: false
+        and no case_ids). The fix uses case_id to result_id mapping instead of fetching
+        tests from the run.
+        """
+        # Create test attachment files
+        attachment1 = tmp_path / "screenshot1.png"
+        attachment1.write_text("screenshot content 1")
+        attachment2 = tmp_path / "screenshot2.png"
+        attachment2.write_text("screenshot content 2")
+
+        # Mock successful attachment uploads
+        requests_mock.post(create_url("add_attachment_to_result/5001"), status_code=200, json={"attachment_id": 9001})
+        requests_mock.post(create_url("add_attachment_to_result/5002"), status_code=200, json={"attachment_id": 9002})
+
+        # Prepare test data - two cases with attachments
+        report_results = [
+            {"case_id": 100, "attachments": [str(attachment1)]},
+            {"case_id": 101, "attachments": [str(attachment2)]},
+        ]
+
+        # Case ID to result ID mapping (this is built from add_results_for_cases response)
+        case_id_to_result_id = {100: 5001, 101: 5002}
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+
+        # Verify both attachments were uploaded correctly
+        history = requests_mock.request_history
+        upload_requests = [req for req in history if "add_attachment_to_result" in req.url]
+        assert len(upload_requests) == 2, "Should have uploaded 2 attachments"
+
+        # Verify correct result IDs were used
+        urls = [req.url.lower() for req in upload_requests]
+        assert any("add_attachment_to_result/5001" in url for url in urls), "Should upload to result 5001"
+        assert any("add_attachment_to_result/5002" in url for url in urls), "Should upload to result 5002"
 
     @pytest.mark.api_handler
     def test_caching_reduces_api_calls(self, api_request_handler: ApiRequestHandler, requests_mock):

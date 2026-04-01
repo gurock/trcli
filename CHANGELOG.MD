@@ -15,7 +15,7 @@ _released 04-01-2026
  - <to_update>
 
 ### Fixed
- - 
+ - Fixed attachment upload failure when adding results to empty test runs (runs created via API with `include_all: false` and no `case_ids`). Attachments now upload correctly by using direct case_id to result_id mapping instead of fetching tests from the run. 
 
 ## [1.13.4]
 
