@@ -222,15 +222,65 @@ class ProjectBasedClient:
             else:
                 assigned_to_id = ...  # Don't change (sentinel value)
 
+            # Determine description value
+            if hasattr(self.environment, "clear_run_description") and self.environment.clear_run_description:
+                description = None  # Clear the description
+            elif self.environment.run_description:
+                description = self.environment.run_description  # Set description
+            else:
+                description = ...  # Don't change
+
+            # Determine milestone_id value
+            if hasattr(self.environment, "clear_milestone_id") and self.environment.clear_milestone_id:
+                milestone_id = None  # Clear the milestone
+            elif self.environment.milestone_id:
+                milestone_id = self.environment.milestone_id  # Set milestone
+            else:
+                milestone_id = ...  # Don't change
+
+            # Determine start_date value
+            if hasattr(self.environment, "clear_run_start_date") and self.environment.clear_run_start_date:
+                start_date = None  # Clear the start date
+            elif self.environment.run_start_date:
+                start_date = self.environment.run_start_date  # Set start date
+            else:
+                start_date = ...  # Don't change
+
+            # Determine end_date value
+            if hasattr(self.environment, "clear_run_end_date") and self.environment.clear_run_end_date:
+                end_date = None  # Clear the end date
+            elif self.environment.run_end_date:
+                end_date = self.environment.run_end_date  # Set end date
+            else:
+                end_date = ...  # Don't change
+
+            # Determine include_all and case_ids based on user input (including clear flag)
+            if hasattr(self.environment, "clear_run_case_ids") and self.environment.clear_run_case_ids:
+                include_all = False  # Clear means no include_all
+                case_ids = []  # Empty array clears all cases
+            elif self.environment.run_include_all:
+                include_all = True
+                case_ids = ...  # Ignore case_ids when include_all is True
+            elif self.environment.run_case_ids:
+                include_all = False
+                case_ids = self.environment.run_case_ids
+            else:
+                # Neither provided - preserve existing settings
+                include_all = ...
+                case_ids = ...
+
             run, error_message = self.api_request_handler.update_run(
                 run_id,
                 self.run_name,
-                start_date=self.environment.run_start_date,
-                end_date=self.environment.run_end_date,
-                milestone_id=self.environment.milestone_id,
+                start_date=start_date,
+                end_date=end_date,
+                milestone_id=milestone_id,
                 refs=self.environment.run_refs,
                 refs_action=getattr(self.environment, "run_refs_action", "add"),
                 assigned_to_id=assigned_to_id,
+                include_all=include_all,
+                case_ids=case_ids,
+                description=description,
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)

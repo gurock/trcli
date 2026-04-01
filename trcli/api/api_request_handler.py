@@ -257,9 +257,22 @@ class ApiRequestHandler:
         refs: str = None,
         refs_action: str = "add",
         assigned_to_id: Union[int, None] = ...,
+        include_all: Union[bool, type(...)] = ...,
+        case_ids: Union[List[int], type(...)] = ...,
+        description: Union[str, None, type(...)] = ...,
     ) -> Tuple[dict, str]:
         return self.run_handler.update_run(
-            run_id, run_name, start_date, end_date, milestone_id, refs, refs_action, assigned_to_id
+            run_id,
+            run_name,
+            start_date,
+            end_date,
+            milestone_id,
+            refs,
+            refs_action,
+            assigned_to_id,
+            include_all,
+            case_ids,
+            description,
         )
 
     def _manage_references(self, existing_refs: str, new_refs: str, action: str) -> str:
@@ -273,8 +286,8 @@ class ApiRequestHandler:
     ) -> Tuple[bool, str, List[str], List[str], List[str]]:
         return self.case_handler.update_existing_case_references(case_id, junit_refs, case_fields, strategy)
 
-    def upload_attachments(self, report_results: List[Dict], results: List[Dict], run_id: int):
-        return self.result_handler.upload_attachments(report_results, results, run_id)
+    def upload_attachments(self, report_results: List[Dict], case_id_to_result_id: Dict[int, int]):
+        return self.result_handler.upload_attachments(report_results, case_id_to_result_id)
 
     def add_results(self, run_id: int) -> Tuple[List, str, int]:
         return self.result_handler.add_results(run_id)

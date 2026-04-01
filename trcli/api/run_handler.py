@@ -130,24 +130,30 @@ class RunHandler:
         self,
         run_id: int,
         run_name: str,
-        start_date: str = None,
-        end_date: str = None,
-        milestone_id: int = None,
+        start_date: Union[str, None, type(...)] = ...,
+        end_date: Union[str, None, type(...)] = ...,
+        milestone_id: Union[int, None, type(...)] = ...,
         refs: str = None,
         refs_action: str = "add",
-        assigned_to_id: Union[int, None] = ...,
+        assigned_to_id: Union[int, None, type(...)] = ...,
+        include_all: Union[bool, type(...)] = ...,
+        case_ids: Union[List[int], type(...)] = ...,
+        description: Union[str, None, type(...)] = ...,
     ) -> Tuple[dict, str]:
         """
         Updates an existing run
 
         :param run_id: run id
         :param run_name: run name
-        :param start_date: start date
-        :param end_date: end_date: end date
-        :param milestone_id: milestone id
+        :param start_date: start date (str), None to clear, or ... to leave unchanged
+        :param end_date: end date (str), None to clear, or ... to leave unchanged
+        :param milestone_id: milestone ID (int), None to clear, or ... to leave unchanged
         :param refs: references to manage
         :param refs_action: action to perform ('add', 'update', 'delete')
         :param assigned_to_id: user ID to assign (int), None to clear, or ... to leave unchanged
+        :param include_all: include all cases (bool) or ... to leave unchanged
+        :param case_ids: specific case IDs (List[int]), [] to clear, or ... to leave unchanged
+        :param description: description text (str), None to clear, or ... to leave unchanged
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
@@ -157,10 +163,47 @@ class RunHandler:
         existing_description = run_response.response_text.get("description", "")
         existing_refs = run_response.response_text.get("refs", "")
 
+        # Handle start_date with sentinel pattern
+        if start_date is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_start_date = None
+        else:
+            # Use provided value (can be None to clear, or actual date)
+            actual_start_date = start_date
+
+        # Handle end_date with sentinel pattern
+        if end_date is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_end_date = None
+        else:
+            # Use provided value (can be None to clear, or actual date)
+            actual_end_date = end_date
+
+        # Handle milestone_id with sentinel pattern
+        if milestone_id is ...:
+            # Use existing value - pass None to data_provider to not set it
+            actual_milestone_id = None
+        else:
+            # Use provided value (can be None to clear, or actual ID)
+            actual_milestone_id = milestone_id
+
         add_run_data = self.data_provider.add_run(
-            run_name, start_date=start_date, end_date=end_date, milestone_id=milestone_id
+            run_name, start_date=actual_start_date, end_date=actual_end_date, milestone_id=actual_milestone_id
         )
-        add_run_data["description"] = existing_description  # Retain the current description
+
+        # Handle description with sentinel pattern
+        if description is not ...:
+            add_run_data["description"] = description  # Can be None (clears) or str (sets)
+        else:
+            add_run_data["description"] = existing_description  # Preserve existing
+
+        # Manually set dates/milestone to null if clearing
+        if start_date is None and start_date is not ...:
+            add_run_data["start_on"] = None
+        if end_date is None and end_date is not ...:
+            add_run_data["due_on"] = None
+        if milestone_id is None and milestone_id is not ...:
+            add_run_data["milestone_id"] = None
 
         # Handle references based on action
         if refs is not None:
@@ -174,22 +217,36 @@ class RunHandler:
             add_run_data["assignedto_id"] = assigned_to_id  # Can be None (clears) or int (sets)
         # else: Don't include assignedto_id in payload (no change to existing assignee)
 
-        existing_include_all = run_response.response_text.get("include_all", False)
-        add_run_data["include_all"] = existing_include_all
-
-        if not existing_include_all:
-            # Only manage explicit case_ids when include_all=False
-            run_tests, error_message = self.__get_all_tests_in_run(run_id)
-            if error_message:
-                return None, f"Failed to get tests in run: {error_message}"
-            run_case_ids = [test["case_id"] for test in run_tests]
-            report_case_ids = add_run_data["case_ids"]
-            joint_case_ids = list(set(report_case_ids + run_case_ids))
-            add_run_data["case_ids"] = joint_case_ids
+        # Handle include_all - only change if explicitly provided
+        if include_all is not ...:
+            add_run_data["include_all"] = include_all
         else:
-            # include_all=True: TestRail includes all suite cases automatically
-            # Do NOT send case_ids array (TestRail ignores it anyway)
+            # Preserve existing value
+            existing_include_all = run_response.response_text.get("include_all", False)
+            add_run_data["include_all"] = existing_include_all
+
+        # Handle case_ids based on include_all state
+        if add_run_data["include_all"]:
+            # include_all=True: Remove case_ids (TestRail includes all suite cases automatically)
             add_run_data.pop("case_ids", None)
+        else:
+            # include_all=False: Handle case_ids
+            if case_ids is not ...:
+                # User explicitly provided case_ids - use them
+                add_run_data["case_ids"] = case_ids
+            else:
+                # Preserve existing case_ids
+                run_tests, error_message = self.__get_all_tests_in_run(run_id)
+                if error_message:
+                    return None, f"Failed to get tests in run: {error_message}"
+                run_case_ids = [test["case_id"] for test in run_tests]
+                # Merge with any case_ids from data provider (from report files)
+                report_case_ids = add_run_data.get("case_ids", [])
+                if report_case_ids:
+                    joint_case_ids = list(set(report_case_ids + run_case_ids))
+                    add_run_data["case_ids"] = joint_case_ids
+                else:
+                    add_run_data["case_ids"] = run_case_ids
 
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
@@ -317,4 +374,37 @@ class RunHandler:
         :returns: Tuple with dict created resources and error string.
         """
         response = self.client.send_post(f"delete_run/{run_id}", payload={})
+        return response.response_text, response.error_message
+
+    def add_plan(
+        self,
+        project_id: int,
+        plan_name: str,
+        entries: List[Dict],
+        description: str = None,
+        milestone_id: int = None,
+    ) -> Tuple[dict, str]:
+        """
+        Creates a new test plan with multiple test runs (one per suite).
+
+        :param project_id: project id
+        :param plan_name: name for the test plan
+        :param entries: list of entry dictionaries, each containing suite_id and case_ids
+            Example: [{"suite_id": 1, "include_all": False, "case_ids": [1, 2, 3]}]
+        :param description: optional description for the plan
+        :param milestone_id: optional milestone id to associate with the plan
+        :returns: Tuple with plan response dict and error string.
+        """
+        plan_data = {
+            "name": plan_name,
+            "entries": entries,
+        }
+
+        if description:
+            plan_data["description"] = description
+
+        if milestone_id:
+            plan_data["milestone_id"] = milestone_id
+
+        response = self.client.send_post(f"add_plan/{project_id}", plan_data)
         return response.response_text, response.error_message

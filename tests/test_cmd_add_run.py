@@ -147,6 +147,145 @@ class TestCmdAddRun:
         assert result.exit_code == 1
         assert "cannot be used together" in result.output
 
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_run_case_ids_mutually_exclusive_with_run_include_all(self, mock_check):
+        """Test that --run-case-ids and --run-include-all are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-case-ids", "1,2,3", "--run-include-all"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_description_requires_run_id(self, mock_check):
+        """Test that --clear-run-description requires --run-id"""
+        runner = CliRunner()
+
+        result = runner.invoke(cmd_add_run.cli, ["--title", "Test Run", "--clear-run-description"])
+
+        assert result.exit_code == 1
+        assert "--clear-run-description can only be used when updating" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_description_mutually_exclusive_with_run_description(self, mock_check):
+        """Test that --run-description and --clear-run-description are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-id", "123", "--run-description", "Test", "--clear-run-description"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_milestone_id_requires_run_id(self, mock_check):
+        """Test that --clear-milestone-id requires --run-id"""
+        runner = CliRunner()
+
+        result = runner.invoke(cmd_add_run.cli, ["--title", "Test Run", "--clear-milestone-id"])
+
+        assert result.exit_code == 1
+        assert "--clear-milestone-id can only be used when updating" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_milestone_id_mutually_exclusive_with_milestone_id(self, mock_check):
+        """Test that --milestone-id and --clear-milestone-id are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli, ["--title", "Test Run", "--run-id", "123", "--milestone-id", "5", "--clear-milestone-id"]
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_start_date_requires_run_id(self, mock_check):
+        """Test that --clear-run-start-date requires --run-id"""
+        runner = CliRunner()
+
+        result = runner.invoke(cmd_add_run.cli, ["--title", "Test Run", "--clear-run-start-date"])
+
+        assert result.exit_code == 1
+        assert "--clear-run-start-date can only be used when updating" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_start_date_mutually_exclusive_with_run_start_date(self, mock_check):
+        """Test that --run-start-date and --clear-run-start-date are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-id", "123", "--run-start-date", "01/01/2026", "--clear-run-start-date"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_end_date_requires_run_id(self, mock_check):
+        """Test that --clear-run-end-date requires --run-id"""
+        runner = CliRunner()
+
+        result = runner.invoke(cmd_add_run.cli, ["--title", "Test Run", "--clear-run-end-date"])
+
+        assert result.exit_code == 1
+        assert "--clear-run-end-date can only be used when updating" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_end_date_mutually_exclusive_with_run_end_date(self, mock_check):
+        """Test that --run-end-date and --clear-run-end-date are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-id", "123", "--run-end-date", "12/31/2026", "--clear-run-end-date"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_case_ids_requires_run_id(self, mock_check):
+        """Test that --clear-run-case-ids requires --run-id"""
+        runner = CliRunner()
+
+        result = runner.invoke(cmd_add_run.cli, ["--title", "Test Run", "--clear-run-case-ids"])
+
+        assert result.exit_code == 1
+        assert "--clear-run-case-ids can only be used when updating" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_case_ids_mutually_exclusive_with_run_case_ids(self, mock_check):
+        """Test that --run-case-ids and --clear-run-case-ids are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-id", "123", "--run-case-ids", "1,2,3", "--clear-run-case-ids"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_clear_run_case_ids_mutually_exclusive_with_run_include_all(self, mock_check):
+        """Test that --run-include-all and --clear-run-case-ids are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli, ["--title", "Test Run", "--run-id", "123", "--run-include-all", "--clear-run-case-ids"]
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
 
 class TestApiRequestHandlerReferences:
     """Test class for reference management functionality"""
