@@ -147,6 +147,19 @@ class TestCmdAddRun:
         assert result.exit_code == 1
         assert "cannot be used together" in result.output
 
+    @mock.patch("trcli.cli.Environment.check_for_required_parameters")
+    def test_run_case_ids_mutually_exclusive_with_run_include_all(self, mock_check):
+        """Test that --run-case-ids and --run-include-all are mutually exclusive"""
+        runner = CliRunner()
+
+        result = runner.invoke(
+            cmd_add_run.cli,
+            ["--title", "Test Run", "--run-case-ids", "1,2,3", "--run-include-all"],
+        )
+
+        assert result.exit_code == 1
+        assert "cannot be used together" in result.output
+
 
 class TestApiRequestHandlerReferences:
     """Test class for reference management functionality"""

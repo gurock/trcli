@@ -222,6 +222,18 @@ class ProjectBasedClient:
             else:
                 assigned_to_id = ...  # Don't change (sentinel value)
 
+            # Determine include_all and case_ids based on user input
+            if self.environment.run_include_all:
+                include_all = True
+                case_ids = ...  # Ignore case_ids when include_all is True
+            elif self.environment.run_case_ids:
+                include_all = False
+                case_ids = self.environment.run_case_ids
+            else:
+                # Neither provided - preserve existing settings
+                include_all = ...
+                case_ids = ...
+
             run, error_message = self.api_request_handler.update_run(
                 run_id,
                 self.run_name,
@@ -231,6 +243,8 @@ class ProjectBasedClient:
                 refs=self.environment.run_refs,
                 refs_action=getattr(self.environment, "run_refs_action", "add"),
                 assigned_to_id=assigned_to_id,
+                include_all=include_all,
+                case_ids=case_ids,
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)
