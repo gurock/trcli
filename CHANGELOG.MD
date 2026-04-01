@@ -12,10 +12,12 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 _released 04-01-2026
 
 ### Added
- - <to_update>
+ - **Enhanced `parse_junit` command**: Added `--special-parser multisuite` which allows users to create and/or update a single test plan with one run per suite from a single JUnit XML report.
+ - **Enhanced `add_run` command**: Added new options to clear run's attributes (description, run and start date, milestone and case selection) when updating runs.
 
 ### Fixed
- - Fixed attachment upload failure when adding results to empty test runs (runs created via API with `include_all: false` and no `case_ids`). Attachments now upload correctly by using direct case_id to result_id mapping instead of fetching tests from the run. 
+ - Fixed attachment upload failure when adding results to empty test runs. Attachments now upload correctly by using direct case_id to result_id mapping instead of fetching tests from the run.
+ - Fixed an issue where case selection cannot be properly updated if the run is added using add_run command.
 
 ## [1.13.4]
 
