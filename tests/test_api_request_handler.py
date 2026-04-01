@@ -1114,6 +1114,254 @@ class TestApiRequestHandler:
         assert 50 in payload["case_ids"], "Should include existing case ID"
 
     @pytest.mark.api_handler
+    def test_update_run_clears_description(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear description by setting it to null"""
+        run_id = 300
+        run_name = "Test Run"
+
+        # Mock get_run response with existing description
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Existing description",
+            "refs": "",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with description=None to clear it
+        run_data, error = api_request_handler.update_run(run_id, run_name, description=None)
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload sent to update_run
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["description"] is None, "description should be null"
+
+    @pytest.mark.api_handler
+    def test_update_run_clears_milestone(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear milestone_id by setting it to null"""
+        run_id = 301
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "",
+            "refs": "",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with milestone_id=None to clear it
+        run_data, error = api_request_handler.update_run(run_id, run_name, milestone_id=None)
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["milestone_id"] is None, "milestone_id should be null"
+
+    @pytest.mark.api_handler
+    def test_update_run_clears_start_date(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear start_date by setting it to null"""
+        run_id = 302
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "",
+            "refs": "",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with start_date=None to clear it
+        run_data, error = api_request_handler.update_run(run_id, run_name, start_date=None)
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["start_on"] is None, "start_on should be null"
+
+    @pytest.mark.api_handler
+    def test_update_run_clears_end_date(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear end_date by setting it to null"""
+        run_id = 303
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "",
+            "refs": "",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with end_date=None to clear it
+        run_data, error = api_request_handler.update_run(run_id, run_name, end_date=None)
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["due_on"] is None, "due_on should be null"
+
+    @pytest.mark.api_handler
+    def test_update_run_clears_case_ids(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear case_ids by setting to empty array"""
+        run_id = 304
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "",
+            "refs": "",
+            "include_all": False,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        get_tests_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "tests": [{"id": 1, "case_id": 10, "status_id": 1}, {"id": 2, "case_id": 20, "status_id": 1}],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.get(create_url(f"get_tests/{run_id}"), json=get_tests_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with case_ids=[] and include_all=False to clear all cases
+        run_data, error = api_request_handler.update_run(run_id, run_name, include_all=False, case_ids=[])
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["include_all"] == False, "include_all should be False"
+        assert payload["case_ids"] == [], "case_ids should be empty array"
+
+    @pytest.mark.api_handler
+    def test_update_run_clears_multiple_attributes(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run can clear multiple attributes at once"""
+        run_id = 305
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Old description",
+            "refs": "REF-1",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run clearing multiple attributes
+        run_data, error = api_request_handler.update_run(
+            run_id, run_name, description=None, milestone_id=None, start_date=None, end_date=None
+        )
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["description"] is None, "description should be null"
+        assert payload["milestone_id"] is None, "milestone_id should be null"
+        assert payload["start_on"] is None, "start_on should be null"
+        assert payload["due_on"] is None, "due_on should be null"
+
+    @pytest.mark.api_handler
+    def test_update_run_preserves_values_with_sentinel(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test that update_run preserves values when sentinel (...) is used"""
+        run_id = 306
+        run_name = "Test Run"
+
+        get_run_response = {
+            "id": run_id,
+            "name": "Original Run",
+            "description": "Keep this description",
+            "refs": "REF-1",
+            "include_all": True,
+            "plan_id": None,
+            "config_ids": [],
+        }
+
+        update_run_response = {"id": run_id, "name": run_name}
+
+        requests_mock.get(create_url(f"get_run/{run_id}"), json=get_run_response)
+        requests_mock.post(create_url(f"update_run/{run_id}"), json=update_run_response)
+
+        # Execute update_run with sentinel (...) for all clearable attributes
+        run_data, error = api_request_handler.update_run(run_id, run_name)
+
+        assert error == "", "No error should occur"
+
+        # Verify the payload preserves existing description
+        request_history = requests_mock.request_history
+        update_request = [r for r in request_history if "update_run" in r.url and r.method == "POST"][0]
+        payload = update_request.json()
+
+        assert payload["description"] == "Keep this description", "description should be preserved"
+        assert payload["refs"] == "REF-1", "refs should be preserved"
+
+    @pytest.mark.api_handler
     def test_upload_attachments_413_error(self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path):
         """Test that 413 errors (file too large) are properly reported."""
         # Create a temporary test file
