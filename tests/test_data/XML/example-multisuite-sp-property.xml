@@ -6,12 +6,14 @@
     <testcase name="test_login" classname="LoginTest" time="2.5">
       <properties>
         <property name="test_id" value="C1374639"/>
+        <property name="testrail_attachment" value="sample_reports/testrail1.jpg"/>
       </properties>
     </testcase>
 
     <testcase name="test_logout" classname="LogoutTest" time="1.2">
       <properties>
         <property name="test_id" value="C1374640"/>
+        <property name="testrail_attachment" value="sample_reports/testrail1.jpg"/>
       </properties>
     </testcase>
 
@@ -19,12 +21,14 @@
     <testcase name="test_add_item" classname="CartTest" time="3.5">
       <properties>
         <property name="test_id" value="C1374641"/>
+        <property name="testrail_attachment" value="sample_reports/testrail2.jpg"/>
       </properties>
     </testcase>
 
     <testcase name="test_remove_item" classname="CartTest" time="2.8">
       <properties>
         <property name="test_id" value="C1374642"/>
+        <property name="testrail_attachment" value="sample_reports/testrail2.jpg"/>
       </properties>
       <failure message="Item not removed"/>
     </testcase>
@@ -33,12 +37,14 @@
     <testcase name="test_checkout" classname="PaymentTest" time="7.5">
       <properties>
         <property name="test_id" value="C1374643"/>
+        <property name="testrail_attachment" value="sample_reports/testrail3.jpg"/>
       </properties>
     </testcase>
 
     <testcase name="test_refund" classname="PaymentTest" time="12.5">
       <properties>
         <property name="test_id" value="C1374638"/>
+        <property name="testrail_attachment" value="sample_reports/testrail3.jpg"/>
       </properties>
     </testcase>
 
