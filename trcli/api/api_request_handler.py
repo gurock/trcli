@@ -286,8 +286,8 @@ class ApiRequestHandler:
     ) -> Tuple[bool, str, List[str], List[str], List[str]]:
         return self.case_handler.update_existing_case_references(case_id, junit_refs, case_fields, strategy)
 
-    def upload_attachments(self, report_results: List[Dict], case_id_to_result_id: Dict[int, int]):
-        return self.result_handler.upload_attachments(report_results, case_id_to_result_id)
+    def upload_attachments(self, report_results: List[Dict], request_id_to_result_id: Dict[int, int]):
+        return self.result_handler.upload_attachments(report_results, request_id_to_result_id)
 
     def add_results(self, run_id: int) -> Tuple[List, str, int]:
         return self.result_handler.add_results(run_id)

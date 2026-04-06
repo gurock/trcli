@@ -44,17 +44,18 @@ class ResultHandler:
         self.__get_all_tests_in_run = get_all_tests_in_run_callback
         self.handle_futures = handle_futures_callback
 
-    def upload_attachments(self, report_results: List[Dict], case_id_to_result_id: Dict[int, int]):
+    def upload_attachments(self, report_results: List[Dict], request_id_to_result_id: Dict[int, int]):
         """
         Upload attachments to test results.
 
         :param report_results: List of test results with attachments from report
-        :param case_id_to_result_id: Mapping from case_id to result_id
+        :param request_id_to_result_id: Mapping from request object id to result_id
         """
         failed_uploads = []
         for report_result in report_results:
             case_id = report_result["case_id"]
-            result_id = case_id_to_result_id.get(case_id)
+            # Use object identity to find the correct result_id for THIS specific result
+            result_id = request_id_to_result_id.get(id(report_result))
 
             if result_id is None:
                 self.environment.elog(f"Unable to find result_id for case {case_id}, skipping attachments.")
@@ -133,18 +134,18 @@ class ResultHandler:
                 # Iterate through futures to get all responses from done tasks (not cancelled)
                 responses = ResultHandler.retrieve_results_after_cancelling(futures)
         responses = [response.response_text for response in responses]
-        results = [result for results_list in responses for result in results_list]
 
-        # Build case_id to result_id mapping based on order correspondence
+        # Build request to result_id mapping based on order correspondence
         # TestRail API preserves order, so we can match requests to responses
-        case_id_to_result_id = {}
+        # Use id() to uniquely identify each request result object (handles duplicate case_ids)
+        request_id_to_result_id = {}
         for request_body, response_results in zip(add_results_data_chunks, responses):
-            # Match request case_ids to response result_ids by order
+            # Match request result objects to response result_ids by order
             for request_result, response_result in zip(request_body["results"], response_results):
-                case_id = request_result.get("case_id")
                 result_id = response_result.get("id")
-                if case_id and result_id:
-                    case_id_to_result_id[case_id] = result_id
+                if result_id:
+                    # Use object identity to uniquely map each request to its API response
+                    request_id_to_result_id[id(request_result)] = result_id
 
         report_results_w_attachments = []
         for results_data_chunk in add_results_data_chunks:
@@ -158,7 +159,7 @@ class ResultHandler:
             self.environment.log(
                 f"Uploading {attachments_count} attachments " f"for {len(report_results_w_attachments)} test results."
             )
-            self.upload_attachments(report_results_w_attachments, case_id_to_result_id)
+            self.upload_attachments(report_results_w_attachments, request_id_to_result_id)
         else:
             self.environment.log(f"No attachments found to upload.")
 
