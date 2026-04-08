@@ -125,11 +125,11 @@ class TestUpdateExistingCaseReferencesWithFields:
             assert skipped_refs == []
             assert updated_fields == []
 
-            # Verify the API call included only refs
+            # Verify the API call included only refs and is_legacy
             handler.client.send_post.assert_called_once()
             call_args = handler.client.send_post.call_args
             update_data = call_args[0][1]
-            assert update_data == {"refs": "REQ-1"}
+            assert update_data == {"refs": "REQ-1", "is_legacy": True}
 
     def test_update_case_filters_internal_fields(self, handler):
         """Test that internal fields are filtered out from updates"""
