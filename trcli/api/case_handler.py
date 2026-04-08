@@ -109,6 +109,8 @@ class CaseHandler:
             case_body[UPDATED_SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
         if self.environment.case_matcher != MatchersParser.AUTO and OLD_SYSTEM_NAME_AUTOMATION_ID in case_body:
             case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        case_body["is_legacy"] = True
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
         if response.status_code == 200:
             case.case_id = response.response_text["id"]
@@ -210,6 +212,9 @@ class CaseHandler:
         if not update_data:
             return True, None, added_refs, skipped_refs, updated_fields
 
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        update_data["is_legacy"] = True
+
         # Update the case
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
 
@@ -245,7 +250,8 @@ class CaseHandler:
         """
         self.environment.vlog(f"Setting automation_id '{automation_id}' on case {case_id}")
 
-        update_data = {"custom_automation_id": automation_id}
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        update_data = {"custom_automation_id": automation_id, "is_legacy": True}
         update_response = self.client.send_post(f"update_case/{case_id}", update_data)
 
         if update_response.status_code == 200:

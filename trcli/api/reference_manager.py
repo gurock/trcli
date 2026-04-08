@@ -65,7 +65,8 @@ class ReferenceManager:
             return False, error_msg
 
         # Update the test case with new references
-        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string})
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string, "is_legacy": True})
 
         if update_response.status_code == 200:
             return True, ""
@@ -89,7 +90,8 @@ class ReferenceManager:
             return False, error_msg
 
         # Update the test case with new references
-        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string})
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string, "is_legacy": True})
 
         if update_response.status_code == 200:
             return True, ""
@@ -127,7 +129,8 @@ class ReferenceManager:
             new_refs_string = merge_references(existing_refs, join_references(specific_references), strategy="delete")
 
         # Update the test case
-        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string})
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        update_response = self.client.send_post(f"update_case/{case_id}", {"refs": new_refs_string, "is_legacy": True})
 
         if update_response.status_code == 200:
             return True, ""
