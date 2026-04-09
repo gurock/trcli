@@ -64,6 +64,36 @@ class TestAPIClient:
         check_response(201, FAKE_PROJECT_DATA, "", response)
 
     @pytest.mark.api_client
+    @patch("requests.post")
+    def test_send_post_is_suppressed_in_dry_run_mode(self, mock_post, api_resources_maker, mocker):
+        environment = mocker.patch("trcli.cli.Environment")
+        api_client = api_resources_maker(environment=environment)
+        api_client.dry_run = True
+
+        response = api_client.send_post("add_project", {"name": "Preview Project"})
+
+        mock_post.assert_not_called()
+        check_response(
+            200,
+            {"uri": "add_project", "payload": {"name": "Preview Project"}, "has_files": False, "dry_run": True},
+            "",
+            response,
+        )
+        environment.log.assert_any_call("Dry run: skipping POST add_project")
+
+    @pytest.mark.api_client
+    def test_send_get_still_executes_in_dry_run_mode(self, api_resources_maker, requests_mock, mocker):
+        requests_mock.get(create_url("get_projects"), status_code=200, json=FAKE_PROJECT_DATA)
+        environment = mocker.patch("trcli.cli.Environment")
+        api_client = api_resources_maker(environment=environment)
+        api_client.dry_run = True
+
+        response = api_client.send_get("get_projects")
+
+        check_calls_count(requests_mock)
+        check_response(200, FAKE_PROJECT_DATA, "", response)
+
+    @pytest.mark.api_client
     def test_send_get_status_code_not_success(self, api_resources, requests_mock):
         """The purpose of this test is to check behaviour of send_get one receiving not successful status code.
         Check that response was packed into APIClientResult, retry mechanism was not triggered."""

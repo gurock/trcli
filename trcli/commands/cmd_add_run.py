@@ -3,6 +3,8 @@ import yaml
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
+from trcli.cli_styles import StyledCommand
+from trcli.commands.results_parser_helpers import build_command_json, json_output_option
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
@@ -42,7 +44,41 @@ def write_run_to_file(environment: Environment, run_id: int):
     environment.log("Done.")
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+def _emit_add_run_json(environment: Environment, *, ok: bool, action: str, run_id: int = None,
+                       errors: list[str] = None, file_written: bool = False):
+    effective_run_id = environment.run_id if environment.dry_run and environment.run_id else run_id
+    if environment.dry_run and not environment.run_id:
+        effective_run_id = None
+    environment.emit_json(
+        build_command_json(
+            "add_run",
+            ok=ok,
+            dry_run=bool(environment.dry_run),
+            data={
+                "action": action,
+                "run_id": effective_run_id,
+                "title": environment.title,
+                "project": environment.project,
+                "project_id": environment.project_id,
+                "suite_id": environment.suite_id,
+                "description": environment.run_description,
+                "milestone_id": environment.milestone_id,
+                "assigned_to_id": environment.run_assigned_to_id,
+                "include_all": bool(environment.run_include_all),
+                "case_ids": environment.run_case_ids,
+                "refs": environment.run_refs,
+                "refs_action": getattr(environment, "run_refs_action", "add"),
+                "auto_close_run": bool(environment.auto_close_run),
+                "file": environment.file,
+                "file_written": file_written,
+            },
+            errors=errors,
+        )
+    )
+
+
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
+@json_output_option
 @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
 @click.option(
     "--run-id",
@@ -121,13 +157,25 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     environment.cmd = "add_run"
     environment.set_parameters(context)
     environment.check_for_required_parameters()
+    action = "update" if environment.run_id else "create"
     
     if environment.run_refs and len(environment.run_refs) > 250:
-        environment.elog("Error: References field cannot exceed 250 characters.")
+        error_message = "Error: References field cannot exceed 250 characters."
+        if environment.wants_json_output:
+            _emit_add_run_json(environment, ok=False, action=action, errors=[error_message])
+        else:
+            environment.elog(error_message)
         exit(1)
     
     if environment.run_refs_action and environment.run_refs_action != 'add' and not environment.run_id:
-        environment.elog("Error: --run-refs-action 'update' and 'delete' can only be used when updating an existing run (--run-id required).")
+        error_message = (
+            "Error: --run-refs-action 'update' and 'delete' can only be used when updating an existing run "
+            "(--run-id required)."
+        )
+        if environment.wants_json_output:
+            _emit_add_run_json(environment, ok=False, action=action, errors=[error_message])
+        else:
+            environment.elog(error_message)
         exit(1)
     
     if environment.run_refs_action == 'delete' and not environment.run_refs and environment.run_id:
@@ -143,10 +191,28 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     project_client.resolve_suite()
     run_id, error_message = project_client.create_or_update_test_run()
     if error_message:
+        if environment.wants_json_output:
+            _emit_add_run_json(environment, ok=False, action=action, run_id=run_id, errors=[error_message])
         exit(1)
 
-    environment.run_id = run_id
-    environment.log(f"title: {environment.title}")
-    environment.log(f"run_id: {run_id}")
-    if environment.file is not None:
+    if environment.dry_run:
+        if environment.wants_json_output:
+            _emit_add_run_json(environment, ok=True, action=action, run_id=run_id)
+            return
+        environment.log("Dry run: no TestRail changes were made.")
+        environment.log(f"title: {environment.title}")
+        if environment.run_id:
+            environment.log(f"run_id: {environment.run_id}")
+        else:
+            environment.log("run_id: <not created>")
+    else:
+        environment.run_id = run_id
+        if not environment.wants_json_output:
+            environment.log(f"title: {environment.title}")
+            environment.log(f"run_id: {run_id}")
+    file_written = False
+    if environment.file is not None and not environment.dry_run:
         write_run_to_file(environment, run_id)
+        file_written = True
+    if environment.wants_json_output:
+        _emit_add_run_json(environment, ok=True, action=action, run_id=run_id, file_written=file_written)

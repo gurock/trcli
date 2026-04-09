@@ -2,6 +2,7 @@ import unittest
 from pathlib import Path
 
 import pytest
+import click
 
 from click.testing import CliRunner
 
@@ -64,6 +65,29 @@ class TestCli:
         ), "'Options:' is not present in output message when calling trcli with --help parameter."
 
     @pytest.mark.cli
+    def test_help_uses_colored_palette(self):
+        ctx = click.Context(cli, info_name="trcli", color=True)
+        help_text = cli.get_help(ctx)
+
+        assert "\x1b[33mUsage: " in help_text
+        assert "\x1b[93mparse_junit\x1b[0m" in help_text
+        assert "\x1b[93m-h, --host " in help_text
+        assert "\x1b[93m--dry-run\x1b[0m" in help_text
+
+    @pytest.mark.cli
+    def test_dry_run_option_is_set_on_environment(self, mocker, cli_resources):
+        cli_agrs_helper, cli_runner = cli_resources
+        args = cli_agrs_helper.get_all_required_parameters_plus_optional(["--dry-run"])
+
+        mocker.patch("sys.argv", ["trcli", *args])
+        setattr_mock = mocker.patch("trcli.cli.setattr")
+
+        with cli_runner.isolated_filesystem():
+            _ = cli_runner.invoke(cli, args)
+
+        setattr_mock.assert_any_call(mocker.ANY, "dry_run", True)
+
+    @pytest.mark.cli
     def test_run_without_command(self, mocker, cli_resources):
         """The purpose of this test is to check that calling trcli without command will result is
         printing message about missing command"""
@@ -99,7 +123,8 @@ class TestCli:
         )
 
         mocker.patch("sys.argv", ["trcli", *args])
-        result = cli_runner.invoke(cli, args)
+        with cli_runner.isolated_filesystem():
+            result = cli_runner.invoke(cli, args)
         assert (
             result.exit_code == expected_exit_code
         ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."
@@ -121,7 +146,8 @@ class TestCli:
         args = ["--host", host, *args]
 
         mocker.patch("sys.argv", ["trcli", *args])
-        result = cli_runner.invoke(cli, args)
+        with cli_runner.isolated_filesystem():
+            result = cli_runner.invoke(cli, args)
         assert (
             result.exit_code == expected_exit_code
         ), f"Exit code {expected_exit_code} expected. Got: {result.exit_code} instead."

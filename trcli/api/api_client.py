@@ -54,6 +54,7 @@ class APIClient:
         proxy_user: str = None,
         noproxy: str = None,
         uploader_metadata: str = None,
+        dry_run: bool = False,
     ):
         self.username = ""
         self.password = ""
@@ -68,6 +69,7 @@ class APIClient:
         self.proxy_user = proxy_user
         self.noproxy = noproxy.split(",") if noproxy else []
         self.uploader_metadata = uploader_metadata
+        self.dry_run = dry_run
 
         if not host_name.endswith("/"):
             host_name = host_name + "/"
@@ -95,7 +97,24 @@ class APIClient:
             * timeout occurred
             * connection error occurred
         """
+        if self.dry_run:
+            return self.__build_dry_run_response(uri, payload, files)
         return self.__send_request("POST", uri, payload, files, as_form_data)
+
+    def __build_dry_run_response(
+        self, uri: str, payload: dict = None, files: Dict[str, Path] = None
+    ) -> APIClientResult:
+        payload_preview = {
+            "uri": uri,
+            "payload": payload or {},
+            "has_files": bool(files),
+            "dry_run": True,
+        }
+        self.logging_function(f"Dry run: skipping POST {uri}")
+        self.verbose_logging_function(
+            APIClient.format_dry_run_for_vlog(method="POST", url=self.__url + uri, payload=payload, files=files)
+        )
+        return APIClientResult(status_code=200, response_text=payload_preview, error_message="")
 
     def __send_request(
         self, method: str, uri: str, payload: dict, files: Dict[str, Path] = None, as_form_data: bool = False
@@ -335,3 +354,11 @@ class APIClient:
     @staticmethod
     def format_response_for_vlog(status_code, body):
         return f"response status code: {status_code}\nresponse body: {body}\n****"
+
+    @staticmethod
+    def format_dry_run_for_vlog(method: str, url: str, payload: dict, files: Dict[str, Path] = None):
+        file_summary = "yes" if files else "no"
+        return (
+            APIClient.format_request_for_vlog(method=method, url=url, payload=payload)
+            + f"response status code: 200\nresponse body: {{'dry_run': True, 'has_files': {file_summary == 'yes'}}}\n****"
+        )

@@ -6,13 +6,19 @@ from junitparser import JUnitXmlError
 from trcli import settings
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
-from trcli.commands.results_parser_helpers import results_parser_options, print_config
+from trcli.cli_styles import StyledCommand
+from trcli.commands.results_parser_helpers import (
+    emit_parser_result_json,
+    results_parser_options,
+    print_config,
+    print_dry_run_preview,
+)
 from trcli.constants import FAULT_MAPPING
 from trcli.data_classes.validation_exception import ValidationException
 from trcli.readers.junit_xml import JunitParser
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @results_parser_options
 @click.option(
     "--special-parser",
@@ -33,7 +39,6 @@ from trcli.readers.junit_xml import JunitParser
     metavar="",
     help="Comma-separated list of reference IDs to append to the test run (up to 250 characters total).",
 )
-@click.option("--json-output", is_flag=True, help="Output reference operation results in JSON format.")
 @click.option(
     "--update-existing-cases",
     type=click.Choice(["yes", "no"], case_sensitive=False),
@@ -66,8 +71,12 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     print_config(environment)
     try:
         parsed_suites = JunitParser(environment).parse_file()
+        if environment.dry_run:
+            print_dry_run_preview(environment, parsed_suites, "upload JUnit results to TestRail")
+            return
         run_id = None
         case_update_results = {}
+        test_run_ref_result = None
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()
@@ -80,15 +89,41 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 case_update_results = result_uploader.case_update_results
 
         if environment.test_run_ref and run_id:
-            _handle_test_run_references(environment, run_id)
+            test_run_ref_result = _handle_test_run_references(environment, run_id)
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:
-            _handle_case_update_reporting(environment, case_update_results)
+            case_update_summary = _handle_case_update_reporting(environment, case_update_results)
 
             # Exit with error if there were case update failures (after reporting)
             if case_update_results.get("failed_cases"):
+                if environment.wants_json_output:
+                    emit_parser_result_json(
+                        environment,
+                        parsed_suites=parsed_suites,
+                        run_id=run_id,
+                        ok=False,
+                        errors=["One or more case updates failed."],
+                        extra_data={
+                            "test_run_references": test_run_ref_result,
+                            "case_updates": case_update_summary,
+                        },
+                    )
                 exit(1)
+        else:
+            case_update_summary = None
+
+        if environment.wants_json_output:
+            emit_parser_result_json(
+                environment,
+                parsed_suites=parsed_suites,
+                run_id=run_id,
+                extra_data={
+                    "special_parser": environment.special_parser,
+                    "test_run_references": test_run_ref_result,
+                    "case_updates": case_update_summary,
+                },
+            )
     except FileNotFoundError as e:
         environment.elog(str(e))
         exit(1)
@@ -130,7 +165,6 @@ def _handle_test_run_references(environment: Environment, run_id: int):
     """
     from trcli.api.project_based_client import ProjectBasedClient
     from trcli.data_classes.dataclass_testrail import TestRailSuite
-    import json
 
     refs = [ref.strip() for ref in environment.test_run_ref.split(",") if ref.strip()]
 
@@ -148,11 +182,14 @@ def _handle_test_run_references(environment: Environment, run_id: int):
 
     final_refs = run_data.get("refs", "") if run_data else ""
 
-    if environment.json_output:
-        # JSON output
-        result = {"run_id": run_id, "added": added_refs, "skipped": skipped_refs, "total_references": final_refs}
-        print(json.dumps(result, indent=2))
-    else:
+    result = {
+        "run_id": run_id,
+        "added": added_refs,
+        "skipped": skipped_refs,
+        "total_references": final_refs,
+    }
+
+    if not environment.wants_json_output:
         environment.log(f"References appended successfully:")
         environment.log(f"  Run ID: {run_id}")
         environment.log(f"  Total references: {len(final_refs.split(',')) if final_refs else 0}")
@@ -162,34 +199,31 @@ def _handle_test_run_references(environment: Environment, run_id: int):
         )
         if final_refs:
             environment.log(f"  All references: {final_refs}")
+    return result
 
 
 def _handle_case_update_reporting(environment: Environment, case_update_results: dict):
     """
     Handle reporting of case update results.
     """
-    import json
-
     # Handle None input gracefully
     if case_update_results is None:
         return
 
-    if environment.json_output:
-        # JSON output for case updates
-        result = {
-            "summary": {
-                "updated_cases": len(case_update_results.get("updated_cases", [])),
-                "skipped_cases": len(case_update_results.get("skipped_cases", [])),
-                "failed_cases": len(case_update_results.get("failed_cases", [])),
-            },
-            "details": {
-                "updated_cases": case_update_results.get("updated_cases", []),
-                "skipped_cases": case_update_results.get("skipped_cases", []),
-                "failed_cases": case_update_results.get("failed_cases", []),
-            },
-        }
-        print(json.dumps(result, indent=2))
-    else:
+    result = {
+        "summary": {
+            "updated_cases": len(case_update_results.get("updated_cases", [])),
+            "skipped_cases": len(case_update_results.get("skipped_cases", [])),
+            "failed_cases": len(case_update_results.get("failed_cases", [])),
+        },
+        "details": {
+            "updated_cases": case_update_results.get("updated_cases", []),
+            "skipped_cases": case_update_results.get("skipped_cases", []),
+            "failed_cases": case_update_results.get("failed_cases", []),
+        },
+    }
+
+    if not environment.wants_json_output:
         # Console output for case updates
         updated_cases = case_update_results.get("updated_cases", [])
         skipped_cases = case_update_results.get("skipped_cases", [])
@@ -222,3 +256,4 @@ def _handle_case_update_reporting(environment: Environment, case_update_results:
                     case_id = case_info["case_id"]
                     error = case_info.get("error", "Unknown error")
                     environment.log(f"    C{case_id}: {error}")
+    return result

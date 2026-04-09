@@ -99,6 +99,9 @@ class RunHandler:
             return None, error_msg
 
         if not plan_id:
+            if self.client.dry_run:
+                self.environment.log(f"Dry run: would create test run in project {project_id}.")
+                return 0, ""
             response = self.client.send_post(f"add_run/{project_id}", add_run_data)
             if response.error_message:
                 return None, response.error_message
@@ -114,6 +117,9 @@ class RunHandler:
                 }
             else:
                 entry_data = add_run_data
+            if self.client.dry_run:
+                self.environment.log(f"Dry run: would add a run entry to plan {plan_id}.")
+                return 0, ""
             response = self.client.send_post(f"add_plan_entry/{plan_id}", entry_data)
             if response.error_message:
                 return None, response.error_message
@@ -180,6 +186,13 @@ class RunHandler:
 
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
+        if self.client.dry_run:
+            preview_run = dict(run_response.response_text)
+            preview_run.update(add_run_data)
+            preview_run["id"] = run_id
+            preview_run["dry_run"] = True
+            self.environment.log(f"Dry run: would update test run {run_id}.")
+            return preview_run, ""
         if not plan_id:
             update_response = self.client.send_post(f"update_run/{run_id}", add_run_data)
         elif plan_id and config_ids:
@@ -293,6 +306,9 @@ class RunHandler:
         :returns: Tuple with dict created resources and error string.
         """
         body = {"run_id": run_id}
+        if self.client.dry_run:
+            self.environment.log(f"Dry run: would close run {run_id}.")
+            return {"id": run_id, "dry_run": True}, ""
         response = self.client.send_post(f"close_run/{run_id}", body)
         return response.response_text, response.error_message
 
@@ -303,5 +319,8 @@ class RunHandler:
         :param run_id: run id
         :returns: Tuple with dict created resources and error string.
         """
+        if self.client.dry_run:
+            self.environment.log(f"Dry run: would delete run {run_id}.")
+            return {"id": run_id, "dry_run": True}, ""
         response = self.client.send_post(f"delete_run/{run_id}", payload={})
         return response.response_text, response.error_message

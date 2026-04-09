@@ -2,6 +2,8 @@ import click
 from pathlib import Path
 
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
+from trcli.cli_styles import StyledCommand
+from trcli.commands.results_parser_helpers import build_command_json
 from trcli.constants import FAULT_MAPPING
 from trcli.api.api_client import APIClient
 from trcli.api.api_request_handler import ApiRequestHandler
@@ -9,7 +11,7 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite
 import trcli
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @click.option(
     "-f",
     "--file",
@@ -32,7 +34,7 @@ import trcli
     required=False,
     help="TestRail case ID to update (required with --update flag).",
 )
-@click.option("--json-output", is_flag=True, help="Output case IDs in JSON format.")
+@click.option("--json-output", "--json", "json_output", is_flag=True, help="Output structured results in JSON format.")
 @click.option("--update", is_flag=True, help="Update existing BDD test case instead of creating new one.")
 @click.pass_context
 @pass_environment
@@ -108,6 +110,29 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
         environment.vlog(f"Target {id_type}: {target_id}")
         environment.vlog(f"API endpoint: POST /api/v2/{endpoint_name}/{target_id}")
 
+        if environment.dry_run:
+            if json_output:
+                environment.emit_json(
+                    build_command_json(
+                        "import_gherkin",
+                        dry_run=True,
+                        data={
+                            "action": "update" if update_mode else "create",
+                            "target_id": target_id,
+                            "target_type": id_type,
+                            "feature_file": str(feature_path),
+                            "feature_size": len(feature_content),
+                        },
+                    )
+                )
+            else:
+                action = "update" if update_mode else "upload"
+                environment.log(f"Dry run: would {action} feature file to TestRail.")
+                environment.log(f"  Target {id_type}: {target_id}")
+                environment.log(f"  Feature file: {feature_path}")
+                environment.log(f"  Feature size: {len(feature_content)} characters")
+            return
+
         # Initialize API client
         environment.log("Connecting to TestRail...")
 
@@ -119,6 +144,7 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
             verbose_logging_function=environment.vlog,
             logging_function=environment.log,
             uploader_metadata=uploader_metadata,
+            dry_run=bool(getattr(environment, "dry_run", False)),
         )
 
         # Set credentials after initialization
@@ -159,9 +185,19 @@ def cli(environment: Environment, context: click.Context, file: str, section_id:
 
         # Display results
         if kwargs.get("json_output"):
-            import json
-
-            print(json.dumps({"case_ids": case_ids, "count": len(case_ids)}, indent=2))
+            environment.emit_json(
+                build_command_json(
+                    "import_gherkin",
+                    data={
+                        "action": "update" if update_mode else "create",
+                        "target_id": target_id,
+                        "target_type": id_type,
+                        "feature_file": str(feature_path),
+                        "case_ids": case_ids,
+                        "count": len(case_ids),
+                    },
+                )
+            )
         else:
             if update_mode:
                 environment.log(f"\nSuccessfully updated feature file!")

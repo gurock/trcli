@@ -76,6 +76,83 @@ class TestCmdParseCucumber:
     @patch("trcli.api.api_client.APIClient")
     @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
     @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
+    def test_parse_cucumber_json_output(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
+        mock_api_client = MagicMock()
+        mock_api_client_class.return_value = mock_api_client
+        mock_api_client_class.build_uploader_metadata.return_value = {}
+
+        mock_api_handler = MagicMock()
+        mock_api_handler_class.return_value = mock_api_handler
+
+        mock_project_data = MagicMock()
+        mock_project_data.project_id = 1
+        mock_api_handler.get_project_data.return_value = mock_project_data
+
+        mock_parser = MagicMock()
+        mock_parser_class.return_value = mock_parser
+        mock_case = MagicMock()
+        mock_case.case_id = 101
+        mock_case.result = MagicMock()
+        mock_section = MagicMock()
+        mock_section.testcases = [mock_case]
+        mock_suite = MagicMock()
+        mock_suite.name = "Test Suite"
+        mock_suite.testsections = [mock_section]
+        mock_parser.parse_file.return_value = [mock_suite]
+
+        mock_uploader = MagicMock()
+        mock_uploader_class.return_value = mock_uploader
+        mock_uploader.last_run_id = 123
+
+        result = self.runner.invoke(
+            cmd_parse_cucumber.cli,
+            ["--file", self.test_cucumber_path, "--suite-id", "2", "--title", "Test Run", "--json"],
+            obj=self.environment,
+        )
+
+        assert result.exit_code == 0
+        payload = json.loads(result.output[result.output.find("{"):])
+        assert payload["ok"] is True
+        assert payload["command"] == "parse_cucumber"
+        assert payload["data"]["run_id"] == 123
+        assert payload["data"]["parsed"]["results"] == 1
+
+    @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
+    @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
+    @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
+    def test_parse_cucumber_dry_run_skips_api_and_uploader(
+        self, mock_parser_class, mock_uploader_class, mock_api_client_class, mock_api_handler_class
+    ):
+        self.environment.dry_run = True
+
+        mock_parser = MagicMock()
+        mock_parser_class.return_value = mock_parser
+        mock_suite = MagicMock()
+        mock_suite.testsections = []
+        mock_parser.parse_file.return_value = [mock_suite]
+
+        result = self.runner.invoke(
+            cmd_parse_cucumber.cli,
+            ["--file", self.test_cucumber_path, "--suite-id", "2", "--title", "Test Run"],
+            obj=self.environment,
+        )
+
+        assert result.exit_code == 0
+        mock_parser.parse_file.assert_called_once_with(bdd_matching_mode=False)
+        mock_uploader_class.assert_not_called()
+        mock_api_client_class.assert_not_called()
+        mock_api_handler_class.assert_not_called()
+        assert "dry run: would upload cucumber results to testrail." in result.output.lower()
+
+    @pytest.mark.cmd_parse_cucumber
+    @patch("trcli.api.api_request_handler.ApiRequestHandler")
+    @patch("trcli.api.api_client.APIClient")
+    @patch("trcli.commands.cmd_parse_cucumber.ResultsUploader")
+    @patch("trcli.commands.cmd_parse_cucumber.CucumberParser")
     @patch(
         "builtins.open",
         new_callable=mock.mock_open,

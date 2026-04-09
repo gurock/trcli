@@ -50,6 +50,7 @@ class ProjectBasedClient:
             "proxy_user": proxy_user,
             "noproxy": noproxy,
             "uploader_metadata": uploader_metadata,
+            "dry_run": bool(getattr(self.environment, "dry_run", False)),
         }
 
         if self.environment.timeout:
@@ -222,17 +223,24 @@ class ProjectBasedClient:
                 refs=self.environment.run_refs,
                 refs_action=getattr(self.environment, "run_refs_action", "add"),
             )
+        is_dry_run = bool(getattr(self.environment, "dry_run", False))
         if self.environment.auto_close_run:
-            self.environment.log("Closing run. ", new_line=False)
-            close_run, error_message = self.api_request_handler.close_run(run_id)
-            if close_run:
-                self.environment.log("Run closed successfully.")
+            if not self.environment.run_id and is_dry_run:
+                self.environment.log("Dry run: would close the newly created run.")
             else:
-                self.environment.elog(f"Failed to close run: {error_message}")
+                self.environment.log("Closing run. ", new_line=False)
+                close_run, error_message = self.api_request_handler.close_run(run_id)
+                if close_run:
+                    self.environment.log("Run closed successfully.")
+                else:
+                    self.environment.elog(f"Failed to close run: {error_message}")
         if error_message:
             self.environment.elog("\n" + error_message)
         else:
-            self.environment.log(f"Test run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
+            if is_dry_run and not self.environment.run_id:
+                self.environment.log("Dry run: test run creation preview completed.")
+            else:
+                self.environment.log(f"Test run: {self.environment.host.rstrip('/')}/index.php?/runs/view/{run_id}")
         return run_id, error_message
 
     def prompt_user_and_add_items(

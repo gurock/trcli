@@ -5,13 +5,19 @@ import click
 from trcli import settings
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
-from trcli.commands.results_parser_helpers import results_parser_options, print_config
+from trcli.cli_styles import StyledCommand
+from trcli.commands.results_parser_helpers import (
+    emit_parser_result_json,
+    results_parser_options,
+    print_config,
+    print_dry_run_preview,
+)
 from trcli.constants import FAULT_MAPPING
 from trcli.data_classes.validation_exception import ValidationException
 from trcli.readers.robot_xml import RobotParser
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @results_parser_options
 @click.pass_context
 @pass_environment
@@ -24,9 +30,14 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     print_config(environment)
     try:
         parsed_suites = RobotParser(environment).parse_file()
+        if environment.dry_run:
+            print_dry_run_preview(environment, parsed_suites, "upload Robot Framework results to TestRail")
+            return
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()
+        if environment.wants_json_output:
+            emit_parser_result_json(environment, parsed_suites=parsed_suites)
     except FileNotFoundError as e:
         environment.elog(str(e))
         exit(1)

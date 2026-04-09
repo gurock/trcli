@@ -3,13 +3,19 @@ import json
 
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
-from trcli.commands.results_parser_helpers import bdd_parser_options, print_config
+from trcli.cli_styles import StyledCommand
+from trcli.commands.results_parser_helpers import (
+    bdd_parser_options,
+    emit_parser_result_json,
+    print_config,
+    print_dry_run_preview,
+)
 from trcli.constants import FAULT_MAPPING, ProjectErrors
 from trcli.data_classes.validation_exception import ValidationException
 from trcli.readers.cucumber_json import CucumberParser
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @bdd_parser_options
 @click.option(
     "-v",
@@ -43,6 +49,14 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     print_config(environment)
 
     try:
+        created_case_ids = {}
+        if environment.dry_run:
+            parser = CucumberParser(environment)
+            parsed_suites = parser.parse_file(bdd_matching_mode=False)
+            print_dry_run_preview(environment, parsed_suites, "upload Cucumber results to TestRail")
+            environment.log("  Note: BDD matching and auto-creation checks are skipped in dry-run mode.")
+            return
+
         # Setup API client and handler (needed for both modes)
         from trcli.api.api_request_handler import ApiRequestHandler
         from trcli.api.api_client import APIClient
@@ -56,6 +70,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             verbose_logging_function=environment.vlog,
             logging_function=environment.log,
             uploader_metadata=uploader_metadata,
+            dry_run=bool(getattr(environment, "dry_run", False)),
         )
 
         # Set credentials
@@ -264,9 +279,24 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
 
         # Summary
         if run_id:
-            environment.log(f"Results uploaded successfully to run ID: {run_id}")
+            if environment.wants_json_output:
+                emit_parser_result_json(
+                    environment,
+                    parsed_suites=parsed_suites,
+                    run_id=run_id,
+                    extra_data={"auto_created_case_ids": list(created_case_ids.values())},
+                )
+            else:
+                environment.log(f"Results uploaded successfully to run ID: {run_id}")
         else:
-            environment.log("Results processing completed")
+            if environment.wants_json_output:
+                emit_parser_result_json(
+                    environment,
+                    parsed_suites=parsed_suites,
+                    extra_data={"auto_created_case_ids": list(created_case_ids.values())},
+                )
+            else:
+                environment.log("Results processing completed")
 
     except FileNotFoundError as e:
         environment.elog(str(e))

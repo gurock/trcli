@@ -64,6 +64,7 @@ RETURN_VALUE_FROM_CUSTOM_CONFIG_FILE = {
 
 trcli_description = (
     "Supported and loaded modules:\n"
+    "    - init: Interactively create a starter config file\n"
     "    - parse_junit: JUnit XML Files (& Similar)\n"
     "    - parse_cucumber: Cucumber JSON results (BDD)\n"
     "    - import_gherkin: Upload .feature files to TestRail BDD\n"

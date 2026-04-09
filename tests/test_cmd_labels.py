@@ -83,6 +83,23 @@ class TestCmdLabels:
             mock_elog.assert_called_with("Failed to add label: API Error: Label already exists")
 
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_dry_run_skips_api_call(self, mock_project_client):
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        self.environment.dry_run = True
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+
+            result = self.runner.invoke(cmd_labels.add, ['--title', 'Test Label'], obj=self.environment)
+
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_label.assert_not_called()
+            mock_log.assert_any_call("Dry run: would add a label in TestRail.")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_update_label_success(self, mock_project_client):
         """Test successful label update"""
         mock_client_instance = MagicMock()
@@ -672,6 +689,28 @@ class TestCmdLabelsTests:
                 test_ids=[1], titles=['Test Label'], project_id=1
             )
             mock_log.assert_any_call("Successfully processed 1 test(s):")
+
+    @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
+    def test_add_label_to_tests_dry_run_skips_api_call(self, mock_project_client):
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        mock_client_instance.project.project_id = 1
+        mock_client_instance.resolve_project.return_value = None
+        self.environment.dry_run = True
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+
+            result = self.runner.invoke(
+                cmd_labels.tests,
+                ['add', '--test-ids', '1,2', '--title', 'label1,label2'],
+                obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_labels_to_tests.assert_not_called()
+            mock_log.assert_any_call("Dry run: would add label(s) to test(s).")
 
     @mock.patch('trcli.commands.cmd_labels.ProjectBasedClient')
     def test_add_label_to_tests_with_csv_file(self, mock_project_client):

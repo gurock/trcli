@@ -6,8 +6,10 @@ from junitparser import JUnitXmlError
 from trcli import settings
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
+from trcli.cli_styles import StyledCommand
 from trcli.constants import FAULT_MAPPING
 from trcli.data_classes.validation_exception import ValidationException
+from trcli.commands.results_parser_helpers import emit_parser_result_json, json_output_option, print_dry_run_preview
 from trcli.readers.openapi_yml import OpenApiParser
 
 
@@ -20,7 +22,8 @@ def print_config(env: Environment):
             f"\n> Auto-create entities: {env.auto_creation_response}")
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
+@json_output_option
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
 @click.option(
     "--suite-id",
@@ -47,9 +50,18 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     print_config(environment)
     try:
         parsed_suites = OpenApiParser(environment).parse_file()
+        if environment.dry_run:
+            print_dry_run_preview(environment, parsed_suites, "create OpenAPI-derived test cases in TestRail")
+            return
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite, skip_run=True)
             result_uploader.upload_results()
+        if environment.wants_json_output:
+            emit_parser_result_json(
+                environment,
+                parsed_suites=parsed_suites,
+                extra_data={"skip_run": True},
+            )
     except FileNotFoundError:
         environment.elog(FAULT_MAPPING["missing_file"])
         exit(1)

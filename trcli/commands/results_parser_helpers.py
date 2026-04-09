@@ -1,4 +1,5 @@
 import functools
+from typing import Optional
 
 import click
 from click import BadParameter
@@ -12,6 +13,16 @@ def print_config(env: Environment):
         if hasattr(env, "assign_failed_to") and env.assign_failed_to and env.assign_failed_to.strip()
         else "No"
     )
+
+
+def json_output_option(f):
+    return click.option(
+        "--json-output",
+        "--json",
+        "json_output",
+        is_flag=True,
+        help="Output structured results in JSON format.",
+    )(f)
     env.log(
         f"Parser Results Execution Parameters"
         f"\n> Report file: {env.file}"
@@ -35,6 +46,7 @@ def resolve_comma_separated_list(ctx, param, value):
 
 
 def results_parser_options(f):
+    @json_output_option
     @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
     @click.option("--close-run", is_flag=True, help="Close the newly created run")
     @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
@@ -114,6 +126,7 @@ def results_parser_options(f):
 def bdd_parser_options(f):
     """Options decorator for BDD/Cucumber parsers that don't need case-matcher or section-id"""
 
+    @json_output_option
     @click.option("-f", "--file", type=click.Path(), metavar="", help="Filename and path.")
     @click.option("--close-run", is_flag=True, help="Close the newly created run")
     @click.option("--title", metavar="", help="Title of Test Run to be created or updated in TestRail.")
@@ -162,3 +175,106 @@ def bdd_parser_options(f):
         return f(*args, **kwargs)
 
     return wrapper_bdd_options
+
+
+def summarize_parsed_suites(parsed_suites) -> dict:
+    sections = 0
+    cases = 0
+    results = 0
+
+    for suite in parsed_suites:
+        sections += len(suite.testsections)
+        for section in suite.testsections:
+            cases += len(section.testcases)
+            for test_case in section.testcases:
+                if getattr(test_case, "result", None) is not None:
+                    results += 1
+
+    return {
+        "suites": len(parsed_suites),
+        "sections": sections,
+        "cases": cases,
+        "results": results,
+    }
+
+
+def build_command_json(
+    command: str,
+    *,
+    ok: bool = True,
+    dry_run: bool = False,
+    data: Optional[dict] = None,
+    warnings: Optional[list[str]] = None,
+    errors: Optional[list[str]] = None,
+) -> dict:
+    return {
+        "ok": ok,
+        "command": command,
+        "dry_run": dry_run,
+        "data": data or {},
+        "warnings": warnings or [],
+        "errors": errors or [],
+    }
+
+
+def emit_parser_result_json(
+    env: Environment,
+    *,
+    parsed_suites,
+    run_id=None,
+    warnings: Optional[list[str]] = None,
+    errors: Optional[list[str]] = None,
+    extra_data: Optional[dict] = None,
+    ok: bool = True,
+):
+    payload = build_command_json(
+        env.cmd,
+        ok=ok,
+        dry_run=bool(getattr(env, "dry_run", False)),
+        data={
+            "file": env.file,
+            "title": env.title,
+            "run_id": run_id,
+            "project": env.project,
+            "project_id": env.project_id,
+            "suite_id": env.suite_id,
+            "parsed": summarize_parsed_suites(parsed_suites),
+            **(extra_data or {}),
+        },
+        warnings=warnings,
+        errors=errors,
+    )
+    env.emit_json(payload)
+
+
+def print_dry_run_preview(env: Environment, parsed_suites, action: str):
+    summary = summarize_parsed_suites(parsed_suites)
+    if env.wants_json_output:
+        env.emit_json(
+            build_command_json(
+                env.cmd,
+                dry_run=True,
+                data={
+                    "action": action,
+                    "parsed": summary,
+                    "target_run_id": env.run_id,
+                    "title": env.title,
+                    "close_run": bool(env.close_run),
+                },
+            )
+        )
+        return
+
+    env.log(f"Dry run: would {action}.")
+    env.log(f"  Parsed suites: {summary['suites']}")
+    env.log(f"  Parsed sections: {summary['sections']}")
+    env.log(f"  Parsed cases: {summary['cases']}")
+    env.log(f"  Parsed results: {summary['results']}")
+
+    if env.run_id:
+        env.log(f"  Target run: {env.run_id}")
+    else:
+        env.log(f"  Run title: {env.title}")
+
+    if env.close_run:
+        env.log("  Close run: yes")

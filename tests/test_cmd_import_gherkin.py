@@ -85,9 +85,9 @@ class TestCmdImportGherkin:
             assert json_start >= 0, "No JSON found in output"
             json_str = result.output[json_start:]
             output_data = json.loads(json_str)
-            assert "case_ids" in output_data
-            assert output_data["case_ids"] == [101, 102]
-            assert output_data["count"] == 2
+            assert output_data["ok"] is True
+            assert output_data["data"]["case_ids"] == [101, 102]
+            assert output_data["data"]["count"] == 2
 
     @pytest.mark.cmd_import_gherkin
     @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
@@ -324,8 +324,8 @@ class TestCmdImportGherkin:
             import json
 
             output_data = json.loads(json_str)
-            assert "case_ids" in output_data
-            assert output_data["case_ids"] == [789]
+            assert output_data["ok"] is True
+            assert output_data["data"]["case_ids"] == [789]
             # Verify update_bdd was called with case_id
             mock_handler.update_bdd.assert_called_once_with(789, mock.ANY)
 
@@ -394,3 +394,46 @@ class TestCmdImportGherkin:
             assert "456" in result.output  # case_id in verbose log
             # Verify update_bdd was called with case_id
             mock_handler.update_bdd.assert_called_once_with(456, mock.ANY)
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_dry_run_create_skips_api_calls(self, mock_api_client_class, mock_api_handler_class):
+        self.environment.dry_run = True
+
+        with self.runner.isolated_filesystem():
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n  Scenario: Test\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli, ["--file", "test.feature", "--section-id", "123"], obj=self.environment
+            )
+
+        assert result.exit_code == 0
+        assert "Dry run: would upload feature file to TestRail." in result.output
+        mock_api_client_class.assert_not_called()
+        mock_api_handler_class.assert_not_called()
+
+    @pytest.mark.cmd_import_gherkin
+    @patch("trcli.commands.cmd_import_gherkin.ApiRequestHandler")
+    @patch("trcli.commands.cmd_import_gherkin.APIClient")
+    def test_import_gherkin_dry_run_update_json_output(self, mock_api_client_class, mock_api_handler_class):
+        self.environment.dry_run = True
+
+        with self.runner.isolated_filesystem():
+            with open("test.feature", "w") as f:
+                f.write("Feature: Test\n  Scenario: Test\n")
+
+            result = self.runner.invoke(
+                cmd_import_gherkin.cli,
+                ["--file", "test.feature", "--case-id", "456", "--update", "--json-output"],
+                obj=self.environment,
+            )
+
+        assert result.exit_code == 0
+        output_data = json.loads(result.output)
+        assert output_data["dry_run"] is True
+        assert output_data["data"]["action"] == "update"
+        assert output_data["data"]["target_id"] == 456
+        mock_api_client_class.assert_not_called()
+        mock_api_handler_class.assert_not_called()

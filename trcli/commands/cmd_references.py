@@ -2,6 +2,7 @@ import click
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
+from trcli.cli_styles import StyledGroup
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
@@ -11,13 +12,19 @@ def print_config(env: Environment, action: str):
             f"\n> Project: {env.project if env.project else env.project_id}")
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(cls=StyledGroup, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Manage references in TestRail"""
     environment.cmd = "references"
     environment.set_parameters(context)
+
+
+def _log_dry_run(environment: Environment, message: str, details: list[str] = None):
+    environment.log(message)
+    for detail in details or []:
+        environment.log(f"  {detail}")
 
 
 @cli.group()
@@ -62,6 +69,14 @@ def add_references(environment: Environment, context: click.Context, case_ids: s
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would add references to test case(s).",
+            [f"Case IDs: {', '.join(map(str, test_case_ids))}", f"References: {', '.join(references)}"],
+        )
+        return
     
     environment.log(f"Adding references to {len(test_case_ids)} test case(s)...")
     environment.log(f"References: {', '.join(references)}")
@@ -126,6 +141,14 @@ def update_references(environment: Environment, context: click.Context, case_ids
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would replace references on test case(s).",
+            [f"Case IDs: {', '.join(map(str, test_case_ids))}", f"References: {', '.join(references)}"],
+        )
+        return
     
     environment.log(f"Updating references for {len(test_case_ids)} test case(s)...")
     environment.log(f"New references: {', '.join(references)}")
@@ -187,6 +210,15 @@ def delete_references(environment: Environment, context: click.Context, case_ids
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        details = [f"Case IDs: {', '.join(map(str, test_case_ids))}"]
+        if specific_refs:
+            details.append(f"References: {', '.join(specific_refs)}")
+        else:
+            details.append("References: all")
+        _log_dry_run(environment, "Dry run: would delete references from test case(s).", details)
+        return
     
     if specific_refs:
         environment.log(f"Deleting specific references from {len(test_case_ids)} test case(s)...")

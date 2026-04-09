@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 from beartype.typing import List, Union
@@ -12,6 +13,7 @@ from tqdm import tqdm
 
 from trcli.constants import (
     FAULT_MAPPING,
+    HELP_EPILOG,
     MISSING_COMMAND_SLOGAN,
     TOOL_USAGE,
     TOOL_VERSION,
@@ -19,6 +21,7 @@ from trcli.constants import (
 )
 from trcli.data_classes.data_parsers import FieldsParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
+from trcli.cli_styles import StyledCommand, StyledGroup, StyledHelpMixin, style_text
 
 # Import structured logging infrastructure
 from trcli.logging import get_logger
@@ -86,6 +89,7 @@ class Environment:
         self.noproxy = None
         self.proxy_user = None
         self.parallel_pagination = None
+        self.dry_run = None
 
         # Structured logger - lazy initialization
         self._logger = None
@@ -100,6 +104,10 @@ class Environment:
         if self._logger is None:
             self._logger = get_logger(f"trcli.{self.cmd}")
         return self._logger
+
+    @property
+    def wants_json_output(self) -> bool:
+        return bool(getattr(self, "json_output", False))
 
     @property
     def case_fields(self):
@@ -133,7 +141,8 @@ class Environment:
         if not self.silent:
             if args:
                 msg %= args
-            click.echo(msg, file=sys.stdout, nl=new_line)
+            output_stream = sys.stderr if self.wants_json_output else sys.stdout
+            click.echo(msg, file=output_stream, nl=new_line)
 
             # Also log to structured logger (backward compatible)
             try:
@@ -150,7 +159,8 @@ class Environment:
         if self.verbose:
             if args:
                 msg %= args
-            click.echo(msg, file=sys.stdout)
+            output_stream = sys.stderr if self.wants_json_output else sys.stdout
+            click.echo(msg, file=output_stream)
 
             # Also log to structured logger
             try:
@@ -176,6 +186,9 @@ class Environment:
         except Exception:
             # Silently fail if structured logging has issues
             pass
+
+    def emit_json(self, payload: dict, *, new_line: bool = True):
+        click.echo(json.dumps(payload, indent=2), file=sys.stdout, nl=new_line)
 
     def get_progress_bar(self, results_amount: int, prefix: str):
         disabled = True if self.silent else False
@@ -251,17 +264,19 @@ class Environment:
     def parse_config_file(self, context: click.Context):
         """Sets config file path from context and information if default or custom config file should be used."""
         executable_folder = Path(sys.argv[0]).parent
+        current_folder = Path.cwd()
 
         if context.params["config"]:
             self.config = context.params["config"]
             self.default_config_file = False
         else:
-            if Path(executable_folder / "config.yml").is_file():
-                self.config = executable_folder / "config.yml"
-            elif Path(executable_folder / "config.yaml").is_file():
-                self.config = executable_folder / "config.yaml"
-            else:
-                self.config = None
+            config_candidates = [
+                current_folder / "config.yml",
+                current_folder / "config.yaml",
+                executable_folder / "config.yml",
+                executable_folder / "config.yaml",
+            ]
+            self.config = next((candidate for candidate in config_candidates if candidate.is_file()), None)
         if self.config:
             self.parse_params_from_config_file(self.config)
 
@@ -292,19 +307,24 @@ class Environment:
 pass_environment = click.make_pass_decorator(Environment, ensure=True)
 
 
-class TRCLI(click.MultiCommand):
+class TRCLI(StyledHelpMixin, click.MultiCommand):
+    command_class = StyledCommand
+    group_class = StyledGroup
+
     def __init__(self, *args, **kwargs):
+        self._skip_update_notice = "status" in sys.argv[1:]
         # Use invoke_without_command=True to be able to print
         # short tool description when starting without parameters
-        print(TOOL_VERSION)
+        print(style_text(TOOL_VERSION, "accent", bold=True))
 
         # Check for updates (non-blocking)
-        try:
-            update_message = check_for_updates(__version__)
-            if update_message:
-                click.secho(update_message, fg="yellow", err=True)
-        except Exception:
-            pass
+        if not self._skip_update_notice:
+            try:
+                update_message = check_for_updates(__version__)
+                if update_message:
+                    click.echo(style_text(update_message, "warn", bold=True), err=True)
+            except Exception:
+                pass
 
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
@@ -329,7 +349,7 @@ class TRCLI(click.MultiCommand):
         return super().main(windows_expand_args=False, *args, **kwargs)
 
 
-@click.command(cls=TRCLI, context_settings=CONTEXT_SETTINGS)
+@click.command(cls=TRCLI, context_settings=CONTEXT_SETTINGS, epilog=HELP_EPILOG)
 @click.pass_context
 @pass_environment
 @click.option(
@@ -411,6 +431,11 @@ class TRCLI(click.MultiCommand):
 )
 @click.option(
     "--parallel-pagination", is_flag=True, help="Enable parallel pagination for faster case fetching (experimental)."
+)
+@click.option(
+    "--dry-run",
+    is_flag=True,
+    help="Preview write operations without sending mutating requests to TestRail.",
 )
 def cli(environment: Environment, context: click.core.Context, *args, **kwargs):
     """TestRail CLI"""

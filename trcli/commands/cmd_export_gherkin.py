@@ -2,6 +2,7 @@ import click
 from pathlib import Path
 
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
+from trcli.cli_styles import StyledCommand
 from trcli.constants import FAULT_MAPPING
 from trcli.api.api_client import APIClient
 from trcli.api.api_request_handler import ApiRequestHandler
@@ -9,7 +10,7 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite
 import trcli
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--case-id",
     type=click.IntRange(min=1),
@@ -67,6 +68,7 @@ def cli(environment: Environment, context: click.Context, case_id: int, output: 
             verbose_logging_function=environment.vlog,
             logging_function=environment.log,
             uploader_metadata=uploader_metadata,
+            dry_run=bool(getattr(environment, "dry_run", False)),
         )
 
         # Set credentials after initialization

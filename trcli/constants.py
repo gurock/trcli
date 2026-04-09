@@ -100,6 +100,7 @@ PROMPT_MESSAGES = dict(
 TOOL_VERSION = f"""TestRail CLI v{trcli.__version__}
 Copyright 2025 Gurock Software GmbH - www.gurock.com"""
 TOOL_USAGE = f"""Supported and loaded modules:
+    - init: Interactively create a starter config file
     - parse_junit: JUnit XML Files (& Similar)
     - parse_cucumber: Cucumber JSON results (BDD)
     - import_gherkin: Upload .feature files to TestRail BDD
@@ -112,6 +113,22 @@ TOOL_USAGE = f"""Supported and loaded modules:
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
+
+HELP_EPILOG = """Examples:
+  trcli init
+    Create a starter config file interactively.
+  trcli parse_junit -f results.xml --title "Automated Test Run" -y
+    Parse a JUnit XML report and upload results to TestRail.
+  trcli parse_cucumber -f cucumber.json --title "BDD Results" -y
+    Parse Cucumber JSON results and upload them to TestRail.
+  trcli add_run --title "Release Validation" --project "My Project"
+    Create a new empty test run in TestRail.
+  trcli labels list --project "My Project"
+    List labels available in the selected project.
+  trcli references cases add --case-ids 1,2 --refs REQ-123,REQ-456
+    Add references to existing test cases.
+
+Docs: https://github.com/gurock/trcli#readme"""
 
 
 class ProjectErrors(enum.IntEnum):

@@ -85,6 +85,8 @@ Options:
                      (e.g., localhost,127.0.0.1).
   --parallel-pagination  Enable parallel pagination for faster case fetching
                      (experimental).
+  --dry-run          Preview write operations without sending mutating
+                     requests to TestRail.
   --help             Show this message and exit.
 
 Commands:
@@ -98,6 +100,55 @@ Commands:
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
   update         Update TRCLI to the latest version from PyPI.
+```
+
+### Dry-run mode
+
+TRCLI supports a client-side preview mode via `--dry-run`.
+
+In dry-run mode:
+- local parsing and validation still run
+- read-only API calls may still run
+- mutating requests to TestRail are not sent
+
+Current dry-run support is aimed at write-oriented commands such as:
+- `add_run`
+- `import_gherkin`
+- parser commands (`parse_junit`, `parse_robot`, `parse_cucumber`, `parse_openapi`)
+- mutating label/reference commands
+
+Example:
+
+```shell
+trcli --dry-run parse_junit -f results.xml --title "Nightly Run"
+```
+
+Important limitations:
+- this is a TRCLI-side preview, not a server-side transaction preview
+- TestRail IDs for newly created resources are not generated in dry-run mode
+- parser dry-run summaries are based on local parsing and do not complete the full write workflow
+
+### JSON output
+
+TRCLI now supports machine-readable output for commands that naturally produce structured results.
+
+Current `--json` support includes:
+- `status`
+- `add_run`
+- parser commands: `parse_junit`, `parse_robot`, `parse_cucumber`, `parse_openapi`
+- `import_gherkin`
+
+Notes:
+- `--json-output` is still accepted as a compatibility alias on commands that already exposed it.
+- In JSON mode, stdout is intended for the final JSON document. Human-readable progress output is redirected away from stdout.
+- Commands still use normal exit codes. In JSON mode, a failing command returns a non-zero exit code and emits an `"ok": false` payload when the failure can be represented structurally.
+
+Example:
+
+```shell
+trcli status --json
+trcli add_run --title "Nightly Run" --suite-id 1 --json
+trcli parse_junit -f results.xml --title "Nightly Run" --json
 ```
 
 Uploading automated test results
@@ -151,7 +202,8 @@ Options:
                       test results to.
   --test-run-ref      Comma-separated list of reference IDs to append to the
                       test run (up to 250 characters total).
-  --json-output       Output reference operation results in JSON format.
+  --json-output, --json
+                      Output structured results in JSON format.
   --update-existing-cases   Update existing TestRail cases with values from
                             JUnit properties (default: no).
   --update-strategy         Strategy for combining incoming values with

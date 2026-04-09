@@ -2,6 +2,7 @@ import click
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
+from trcli.cli_styles import StyledGroup
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
@@ -11,13 +12,19 @@ def print_config(env: Environment, action: str):
             f"\n> Project: {env.project if env.project else env.project_id}")
 
 
-@click.group(context_settings=CONTEXT_SETTINGS)
+@click.group(cls=StyledGroup, context_settings=CONTEXT_SETTINGS)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
     """Manage labels in TestRail"""
     environment.cmd = "labels"
     environment.set_parameters(context)
+
+
+def _log_dry_run(environment: Environment, message: str, details: list[str] = None):
+    environment.log(message)
+    for detail in details or []:
+        environment.log(f"  {detail}")
 
 
 @cli.command()
@@ -38,6 +45,14 @@ def add(environment: Environment, context: click.Context, title: str, *args, **k
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would add a label in TestRail.",
+            [f"Project ID: {project_client.project.project_id}", f"Title: '{title}'"],
+        )
+        return
     
     environment.log(f"Adding label '{title}'...")
     
@@ -74,6 +89,14 @@ def update(environment: Environment, context: click.Context, label_id: int, titl
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would update a label in TestRail.",
+            [f"Project ID: {project_client.project.project_id}", f"Label ID: {label_id}", f"Title: '{title}'"],
+        )
+        return
     
     environment.log(f"Updating label with ID {label_id}...")
     
@@ -113,6 +136,14 @@ def delete(environment: Environment, context: click.Context, ids: str, *args, **
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would delete label(s) in TestRail.",
+            [f"Label IDs: {', '.join(map(str, label_ids))}"],
+        )
+        return
     
     environment.log(f"Deleting labels with IDs: {', '.join(map(str, label_ids))}...")
     
@@ -258,6 +289,14 @@ def add_to_cases(environment: Environment, context: click.Context, case_ids: str
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would add a label to test case(s).",
+            [f"Project ID: {project_client.project.project_id}", f"Case IDs: {', '.join(map(str, case_id_list))}", f"Title: '{title}'"],
+        )
+        return
     
     environment.log(f"Adding label '{title}' to {len(case_id_list)} test case(s)...")
     
@@ -525,6 +564,18 @@ def add_to_tests(environment: Environment, context: click.Context, test_ids: str
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
     project_client.resolve_project()
+
+    if environment.dry_run:
+        _log_dry_run(
+            environment,
+            "Dry run: would add label(s) to test(s).",
+            [
+                f"Project ID: {project_client.project.project_id}",
+                f"Test IDs: {', '.join(map(str, test_id_list))}",
+                f"Labels: {', '.join(title_list)}",
+            ],
+        )
+        return
     
     # Log message adjusted for single/multiple labels
     if len(title_list) == 1:

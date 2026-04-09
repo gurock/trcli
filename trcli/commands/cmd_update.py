@@ -9,12 +9,13 @@ import subprocess
 import click
 
 from trcli.cli import CONTEXT_SETTINGS
+from trcli.cli_styles import StyledCommand
 from trcli.version_checker import _query_pypi, _compare_and_format, _save_cache
 from trcli import __version__
 from datetime import datetime
 
 
-@click.command(context_settings=CONTEXT_SETTINGS)
+@click.command(cls=StyledCommand, context_settings=CONTEXT_SETTINGS)
 @click.option(
     "--check-only",
     is_flag=True,

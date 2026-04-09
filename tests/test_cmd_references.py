@@ -125,6 +125,26 @@ class TestCmdReferences:
             mock_elog.assert_any_call("Failed to add references to 1 test case(s)")
 
     @mock.patch('trcli.commands.cmd_references.ProjectBasedClient')
+    def test_add_references_dry_run_skips_api_calls(self, mock_project_client):
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        self.environment.dry_run = True
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+
+            result = self.runner.invoke(
+                cmd_references.cases,
+                ['add', '--case-ids', '1,2', '--refs', 'REQ-1,REQ-2'],
+                obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.add_case_references.assert_not_called()
+            mock_log.assert_any_call("Dry run: would add references to test case(s).")
+
+    @mock.patch('trcli.commands.cmd_references.ProjectBasedClient')
     def test_update_references_success(self, mock_project_client):
         """Test successful update of references on test cases"""
         # Mock the project client and its methods
@@ -209,6 +229,26 @@ class TestCmdReferences:
             mock_log.assert_any_call("Deleting specific references from 1 test case(s)...")
             mock_log.assert_any_call("References to delete: REQ-1, REQ-2")
             mock_log.assert_any_call("Successfully deleted references from 1 test case(s)")
+
+    @mock.patch('trcli.commands.cmd_references.ProjectBasedClient')
+    def test_delete_references_dry_run_skips_api_calls(self, mock_project_client):
+        mock_client_instance = MagicMock()
+        mock_project_client.return_value = mock_client_instance
+        self.environment.dry_run = True
+
+        with patch.object(self.environment, 'log') as mock_log, \
+             patch.object(self.environment, 'set_parameters'), \
+             patch.object(self.environment, 'check_for_required_parameters'):
+
+            result = self.runner.invoke(
+                cmd_references.cases,
+                ['delete', '--case-ids', '1', '--refs', 'REQ-1', '--yes'],
+                obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            mock_client_instance.api_request_handler.delete_case_references.assert_not_called()
+            mock_log.assert_any_call("Dry run: would delete references from test case(s).")
 
     @mock.patch('trcli.commands.cmd_references.ProjectBasedClient')
     def test_delete_references_empty_specific_refs(self, mock_project_client):

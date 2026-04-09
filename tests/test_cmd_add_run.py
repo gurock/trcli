@@ -1,7 +1,9 @@
 from unittest import mock
+import json
 import pytest
 from click.testing import CliRunner
 
+from trcli.cli import cli as root_cli
 from trcli.cli import Environment
 from trcli.commands import cmd_add_run
 
@@ -113,6 +115,152 @@ class TestCmdAddRun:
         assert result.exit_code == 0
         assert "--run-refs-action" in result.output
         assert "Action to perform on references" in result.output
+
+    @mock.patch("trcli.commands.cmd_add_run.write_run_to_file")
+    @mock.patch("trcli.commands.cmd_add_run.ProjectBasedClient")
+    @mock.patch("trcli.cli.check_for_updates", return_value=None)
+    def test_dry_run_does_not_write_run_file(
+        self, _mock_update_check, mock_project_client_class, mock_write_run_to_file
+    ):
+        runner = CliRunner()
+        mock_project_client = mock_project_client_class.return_value
+        mock_project_client.resolve_project.return_value = None
+        mock_project_client.resolve_suite.return_value = None
+        mock_project_client.create_or_update_test_run.return_value = (0, "")
+
+        args = [
+            "--host",
+            "https://example.testrail.io",
+            "--project",
+            "Example Project",
+            "--username",
+            "user@example.com",
+            "--key",
+            "secret",
+            "--dry-run",
+            "add_run",
+            "--title",
+            "Preview Run",
+            "--suite-id",
+            "1",
+            "--file",
+            "preview.yml",
+        ]
+
+        with runner.isolated_filesystem():
+            with mock.patch("sys.argv", ["trcli", *args]):
+                result = runner.invoke(root_cli, args)
+
+        assert result.exit_code == 0
+        assert "Dry run: no TestRail changes were made." in result.output
+        assert "run_id: <not created>" in result.output
+        mock_write_run_to_file.assert_not_called()
+
+    @mock.patch("trcli.commands.cmd_add_run.ProjectBasedClient")
+    @mock.patch("trcli.cli.check_for_updates", return_value=None)
+    def test_add_run_json_output_create(self, _mock_update_check, mock_project_client_class):
+        runner = CliRunner()
+        mock_project_client = mock_project_client_class.return_value
+        mock_project_client.resolve_project.return_value = None
+        mock_project_client.resolve_suite.return_value = None
+        mock_project_client.create_or_update_test_run.return_value = (321, "")
+
+        args = [
+            "--host",
+            "https://example.testrail.io",
+            "--project",
+            "Example Project",
+            "--username",
+            "user@example.com",
+            "--key",
+            "secret",
+            "add_run",
+            "--title",
+            "JSON Run",
+            "--suite-id",
+            "1",
+            "--json",
+        ]
+
+        with mock.patch("sys.argv", ["trcli", *args]):
+            result = runner.invoke(root_cli, args)
+
+        assert result.exit_code == 0
+        payload = json.loads(result.output[result.output.find("{"):])
+        assert payload["ok"] is True
+        assert payload["command"] == "add_run"
+        assert payload["data"]["action"] == "create"
+        assert payload["data"]["run_id"] == 321
+        assert payload["data"]["title"] == "JSON Run"
+
+    @mock.patch("trcli.commands.cmd_add_run.ProjectBasedClient")
+    @mock.patch("trcli.cli.check_for_updates", return_value=None)
+    def test_add_run_json_output_dry_run(self, _mock_update_check, mock_project_client_class):
+        runner = CliRunner()
+        mock_project_client = mock_project_client_class.return_value
+        mock_project_client.resolve_project.return_value = None
+        mock_project_client.resolve_suite.return_value = None
+        mock_project_client.create_or_update_test_run.return_value = (0, "")
+
+        args = [
+            "--host",
+            "https://example.testrail.io",
+            "--project",
+            "Example Project",
+            "--username",
+            "user@example.com",
+            "--key",
+            "secret",
+            "--dry-run",
+            "add_run",
+            "--title",
+            "Preview Run",
+            "--suite-id",
+            "1",
+            "--json",
+        ]
+
+        with mock.patch("sys.argv", ["trcli", *args]):
+            result = runner.invoke(root_cli, args)
+
+        assert result.exit_code == 0
+        payload = json.loads(result.output[result.output.find("{"):])
+        assert payload["ok"] is True
+        assert payload["dry_run"] is True
+        assert payload["data"]["action"] == "create"
+        assert payload["data"]["run_id"] is None
+
+    @mock.patch("trcli.cli.check_for_updates", return_value=None)
+    def test_add_run_json_output_validation_error(self, _mock_update_check):
+        runner = CliRunner()
+        long_refs = "A" * 251
+
+        args = [
+            "--host",
+            "https://example.testrail.io",
+            "--project",
+            "Example Project",
+            "--username",
+            "user@example.com",
+            "--key",
+            "secret",
+            "add_run",
+            "--title",
+            "JSON Run",
+            "--suite-id",
+            "1",
+            "--run-refs",
+            long_refs,
+            "--json",
+        ]
+
+        with mock.patch("sys.argv", ["trcli", *args]):
+            result = runner.invoke(root_cli, args)
+
+        assert result.exit_code == 1
+        payload = json.loads(result.output[result.output.find("{"):])
+        assert payload["ok"] is False
+        assert "References field cannot exceed 250 characters." in payload["errors"][0]
 
 
 class TestApiRequestHandlerReferences:
