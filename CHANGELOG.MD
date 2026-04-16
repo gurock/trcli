@@ -6,6 +6,15 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.14.1]
+
+_released 04-16-2026
+
+### Added
+ - Keep Markdown Syntax when sending markdown data to Testrail with new WYSIWYG editor - **Requires TestRail 10.3.0 or higher**
+
+### Fixed
+ - Fixed an issue where attachments are all uploaded to the last result when multiple results are added to case while parsing several reports via glob support
 
 ## [1.14.0]
 

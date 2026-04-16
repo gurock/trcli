@@ -207,6 +207,9 @@ class BddHandler:
             if ref_tags:
                 body["refs"] = ", ".join(ref_tags)
 
+        # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+        body["is_legacy"] = True
+
         response = self.client.send_post(f"add_case/{section_id}", body)
 
         if response.status_code == 200:

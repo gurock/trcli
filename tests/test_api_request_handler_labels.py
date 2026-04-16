@@ -341,7 +341,9 @@ class TestApiRequestHandlerLabelsCases:
             mock_add_label.assert_called_once_with(1, "test-label")
             assert mock_send_get.call_count == 2
             # Should call update_cases/{suite_id} once for batch update
-            mock_send_post.assert_called_once_with("update_cases/1", payload={"case_ids": [1, 2], "labels": [5]})
+            mock_send_post.assert_called_once_with(
+                "update_cases/1", payload={"case_ids": [1, 2], "labels": [5], "is_legacy": True}
+            )
 
     def test_add_labels_to_cases_single_case(self):
         """Test adding labels to a single test case using update_case endpoint"""
@@ -392,7 +394,7 @@ class TestApiRequestHandlerLabelsCases:
             mock_add_label.assert_called_once_with(1, "test-label")
             assert mock_send_get.call_count == 1
             # Should call update_case/{case_id} once for single case
-            mock_send_post.assert_called_once_with("update_case/1", payload={"labels": [5]})
+            mock_send_post.assert_called_once_with("update_case/1", payload={"labels": [5], "is_legacy": True})
 
     def test_add_labels_to_cases_existing_label(self):
         """Test adding labels when label already exists"""

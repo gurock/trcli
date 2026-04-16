@@ -1377,10 +1377,10 @@ class TestApiRequestHandler:
 
         # Prepare test data
         report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
-        case_id_to_result_id = {100: 2001}
+        request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1397,10 +1397,10 @@ class TestApiRequestHandler:
 
         # Prepare test data
         report_results = [{"case_id": 100, "attachments": [str(test_file)]}]
-        case_id_to_result_id = {100: 2001}
+        request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1410,10 +1410,10 @@ class TestApiRequestHandler:
         """Test that missing attachment files are properly reported."""
         # Prepare test data with non-existent file
         report_results = [{"case_id": 100, "attachments": ["/path/to/nonexistent/file.jpg"]}]
-        case_id_to_result_id = {100: 2001}
+        request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments - should not raise exception
-        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
 
     @pytest.mark.api_handler
     def test_upload_attachments_empty_run_scenario(
@@ -1423,8 +1423,8 @@ class TestApiRequestHandler:
 
         This test covers the bug fix for issue where TRCLI failed to upload attachments
         when using --run-id with an empty run (created via API with include_all: false
-        and no case_ids). The fix uses case_id to result_id mapping instead of fetching
-        tests from the run.
+        and no case_ids). The fix uses request object identity to result_id mapping instead
+        of case_id mapping, which correctly handles duplicate case_ids.
         """
         # Create test attachment files
         attachment1 = tmp_path / "screenshot1.png"
@@ -1442,11 +1442,11 @@ class TestApiRequestHandler:
             {"case_id": 101, "attachments": [str(attachment2)]},
         ]
 
-        # Case ID to result ID mapping (this is built from add_results_for_cases response)
-        case_id_to_result_id = {100: 5001, 101: 5002}
+        # Request object ID to result ID mapping (this is built from add_results_for_cases response)
+        request_id_to_result_id = {id(report_results[0]): 5001, id(report_results[1]): 5002}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, case_id_to_result_id)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
 
         # Verify both attachments were uploaded correctly
         history = requests_mock.request_history
@@ -1457,6 +1457,47 @@ class TestApiRequestHandler:
         urls = [req.url.lower() for req in upload_requests]
         assert any("add_attachment_to_result/5001" in url for url in urls), "Should upload to result 5001"
         assert any("add_attachment_to_result/5002" in url for url in urls), "Should upload to result 5002"
+
+    @pytest.mark.api_handler
+    def test_upload_attachments_duplicate_case_ids_different_results(
+        self, api_request_handler: ApiRequestHandler, requests_mock, tmp_path
+    ):
+        """Test that attachments are uploaded to correct results when same case_id appears multiple times."""
+        # Create test attachment files
+        attachment1 = tmp_path / "report1_screenshot.png"
+        attachment1.write_text("screenshot from report 1")
+        attachment2 = tmp_path / "report2_screenshot.png"
+        attachment2.write_text("screenshot from report 2")
+
+        # Mock successful attachment uploads
+        requests_mock.post(create_url("add_attachment_to_result/1001"), status_code=200, json={"attachment_id": 9001})
+        requests_mock.post(create_url("add_attachment_to_result/1002"), status_code=200, json={"attachment_id": 9002})
+
+        # Prepare test data - SAME case_id (123) but different result objects with different attachments
+        # This simulates what happens when glob pattern processes multiple reports with the same test
+        result1 = {"case_id": 123, "attachments": [str(attachment1)]}
+        result2 = {"case_id": 123, "attachments": [str(attachment2)]}
+        report_results = [result1, result2]
+
+        # Request object ID to result ID mapping
+        # Key insight: We map by object identity, NOT by case_id
+        request_id_to_result_id = {
+            id(result1): 1001,  # First occurrence of case 123
+            id(result2): 1002,  # Second occurrence of case 123
+        }
+
+        # Call upload_attachments
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+
+        # Verify both attachments were uploaded correctly
+        history = requests_mock.request_history
+        upload_requests = [req for req in history if "add_attachment_to_result" in req.url]
+        assert len(upload_requests) == 2, "Should have uploaded 2 attachments"
+
+        # Verify attachments went to DIFFERENT result IDs (not both to 1002)
+        urls = [req.url.lower() for req in upload_requests]
+        assert any("add_attachment_to_result/1001" in url for url in urls), "Should upload attachment1 to result 1001"
+        assert any("add_attachment_to_result/1002" in url for url in urls), "Should upload attachment2 to result 1002"
 
     @pytest.mark.api_handler
     def test_caching_reduces_api_calls(self, api_request_handler: ApiRequestHandler, requests_mock):
