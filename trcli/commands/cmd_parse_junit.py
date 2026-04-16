@@ -219,7 +219,7 @@ def _handle_case_update_reporting(environment: Environment, case_update_results:
         failed_cases = case_update_results.get("failed_cases", [])
 
         if updated_cases or skipped_cases or failed_cases:
-            environment.log("Case Reference Updates Summary:")
+            environment.log("Case Updates Summary:")
             environment.log(f"  Updated cases: {len(updated_cases)}")
             environment.log(f"  Skipped cases: {len(skipped_cases)}")
             environment.log(f"  Failed cases: {len(failed_cases)}")
@@ -230,7 +230,19 @@ def _handle_case_update_reporting(environment: Environment, case_update_results:
                     case_id = case_info["case_id"]
                     added = case_info.get("added_refs", [])
                     skipped = case_info.get("skipped_refs", [])
-                    environment.log(f"    C{case_id}: added {len(added)} refs, skipped {len(skipped)} duplicates")
+                    updated_fields = case_info.get("updated_fields", [])
+
+                    # Build details message
+                    details = []
+                    if added or skipped:
+                        details.append(f"added {len(added)} refs, skipped {len(skipped)} duplicates")
+                    if updated_fields:
+                        details.append(f"updated {len(updated_fields)} field(s): {', '.join(updated_fields)}")
+
+                    if details:
+                        environment.log(f"    C{case_id}: {'; '.join(details)}")
+                    else:
+                        environment.log(f"    C{case_id}: no changes")
 
             if skipped_cases:
                 environment.log("  Skipped case details:")

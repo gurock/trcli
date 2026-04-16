@@ -221,7 +221,8 @@ class LabelManager:
         if len(cases_to_update) == 1:
             # Single case: use update_case/{case_id}
             case_info = cases_to_update[0]
-            case_update_data = {"labels": case_info["labels"]}
+            # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
+            case_update_data = {"labels": case_info["labels"], "is_legacy": True}
 
             update_response = self.client.send_post(f"update_case/{case_info['case_id']}", payload=case_update_data)
 
@@ -266,9 +267,11 @@ class LabelManager:
                         )
             else:
                 # Batch update using update_cases/{suite_id}
+                # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
                 batch_update_data = {
                     "case_ids": [case_info["case_id"] for case_info in cases_to_update],
                     "labels": cases_to_update[0]["labels"],  # Assuming same labels for all cases
+                    "is_legacy": True,
                 }
 
                 batch_response = self.client.send_post(f"update_cases/{case_suite_id}", payload=batch_update_data)
