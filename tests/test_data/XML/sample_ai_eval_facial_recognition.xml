@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Facial Recognition Security System - AI Evaluation" tests="8" failures="2" errors="0" time="95.3">
+  <testsuite name="Recognition Accuracy Tests" tests="4" failures="1" errors="0" time="45.8">
+    <testcase classname="facial_recognition.BasicTests" name="test_authorized_user_recognition" time="3.5">
+      <properties>
+        <property name="test_id" value="C20"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "recognition_speed": 5, "reliability": 5, "user_experience": 4}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Authorized user John Doe positioned 0.7m from camera under optimal lighting"/>
+        <property name="testrail_result_field" value="custom_ai_output:User recognized in 0.8s. Biometric match confidence: 98.7%. Access granted. Lock disengaged successfully."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:3.5 seconds"/>
+      </properties>
+    </testcase>
+    <testcase classname="facial_recognition.BasicTests" name="test_unauthorized_user_denial" time="2.8">
+      <properties>
+        <property name="test_id" value="C21"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "security": 5, "false_acceptance_rate": 5, "logging": 5}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Unregistered individual Jane Smith positioned at camera"/>
+        <property name="testrail_result_field" value="custom_ai_output:No matching profile found in database. Access denied. Lock remained engaged. Alert logged with timestamp and captured image."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-002"/>
+        <property name="testrail_result_field" value="custom_ai_latency:2.8 seconds"/>
+      </properties>
+    </testcase>
+    <testcase classname="facial_recognition.ObstructionTests" name="test_recognition_with_eyewear" time="4.2">
+      <properties>
+        <property name="test_id" value="C22"/>
+        <property name="quality_rating" value='{"factual_accuracy": 4, "robustness": 5, "adaptability": 5, "reliability": 4}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Authorized user wearing prescription glasses, then sunglasses"/>
+        <property name="testrail_result_field" value="custom_ai_output:Successfully recognized with both prescription glasses (confidence: 96.2%) and sunglasses (confidence: 94.5%). Access granted in both scenarios."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-003"/>
+        <property name="testrail_result_field" value="custom_ai_latency:4.2 seconds"/>
+      </properties>
+    </testcase>
+    <testcase classname="facial_recognition.ObstructionTests" name="test_recognition_with_medical_mask" time="6.5">
+      <properties>
+        <property name="test_id" value="C23"/>
+        <property name="quality_rating" value='{"factual_accuracy": 2, "recognition_speed": 3, "reliability": 2, "false_rejection_rate": 1}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Authorized user wearing surgical mask covering nose and mouth"/>
+        <property name="testrail_result_field" value="custom_ai_output:Recognition attempted but confidence below threshold (58.3%). Multiple retries required. User eventually denied access after 3 failed attempts."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-004"/>
+        <property name="testrail_result_field" value="custom_ai_latency:6.5 seconds"/>
+      </properties>
+      <failure message="False rejection - Authorized user denied">
+        Expected: System should recognize authorized user with mask (confidence >= 85%)
+        Actual: Recognition confidence only 58.3%, user denied after 3 attempts
+        Issue: Mask detection algorithm needs improvement for medical/surgical masks
+        Impact: Legitimate users unable to access facility when wearing required PPE
+      </failure>
+    </testcase>
+
+  </testsuite>
+
+  <testsuite name="Security Tests" tests="4" failures="1" errors="0" time="49.5">
+    <testcase classname="facial_recognition.SecurityTests" name="test_blacklist_alarm_trigger" time="2.1">
+      <properties>
+        <property name="test_id" value="C25"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "security": 5, "response_time": 5, "alerting": 5}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Blacklisted individual 'Test Subject Alpha' positioned at camera"/>
+        <property name="testrail_result_field" value="custom_ai_output:BLACKLIST MATCH DETECTED! Confidence: 99.1%. Access denied immediately. Audible alarm triggered. Security notified. Event logged with high priority flag."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-005"/>
+        <property name="testrail_result_field" value="custom_ai_latency:2.1 seconds"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="facial_recognition.AntiSpoofingTests" name="test_photo_spoof_detection" time="5.8">
+      <properties>
+        <property name="test_id" value="C29"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "security": 5, "liveness_detection": 5, "spoof_resistance": 4}'/>
+        <property name="testrail_result_field" value="custom_ai_input:High-resolution printed photo of authorized user held at camera"/>
+        <property name="testrail_result_field" value="custom_ai_output:SPOOF ATTEMPT DETECTED via 2D presentation attack analysis. Liveness check failed (no depth variation, no blinking). Access denied. Security alert triggered."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-006"/>
+        <property name="testrail_result_field" value="custom_ai_latency:5.8 seconds"/>
+      </properties>
+    </testcase>
+
+    <testcase classname="facial_recognition.AntiSpoofingTests" name="test_3d_mask_spoof_detection" time="4.5">
+      <properties>
+        <property name="test_id" value="C39"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "security": 1, "liveness_detection": 1, "vulnerability": 5}'/>
+        <property name="testrail_result_field" value="custom_ai_input:High-quality 3D silicone mask replicating authorized user face"/>
+        <property name="testrail_result_field" value="custom_ai_output:CRITICAL SECURITY FAILURE: System recognized 3D mask as authorized user. Match confidence: 91.3%. Access GRANTED to spoofed identity."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-007"/>
+        <property name="testrail_result_field" value="custom_ai_latency:4.5 seconds"/>
+      </properties>
+      <failure message="CRITICAL: 3D mask bypass successful">
+        Expected: System detects 3D mask as spoof attempt, denies access
+        Actual: System granted access to 3D mask (91.3% confidence match)
+        Severity: CRITICAL - Complete security bypass vulnerability
+        Root Cause: Liveness detection insufficient for advanced 3D masks
+        Recommendation: Implement multi-modal biometric verification (facial + iris/fingerprint)
+        Risk: Unauthorized physical access by determined attackers with resources
+      </failure>
+    </testcase>
+
+    <!-- Test 8: Recognition Under Varying Lighting Conditions (PASSED) -->
+    <testcase classname="facial_recognition.EnvironmentalTests" name="test_lighting_conditions_variance" time="12.8">
+      <properties>
+        <property name="test_id" value="C24"/>
+        <property name="quality_rating" value='{"factual_accuracy": 4, "robustness": 4, "adaptability": 5, "reliability": 4}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Authorized user tested under low-light (8 lux) and high-glare (direct sunlight) conditions"/>
+        <property name="testrail_result_field" value="custom_ai_output:Low-light: Recognized successfully (confidence: 89.2%, IR assist enabled). High-glare: Recognized after 2 attempts (confidence: 87.5%, auto-exposure compensation applied). Both scenarios resulted in access granted."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://security-logs.example.com/trace/facial-rec-008"/>
+        <property name="testrail_result_field" value="custom_ai_latency:12.8 seconds"/>
+      </properties>
+    </testcase>
+
+  </testsuite>
+
+</testsuites>
