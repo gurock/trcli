@@ -485,6 +485,97 @@ Assigning failed results: 3/3, Done.
 Submitted 25 test results in 2.1 secs.
 ```
 
+## AI Evaluation Template Support
+
+TRCLI supports TestRail's AI Evaluation Template, which enables **multi-dimensional quality assessment** for test results. This feature is ideal for evaluating systems where outcomes need assessment across multiple quality criteria, not just pass/fail.
+
+### Use Cases
+
+The AI Evaluation Template is useful for:
+
+- **AI Systems**: Chatbots, code generators, recommendation engines (factual accuracy, relevance, completeness)
+- **Performance Testing**: Responsiveness, degradation, stability under load
+- **Security Testing**: Vulnerability resistance, data leakage prevention
+- **UI/UX Testing**: Accessibility, usability, aesthetics
+- **Any Quality-Based Testing**: Custom quality dimensions for your specific needs
+
+### Quality Rating
+
+Rate test results across **up to 15 custom categories** using **0-5 star ratings**:
+
+```xml
+<property name="quality_rating" value='{"factual_accuracy": 5, "relevance": 4, "completeness": 3}'/>
+```
+
+### AI Context Fields
+
+Track additional context about AI system evaluation:
+
+- **custom_ai_input**: What was tested (prompt, request, scenario)
+- **custom_ai_output**: What was produced (response, result, behavior)
+- **custom_ai_traces**: Links to detailed logs/observability tools
+- **custom_ai_latency**: Performance metrics
+
+### Validation Rules
+
+Quality ratings must follow these rules:
+
+- **Maximum 15 categories**
+- **Star values must be integers 0-5**
+- **At least one category must have a value ≥ 1**
+- **Must be valid JSON object format**
+
+#### Valid Examples
+
+```json
+{"accuracy": 5, "speed": 4, "reliability": 3}
+{"factual_accuracy": 5, "relevance": 5, "completeness": 4, "clarity": 3, "tone": 4}
+```
+
+#### Invalid Examples
+
+```json
+{"accuracy": 10}                    ❌ Value out of range (must be 0-5)
+{"cat1": 5, "cat2": 4, ... "cat20": 3}  ❌ Too many categories (max 15)
+{"accuracy": 0, "speed": 0}         ❌ All values are 0 (need at least one ≥ 1)
+{"accuracy": 4.5}                   ❌ Must be integer, not float
+```
+
+### Error Handling
+
+If a quality rating fails validation, TRCLI will:
+1. Log an error message with the specific validation issue
+2. Skip the invalid quality rating
+3. Continue uploading the test result (without quality rating)
+4. Upload other valid properties (status, comment, custom fields)
+
+Example error message:
+
+```
+ERROR: Quality rating validation failed for test 'test_chatbot_response':
+Star values must be between 0 and 5, got 10 for category 'accuracy'
+```
+
+### Viewing Results in TestRail
+
+Once uploaded, quality ratings appear in TestRail with star visualizations:
+
+```
+Test: test_chatbot_response
+Status: ✓ Passed
+
+Quality Rating:
+  ⭐⭐⭐⭐⭐ Factual Accuracy (5/5)
+  ⭐⭐⭐⭐⭐ Relevance (5/5)
+  ⭐⭐⭐⭐   Clarity (4/5)
+  ⭐⭐⭐⭐⭐ Tone (5/5)
+
+Input:  What is the capital of France?
+Output: The capital of France is Paris.
+Traces: https://logs.example.com/trace/123
+Latency: 0.8 seconds
+```
+
 ## Behavior-Driven Development (BDD) Support
 
 The TestRail CLI provides comprehensive support for Behavior-Driven Development workflows using Gherkin syntax. The BDD features enable you to manage test cases written in Gherkin format, execute BDD tests with various frameworks (Cucumber, Behave, pytest-bdd, etc.), and seamlessly upload results to TestRail.

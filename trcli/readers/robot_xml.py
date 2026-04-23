@@ -6,7 +6,12 @@ import glob
 
 from trcli.backports import removeprefix
 from trcli.cli import Environment
-from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
+from trcli.data_classes.data_parsers import (
+    MatchersParser,
+    FieldsParser,
+    TestRailCaseFieldsOptimizer,
+    QualityRatingParser,
+)
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -111,6 +116,7 @@ class RobotParser(FileParser):
                 result_fields = []
                 case_fields = []
                 comments = []
+                quality_rating = None
                 documentation = test.find("doc")
                 if self.case_matcher == MatchersParser.NAME:
                     case_id, case_name = MatchersParser.parse_name_with_id(case_name)
@@ -122,6 +128,13 @@ class RobotParser(FileParser):
                             and self.case_matcher == MatchersParser.PROPERTY
                         ):
                             case_id = int(self._remove_tr_prefix(line, "- testrail_case_id:").lower().replace("c", ""))
+                        if line.lower().startswith("- quality_rating:"):
+                            quality_rating_str = self._remove_tr_prefix(line, "- quality_rating:")
+                            parsed_rating, error = QualityRatingParser.parse_quality_rating(quality_rating_str)
+                            if error:
+                                self.env.elog(f"Quality rating validation failed for test '{case_name}': {error}")
+                            else:
+                                quality_rating = parsed_rating
                         if line.lower().startswith("- testrail_attachment:"):
                             attachments.append(self._remove_tr_prefix(line, "- testrail_attachment:"))
                         if line.lower().startswith("- testrail_result_field"):
@@ -168,6 +181,7 @@ class RobotParser(FileParser):
                     attachments=attachments,
                     result_fields=result_fields_dict,
                     custom_step_results=step_keywords,
+                    quality_rating=quality_rating,
                 )
                 for comment in reversed(comments):
                     result.prepend_comment(comment)
