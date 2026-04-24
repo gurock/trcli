@@ -59,6 +59,7 @@ class TestJunitParser:
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
+        parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
         print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
@@ -77,6 +78,7 @@ class TestJunitParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         settings.ALLOW_ELAPSED_MS = False
         parsing_result_json = asdict(read_junit)
+        parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
         file_json = open(Path(__file__).parent / "test_data/json/milliseconds.json")
         expected_json = json.load(file_json)
         assert (
@@ -88,6 +90,7 @@ class TestJunitParser:
         def _compare(junit_output, expected_path):
             read_junit = self.__clear_unparsable_junit_elements(junit_output)
             parsing_result_json = asdict(read_junit)
+            parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
             file_json = open(expected_path)
             expected_json = json.load(file_json)
             assert (
@@ -138,6 +141,7 @@ class TestJunitParser:
         file_reader = JunitParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
+        parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert (
@@ -159,6 +163,14 @@ class TestJunitParser:
         file_reader = JunitParser(env)
         with pytest.raises(ParseError):
             file_reader.parse_file()
+
+    def __remove_none_quality_ratings(self, result_json: dict) -> dict:
+        """Remove quality_rating fields that are None for backward compatibility with existing tests"""
+        for section in result_json.get("testsections", []):
+            for testcase in section.get("testcases", []):
+                if testcase.get("result", {}).get("quality_rating") is None:
+                    testcase["result"].pop("quality_rating", None)
+        return result_json
 
     @pytest.mark.parse_junit
     def test_junit_xml_parser_file_not_found(self):
