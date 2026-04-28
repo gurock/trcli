@@ -623,15 +623,8 @@ The key elements for Robot Framework:
 trcli parse_robot \
   -f output.xml \
   --project-id 1 \
-  --suite-id 100 \
-  --result-fields custom_ai_model:gpt-4
+  --suite-id 100
 ```
-
-A complete example file is available at `sample_ai_eval_robot_framework.xml` demonstrating:
-- High quality responses (passed tests with high ratings)
-- Low quality responses (failed tests with low ratings)
-- Security testing with quality dimensions
-- Multiple quality rating categories
 
 ## Behavior-Driven Development (BDD) Support
 
