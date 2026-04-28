@@ -576,6 +576,63 @@ Traces: https://logs.example.com/trace/123
 Latency: 0.8 seconds
 ```
 
+### Robot Framework Support
+
+Robot Framework test results fully support AI Evaluation Template features. Quality ratings and AI context fields are specified in the test's documentation section using special markers.
+
+#### Example Robot Framework Test
+
+```robot
+*** Test Cases ***
+Test Chatbot Response Quality
+    [Documentation]    Test chatbot's ability to answer factual questions accurately
+    ...
+    ...    Quality Rating Categories:
+    ...    - factual_accuracy: Did the chatbot provide correct information?
+    ...    - relevance: Was the response relevant to the question?
+    ...    - clarity: Was the response clear and easy to understand?
+    ...    - tone: Was the tone appropriate and professional?
+    ...
+    ...    AI Context Fields:
+    ...    - custom_ai_input: The question asked to the chatbot
+    ...    - custom_ai_output: The response provided by the chatbot
+    ...    - custom_ai_traces: Link to detailed logs/observability
+    ...    - custom_ai_latency: Response time
+    ...
+    ...    - testrail_case_id: C300
+    ...    - quality_rating: {"factual_accuracy": 5, "relevance": 5, "clarity": 4, "tone": 4}
+    ...    - testrail_result_field: custom_ai_input:What is the capital of France?
+    ...    - testrail_result_field: custom_ai_output:The capital of France is Paris.
+    ...    - testrail_result_field: custom_ai_traces:https://logs.example.com/trace/chat-001
+    ...    - testrail_result_field: custom_ai_latency:0.85 seconds
+
+    Ask Chatbot Question    What is the capital of France?
+    Verify Answer Correctness    Paris
+```
+
+The key elements for Robot Framework:
+
+1. **Documentation Format**: Use continuation lines (`...`) in the `[Documentation]` section
+2. **Quality Rating**: Specify as JSON on a line starting with `- quality_rating:`
+3. **AI Context Fields**: Use `- testrail_result_field: field_name:value` format
+4. **Case Matching**: Use `- testrail_case_id: C123` to link to existing test cases
+
+#### Uploading Robot Framework Results
+
+```bash
+trcli parse_robot \
+  -f output.xml \
+  --project-id 1 \
+  --suite-id 100 \
+  --result-fields custom_ai_model:gpt-4
+```
+
+A complete example file is available at `sample_ai_eval_robot_framework.xml` demonstrating:
+- High quality responses (passed tests with high ratings)
+- Low quality responses (failed tests with low ratings)
+- Security testing with quality dimensions
+- Multiple quality rating categories
+
 ## Behavior-Driven Development (BDD) Support
 
 The TestRail CLI provides comprehensive support for Behavior-Driven Development workflows using Gherkin syntax. The BDD features enable you to manage test cases written in Gherkin format, execute BDD tests with various frameworks (Cucumber, Behave, pytest-bdd, etc.), and seamlessly upload results to TestRail.

@@ -80,6 +80,40 @@ class TestRobotParser:
         return result_json
 
     @pytest.mark.parse_robot
+    @pytest.mark.parametrize(
+        "input_xml_path, expected_path",
+        [
+            # RF 5.0 format with quality ratings
+            (
+                Path(__file__).parent / "test_data/XML/robotframework_quality_rating_RF50.xml",
+                Path(__file__).parent / "test_data/json/robotframework_quality_rating_RF50.json",
+            ),
+            # RF 7.0 format with quality ratings
+            (
+                Path(__file__).parent / "test_data/XML/robotframework_quality_rating_RF70.xml",
+                Path(__file__).parent / "test_data/json/robotframework_quality_rating_RF70.json",
+            ),
+        ],
+        ids=["RF 5.0 Quality Rating", "RF 7.0 Quality Rating"],
+    )
+    def test_robot_xml_parser_quality_ratings(self, input_xml_path: Union[str, Path], expected_path: str, freezer):
+        """Test that Robot Framework parser correctly parses quality ratings from test documentation"""
+        freezer.move_to("2020-05-20 01:00:00")
+        env = Environment()
+        env.case_matcher = MatchersParser.PROPERTY
+        env.file = input_xml_path
+        file_reader = RobotParser(env)
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
+        parsing_result_json = asdict(read_junit)
+
+        # Don't remove quality_rating for this test - we want to verify it's present
+        file_json = open(expected_path)
+        expected_json = json.load(file_json)
+
+        diff = DeepDiff(parsing_result_json, expected_json)
+        assert diff == {}, f"Result of parsing Robot XML is different than expected \n{diff}"
+
+    @pytest.mark.parse_robot
     def test_robot_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             env = Environment()
