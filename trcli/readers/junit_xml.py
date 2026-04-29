@@ -91,11 +91,6 @@ class JunitParser(FileParser):
 
         return properties
 
-    def _update_with_custom_statuses(self):
-        custom_statuses = self.env.params_from_config.get("case_result_statuses", None)
-        if custom_statuses:
-            self._case_result_statuses.update(custom_statuses)
-
     def _extract_case_id_and_name(self, case) -> tuple:
         case_name = case.name
         case_id = None
