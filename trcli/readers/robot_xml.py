@@ -27,6 +27,7 @@ class RobotParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+        self.invalid_quality_ratings_found = False  # Track if any quality ratings were invalid
 
     @staticmethod
     def check_file(filepath: Union[str, Path]) -> Path:
@@ -133,6 +134,8 @@ class RobotParser(FileParser):
                             parsed_rating, error = QualityRatingParser.parse_quality_rating(quality_rating_str)
                             if error:
                                 self.env.elog(f"Quality rating validation failed for test '{case_name}': {error}")
+                                # Mark that we found invalid quality ratings
+                                self.invalid_quality_ratings_found = True
                             else:
                                 quality_rating = parsed_rating
                         if line.lower().startswith("- testrail_attachment:"):

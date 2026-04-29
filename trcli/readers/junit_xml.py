@@ -48,6 +48,7 @@ class JunitParser(FileParser):
         self._case_matcher = environment.case_matcher
         self._special = environment.special_parser
         self._case_result_statuses = {"passed": 1, "skipped": 4, "error": 5, "failure": 5}
+        self.invalid_quality_ratings_found = False  # Track if any quality ratings were invalid
         self._update_with_custom_statuses()
 
     @classmethod
@@ -218,6 +219,8 @@ class JunitParser(FileParser):
                     parsed_rating, error = QualityRatingParser.parse_quality_rating(value)
                     if error:
                         self.env.elog(f"Quality rating validation failed for test '{case.name}': {error}")
+                        # Mark that we found invalid quality ratings
+                        self.invalid_quality_ratings_found = True
                         # Skip invalid quality rating
                     else:
                         quality_rating = parsed_rating

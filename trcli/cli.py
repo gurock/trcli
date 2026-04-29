@@ -17,7 +17,7 @@ from trcli.constants import (
     TOOL_VERSION,
     COMMAND_FAULT_MAPPING,
 )
-from trcli.data_classes.data_parsers import FieldsParser
+from trcli.data_classes.data_parsers import FieldsParser, QualityRatingParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
 # Import structured logging infrastructure
@@ -123,6 +123,23 @@ class Environment:
         if error:
             self.elog(error)
             exit(1)
+
+        # Validate quality_rating if present in result_fields
+        if "quality_rating" in fields_dict:
+            quality_rating_value = fields_dict["quality_rating"]
+            _, validation_error = QualityRatingParser.parse_quality_rating(quality_rating_value)
+            if validation_error:
+                self.elog(
+                    f"ERROR: Invalid quality_rating provided in --result-fields parameter:\n"
+                    f"{validation_error}\n\n"
+                    f"Quality rating requirements:\n"
+                    f"  - Maximum 15 categories\n"
+                    f"  - Star values must be integers 0-5\n"
+                    f"  - At least one category must have a value >= 1\n"
+                    f"  - Must be valid JSON object format"
+                )
+                exit(1)
+
         self._result_fields = fields_dict
 
     def log(self, msg: str, new_line=True, *args):
