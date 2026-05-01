@@ -8,7 +8,12 @@ from junitparser import JUnitXml, JUnitXmlError, Element, Attr, TestSuite as JUn
 
 from trcli.cli import Environment
 from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID
-from trcli.data_classes.data_parsers import MatchersParser, FieldsParser, TestRailCaseFieldsOptimizer
+from trcli.data_classes.data_parsers import (
+    MatchersParser,
+    FieldsParser,
+    TestRailCaseFieldsOptimizer,
+    QualityRatingParser,
+)
 from trcli.data_classes.dataclass_testrail import (
     TestRailCase,
     TestRailSuite,
@@ -192,8 +197,7 @@ class JunitParser(FileParser):
         ]
         return "\n".join(part for part in parts if part).strip()
 
-    @staticmethod
-    def _parse_case_properties(case):
+    def _parse_case_properties(self, case):
         result_steps = []
         attachments = []
         result_fields = []
@@ -201,6 +205,7 @@ class JunitParser(FileParser):
         case_fields = []
         case_refs = None
         sauce_session = None
+        quality_rating = None
 
         for case_props in case.iterchildren(Properties):
             for prop in case_props.iterchildren(Property):
@@ -208,6 +213,14 @@ class JunitParser(FileParser):
                 if not name:
                     continue
 
+                elif name == "quality_rating":
+                    # Parse and validate quality rating
+                    parsed_rating, error = QualityRatingParser.parse_quality_rating(value)
+                    if error:
+                        self.env.elog(f"Quality rating validation failed for test '{case.name}': {error}")
+                        # Skip invalid quality rating
+                    else:
+                        quality_rating = parsed_rating
                 elif name.startswith("testrail_result_step"):
                     status, step = value.split(":", maxsplit=1)
                     step_obj = TestRailSeparatedStep(step.strip())
@@ -230,7 +243,7 @@ class JunitParser(FileParser):
                 elif name.startswith("testrail_sauce_session"):
                     sauce_session = value
 
-        return result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session
+        return result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session, quality_rating
 
     def _resolve_case_fields(self, result_fields, case_fields):
         result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
@@ -255,9 +268,16 @@ class JunitParser(FileParser):
             """
             automation_id = f"{case.classname}.{case.name}"
             case_id, case_name = self._extract_case_id_and_name(case)
-            result_steps, attachments, result_fields, comments, case_fields, case_refs, sauce_session = (
-                self._parse_case_properties(case)
-            )
+            (
+                result_steps,
+                attachments,
+                result_fields,
+                comments,
+                case_fields,
+                case_refs,
+                sauce_session,
+                quality_rating,
+            ) = self._parse_case_properties(case)
             result_fields_dict, case_fields_dict = self._resolve_case_fields(result_fields, case_fields)
             status_id = self._get_status_id_for_case_result(case)
             comment = self._get_comment_for_case_result(case)
@@ -283,6 +303,7 @@ class JunitParser(FileParser):
                         custom_step_results=result_steps.copy() if result_steps else [],
                         status_id=status_id,
                         comment=comment,
+                        quality_rating=quality_rating,
                     )
 
                     # Apply comment prepending
@@ -321,6 +342,7 @@ class JunitParser(FileParser):
                     custom_step_results=result_steps,
                     status_id=status_id,
                     comment=comment,
+                    quality_rating=quality_rating,
                 )
 
                 for comment_text in reversed(comments):
@@ -400,14 +422,6 @@ class JunitParser(FileParser):
             True if special parser is 'bdd', False otherwise
         """
         return self._special == "bdd"
-
-    def _is_multisuite_mode(self) -> bool:
-        """Check if multisuite mode is enabled
-
-        Returns:
-            True if special parser is 'multisuite', False otherwise
-        """
-        return self._special == "multisuite"
 
     def _extract_feature_case_id_from_property(self, testsuite) -> Union[int, None]:
         """Extract case ID from testsuite-level properties

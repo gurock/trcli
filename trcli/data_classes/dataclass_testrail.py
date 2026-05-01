@@ -34,6 +34,7 @@ class TestRailResult:
     elapsed: str = field(default=None, skip_if_default=True)
     defects: str = field(default=None, skip_if_default=True)
     assignedto_id: int = field(default=None, skip_if_default=True)
+    quality_rating: Optional[dict] = field(default=None, skip_if_default=True)
     attachments: Optional[List[str]] = field(default_factory=list, skip_if_default=True)
     result_fields: Optional[dict] = field(default_factory=dict, skip=True)
     junit_result_unparsed: List = field(default=None, metadata={"serde_skip": True})

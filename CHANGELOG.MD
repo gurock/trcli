@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 _released 04--2026
 
 ### Added
- - Support for uploading test results to AI Evaluation Templates
+ - **AI Evaluation Template Support**: Uploading test result support for TestRail's AI Evaluation Template with multi-dimensional quality ratings. See README "AI Evaluation Template Support" section for complete examples.
 
 ## [1.14.1]
 
