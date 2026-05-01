@@ -150,7 +150,7 @@ class RobotParser(FileParser):
                 for kw in keywords:
                     kw_result = kw.find("status").get("status")
                     step = TestRailSeparatedStep(kw.get("name"))
-                    step.status_id = status_dict[kw_result.lower()]
+                    step.status_id = self._case_result_statuses[kw_result.lower()]
                     step_keywords.append(step)
 
                 result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
