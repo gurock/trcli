@@ -22,6 +22,8 @@ class RobotParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+        self._case_result_statuses = {"pass": 1, "not run": 3, "skip": 4, "fail": 5}
+        self._update_with_custom_statuses()
 
     @staticmethod
     def check_file(filepath: Union[str, Path]) -> Path:
@@ -131,8 +133,7 @@ class RobotParser(FileParser):
                         if line.lower().startswith("- testrail_case_field"):
                             case_fields.append(self._remove_tr_prefix(line, "- testrail_case_field:"))
                 status = test.find("status")
-                status_dict = {"pass": 1, "not run": 3, "skip": 4, "fail": 5}
-                status_id = status_dict[status.get("status").lower()]
+                status_id = self._case_result_statuses[status.get("status").lower()]
 
                 elapsed_time = None
                 # if status contains "elapsed" then obtain it, otherwise calculate it from starttime and endtime
@@ -149,7 +150,7 @@ class RobotParser(FileParser):
                 for kw in keywords:
                     kw_result = kw.find("status").get("status")
                     step = TestRailSeparatedStep(kw.get("name"))
-                    step.status_id = status_dict[kw_result.lower()]
+                    step.status_id = self._case_result_statuses[kw_result.lower()]
                     step_keywords.append(step)
 
                 result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
