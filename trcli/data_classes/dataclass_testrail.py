@@ -6,6 +6,7 @@ from serde import field, serialize, deserialize, to_dict
 
 from trcli import settings
 from trcli.data_classes.validation_exception import ValidationException
+from trcli.data_classes.quality_rating_parser import QualityRatingParser
 
 
 @serialize
@@ -101,12 +102,32 @@ class TestRailResult:
     def add_global_result_fields(self, results_fields: dict) -> None:
         """Add global result fields without overriding the existing test-specific result fields
 
+        Special handling for quality_rating:
+        - If present in results_fields, it's extracted and parsed via QualityRatingParser
+        - Parsed quality_rating is set on self.quality_rating attribute (not in result_fields dict)
+        - Test-specific quality_rating (from properties/metadata) takes precedence over CLI --result-fields
+
         :param results_fields: Global results fields to be added to the result
         :return: None
+        :raises ValidationException: If quality_rating validation fails
         """
         if not results_fields:
             return
+
         new_results_fields = results_fields.copy()
+
+        # Special handling for quality_rating field
+        if "quality_rating" in new_results_fields:
+            quality_rating_value = new_results_fields.pop("quality_rating")
+
+            # Only apply CLI quality_rating if test doesn't already have one (test-specific takes precedence)
+            if self.quality_rating is None:
+                # Parse and validate the quality_rating
+                parsed_rating, error = QualityRatingParser.parse_quality_rating(quality_rating_value)
+                if error:
+                    raise ValidationException("quality_rating", "--result-fields", error)
+                self.quality_rating = parsed_rating
+
         new_results_fields.update(self.result_fields)
         self.result_fields = new_results_fields
 

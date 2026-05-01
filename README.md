@@ -576,6 +576,70 @@ Traces: https://logs.example.com/trace/123
 Latency: 0.8 seconds
 ```
 
+### Using `--result-fields` for Quality Rating
+
+In addition to specifying quality ratings in XML/JSON properties, you can apply a **global quality rating** to all test results using the `--result-fields` command-line option:
+
+```shell
+trcli parse_junit \
+  -f sample_results.xml \
+  --project-id 1 \
+  --suite-id 2 \
+  --result-fields quality_rating:'{"factual_accuracy": 4, "reliability": 5, "performance": 3}'
+```
+
+#### Behavior
+
+- **Global Application**: The quality rating specified via `--result-fields` is applied to **all test results** that don't already have one
+- **Test-Specific Override**: Quality ratings specified in test properties/metadata **always take precedence** over `--result-fields`
+- **Validation**: The same validation rules apply (max 15 categories, 0-5 stars, at least one ≥ 1)
+
+#### Example: Mixed Quality Ratings
+
+```xml
+<testsuites>
+  <testsuite name="API Tests">
+    <!-- Test 1: Uses CLI global quality_rating (no rating in XML) -->
+    <testcase name="C100_test_payment_success" time="2.5">
+      <properties>
+        <property name="testrail_result_field" value="custom_api_endpoint:/api/v1/payment"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Uses test-specific quality_rating (overrides CLI) -->
+    <testcase name="C101_test_refund_success" time="3.1">
+      <properties>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "response_time": 5}'/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+CLI command:
+```shell
+trcli parse_junit \
+  -f report.xml \
+  --project-id 1 \
+  --suite-id 2 \
+  --result-fields quality_rating:'{"factual_accuracy": 4, "reliability": 5}'
+```
+
+**Result:**
+- **C100** gets the CLI quality rating: `{"factual_accuracy": 4, "reliability": 5}`
+- **C101** gets its test-specific quality rating: `{"factual_accuracy": 5, "response_time": 5}`
+
+#### Error Handling with --result-fields
+
+If the quality_rating value in `--result-fields` is invalid, TRCLI will exit with an error before uploading:
+
+```
+ERROR: Unable to parse quality_rating in --result-fields property.
+Star values must be between 0 and 5, got 10 for category 'accuracy'
+```
+
+**Note:** This is different from invalid property-based quality ratings, which log a warning and continue. CLI validation is stricter because it affects all results.
+
 ### Robot Framework Support
 
 Robot Framework test results fully support AI Evaluation Template features. Quality ratings and AI context fields are specified in the test's documentation section using special markers.

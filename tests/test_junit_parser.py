@@ -164,6 +164,14 @@ class TestJunitParser:
         with pytest.raises(ParseError):
             file_reader.parse_file()
 
+    def __remove_none_quality_ratings(self, result_json: dict) -> dict:
+        """Remove quality_rating fields that are None for backward compatibility with existing tests"""
+        for section in result_json.get("testsections", []):
+            for testcase in section.get("testcases", []):
+                if testcase.get("result", {}).get("quality_rating") is None:
+                    testcase["result"].pop("quality_rating", None)
+        return result_json
+
     @pytest.mark.parse_junit
     def test_junit_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
