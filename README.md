@@ -690,6 +690,79 @@ trcli parse_robot \
   --suite-id 100
 ```
 
+### Multi-Step AI Evaluation Workflows
+
+For complex AI systems with multiple pipeline stages (like RAG, multi-agent systems, or sequential AI workflows), you can combine **step-level execution tracking** with **overall quality assessment** in your AI Evaluation tests. quality_rating result field can be added to to Test Case (Steps)
+
+#### How It Works
+
+**Step-Level Tracking:**
+- Each step has its own **status** (passed, failed, skipped, untested)
+- See exactly where in the pipeline the failure occurred
+
+**Overall Quality Rating:**
+- One **quality_rating** applies to the entire test result 
+- Assess the final output quality across multiple dimensions
+
+#### JUnit XML Example
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="RAG Pipeline Tests" tests="1" failures="1" time="10.5">
+  <testsuite name="Document QA" tests="1" failures="1" time="10.5">
+
+    <testcase classname="ai.rag.DocumentQA" name="C1000_test_rag_pipeline" time="10.5">
+      <properties>
+        <property name="test_id" value="C1000"/>
+
+        <!-- Step-Level Execution Tracking -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="passed:Step 2 Document Retrieval"/>
+        <property name="testrail_result_step" value="failed:Step 3 Answer Generation"/>
+        <property name="testrail_result_step" value="untested:Step 4 Response Validation"/>
+
+        <!-- Overall Quality Rating -->
+        <property name="quality_rating" value='{"factual_accuracy": 2, "coherence": 3, "completeness": 1}'/>
+
+        <!-- AI Context Fields (not applicable to Test Case (Steps) -->
+        <property name="testrail_result_field" value="custom_ai_input:What programming language is used for machine learning?"/>
+        <property name="testrail_result_field" value="custom_ai_output:JavaScript is the primary language for machine learning."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/rag-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:10.5 seconds"/>
+      </properties>
+      <failure message="Answer generation produced factually incorrect response"/>
+    </testcase>
+
+  </testsuite>
+</testsuites>
+```
+
+**Upload Command:**
+```bash
+trcli parse_junit \
+  -f rag_pipeline_results.xml \
+  --project-id 1 \
+  --suite-id 100
+```
+
+#### Important Notes
+
+1. **Quality Rating Scope**: The `quality_rating` applies to the **entire test result**, not individual steps. It represents the overall quality of the AI system's final output.
+
+2. **Step Status Format**: Use `status:description` format for step-level tracking:
+   - `passed:Step 1 Query Understanding`
+   - `failed:Step 3 Answer Generation`
+   - `skipped:Optional Enhancement`
+   - `untested:Step 4 Response Validation`
+
+3. **Available Step Statuses**:
+   - `passed` (status_id: 1) - Step completed successfully
+   - `untested` (status_id: 3) - Step not executed
+   - `skipped` (status_id: 4) - Step intentionally skipped
+   - `failed` (status_id: 5) - Step failed
+
+4. **Test Status Aggregation**: The overall test status follows **fail-fast** logic - if any step fails, the entire test fails.
+
 ## Behavior-Driven Development (BDD) Support
 
 The TestRail CLI provides comprehensive support for Behavior-Driven Development workflows using Gherkin syntax. The BDD features enable you to manage test cases written in Gherkin format, execute BDD tests with various frameworks (Cucumber, Behave, pytest-bdd, etc.), and seamlessly upload results to TestRail.
