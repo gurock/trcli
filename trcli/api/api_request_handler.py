@@ -1072,3 +1072,73 @@ class ApiRequestHandler:
         self, section_id: int, title: str, bdd_content: str, template_id: int, tags: List[str] = None
     ) -> Tuple[int, str]:
         return self.bdd_handler.add_case_bdd(section_id, title, bdd_content, template_id, tags)
+
+    def validate_ai_evaluation_template(self, project_id: int) -> Tuple[bool, str]:
+        """
+        Validate that AI Evaluation template exists in the project
+
+        Args:
+            project_id: TestRail project ID
+
+        Returns:
+            Tuple of (exists, error_message)
+            - exists: True if AI Evaluation template is enabled, False otherwise
+            - error_message: Empty string on success, error details on failure
+        """
+        self.environment.vlog(f"Validating AI Evaluation template for project {project_id}")
+        response = self.client.send_get(f"get_templates/{project_id}")
+
+        if response.status_code == 200:
+            templates = response.response_text
+            if isinstance(templates, list):
+                self.environment.vlog(f"Retrieved {len(templates)} template(s) from TestRail")
+
+                # Log all available templates for debugging
+                if templates:
+                    self.environment.vlog("Available templates:")
+                    for template in templates:
+                        template_id = template.get("id")
+                        template_name = template.get("name", "")
+                        template_i18n = template.get("i18n_custom_id", "")
+                        self.environment.vlog(f"  - ID {template_id}: '{template_name}' ({template_i18n})")
+
+                # Look for AI Evaluation template (ID: 5 or i18n_custom_id: "templates_ai_evaluation")
+                for template in templates:
+                    template_id = template.get("id")
+                    template_name = template.get("name", "")
+                    template_i18n = template.get("i18n_custom_id", "")
+
+                    # Check for AI Evaluation template by ID or i18n identifier
+                    if template_id == 5 or template_i18n == "templates_ai_evaluation":
+                        self.environment.vlog(
+                            f"  ✓ MATCH: Found AI Evaluation template '{template_name}' (ID: {template_id})"
+                        )
+                        self.environment.log(f"AI Evaluation template is enabled in this project.")
+                        return True, ""
+
+                # Build detailed error message
+                error_parts = [
+                    "AI Evaluation template is not enabled in this project.",
+                    "This feature requires the AI Evaluation template to be enabled in TestRail.",
+                ]
+                if templates:
+                    template_list = ", ".join([f"'{t.get('name', 'Unknown')}' (ID: {t.get('id')})" for t in templates])
+                    error_parts.append(f"Available templates: {template_list}")
+                    error_parts.append(
+                        "\nTo enable AI Evaluation template:\n"
+                        "1. Go to TestRail Administration > Customizations > Templates\n"
+                        "2. Enable 'AI Evaluation' template for your project"
+                    )
+                else:
+                    error_parts.append("No templates are available in this project.")
+
+                self.environment.elog("\n".join(error_parts))
+                return False, "\n".join(error_parts)
+            else:
+                error_msg = "Unexpected response format from get_templates"
+                self.environment.elog(error_msg)
+                return False, error_msg
+        else:
+            error_msg = response.error_message or f"Failed to get templates (HTTP {response.status_code})"
+            self.environment.elog(error_msg)
+            return False, error_msg
