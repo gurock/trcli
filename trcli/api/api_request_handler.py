@@ -1102,14 +1102,13 @@ class ApiRequestHandler:
                         template_i18n = template.get("i18n_custom_id", "")
                         self.environment.vlog(f"  - ID {template_id}: '{template_name}' ({template_i18n})")
 
-                # Look for AI Evaluation template (ID: 5 or i18n_custom_id: "templates_ai_evaluation")
+                # Look for AI Evaluation template by i18n_custom_id (system identifier)
                 for template in templates:
                     template_id = template.get("id")
                     template_name = template.get("name", "")
                     template_i18n = template.get("i18n_custom_id", "")
 
-                    # Check for AI Evaluation template by ID or i18n identifier
-                    if template_id == 5 or template_i18n == "templates_ai_evaluation":
+                    if template_i18n == "templates_ai_evaluation":
                         self.environment.vlog(
                             f"  ✓ MATCH: Found AI Evaluation template '{template_name}' (ID: {template_id})"
                         )
