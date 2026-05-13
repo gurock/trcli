@@ -232,14 +232,15 @@ class TestValidateAIEvaluationTemplate:
         handler.environment = Mock()
         handler.environment.vlog = Mock()
 
-        exists, error = handler.validate_ai_evaluation_template(project_id=1)
+        exists, error, template_id = handler.validate_ai_evaluation_template(project_id=1)
 
         assert exists is True
         assert error == ""
+        assert template_id == 5
         mock_client.send_get.assert_called_once_with("get_templates/1")
 
     def test_validate_template_exists_by_i18n(self):
-        """Test validation succeeds when template has i18n_custom_id"""
+        """Test validation succeeds when template has i18n_custom_id with non-standard ID"""
         from trcli.api.api_request_handler import ApiRequestHandler
 
         mock_client = Mock()
@@ -256,10 +257,11 @@ class TestValidateAIEvaluationTemplate:
         handler.environment = Mock()
         handler.environment.vlog = Mock()
 
-        exists, error = handler.validate_ai_evaluation_template(project_id=1)
+        exists, error, template_id = handler.validate_ai_evaluation_template(project_id=1)
 
         assert exists is True
         assert error == ""
+        assert template_id == 10  # Returns actual ID, not hardcoded 5
 
     def test_validate_template_not_found(self):
         """Test validation fails when template doesn't exist"""
@@ -277,12 +279,13 @@ class TestValidateAIEvaluationTemplate:
         handler.environment = Mock()
         handler.environment.vlog = Mock()
 
-        exists, error = handler.validate_ai_evaluation_template(project_id=1)
+        exists, error, template_id = handler.validate_ai_evaluation_template(project_id=1)
 
         assert exists is False
         assert "AI Evaluation template" in error
         assert "not enabled" in error
         assert "To enable AI Evaluation template" in error
+        assert template_id == 0  # Returns 0 when not found
 
     def test_validate_template_api_error(self):
         """Test validation handles API errors gracefully"""
@@ -300,7 +303,8 @@ class TestValidateAIEvaluationTemplate:
         handler.environment = Mock()
         handler.environment.vlog = Mock()
 
-        exists, error = handler.validate_ai_evaluation_template(project_id=1)
+        exists, error, template_id = handler.validate_ai_evaluation_template(project_id=1)
 
         assert exists is False
         assert "Insufficient permissions" in error
+        assert template_id == 0  # Returns 0 on API error

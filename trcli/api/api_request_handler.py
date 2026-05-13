@@ -1073,7 +1073,7 @@ class ApiRequestHandler:
     ) -> Tuple[int, str]:
         return self.bdd_handler.add_case_bdd(section_id, title, bdd_content, template_id, tags)
 
-    def validate_ai_evaluation_template(self, project_id: int) -> Tuple[bool, str]:
+    def validate_ai_evaluation_template(self, project_id: int) -> Tuple[bool, str, int]:
         """
         Validate that AI Evaluation template exists in the project
 
@@ -1081,9 +1081,15 @@ class ApiRequestHandler:
             project_id: TestRail project ID
 
         Returns:
-            Tuple of (exists, error_message)
+            Tuple of (exists, error_message, template_id)
             - exists: True if AI Evaluation template is enabled, False otherwise
             - error_message: Empty string on success, error details on failure
+            - template_id: The actual template ID from TestRail (0 if not found)
+
+        Note:
+            The AI Evaluation template is identified by i18n_custom_id "templates_ai_evaluation".
+            We check only by i18n_custom_id (not template ID) because the ID can vary depending
+            on when custom templates were created in the instance.
         """
         self.environment.vlog(f"Validating AI Evaluation template for project {project_id}")
         response = self.client.send_get(f"get_templates/{project_id}")
@@ -1113,7 +1119,7 @@ class ApiRequestHandler:
                             f"  ✓ MATCH: Found AI Evaluation template '{template_name}' (ID: {template_id})"
                         )
                         self.environment.log(f"AI Evaluation template is enabled in this project.")
-                        return True, ""
+                        return True, "", template_id
 
                 # Build detailed error message
                 error_parts = [
@@ -1132,12 +1138,12 @@ class ApiRequestHandler:
                     error_parts.append("No templates are available in this project.")
 
                 self.environment.elog("\n".join(error_parts))
-                return False, "\n".join(error_parts)
+                return False, "\n".join(error_parts), 0
             else:
                 error_msg = "Unexpected response format from get_templates"
                 self.environment.elog(error_msg)
-                return False, error_msg
+                return False, error_msg, 0
         else:
             error_msg = response.error_message or f"Failed to get templates (HTTP {response.status_code})"
             self.environment.elog(error_msg)
-            return False, error_msg
+            return False, error_msg, 0

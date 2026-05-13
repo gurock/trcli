@@ -507,13 +507,13 @@ class ResultsUploader(ProjectBasedClient):
         Validate AI Evaluation template and apply its template_id to all test cases.
 
         Calls the API to validate that AI Evaluation template exists in the project.
-        If validation succeeds, sets template_id=5 on all test cases for auto-creation.
+        If validation succeeds, applies the template_id to all test cases for auto-creation.
         If validation fails, logs error and exits.
         """
         self.environment.log("AI Evaluation indicators detected. Validating AI Evaluation template...")
 
-        # Validate template exists via API
-        template_exists, error_message = self.api_request_handler.validate_ai_evaluation_template(
+        # Validate template exists via API and get its actual ID
+        template_exists, error_message, template_id = self.api_request_handler.validate_ai_evaluation_template(
             self.project.project_id
         )
 
@@ -522,8 +522,8 @@ class ResultsUploader(ProjectBasedClient):
             self.environment.elog(error_message)
             exit(1)
 
-        self.environment.log("Using AI Evaluation template for auto-created test cases")
+        self.environment.log(f"Using AI Evaluation template (ID: {template_id}) for auto-created test cases")
         suite_data = self.api_request_handler.suites_data_from_provider
         for section in suite_data.testsections:
             for test_case in section.testcases:
-                test_case.template_id = 5
+                test_case.template_id = template_id
