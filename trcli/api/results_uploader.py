@@ -502,12 +502,39 @@ class ResultsUploader(ProjectBasedClient):
 
         return False
 
+    def _test_case_needs_ai_template(self, test_case) -> bool:
+        """
+        Determine if a specific test case needs AI Evaluation template.
+
+        IMPORTANT: A test case needs AI Evaluation template ONLY if it has quality_rating
+        in the test result, because quality_rating is a required field for AI Evaluation template.
+
+        AI case fields (custom_ai_type, custom_ai_model) are metadata that can be used with
+        ANY template and do NOT require AI Evaluation template.
+
+        Args:
+            test_case: The test case to check
+
+        Returns:
+            True if test case has quality_rating in result, False otherwise
+        """
+        # ONLY check for quality_rating in test result
+        # AI case fields do NOT require AI Evaluation template
+        if test_case.result and test_case.result.quality_rating is not None:
+            return True
+
+        return False
+
     def _apply_ai_evaluation_template(self):
         """
-        Validate AI Evaluation template and apply its template_id to all test cases.
+        Validate AI Evaluation template and apply its template_id to test cases that need it.
 
         Calls the API to validate that AI Evaluation template exists in the project.
-        If validation succeeds, applies the template_id to all test cases for auto-creation.
+        If validation succeeds, applies the template_id selectively to test cases based on:
+        - Test-specific quality_rating in results
+        - Test-specific AI case fields in XML properties
+        - Global AI case fields from CLI --case-fields
+
         If validation fails, logs error and exits.
         """
         self.environment.log("AI Evaluation indicators detected. Validating AI Evaluation template...")
@@ -522,8 +549,20 @@ class ResultsUploader(ProjectBasedClient):
             self.environment.elog(error_message)
             exit(1)
 
-        self.environment.log(f"Using AI Evaluation template (ID: {template_id}) for auto-created test cases")
+        # Apply template_id selectively to test cases that need it
         suite_data = self.api_request_handler.suites_data_from_provider
+        ai_cases_count = 0
+        regular_cases_count = 0
+
         for section in suite_data.testsections:
             for test_case in section.testcases:
-                test_case.template_id = template_id
+                if self._test_case_needs_ai_template(test_case):
+                    test_case.template_id = template_id
+                    ai_cases_count += 1
+                else:
+                    regular_cases_count += 1
+
+        self.environment.log(
+            f"Using AI Evaluation template (ID: {template_id}) for {ai_cases_count} test case(s), "
+            f"{regular_cases_count} test case(s) will use default template"
+        )

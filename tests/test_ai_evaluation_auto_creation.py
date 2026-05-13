@@ -208,6 +208,152 @@ class TestAIEvaluationDetection:
         assert result is False
 
 
+class TestSelectiveTemplateApplication:
+    """Test that AI Evaluation template is applied selectively per test case"""
+
+    def test_apply_template_only_to_cases_with_quality_rating(self):
+        """Test that only cases with quality_rating get AI template"""
+        from trcli.api.results_uploader import ResultsUploader
+
+        # Create suite with mixed cases
+        result_with_rating = TestRailResult(status_id=1, quality_rating={"factual_accuracy": 5})
+        result_without_rating = TestRailResult(status_id=1)
+
+        case_with_rating = TestRailCase(title="AI Test", result=result_with_rating)
+        case_without_rating = TestRailCase(title="Regular Test", result=result_without_rating)
+
+        section = TestRailSection(name="Section")
+        section.testcases = [case_with_rating, case_without_rating]
+        suite = TestRailSuite(name="Suite")
+        suite.testsections = [section]
+
+        # Create uploader
+        env = Mock()
+        env.case_fields = {}
+        env.vlog = Mock()
+        env.log = Mock()
+
+        api_handler = Mock()
+        api_handler.suites_data_from_provider = suite
+
+        uploader = ResultsUploader.__new__(ResultsUploader)
+        uploader.environment = env
+        uploader.api_request_handler = api_handler
+
+        # Test per-case logic
+        assert uploader._test_case_needs_ai_template(case_with_rating) is True
+        assert uploader._test_case_needs_ai_template(case_without_rating) is False
+
+    def test_ai_case_fields_do_not_require_ai_template(self):
+        """Test that AI case fields do NOT require AI template - they work with any template"""
+        from trcli.api.results_uploader import ResultsUploader
+
+        # Create suite with AI case fields but NO quality_rating in result
+        result = TestRailResult(status_id=1)  # No quality_rating
+
+        case_with_ai_fields = TestRailCase(
+            title="AI Test", case_fields={"custom_ai_type": 1, "custom_ai_model": 2}, result=result
+        )
+
+        section = TestRailSection(name="Section")
+        section.testcases = [case_with_ai_fields]
+        suite = TestRailSuite(name="Suite")
+        suite.testsections = [section]
+
+        # Create uploader
+        env = Mock()
+        env.case_fields = {}
+        env.vlog = Mock()
+
+        api_handler = Mock()
+        api_handler.suites_data_from_provider = suite
+
+        uploader = ResultsUploader.__new__(ResultsUploader)
+        uploader.environment = env
+        uploader.api_request_handler = api_handler
+
+        # AI case fields are just metadata - they do NOT require AI template
+        # Only quality_rating requires AI Evaluation template
+        assert uploader._test_case_needs_ai_template(case_with_ai_fields) is False
+
+    def test_ai_case_fields_with_quality_rating_gets_template(self):
+        """Test that cases with BOTH AI case fields AND quality_rating get AI template"""
+        from trcli.api.results_uploader import ResultsUploader
+
+        # Create case with both AI case fields AND quality_rating
+        result_with_rating = TestRailResult(status_id=1, quality_rating={"factual_accuracy": 5})
+        case_with_both = TestRailCase(
+            title="AI Test", case_fields={"custom_ai_type": 1, "custom_ai_model": 2}, result=result_with_rating
+        )
+
+        section = TestRailSection(name="Section")
+        section.testcases = [case_with_both]
+        suite = TestRailSuite(name="Suite")
+        suite.testsections = [section]
+
+        # Create uploader
+        env = Mock()
+        env.case_fields = {}
+        env.vlog = Mock()
+
+        api_handler = Mock()
+        api_handler.suites_data_from_provider = suite
+
+        uploader = ResultsUploader.__new__(ResultsUploader)
+        uploader.environment = env
+        uploader.api_request_handler = api_handler
+
+        # Should need AI template due to quality_rating
+        assert uploader._test_case_needs_ai_template(case_with_both) is True
+
+    def test_mixed_report_selective_template_application(self):
+        """Test full workflow: mixed report with selective template application"""
+        from trcli.api.results_uploader import ResultsUploader
+
+        # Create suite with 3 cases: 2 with quality_rating, 1 without
+        result1 = TestRailResult(status_id=1, quality_rating={"factual_accuracy": 5})
+        result2 = TestRailResult(status_id=1, quality_rating={"coherence": 4})
+        result3 = TestRailResult(status_id=1)  # No quality_rating
+
+        case1 = TestRailCase(title="AI Test 1", result=result1)
+        case2 = TestRailCase(title="AI Test 2", result=result2)
+        case3 = TestRailCase(title="Regular Test", result=result3)
+
+        section = TestRailSection(name="Section")
+        section.testcases = [case1, case2, case3]
+        suite = TestRailSuite(name="Suite")
+        suite.testsections = [section]
+
+        # Create uploader and mock project
+        env = Mock()
+        env.case_fields = {}
+        env.vlog = Mock()
+        env.log = Mock()
+
+        api_handler = Mock()
+        api_handler.suites_data_from_provider = suite
+        api_handler.validate_ai_evaluation_template = Mock(return_value=(True, "", 10))
+
+        uploader = ResultsUploader.__new__(ResultsUploader)
+        uploader.environment = env
+        uploader.api_request_handler = api_handler
+        uploader.project = Mock()
+        uploader.project.project_id = 1
+
+        # Apply template
+        uploader._apply_ai_evaluation_template()
+
+        # Verify: cases 1 and 2 should have template_id=10, case 3 should not
+        assert case1.template_id == 10
+        assert case2.template_id == 10
+        assert case3.template_id is None  # No template set
+
+        # Verify log message
+        env.log.assert_any_call(
+            "Using AI Evaluation template (ID: 10) for 2 test case(s), 1 test case(s) will use default template"
+        )
+
+
 class TestValidateAIEvaluationTemplate:
     """Test validate_ai_evaluation_template API method"""
 

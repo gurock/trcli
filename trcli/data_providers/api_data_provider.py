@@ -132,10 +132,18 @@ class ApiDataProvider:
         return body
 
     def add_results_for_cases(self, bulk_size, user_ids=None):
-        """Return bodies for adding results for cases. Returns bodies for results that already have case ID."""
+        """Return bodies for adding results for cases. Returns bodies for results that already have case ID.
+
+        Splits results into separate batches:
+        1. Results WITHOUT quality_rating (for Text template cases)
+        2. Results WITH quality_rating (for AI Evaluation template cases)
+
+        This is necessary because TestRail validates each batch and rejects mixed batches.
+        """
         testcases = [sections.testcases for sections in self.suites_input.testsections]
 
-        bodies = []
+        bodies_without_quality_rating = []
+        bodies_with_quality_rating = []
         user_index = 0
         assigned_count = 0
         total_failed_count = 0
@@ -155,17 +163,39 @@ class ApiDataProvider:
                             user_index += 1
                             assigned_count += 1
 
-                    bodies.append(case.result.to_dict())
+                    result_dict = case.result.to_dict()
+
+                    # Split results based on presence of quality_rating
+                    # This prevents TestRail validation errors when mixing template types
+                    if "quality_rating" in result_dict and result_dict["quality_rating"] is not None:
+                        bodies_with_quality_rating.append(result_dict)
+                    else:
+                        bodies_without_quality_rating.append(result_dict)
 
         # Store counts for logging (we'll access this from the api_request_handler)
         self._assigned_count = assigned_count if user_ids else 0
         self._total_failed_count = total_failed_count
 
-        result_bulks = ApiDataProvider.divide_list_into_bulks(
-            bodies,
-            bulk_size=bulk_size,
-        )
-        return [{"results": result_bulk} for result_bulk in result_bulks]
+        # Create separate batches for results with and without quality_rating
+        result_batches = []
+
+        # Add batches for results WITHOUT quality_rating (Text template cases)
+        if bodies_without_quality_rating:
+            result_bulks_without = ApiDataProvider.divide_list_into_bulks(
+                bodies_without_quality_rating,
+                bulk_size=bulk_size,
+            )
+            result_batches.extend([{"results": result_bulk} for result_bulk in result_bulks_without])
+
+        # Add batches for results WITH quality_rating (AI Evaluation template cases)
+        if bodies_with_quality_rating:
+            result_bulks_with = ApiDataProvider.divide_list_into_bulks(
+                bodies_with_quality_rating,
+                bulk_size=bulk_size,
+            )
+            result_batches.extend([{"results": result_bulk} for result_bulk in result_bulks_with])
+
+        return result_batches
 
     def update_data(
         self,
