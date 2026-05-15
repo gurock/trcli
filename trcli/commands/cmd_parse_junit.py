@@ -76,7 +76,23 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     settings.ALLOW_ELAPSED_MS = environment.allow_ms
     print_config(environment)
     try:
-        parsed_suites = JunitParser(environment).parse_file()
+        junit_parser = JunitParser(environment)
+        parsed_suites = junit_parser.parse_file()
+
+        # Check if any invalid quality ratings were found during parsing
+        if junit_parser.invalid_quality_ratings_found:
+            environment.elog(
+                "\nERROR: One or more test results have invalid quality_rating values that were rejected.\n"
+                "Cannot proceed with upload as quality_rating is required for tests that specify it.\n\n"
+                "Please fix the invalid quality ratings in your test report and try again.\n\n"
+                "Quality rating requirements:\n"
+                "  - Maximum 15 categories\n"
+                "  - Star values must be integers 0-5\n"
+                "  - At least one category must have a value >= 1\n"
+                "  - Must be valid JSON object format"
+            )
+            exit(1)
+
         run_id = None
         case_update_results = {}
 

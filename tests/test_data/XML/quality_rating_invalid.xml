@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="Invalid Quality Rating Tests" tests="3" failures="0" errors="0" time="6.0">
+  <testsuite name="Invalid Quality Ratings" tests="3" failures="0" errors="0" time="6.0">
+
+    <!-- Test 1: Invalid - too many categories (16) -->
+    <testcase classname="ai_tests.InvalidTests" name="test_too_many_categories" time="2.0">
+      <properties>
+        <property name="test_id" value="C200"/>
+        <property name="quality_rating" value='{"cat1": 5, "cat2": 4, "cat3": 3, "cat4": 2, "cat5": 1, "cat6": 5, "cat7": 4, "cat8": 3, "cat9": 2, "cat10": 1, "cat11": 5, "cat12": 4, "cat13": 3, "cat14": 2, "cat15": 1, "cat16": 5}'/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Invalid - value out of range -->
+    <testcase classname="ai_tests.InvalidTests" name="test_value_out_of_range" time="2.0">
+      <properties>
+        <property name="test_id" value="C201"/>
+        <property name="quality_rating" value='{"accuracy": 10, "speed": 4}'/>
+      </properties>
+    </testcase>
+
+    <!-- Test 3: Invalid - all zeros -->
+    <testcase classname="ai_tests.InvalidTests" name="test_all_zeros" time="2.0">
+      <properties>
+        <property name="test_id" value="C202"/>
+        <property name="quality_rating" value='{"accuracy": 0, "speed": 0, "reliability": 0}'/>
+      </properties>
+    </testcase>
+
+  </testsuite>
+</testsuites>

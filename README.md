@@ -33,7 +33,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.14.1
+TestRail CLI v1.14.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -51,7 +51,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.14.1
+TestRail CLI v1.14.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -484,6 +484,440 @@ Adding results: 100%|████████████| 25/25 [00:02<00:00, 1
 Assigning failed results: 3/3, Done.
 Submitted 25 test results in 2.1 secs.
 ```
+
+## AI Evaluation Template Support
+
+TRCLI supports TestRail's AI Evaluation Template, which enables **multi-dimensional quality assessment** for test results. This feature is ideal for evaluating systems where outcomes need assessment across multiple quality criteria, not just pass/fail.
+
+### Use Cases
+
+The AI Evaluation Template is useful for:
+
+- **AI Systems**: Chatbots, code generators, recommendation engines (factual accuracy, relevance, completeness)
+- **Performance Testing**: Responsiveness, degradation, stability under load
+- **Security Testing**: Vulnerability resistance, data leakage prevention
+- **UI/UX Testing**: Accessibility, usability, aesthetics
+- **Any Quality-Based Testing**: Custom quality dimensions for your specific needs
+
+### Quality Rating
+
+Rate test results across **up to 15 custom categories** using **0-5 star ratings**:
+
+```xml
+<property name="quality_rating" value='{"factual_accuracy": 5, "relevance": 4, "completeness": 3}'/>
+```
+
+### AI Context Fields
+
+Track additional context about AI system evaluation:
+
+- **custom_ai_input**: What was tested (prompt, request, scenario)
+- **custom_ai_output**: What was produced (response, result, behavior)
+- **custom_ai_traces**: Links to detailed logs/observability tools
+- **custom_ai_latency**: Performance metrics
+
+### Validation Rules
+
+Quality ratings must follow these rules:
+
+- **Maximum 15 categories**
+- **Star values must be integers 0-5**
+- **At least one category must have a value ≥ 1**
+- **Must be valid JSON object format**
+
+#### Valid Examples
+
+```json
+{"accuracy": 5, "speed": 4, "reliability": 3}
+{"factual_accuracy": 5, "relevance": 5, "completeness": 4, "clarity": 3, "tone": 4}
+```
+
+#### Invalid Examples
+
+```json
+{"accuracy": 10}                    ❌ Value out of range (must be 0-5)
+{"cat1": 5, "cat2": 4, ... "cat20": 3}  ❌ Too many categories (max 15)
+{"accuracy": 0, "speed": 0}         ❌ All values are 0 (need at least one ≥ 1)
+{"accuracy": 4.5}                   ❌ Must be integer, not float
+```
+
+### Error Handling
+
+If a quality rating fails validation, TRCLI will:
+1. Log an error message with the specific validation issue
+2. Skip the invalid quality rating
+3. Continue uploading the test result (without quality rating)
+4. Upload other valid properties (status, comment, custom fields)
+
+Example error message:
+
+```
+ERROR: Quality rating validation failed for test 'test_chatbot_response':
+Star values must be between 0 and 5, got 10 for category 'accuracy'
+```
+
+### Viewing Results in TestRail
+
+Once uploaded, quality ratings appear in TestRail with star visualizations:
+
+```
+Test: test_chatbot_response
+Status: ✓ Passed
+
+Quality Rating:
+  ⭐⭐⭐⭐⭐ Factual Accuracy (5/5)
+  ⭐⭐⭐⭐⭐ Relevance (5/5)
+  ⭐⭐⭐⭐   Clarity (4/5)
+  ⭐⭐⭐⭐⭐ Tone (5/5)
+
+Input:  What is the capital of France?
+Output: The capital of France is Paris.
+Traces: https://logs.example.com/trace/123
+Latency: 0.8 seconds
+```
+
+### Using `--result-fields` for Quality Rating
+
+In addition to specifying quality ratings in XML/JSON properties, you can apply a **global quality rating** to all test results using the `--result-fields` command-line option:
+
+```shell
+trcli parse_junit \
+  -f sample_results.xml \
+  --project-id 1 \
+  --suite-id 2 \
+  --result-fields quality_rating:'{"factual_accuracy": 4, "reliability": 5, "performance": 3}'
+```
+
+#### Behavior
+
+- **Global Application**: The quality rating specified via `--result-fields` is applied to **all test results** that don't already have one
+- **Test-Specific Override**: Quality ratings specified in test properties/metadata **always take precedence** over `--result-fields`
+- **Validation**: The same validation rules apply (max 15 categories, 0-5 stars, at least one ≥ 1)
+
+#### Example: Mixed Quality Ratings
+
+```xml
+<testsuites>
+  <testsuite name="API Tests">
+    <!-- Test 1: Uses CLI global quality_rating (no rating in XML) -->
+    <testcase name="C100_test_payment_success" time="2.5">
+      <properties>
+        <property name="testrail_result_field" value="custom_api_endpoint:/api/v1/payment"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Uses test-specific quality_rating (overrides CLI) -->
+    <testcase name="C101_test_refund_success" time="3.1">
+      <properties>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "response_time": 5}'/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+CLI command:
+```shell
+trcli parse_junit \
+  -f report.xml \
+  --project-id 1 \
+  --suite-id 2 \
+  --result-fields quality_rating:'{"factual_accuracy": 4, "reliability": 5}'
+```
+
+**Result:**
+- **C100** gets the CLI quality rating: `{"factual_accuracy": 4, "reliability": 5}`
+- **C101** gets its test-specific quality rating: `{"factual_accuracy": 5, "response_time": 5}`
+
+#### Error Handling with --result-fields
+
+If the quality_rating value in `--result-fields` is invalid, TRCLI will exit with an error before uploading:
+
+```
+ERROR: Unable to parse quality_rating in --result-fields property.
+Star values must be between 0 and 5, got 10 for category 'accuracy'
+```
+
+**Note:** This is different from invalid property-based quality ratings, which log a warning and continue. CLI validation is stricter because it affects all results.
+
+### Robot Framework Support
+
+Robot Framework test results fully support AI Evaluation Template features. Quality ratings and AI context fields are specified in the test's documentation section using special markers.
+
+#### Example Robot Framework Test
+
+```robot
+*** Test Cases ***
+Test Chatbot Response Quality
+    [Documentation]    Test chatbot's ability to answer factual questions accurately
+    ...
+    ...    Quality Rating Categories:
+    ...    - factual_accuracy: Did the chatbot provide correct information?
+    ...    - relevance: Was the response relevant to the question?
+    ...    - clarity: Was the response clear and easy to understand?
+    ...    - tone: Was the tone appropriate and professional?
+    ...
+    ...    AI Context Fields:
+    ...    - custom_ai_input: The question asked to the chatbot
+    ...    - custom_ai_output: The response provided by the chatbot
+    ...    - custom_ai_traces: Link to detailed logs/observability
+    ...    - custom_ai_latency: Response time
+    ...
+    ...    - testrail_case_id: C300
+    ...    - quality_rating: {"factual_accuracy": 5, "relevance": 5, "clarity": 4, "tone": 4}
+    ...    - testrail_result_field: custom_ai_input:What is the capital of France?
+    ...    - testrail_result_field: custom_ai_output:The capital of France is Paris.
+    ...    - testrail_result_field: custom_ai_traces:https://logs.example.com/trace/chat-001
+    ...    - testrail_result_field: custom_ai_latency:0.85 seconds
+
+    Ask Chatbot Question    What is the capital of France?
+    Verify Answer Correctness    Paris
+```
+
+The key elements for Robot Framework:
+
+1. **Documentation Format**: Use continuation lines (`...`) in the `[Documentation]` section
+2. **Quality Rating**: Specify as JSON on a line starting with `- quality_rating:`
+3. **AI Context Fields**: Use `- testrail_result_field: field_name:value` format
+4. **Case Matching**: Use `- testrail_case_id: C123` to link to existing test cases
+
+#### Uploading Robot Framework Results
+
+```bash
+trcli parse_robot \
+  -f output.xml \
+  --project-id 1 \
+  --suite-id 100
+```
+
+### Multi-Step AI Evaluation Workflows
+
+For complex AI systems with multiple pipeline stages (like RAG, multi-agent systems, or sequential AI workflows), you can combine **step-level execution tracking** with **overall quality assessment** in your AI Evaluation tests. quality_rating result field can be added to to Test Case (Steps)
+
+#### How It Works
+
+**Step-Level Tracking:**
+- Each step has its own **status** (passed, failed, skipped, untested)
+- See exactly where in the pipeline the failure occurred
+
+**Overall Quality Rating:**
+- One **quality_rating** applies to the entire test result 
+- Assess the final output quality across multiple dimensions
+
+#### JUnit XML Example
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="RAG Pipeline Tests" tests="1" failures="1" time="10.5">
+  <testsuite name="Document QA" tests="1" failures="1" time="10.5">
+
+    <testcase classname="ai.rag.DocumentQA" name="C1000_test_rag_pipeline" time="10.5">
+      <properties>
+        <property name="test_id" value="C1000"/>
+
+        <!-- Step-Level Execution Tracking -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="passed:Step 2 Document Retrieval"/>
+        <property name="testrail_result_step" value="failed:Step 3 Answer Generation"/>
+        <property name="testrail_result_step" value="untested:Step 4 Response Validation"/>
+
+        <!-- Overall Quality Rating -->
+        <property name="quality_rating" value='{"factual_accuracy": 2, "coherence": 3, "completeness": 1}'/>
+
+        <!-- AI Context Fields (not applicable to Test Case (Steps) -->
+        <property name="testrail_result_field" value="custom_ai_input:What programming language is used for machine learning?"/>
+        <property name="testrail_result_field" value="custom_ai_output:JavaScript is the primary language for machine learning."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/rag-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:10.5 seconds"/>
+      </properties>
+      <failure message="Answer generation produced factually incorrect response"/>
+    </testcase>
+
+  </testsuite>
+</testsuites>
+```
+
+**Upload Command:**
+```bash
+trcli parse_junit \
+  -f rag_pipeline_results.xml \
+  --project-id 1 \
+  --suite-id 100
+```
+
+#### Important Notes
+
+1. **Quality Rating Scope**: The `quality_rating` applies to the **entire test result**, not individual steps. It represents the overall quality of the AI system's final output.
+
+2. **Step Status Format**: Use `status:description` format for step-level tracking:
+   - `passed:Step 1 Query Understanding`
+   - `failed:Step 3 Answer Generation`
+   - `skipped:Optional Enhancement`
+   - `untested:Step 4 Response Validation`
+
+3. **Available Step Statuses**:
+   - `passed` (status_id: 1) - Step completed successfully
+   - `untested` (status_id: 3) - Step not executed
+   - `skipped` (status_id: 4) - Step intentionally skipped
+   - `failed` (status_id: 5) - Step failed
+
+4. **Test Status Aggregation**: The overall test status follows **fail-fast** logic - if any step fails, the entire test fails.
+
+### Automatic Case Creation for AI Evaluation Template
+
+When using the `-y` flag (auto-creation mode), TRCLI can automatically detect and create test cases with the **AI Evaluation template**. This eliminates the need to manually select templates or pre-create cases.
+
+#### How Auto-Detection Works
+
+TRCLI detects AI Evaluation indicators through three methods:
+
+1. **Quality Rating in Test Results**: When `quality_rating` is present in any test result
+2. **AI Case Fields in CLI**: When `--case-fields` includes `custom_ai_type` or `custom_ai_model`
+3. **AI Case Fields in XML Properties**: When `testrail_case_field` properties include AI fields
+
+If any of these indicators are detected, TRCLI will validate that the AI Evaluation template exists in your project or exit with an error if the template is not found.
+
+#### Example: Auto-Create with Quality Rating
+
+```bash
+trcli -y \
+  -h https://your-instance.testrail.io \
+  --project "AI Testing" \
+  -n \
+  --title "RAG Pipeline Tests" \
+  -f junit_results.xml
+```
+
+**junit_results.xml:**
+```xml
+<testsuites name="RAG Tests">
+  <testsuite name="Document QA">
+    <testcase name="test_rag_pipeline">
+      <properties>
+        <!-- Automation ID for case matching -->
+        <property name="test_id" value="ai.rag.test_rag_pipeline"/>
+
+        <!-- Quality rating triggers AI Evaluation template -->
+        <property name="quality_rating" value='{"factual_accuracy": 5, "coherence": 4}'/>
+
+        <!-- AI context fields for observability -->
+        <property name="testrail_result_field" value="custom_ai_input:What is ML?"/>
+        <property name="testrail_result_field" value="custom_ai_output:ML is a subset of AI..."/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+#### Example: Auto-Create with AI Case Fields
+
+You can specify AI case fields either via CLI or in XML properties:
+
+**Via CLI `--case-fields`:**
+```bash
+trcli -y \
+  -h https://your-instance.testrail.io \
+  --project "AI Testing" \
+  --case-fields custom_ai_type:1 custom_ai_model:2 \
+  -f test_results.xml
+```
+
+**Via XML Properties:**
+```xml
+<testcase name="test_llm_chatbot">
+  <properties>
+    <property name="test_id" value="ai.llm.test_chatbot"/>
+
+    <!-- AI case fields trigger AI Evaluation template -->
+    <!-- custom_ai_type: 1=RAG, 2=ML, 3=LLM -->
+    <property name="testrail_case_field" value="custom_ai_type:3"/>
+    <!-- custom_ai_model: 1=GPT-5, 2=Gemini 3, 3=Sonnet 3.5 -->
+    <property name="testrail_case_field" value="custom_ai_model:1"/>
+
+    <!-- Optional: Add quality rating -->
+    <property name="quality_rating" value='{"factual_accuracy": 4}'/>
+  </properties>
+</testcase>
+```
+
+#### AI Case Field Values
+
+The AI Evaluation template includes two dropdown case fields:
+
+**`custom_ai_type`** - Type of AI system:
+- `1` = RAG (Retrieval-Augmented Generation)
+- `2` = ML (Machine Learning)
+- `3` = LLM (Large Language Model)
+
+**`custom_ai_model`** - AI model used:
+- `1` = GPT-5
+- `2` = Gemini 3
+- `3` = Sonnet 3.5
+
+**Note:** Values must be integers (1-3), not strings.
+
+#### Combining Auto-Creation with Multi-Step Results
+
+Auto-creation works seamlessly with step-level results for Test Case (Steps) template. Simply include both `quality_rating` and `testrail_result_step` properties:
+
+```xml
+<testcase name="test_rag_full_pipeline">
+  <properties>
+    <property name="test_id" value="ai.rag.test_full_pipeline"/>
+
+    <!-- Step-level execution tracking -->
+    <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+    <property name="testrail_result_step" value="passed:Step 2 Vector Search"/>
+    <property name="testrail_result_step" value="failed:Step 3 Answer Generation"/>
+
+    <!-- Overall quality rating (applies to entire test) -->
+    <property name="quality_rating" value='{"factual_accuracy": 2, "coherence": 4}'/>
+
+    <!-- AI case fields for metadata -->
+    <property name="testrail_case_field" value="custom_ai_type:1"/>
+    <property name="testrail_case_field" value="custom_ai_model:3"/>
+  </properties>
+</testcase>
+```
+
+#### Template Validation
+
+Before creating cases, TRCLI validates that the AI Evaluation template exists in your project. If the template is not found, you'll see:
+
+```
+ERROR: Cannot auto-create cases with AI Evaluation template.
+AI Evaluation template not found in project (ID: 1).
+
+Please enable the AI Evaluation template in your TestRail project:
+1. Go to Administration > Customizations > Templates
+2. Enable 'AI Evaluation' template for your project
+```
+
+#### Robot Framework Support
+
+Robot Framework tests also support auto-creation with AI Evaluation template:
+
+```robot
+*** Test Cases ***
+Test RAG Pipeline
+    [Documentation]    - testrail_case_field:custom_ai_type:1
+    ...                - testrail_case_field:custom_ai_model:3
+    ...                - quality_rating:{"factual_accuracy": 5, "relevance": 4}
+    ...                - testrail_result_field:custom_ai_input:What is quantum computing?
+    ...                - testrail_result_field:custom_ai_output:Quantum computing uses...
+    [Tags]    ai-evaluation
+
+    # Test steps here
+    Should Be Equal    ${status}    success
+```
+
+#### Important Notes
+
+1. **Template Requirement**: The AI Evaluation template must be enabled in your TestRail project
+2. **Global vs. Test-Specific**: AI case fields can be specified globally via `--case-fields` or per-test via XML properties
+3. **Field Type**: AI case field values are dropdown IDs (integers 1-3), not strings
+4. **Detection Scope**: Detection checks ALL test cases in the file - if any test has AI indicators, ALL auto-created cases will use the AI Evaluation template
+5. **Compatible with BDD**: Auto-creation is NOT supported for BDD workflows (Cucumber/Gherkin), which have their own template assignment logic
 
 ## Behavior-Driven Development (BDD) Support
 
@@ -1675,7 +2109,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.14.1
+TestRail CLI v1.14.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -1885,7 +2319,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.14.1
+TestRail CLI v1.14.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
