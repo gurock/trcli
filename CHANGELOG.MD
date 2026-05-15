@@ -12,6 +12,7 @@ _released 04--2026
 
 ### Added
  - **AI Evaluation Template Support**: Uploading test result support for TestRail's AI Evaluation Template with multi-dimensional quality ratings. See README "AI Evaluation Template Support" section for complete examples.
+ - **Multi-Step AI Evaluation Workflows**: Support for combining step-level execution tracking (`testrail_result_step`) with overall quality ratings in AI Evaluation tests. See README "Multi-Step AI Evaluation Workflows" section.
  - **Global Quality Rating via `--result-fields`**: Added support for applying quality ratings to all test results using `--result-fields quality_rating:'{"category": value}'`. Test-specific quality ratings in XML/JSON properties take precedence over CLI global ratings.
 
 ## [1.14.1]
