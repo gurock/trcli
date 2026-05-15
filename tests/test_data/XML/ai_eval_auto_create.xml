@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Sample JUnit XML demonstrating AI Evaluation Template auto-creation with -y flag
+
+This file shows how to trigger automatic case creation with AI Evaluation template by including:
+1. quality_rating field in test results (overall AI quality assessment)
+2. AI case fields (custom_ai_type, custom_ai_model) in properties
+3. Step-level results for multi-step AI workflows
+
+When uploaded with -y flag, TRCLI will:
+- Detect AI Evaluation indicators
+- Validate AI Evaluation template exists (ID: 5)
+- Auto-create cases with template_id=5
+- Support both quality_rating AND step-level results
+-->
+<testsuites name="RAG Pipeline - Auto Creation Demo" tests="3" failures="1" errors="0" time="45.0">
+
+  <testsuite name="Document QA Pipeline" tests="3" failures="1" errors="0" time="45.0">
+
+    <!-- Example 1: Auto-create case with quality_rating only -->
+    <testcase classname="ai.rag.document_qa" name="test_simple_qa_with_quality" time="12.0">
+      <properties>
+        <!-- Automation ID for matching (supports -y flag) -->
+        <property name="test_id" value="ai.rag.document_qa.test_simple_qa_with_quality"/>
+
+        <!-- Overall quality rating triggers AI Evaluation template -->
+        <property name="quality_rating" value='{"factual_accuracy": 5, "coherence": 5, "completeness": 4, "relevance": 5}'/>
+
+        <!-- AI result fields for observability -->
+        <property name="testrail_result_field" value="custom_ai_input:What is machine learning?"/>
+        <property name="testrail_result_field" value="custom_ai_output:Machine learning is a subset of AI that enables systems to learn from data."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/001"/>
+      </properties>
+    </testcase>
+
+    <!-- Example 2: Auto-create case with AI case fields (dropdown values) -->
+    <testcase classname="ai.llm.chatbot" name="test_chatbot_with_case_fields" time="8.5">
+      <properties>
+        <property name="test_id" value="ai.llm.chatbot.test_chatbot_with_case_fields"/>
+
+        <!-- AI case fields trigger AI Evaluation template -->
+        <!-- custom_ai_type: 1=RAG, 2=ML, 3=LLM -->
+        <property name="testrail_case_field" value="custom_ai_type:3"/>
+        <!-- custom_ai_model: 1=GPT-5, 2=Gemini 3, 3=Sonnet 3.5 -->
+        <property name="testrail_case_field" value="custom_ai_model:1"/>
+
+        <!-- Optional: Add quality rating for this test -->
+        <property name="quality_rating" value='{"factual_accuracy": 4, "coherence": 5}'/>
+
+        <property name="testrail_result_field" value="custom_ai_input:Hello, how are you?"/>
+        <property name="testrail_result_field" value="custom_ai_output:I'm doing well, thank you for asking!"/>
+      </properties>
+    </testcase>
+
+    <!-- Example 3: Auto-create case with quality_rating AND multi-step results -->
+    <testcase classname="ai.rag.document_retrieval" name="test_rag_full_pipeline_multistep" time="24.5">
+      <properties>
+        <property name="test_id" value="ai.rag.document_retrieval.test_rag_full_pipeline_multistep"/>
+
+        <!-- Step-level execution tracking (works with AI Evaluation template) -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="passed:Step 2 Vector Search"/>
+        <property name="testrail_result_step" value="passed:Step 3 Reranking"/>
+        <property name="testrail_result_step" value="passed:Step 4 Answer Generation"/>
+        <property name="testrail_result_step" value="passed:Step 5 Response Validation"/>
+
+        <!-- Overall quality rating (applies to entire test, not per-step) -->
+        <property name="quality_rating" value='{"factual_accuracy": 5, "coherence": 5, "completeness": 5, "relevance": 5}'/>
+
+        <!-- AI case fields for metadata -->
+        <property name="testrail_case_field" value="custom_ai_type:1"/>
+        <property name="testrail_case_field" value="custom_ai_model:3"/>
+
+        <!-- AI result fields -->
+        <property name="testrail_result_field" value="custom_ai_input:Explain quantum entanglement in simple terms"/>
+        <property name="testrail_result_field" value="custom_ai_output:Quantum entanglement is a phenomenon where two particles become connected..."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/002"/>
+        <property name="testrail_result_field" value="custom_ai_latency:24.5 seconds"/>
+      </properties>
+    </testcase>
+
+  </testsuite>
+
+</testsuites>

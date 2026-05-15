@@ -763,6 +763,162 @@ trcli parse_junit \
 
 4. **Test Status Aggregation**: The overall test status follows **fail-fast** logic - if any step fails, the entire test fails.
 
+### Automatic Case Creation for AI Evaluation Template
+
+When using the `-y` flag (auto-creation mode), TRCLI can automatically detect and create test cases with the **AI Evaluation template**. This eliminates the need to manually select templates or pre-create cases.
+
+#### How Auto-Detection Works
+
+TRCLI detects AI Evaluation indicators through three methods:
+
+1. **Quality Rating in Test Results**: When `quality_rating` is present in any test result
+2. **AI Case Fields in CLI**: When `--case-fields` includes `custom_ai_type` or `custom_ai_model`
+3. **AI Case Fields in XML Properties**: When `testrail_case_field` properties include AI fields
+
+If any of these indicators are detected, TRCLI will validate that the AI Evaluation template exists in your project or exit with an error if the template is not found.
+
+#### Example: Auto-Create with Quality Rating
+
+```bash
+trcli -y \
+  -h https://your-instance.testrail.io \
+  --project "AI Testing" \
+  -n \
+  --title "RAG Pipeline Tests" \
+  -f junit_results.xml
+```
+
+**junit_results.xml:**
+```xml
+<testsuites name="RAG Tests">
+  <testsuite name="Document QA">
+    <testcase name="test_rag_pipeline">
+      <properties>
+        <!-- Automation ID for case matching -->
+        <property name="test_id" value="ai.rag.test_rag_pipeline"/>
+
+        <!-- Quality rating triggers AI Evaluation template -->
+        <property name="quality_rating" value='{"factual_accuracy": 5, "coherence": 4}'/>
+
+        <!-- AI context fields for observability -->
+        <property name="testrail_result_field" value="custom_ai_input:What is ML?"/>
+        <property name="testrail_result_field" value="custom_ai_output:ML is a subset of AI..."/>
+      </properties>
+    </testcase>
+  </testsuite>
+</testsuites>
+```
+
+#### Example: Auto-Create with AI Case Fields
+
+You can specify AI case fields either via CLI or in XML properties:
+
+**Via CLI `--case-fields`:**
+```bash
+trcli -y \
+  -h https://your-instance.testrail.io \
+  --project "AI Testing" \
+  --case-fields custom_ai_type:1 custom_ai_model:2 \
+  -f test_results.xml
+```
+
+**Via XML Properties:**
+```xml
+<testcase name="test_llm_chatbot">
+  <properties>
+    <property name="test_id" value="ai.llm.test_chatbot"/>
+
+    <!-- AI case fields trigger AI Evaluation template -->
+    <!-- custom_ai_type: 1=RAG, 2=ML, 3=LLM -->
+    <property name="testrail_case_field" value="custom_ai_type:3"/>
+    <!-- custom_ai_model: 1=GPT-5, 2=Gemini 3, 3=Sonnet 3.5 -->
+    <property name="testrail_case_field" value="custom_ai_model:1"/>
+
+    <!-- Optional: Add quality rating -->
+    <property name="quality_rating" value='{"factual_accuracy": 4}'/>
+  </properties>
+</testcase>
+```
+
+#### AI Case Field Values
+
+The AI Evaluation template includes two dropdown case fields:
+
+**`custom_ai_type`** - Type of AI system:
+- `1` = RAG (Retrieval-Augmented Generation)
+- `2` = ML (Machine Learning)
+- `3` = LLM (Large Language Model)
+
+**`custom_ai_model`** - AI model used:
+- `1` = GPT-5
+- `2` = Gemini 3
+- `3` = Sonnet 3.5
+
+**Note:** Values must be integers (1-3), not strings.
+
+#### Combining Auto-Creation with Multi-Step Results
+
+Auto-creation works seamlessly with step-level results for Test Case (Steps) template. Simply include both `quality_rating` and `testrail_result_step` properties:
+
+```xml
+<testcase name="test_rag_full_pipeline">
+  <properties>
+    <property name="test_id" value="ai.rag.test_full_pipeline"/>
+
+    <!-- Step-level execution tracking -->
+    <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+    <property name="testrail_result_step" value="passed:Step 2 Vector Search"/>
+    <property name="testrail_result_step" value="failed:Step 3 Answer Generation"/>
+
+    <!-- Overall quality rating (applies to entire test) -->
+    <property name="quality_rating" value='{"factual_accuracy": 2, "coherence": 4}'/>
+
+    <!-- AI case fields for metadata -->
+    <property name="testrail_case_field" value="custom_ai_type:1"/>
+    <property name="testrail_case_field" value="custom_ai_model:3"/>
+  </properties>
+</testcase>
+```
+
+#### Template Validation
+
+Before creating cases, TRCLI validates that the AI Evaluation template exists in your project. If the template is not found, you'll see:
+
+```
+ERROR: Cannot auto-create cases with AI Evaluation template.
+AI Evaluation template not found in project (ID: 1).
+
+Please enable the AI Evaluation template in your TestRail project:
+1. Go to Administration > Customizations > Templates
+2. Enable 'AI Evaluation' template for your project
+```
+
+#### Robot Framework Support
+
+Robot Framework tests also support auto-creation with AI Evaluation template:
+
+```robot
+*** Test Cases ***
+Test RAG Pipeline
+    [Documentation]    - testrail_case_field:custom_ai_type:1
+    ...                - testrail_case_field:custom_ai_model:3
+    ...                - quality_rating:{"factual_accuracy": 5, "relevance": 4}
+    ...                - testrail_result_field:custom_ai_input:What is quantum computing?
+    ...                - testrail_result_field:custom_ai_output:Quantum computing uses...
+    [Tags]    ai-evaluation
+
+    # Test steps here
+    Should Be Equal    ${status}    success
+```
+
+#### Important Notes
+
+1. **Template Requirement**: The AI Evaluation template must be enabled in your TestRail project
+2. **Global vs. Test-Specific**: AI case fields can be specified globally via `--case-fields` or per-test via XML properties
+3. **Field Type**: AI case field values are dropdown IDs (integers 1-3), not strings
+4. **Detection Scope**: Detection checks ALL test cases in the file - if any test has AI indicators, ALL auto-created cases will use the AI Evaluation template
+5. **Compatible with BDD**: Auto-creation is NOT supported for BDD workflows (Cucumber/Gherkin), which have their own template assignment logic
+
 ## Behavior-Driven Development (BDD) Support
 
 The TestRail CLI provides comprehensive support for Behavior-Driven Development workflows using Gherkin syntax. The BDD features enable you to manage test cases written in Gherkin format, execute BDD tests with various frameworks (Cucumber, Behave, pytest-bdd, etc.), and seamlessly upload results to TestRail.

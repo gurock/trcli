@@ -80,7 +80,12 @@ class ResultsUploader(ProjectBasedClient):
                 self.environment.log("\n".join(revert_logs))
                 exit(1)
 
+            # Detect if AI Evaluation template should be used for auto-created cases
             if missing_test_cases:
+                use_ai_evaluation = self._should_use_ai_evaluation_template()
+                if use_ai_evaluation:
+                    self._apply_ai_evaluation_template()
+
                 added_test_cases, result_code = self.add_missing_test_cases()
             else:
                 result_code = 1
@@ -127,13 +132,12 @@ class ResultsUploader(ProjectBasedClient):
         case_update_results = None
         case_update_failed = []
         if hasattr(self.environment, "update_existing_cases") and self.environment.update_existing_cases == "yes":
-            self.environment.log("Updating existing cases with JUnit references...")
+            self.environment.log("Updating existing cases...")
             case_update_results, case_update_failed = self.update_existing_cases_with_junit_refs(added_test_cases)
 
             if case_update_results.get("updated_cases"):
-                self.environment.log(
-                    f"Updated {len(case_update_results['updated_cases'])} existing case(s) with references."
-                )
+                updated_count = len(case_update_results["updated_cases"])
+                self.environment.log(f"Updated {updated_count} existing case(s).")
             if case_update_results.get("failed_cases"):
                 self.environment.elog(f"Failed to update {len(case_update_results['failed_cases'])} case(s).")
 
@@ -263,6 +267,16 @@ class ResultsUploader(ProjectBasedClient):
         failed_cases = []
 
         strategy = getattr(self.environment, "update_strategy", "append")
+
+        # Apply global case fields from CLI to all test cases
+        # This ensures --case-fields values are merged into test case objects
+        global_case_fields = getattr(self.environment, "case_fields", {}) or {}
+        if global_case_fields:
+            self.environment.vlog(f"Applying global case fields: {global_case_fields}")
+            for section in self.api_request_handler.suites_data_from_provider.testsections:
+                for test_case in section.testcases:
+                    if test_case.case_id:  # Only for existing cases
+                        test_case.add_global_case_fields(global_case_fields)
 
         # Process all test cases in all sections
         for section in self.api_request_handler.suites_data_from_provider.testsections:
@@ -441,3 +455,114 @@ class ResultsUploader(ProjectBasedClient):
             else:
                 returned_log.append(RevertMessages.suite_deleted)
         return returned_log
+
+    def _should_use_ai_evaluation_template(self) -> bool:
+        """
+        Determine if AI Evaluation template should be used for auto-created test cases.
+
+        Checks for:
+        1. presence of quality_rating in any test result
+        2. AI case fields (custom_ai_type, custom_ai_model) in CLI --case-fields
+        3. AI case fields in XML properties (testrail_case_field)
+
+        Returns:
+            True if AI Evaluation template should be used, False otherwise
+        """
+        suite_data = self.api_request_handler.suites_data_from_provider
+
+        # Check 1: quality_rating in any test result
+        has_quality_rating = any(
+            test_case.result.quality_rating is not None
+            for section in suite_data.testsections
+            for test_case in section.testcases
+        )
+
+        if has_quality_rating:
+            self.environment.vlog("Detected quality_rating in test results - will use AI Evaluation template")
+            return True
+
+        # Check 2: AI case fields in CLI --case-fields
+        case_fields_cli = getattr(self.environment, "case_fields", {}) or {}
+        has_ai_case_fields_cli = any(field in case_fields_cli for field in ["custom_ai_type", "custom_ai_model"])
+
+        if has_ai_case_fields_cli:
+            self.environment.vlog("Detected AI case fields in --case-fields - will use AI Evaluation template")
+            return True
+
+        # Check 3: AI case fields in XML properties (testrail_case_field)
+        has_ai_case_fields_xml = any(
+            any(field in (test_case.case_fields or {}) for field in ["custom_ai_type", "custom_ai_model"])
+            for section in suite_data.testsections
+            for test_case in section.testcases
+        )
+
+        if has_ai_case_fields_xml:
+            self.environment.vlog("Detected AI case fields in XML properties - will use AI Evaluation template")
+            return True
+
+        return False
+
+    def _test_case_needs_ai_template(self, test_case) -> bool:
+        """
+        Determine if a specific test case needs AI Evaluation template.
+
+        IMPORTANT: A test case needs AI Evaluation template ONLY if it has quality_rating
+        in the test result, because quality_rating is a required field for AI Evaluation template.
+
+        AI case fields (custom_ai_type, custom_ai_model) are metadata that can be used with
+        ANY template and do NOT require AI Evaluation template.
+
+        Args:
+            test_case: The test case to check
+
+        Returns:
+            True if test case has quality_rating in result, False otherwise
+        """
+        # ONLY check for quality_rating in test result
+        # AI case fields do NOT require AI Evaluation template
+        if test_case.result and test_case.result.quality_rating is not None:
+            return True
+
+        return False
+
+    def _apply_ai_evaluation_template(self):
+        """
+        Validate AI Evaluation template and apply its template_id to test cases that need it.
+
+        Calls the API to validate that AI Evaluation template exists in the project.
+        If validation succeeds, applies the template_id selectively to test cases based on:
+        - Test-specific quality_rating in results
+        - Test-specific AI case fields in XML properties
+        - Global AI case fields from CLI --case-fields
+
+        If validation fails, logs error and exits.
+        """
+        self.environment.log("AI Evaluation indicators detected. Validating AI Evaluation template...")
+
+        # Validate template exists via API and get its actual ID
+        template_exists, error_message, template_id = self.api_request_handler.validate_ai_evaluation_template(
+            self.project.project_id
+        )
+
+        if not template_exists:
+            self.environment.elog("ERROR: Cannot auto-create cases with AI Evaluation template.")
+            self.environment.elog(error_message)
+            exit(1)
+
+        # Apply template_id selectively to test cases that need it
+        suite_data = self.api_request_handler.suites_data_from_provider
+        ai_cases_count = 0
+        regular_cases_count = 0
+
+        for section in suite_data.testsections:
+            for test_case in section.testcases:
+                if self._test_case_needs_ai_template(test_case):
+                    test_case.template_id = template_id
+                    ai_cases_count += 1
+                else:
+                    regular_cases_count += 1
+
+        self.environment.log(
+            f"Using AI Evaluation template (ID: {template_id}) for {ai_cases_count} test case(s), "
+            f"{regular_cases_count} test case(s) will use default template"
+        )

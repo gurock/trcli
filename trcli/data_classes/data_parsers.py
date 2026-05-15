@@ -147,6 +147,9 @@ class FieldsParser:
     def resolve_fields(fields: Union[List[str], Dict]) -> Tuple[Dict, str]:
         error = None
         fields_dictionary = {}
+        # AI case fields that should be converted to integers (dropdown IDs)
+        AI_DROPDOWN_FIELDS = {"custom_ai_type", "custom_ai_model"}
+
         try:
             if isinstance(fields, list) or isinstance(fields, tuple):
                 for field in fields:
@@ -155,6 +158,13 @@ class FieldsParser:
                         try:
                             value = ast.literal_eval(value)
                         except Exception:
+                            pass
+                    elif field in AI_DROPDOWN_FIELDS:
+                        # Convert AI dropdown fields to integers
+                        try:
+                            value = int(value)
+                        except (ValueError, TypeError):
+                            # Keep as string if not a valid integer
                             pass
                     fields_dictionary[field] = value
             elif isinstance(fields, dict):
