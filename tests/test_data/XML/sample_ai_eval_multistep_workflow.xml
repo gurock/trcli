@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="RAG Pipeline - AI Evaluation" tests="3" failures="2" errors="0" time="35.2">
+
+  <!-- Suite 1: Document QA Tests -->
+  <testsuite name="Document QA RAG Pipeline" tests="3" failures="2" errors="0" time="35.2">
+
+    <!-- Test 1: Successful RAG Pipeline (All Steps Pass) -->
+    <testcase classname="ai.rag.DocumentQA" name="C1000_test_rag_pipeline_success" time="12.5">
+      <properties>
+        <property name="test_id" value="C1000"/>
+
+        <!-- Step-Level Execution Tracking -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="passed:Step 2 Document Retrieval"/>
+        <property name="testrail_result_step" value="passed:Step 3 Answer Generation"/>
+        <property name="testrail_result_step" value="passed:Step 4 Response Validation"/>
+
+        <!-- Overall Quality Rating (High Quality) -->
+        <property name="quality_rating" value='{"factual_accuracy": 5, "coherence": 5, "completeness": 4, "relevance": 5}'/>
+
+        <!-- AI Context Fields -->
+        <property name="testrail_result_field" value="custom_ai_input:What is the capital of France?"/>
+        <property name="testrail_result_field" value="custom_ai_output:The capital of France is Paris. Paris is the largest city in France and has been the capital since 987 AD."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/rag-success-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:12.5 seconds"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Failed Answer Generation (Step 3 Fails) -->
+    <testcase classname="ai.rag.DocumentQA" name="C1001_test_rag_pipeline_factual_error" time="10.5">
+      <properties>
+        <property name="test_id" value="C1001"/>
+
+        <!-- Step-Level Execution Tracking -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="passed:Step 2 Document Retrieval"/>
+        <property name="testrail_result_step" value="failed:Step 3 Answer Generation"/>
+        <property name="testrail_result_step" value="untested:Step 4 Response Validation"/>
+
+        <!-- Overall Quality Rating (Low Due to Factual Error) -->
+        <property name="quality_rating" value='{"factual_accuracy": 1, "coherence": 3, "completeness": 2, "relevance": 2}'/>
+
+        <!-- AI Context Fields -->
+        <property name="testrail_result_field" value="custom_ai_input:What programming language is primarily used for machine learning?"/>
+        <property name="testrail_result_field" value="custom_ai_output:JavaScript is the primary language for machine learning, widely used in neural networks and deep learning."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/rag-failure-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:10.5 seconds"/>
+      </properties>
+      <failure message="Answer generation produced factually incorrect response">
+        Expected: Python is the primary language for machine learning
+        Actual: JavaScript is the primary language for machine learning
+
+        Issue: Model hallucinated incorrect information despite correct document retrieval
+        Impact: Users receive misleading information that could affect decision-making
+      </failure>
+    </testcase>
+
+    <!-- Test 3: Document Retrieval Failure (Step 2 Fails) -->
+    <testcase classname="ai.rag.DocumentQA" name="C1002_test_rag_pipeline_retrieval_failure" time="12.2">
+      <properties>
+        <property name="test_id" value="C1002"/>
+
+        <!-- Step-Level Execution Tracking -->
+        <property name="testrail_result_step" value="passed:Step 1 Query Understanding"/>
+        <property name="testrail_result_step" value="failed:Step 2 Document Retrieval"/>
+        <property name="testrail_result_step" value="untested:Step 3 Answer Generation"/>
+        <property name="testrail_result_step" value="untested:Step 4 Response Validation"/>
+
+        <!-- Overall Quality Rating (Low Due to No Relevant Documents) -->
+        <property name="quality_rating" value='{"factual_accuracy": 0, "coherence": 1, "completeness": 0, "relevance": 1}'/>
+
+        <!-- AI Context Fields -->
+        <property name="testrail_result_field" value="custom_ai_input:Explain the Heisenberg uncertainty principle in quantum mechanics"/>
+        <property name="testrail_result_field" value="custom_ai_output:I don't have enough information to answer your question about the Heisenberg uncertainty principle."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/rag-retrieval-failure-001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:12.2 seconds"/>
+      </properties>
+      <failure message="Document retrieval failed to find relevant sources">
+        Expected: Retrieved at least 3 relevant documents about quantum mechanics
+        Actual: Retrieved 0 relevant documents (only found documents about classical physics)
+
+        Issue: Vector search embeddings failed to capture semantic meaning of quantum mechanics query
+        Impact: System cannot provide accurate answers for domain-specific questions
+        Recommendation: Retrain embedding model with physics-domain knowledge or use specialized vector database
+      </failure>
+    </testcase>
+
+  </testsuite>
+
+</testsuites>

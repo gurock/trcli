@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.14.2]
+
+_released 05-15-2026
+
+### Added
+ - **AI Evaluation Template Support**: Uploading test result support for TestRail's AI Evaluation Template with multi-dimensional quality ratings. See README "AI Evaluation Template Support" section for complete examples.
+ - **Multi-Step AI Evaluation Workflows**: Support for combining step-level execution tracking with quality ratings in AI Evaluation. See README "Multi-Step AI Evaluation Workflows" section.
+ - Global Quality Rating via `--result-fields`: Added support for applying quality ratings to all test results using --result-fields.
+ - **Code-First Approach support for AI Evaluation Template**: When using `-y` (auto-creation mode), TRCLI now automatically detects and creates test cases with the AI Evaluation template. See README "Automatic Case Creation for AI Evaluation Template" section.
+ - Support for using custom case result statuses in Robot and JUnit reports.
+
 ## [1.14.1]
 
 _released 04-16-2026

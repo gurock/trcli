@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="AI Evaluation Tests" tests="3" failures="1" errors="0" time="10.5">
+  <testsuite name="Quality Rating Tests" tests="3" failures="1" errors="0" time="10.5">
+
+    <!-- Test 1: Valid quality rating with AI context fields -->
+    <testcase classname="ai_tests.BasicTests" name="test_with_quality_rating" time="3.5">
+      <properties>
+        <property name="test_id" value="C100"/>
+        <property name="quality_rating" value='{"factual_accuracy": 5, "relevance": 5, "completeness": 4}'/>
+        <property name="testrail_result_field" value="custom_ai_input:What is the capital of France?"/>
+        <property name="testrail_result_field" value="custom_ai_output:The capital of France is Paris."/>
+        <property name="testrail_result_field" value="custom_ai_traces:https://logs.example.com/trace/001"/>
+        <property name="testrail_result_field" value="custom_ai_latency:0.8 seconds"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 2: Test without quality rating (backward compatibility) -->
+    <testcase classname="ai_tests.BasicTests" name="test_without_quality_rating" time="2.0">
+      <properties>
+        <property name="test_id" value="C101"/>
+        <property name="testrail_result_field" value="custom_field:some value"/>
+      </properties>
+    </testcase>
+
+    <!-- Test 3: Failed test with low quality ratings -->
+    <testcase classname="ai_tests.BasicTests" name="test_failed_with_quality_rating" time="5.0">
+      <properties>
+        <property name="test_id" value="C102"/>
+        <property name="quality_rating" value='{"factual_accuracy": 2, "relevance": 1, "completeness": 2}'/>
+        <property name="testrail_result_field" value="custom_ai_input:Complex question"/>
+        <property name="testrail_result_field" value="custom_ai_output:Incomplete response"/>
+      </properties>
+      <failure message="Quality threshold not met">
+        Expected accuracy >= 4, got 2
+      </failure>
+    </testcase>
+
+  </testsuite>
+</testsuites>
