@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.14.3]
+
+_released 05-26-2026
+
+### Added
+### Fixed
+
 ## [1.14.2]
 
 _released 05-15-2026
