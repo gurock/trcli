@@ -92,7 +92,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in 2 sections.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -113,7 +113,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in 2 sections.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -135,7 +135,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -158,7 +158,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -180,7 +180,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -202,7 +202,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -223,7 +223,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -246,7 +246,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [GENERIC-IDS-AUTO]",
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results in",
             ],
         )
@@ -290,7 +290,7 @@ trcli -n \\
                 "Processed 3 test cases in section [GENERIC-IDS-NAME]",
                 "Found 3 test cases without case ID in the report file.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -313,7 +313,7 @@ trcli -n \\
                 "Processed 3 test cases in section [GENERIC-IDS-PROP]",
                 "Found 3 test cases without case ID in the report file.",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -334,7 +334,7 @@ trcli -y \\
             [
                 "Processed 3 test cases in section [ATTACHMENTS]",
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 4 attachments for 2 test results.",
+                "Uploading 4/4 for 2 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -376,7 +376,7 @@ trcli -y \\
                 # Creates test run in TestRail
                 f"Creating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
                 # Uploads attachments: Test 2 (1 × 3 cases) + Test 3 (1 × 2 cases) = 5
-                "Uploading 5 attachments for 5 test results",
+                "Uploading 5/5 for 5 test results",
                 # Submits results: 1 (single) + 3 (test 2) + 2 (test 3) = 6 total
                 "Submitted 6 test results in",
             ],
@@ -548,7 +548,7 @@ trcli -y \\
             output,
             [
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results",
             ],
         )
@@ -755,7 +755,7 @@ trcli -y \\
             output,
             [
                 "Processed 3 test cases in 2 sections.",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 3 test results in",
             ],
         )
@@ -776,7 +776,7 @@ trcli -y \\
             output,
             [
                 f"Updating test run. Test run: {self.TR_INSTANCE}index.php?/runs/view",
-                "Uploading 1 attachments for 1 test results.",
+                "Uploading 1/1 for 1 test results",
                 "Submitted 6 test results",
             ],
         )

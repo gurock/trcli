@@ -1380,7 +1380,8 @@ class TestApiRequestHandler:
         request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+        total_attachments = sum(len(r["attachments"]) for r in report_results)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1400,7 +1401,8 @@ class TestApiRequestHandler:
         request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+        total_attachments = sum(len(r["attachments"]) for r in report_results)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
         # Verify the request was made (case-insensitive comparison)
         assert requests_mock.last_request.url.lower() == create_url("add_attachment_to_result/2001").lower()
@@ -1413,7 +1415,8 @@ class TestApiRequestHandler:
         request_id_to_result_id = {id(report_results[0]): 2001}
 
         # Call upload_attachments - should not raise exception
-        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+        total_attachments = sum(len(r["attachments"]) for r in report_results)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
     @pytest.mark.api_handler
     def test_upload_attachments_empty_run_scenario(
@@ -1446,7 +1449,8 @@ class TestApiRequestHandler:
         request_id_to_result_id = {id(report_results[0]): 5001, id(report_results[1]): 5002}
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+        total_attachments = sum(len(r["attachments"]) for r in report_results)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
         # Verify both attachments were uploaded correctly
         history = requests_mock.request_history
@@ -1487,7 +1491,8 @@ class TestApiRequestHandler:
         }
 
         # Call upload_attachments
-        api_request_handler.upload_attachments(report_results, request_id_to_result_id)
+        total_attachments = sum(len(r["attachments"]) for r in report_results)
+        api_request_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
         # Verify both attachments were uploaded correctly
         history = requests_mock.request_history
