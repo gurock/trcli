@@ -8,6 +8,7 @@ It manages all test result operations including:
 """
 
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from beartype.typing import List, Tuple, Dict
 
@@ -44,14 +45,59 @@ class ResultHandler:
         self.__get_all_tests_in_run = get_all_tests_in_run_callback
         self.handle_futures = handle_futures_callback
 
-    def upload_attachments(self, report_results: List[Dict], request_id_to_result_id: Dict[int, int]):
+    def _upload_single_attachment(self, file_path: str, result_id: int, case_id: int) -> Tuple[bool, str]:
         """
-        Upload attachments to test results.
+        Upload a single attachment file.
+
+        :param file_path: Path to the attachment file
+        :param result_id: TestRail result ID to attach to
+        :param case_id: TestRail case ID (for error messages)
+        :return: Tuple of (success, error_message)
+        """
+        try:
+            with open(file_path, "rb") as file:
+                response = self.client.send_post(f"add_attachment_to_result/{result_id}", files={"attachment": file})
+
+                # Check if upload was successful
+                if response.status_code != 200:
+                    file_name = os.path.basename(file_path)
+
+                    # Handle 413 Request Entity Too Large specifically
+                    if response.status_code == 413:
+                        error_msg = FAULT_MAPPING["attachment_too_large"].format(file_name=file_name, case_id=case_id)
+                        return False, f"{file_name} (case {case_id})"
+                    else:
+                        # Handle other HTTP errors
+                        error_msg = FAULT_MAPPING["attachment_upload_failed"].format(
+                            file_path=file_name,
+                            case_id=case_id,
+                            error_message=response.error_message or f"HTTP {response.status_code}",
+                        )
+                        return False, f"{file_name} (case {case_id})"
+                return True, None
+
+        except FileNotFoundError:
+            return False, f"{file_path} (case {case_id})"
+        except Exception as ex:
+            file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
+            return False, f"{file_name} (case {case_id})"
+
+    def upload_attachments(
+        self, report_results: List[Dict], request_id_to_result_id: Dict[int, int], total_attachments: int
+    ):
+        """
+        Upload attachments to test results concurrently.
 
         :param report_results: List of test results with attachments from report
         :param request_id_to_result_id: Mapping from request object id to result_id
+        :param total_attachments: Total number of attachments to upload
         """
         failed_uploads = []
+        uploaded_count = 0
+        count_lock = threading.Lock()
+
+        # Prepare list of upload tasks
+        upload_tasks = []
         for report_result in report_results:
             case_id = report_result["case_id"]
             # Use object identity to find the correct result_id for THIS specific result
@@ -62,39 +108,49 @@ class ResultHandler:
                 continue
 
             for file_path in report_result.get("attachments"):
+                upload_tasks.append((file_path, result_id, case_id))
+
+        if not upload_tasks:
+            return
+
+        # Use ThreadPoolExecutor for concurrent uploads
+        with ThreadPoolExecutor(max_workers=min(10, len(upload_tasks))) as executor:
+            # Submit all upload tasks
+            future_to_task = {
+                executor.submit(self._upload_single_attachment, file_path, result_id, case_id): (file_path, case_id)
+                for file_path, result_id, case_id in upload_tasks
+            }
+
+            # Process completed uploads
+            for future in as_completed(future_to_task):
+                file_path, case_id = future_to_task[future]
                 try:
-                    with open(file_path, "rb") as file:
-                        response = self.client.send_post(
-                            f"add_attachment_to_result/{result_id}", files={"attachment": file}
+                    success, error_msg = future.result()
+
+                    with count_lock:
+                        if success:
+                            uploaded_count += 1
+                        else:
+                            if error_msg:
+                                failed_uploads.append(error_msg)
+                                # Log errors to stderr
+                                file_name = os.path.basename(file_path)
+                                self.environment.elog(f"Failed to upload attachment '{file_name}' for case {case_id}")
+
+                        # Update progress in place (overwrite the line)
+                        self.environment.log(
+                            f"\rUploading {uploaded_count}/{total_attachments} for {len(report_results)} test results.",
+                            new_line=False,
                         )
 
-                        # Check if upload was successful
-                        if response.status_code != 200:
-                            file_name = os.path.basename(file_path)
-
-                            # Handle 413 Request Entity Too Large specifically
-                            if response.status_code == 413:
-                                error_msg = FAULT_MAPPING["attachment_too_large"].format(
-                                    file_name=file_name, case_id=case_id
-                                )
-                                self.environment.elog(error_msg)
-                                failed_uploads.append(f"{file_name} (case {case_id})")
-                            else:
-                                # Handle other HTTP errors
-                                error_msg = FAULT_MAPPING["attachment_upload_failed"].format(
-                                    file_path=file_name,
-                                    case_id=case_id,
-                                    error_message=response.error_message or f"HTTP {response.status_code}",
-                                )
-                                self.environment.elog(error_msg)
-                                failed_uploads.append(f"{file_name} (case {case_id})")
-                except FileNotFoundError:
-                    self.environment.elog(f"Attachment file not found: {file_path} (case {case_id})")
-                    failed_uploads.append(f"{file_path} (case {case_id})")
                 except Exception as ex:
-                    file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
-                    self.environment.elog(f"Error uploading attachment '{file_name}' for case {case_id}: {ex}")
-                    failed_uploads.append(f"{file_name} (case {case_id})")
+                    with count_lock:
+                        file_name = os.path.basename(file_path) if os.path.exists(file_path) else file_path
+                        self.environment.elog(f"Error uploading attachment '{file_name}' for case {case_id}: {ex}")
+                        failed_uploads.append(f"{file_name} (case {case_id})")
+
+        # Print newline after progress is complete
+        self.environment.log("")
 
         # Provide a summary if there were failed uploads
         if failed_uploads:
@@ -156,10 +212,7 @@ class ResultHandler:
             attachments_count = 0
             for result in report_results_w_attachments:
                 attachments_count += len(result["attachments"])
-            self.environment.log(
-                f"Uploading {attachments_count} attachments " f"for {len(report_results_w_attachments)} test results."
-            )
-            self.upload_attachments(report_results_w_attachments, request_id_to_result_id)
+            self.upload_attachments(report_results_w_attachments, request_id_to_result_id, attachments_count)
         else:
             self.environment.log(f"No attachments found to upload.")
 
