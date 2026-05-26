@@ -294,6 +294,70 @@ class ApiRequestHandler:
     def add_results(self, run_id: int) -> Tuple[List, str, int]:
         return self.result_handler.add_results(run_id)
 
+    def get_results(self, test_id: int, offset: int = 0, limit: int = 250) -> Tuple[List[Dict], str]:
+        """
+        Get test results for a specific test.
+
+        :param test_id: TestRail test ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        return self.result_handler.get_results(test_id, offset, limit)
+
+    def get_results_for_run(self, run_id: int, offset: int = 0, limit: int = 250) -> Tuple[List[Dict], str]:
+        """
+        Get test results for all tests in a run.
+
+        :param run_id: TestRail run ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        return self.result_handler.get_results_for_run(run_id, offset, limit)
+
+    def get_results_for_case(
+        self, run_id: int, case_id: int, offset: int = 0, limit: int = 250
+    ) -> Tuple[List[Dict], str]:
+        """
+        Get test results for a specific case in a run.
+
+        :param run_id: TestRail run ID
+        :param case_id: TestRail case ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        return self.result_handler.get_results_for_case(run_id, case_id, offset, limit)
+
+    def edit_result(
+        self,
+        result_id: int,
+        status_id: int = None,
+        comment: str = None,
+        version: str = None,
+        elapsed: str = None,
+        defects: str = None,
+        assignedto_id: int = None,
+        custom_fields: Dict = None,
+    ) -> Tuple[bool, str]:
+        """
+        Edit an existing test result.
+
+        :param result_id: TestRail result ID to edit
+        :param status_id: Test status ID (1=Passed, 2=Blocked, 3=Untested, 4=Retest, 5=Failed)
+        :param comment: Comment/notes for the result
+        :param version: Version or build tested against
+        :param elapsed: Time elapsed (e.g., "1m 5s" or "65s")
+        :param defects: Comma-separated list of defect IDs
+        :param assignedto_id: User ID to assign the test to
+        :param custom_fields: Dictionary of custom field values
+        :returns: Tuple of (success, error_message)
+        """
+        return self.result_handler.edit_result(
+            result_id, status_id, comment, version, elapsed, defects, assignedto_id, custom_fields
+        )
+
     def handle_futures(self, futures, action_string, progress_bar) -> Tuple[list, str]:
         responses_by_request = {} if action_string == "add_results" else None
         responses = []
