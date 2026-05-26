@@ -1568,3 +1568,340 @@ class TestApiRequestHandler:
         assert stats["miss_count"] == 1
         assert stats["hit_count"] == 1
         assert stats["hit_rate"] == 50.0  # 1 hit out of 2 total requests
+
+    def test_edit_result_success(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test successfully editing a result with all fields"""
+        result_id = 12345
+        mocked_response = {
+            "id": result_id,
+            "status_id": 5,
+            "comment": "Test failed due to timeout",
+            "version": "2.0.1",
+            "elapsed": "30s",
+            "defects": "BUG-123,BUG-456",
+            "assignedto_id": 7,
+            "custom_field1": "custom_value",
+        }
+
+        requests_mock.post(create_url(f"edit_result/{result_id}"), json=mocked_response)
+
+        success, error = api_request_handler.edit_result(
+            result_id=result_id,
+            status_id=5,
+            comment="Test failed due to timeout",
+            version="2.0.1",
+            elapsed="30s",
+            defects="BUG-123,BUG-456",
+            assignedto_id=7,
+            custom_fields={"custom_field1": "custom_value"},
+        )
+
+        assert success is True
+        assert error is None
+        assert requests_mock.call_count == 1
+
+        # Verify request body
+        request_body = requests_mock.last_request.json()
+        assert request_body["status_id"] == 5
+        assert request_body["comment"] == "Test failed due to timeout"
+        assert request_body["version"] == "2.0.1"
+        assert request_body["elapsed"] == "30s"
+        assert request_body["defects"] == "BUG-123,BUG-456"
+        assert request_body["assignedto_id"] == 7
+        assert request_body["custom_field1"] == "custom_value"
+
+    def test_edit_result_partial_fields(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test editing a result with only some fields"""
+        result_id = 12345
+        mocked_response = {
+            "id": result_id,
+            "status_id": 1,
+            "comment": "Test passed after retry",
+        }
+
+        requests_mock.post(create_url(f"edit_result/{result_id}"), json=mocked_response)
+
+        success, error = api_request_handler.edit_result(
+            result_id=result_id,
+            status_id=1,
+            comment="Test passed after retry",
+        )
+
+        assert success is True
+        assert error is None
+
+        # Verify only provided fields are in request
+        request_body = requests_mock.last_request.json()
+        assert request_body["status_id"] == 1
+        assert request_body["comment"] == "Test passed after retry"
+        assert "version" not in request_body
+        assert "elapsed" not in request_body
+        assert "defects" not in request_body
+
+    def test_edit_result_api_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test edit_result when API returns an error"""
+        result_id = 12345
+        error_message = "Field :status_id is not a valid status."
+
+        requests_mock.post(
+            create_url(f"edit_result/{result_id}"),
+            json={"error": error_message},
+            status_code=400,
+        )
+
+        success, error = api_request_handler.edit_result(
+            result_id=result_id,
+            status_id=999,  # Invalid status ID
+        )
+
+        assert success is False
+        assert error_message in error
+
+    def test_edit_result_no_fields_provided(self, api_request_handler: ApiRequestHandler):
+        """Test edit_result when no fields are provided"""
+        result_id = 12345
+
+        success, error = api_request_handler.edit_result(result_id=result_id)
+
+        assert success is False
+        assert error == "No fields provided to update"
+
+    def test_edit_result_custom_fields_only(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test editing a result with only custom fields"""
+        result_id = 12345
+        mocked_response = {
+            "id": result_id,
+            "custom_automation_type": "Automated",
+            "custom_test_environment": "Production",
+        }
+
+        requests_mock.post(create_url(f"edit_result/{result_id}"), json=mocked_response)
+
+        success, error = api_request_handler.edit_result(
+            result_id=result_id,
+            custom_fields={
+                "custom_automation_type": "Automated",
+                "custom_test_environment": "Production",
+            },
+        )
+
+        assert success is True
+        assert error is None
+
+        # Verify custom fields are in request
+        request_body = requests_mock.last_request.json()
+        assert request_body["custom_automation_type"] == "Automated"
+        assert request_body["custom_test_environment"] == "Production"
+
+    def test_get_results_success(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test successfully retrieving results for a test"""
+        test_id = 1001
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "results": [
+                {
+                    "id": 1,
+                    "test_id": test_id,
+                    "status_id": 1,
+                    "created_on": 1234567890,
+                    "created_by": 1,
+                    "comment": "Test passed",
+                },
+                {
+                    "id": 2,
+                    "test_id": test_id,
+                    "status_id": 5,
+                    "created_on": 1234567900,
+                    "created_by": 2,
+                    "comment": "Test failed",
+                },
+            ],
+        }
+
+        requests_mock.get(create_url(f"get_results/{test_id}&offset=0&limit=250"), json=mocked_response)
+
+        results, error = api_request_handler.get_results(test_id, offset=0, limit=250)
+
+        assert error is None
+        assert len(results) == 2
+        assert results[0]["id"] == 1
+        assert results[0]["status_id"] == 1
+        assert results[1]["id"] == 2
+        assert results[1]["status_id"] == 5
+
+    def test_get_results_with_pagination(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test retrieving results with custom pagination"""
+        test_id = 1001
+        mocked_response = {
+            "offset": 10,
+            "limit": 5,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "results": [
+                {
+                    "id": 11,
+                    "test_id": test_id,
+                    "status_id": 1,
+                    "created_on": 1234567890,
+                    "created_by": 1,
+                },
+            ],
+        }
+
+        requests_mock.get(create_url(f"get_results/{test_id}&offset=10&limit=5"), json=mocked_response)
+
+        results, error = api_request_handler.get_results(test_id, offset=10, limit=5)
+
+        assert error is None
+        assert len(results) == 1
+        assert results[0]["id"] == 11
+
+    def test_get_results_api_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test get_results when API returns an error"""
+        test_id = 1001
+        error_message = "Field :test_id is not a valid test."
+
+        requests_mock.get(
+            create_url(f"get_results/{test_id}&offset=0&limit=250"),
+            json={"error": error_message},
+            status_code=400,
+        )
+
+        results, error = api_request_handler.get_results(test_id)
+
+        assert len(results) == 0
+        assert error_message in error
+
+    def test_get_results_for_case_success(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test successfully retrieving results for a case in a run"""
+        run_id = 100
+        case_id = 200
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "results": [
+                {
+                    "id": 1,
+                    "test_id": 5001,
+                    "status_id": 1,
+                    "created_on": 1234567890,
+                    "created_by": 1,
+                    "comment": "Test passed",
+                },
+            ],
+        }
+
+        requests_mock.get(
+            create_url(f"get_results_for_case/{run_id}/{case_id}&offset=0&limit=250"), json=mocked_response
+        )
+
+        results, error = api_request_handler.get_results_for_case(run_id, case_id, offset=0, limit=250)
+
+        assert error is None
+        assert len(results) == 1
+        assert results[0]["id"] == 1
+        assert results[0]["test_id"] == 5001
+
+    def test_get_results_for_case_api_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test get_results_for_case when API returns an error"""
+        run_id = 100
+        case_id = 200
+        error_message = "Field :case_id is not a valid case."
+
+        requests_mock.get(
+            create_url(f"get_results_for_case/{run_id}/{case_id}&offset=0&limit=250"),
+            json={"error": error_message},
+            status_code=400,
+        )
+
+        results, error = api_request_handler.get_results_for_case(run_id, case_id)
+
+        assert len(results) == 0
+        assert error_message in error
+
+    def test_get_results_for_run_success(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test successfully retrieving results for all tests in a run"""
+        run_id = 100
+        mocked_response = {
+            "offset": 0,
+            "limit": 250,
+            "size": 2,
+            "_links": {"next": None, "prev": None},
+            "results": [
+                {
+                    "id": 1,
+                    "test_id": 5001,
+                    "status_id": 1,
+                    "created_on": 1234567890,
+                    "created_by": 1,
+                    "comment": "Test passed",
+                },
+                {
+                    "id": 2,
+                    "test_id": 5002,
+                    "status_id": 5,
+                    "created_on": 1234567900,
+                    "created_by": 2,
+                    "comment": "Test failed",
+                },
+            ],
+        }
+
+        requests_mock.get(create_url(f"get_results_for_run/{run_id}&offset=0&limit=250"), json=mocked_response)
+
+        results, error = api_request_handler.get_results_for_run(run_id, offset=0, limit=250)
+
+        assert error is None
+        assert len(results) == 2
+        assert results[0]["id"] == 1
+        assert results[0]["test_id"] == 5001
+        assert results[1]["id"] == 2
+        assert results[1]["test_id"] == 5002
+
+    def test_get_results_for_run_with_pagination(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test retrieving run results with custom pagination"""
+        run_id = 100
+        mocked_response = {
+            "offset": 10,
+            "limit": 5,
+            "size": 1,
+            "_links": {"next": None, "prev": None},
+            "results": [
+                {
+                    "id": 11,
+                    "test_id": 5011,
+                    "status_id": 1,
+                    "created_on": 1234567890,
+                    "created_by": 1,
+                },
+            ],
+        }
+
+        requests_mock.get(create_url(f"get_results_for_run/{run_id}&offset=10&limit=5"), json=mocked_response)
+
+        results, error = api_request_handler.get_results_for_run(run_id, offset=10, limit=5)
+
+        assert error is None
+        assert len(results) == 1
+        assert results[0]["id"] == 11
+
+    def test_get_results_for_run_api_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """Test get_results_for_run when API returns an error"""
+        run_id = 100
+        error_message = "Field :run_id is not a valid run."
+
+        requests_mock.get(
+            create_url(f"get_results_for_run/{run_id}&offset=0&limit=250"),
+            json={"error": error_message},
+            status_code=400,
+        )
+
+        results, error = api_request_handler.get_results_for_run(run_id)
+
+        assert len(results) == 0
+        assert error_message in error
