@@ -286,13 +286,16 @@ class ApiRequestHandler:
     ) -> Tuple[bool, str, List[str], List[str], List[str]]:
         return self.case_handler.update_existing_case_references(case_id, junit_refs, case_fields, strategy)
 
-    def upload_attachments(self, report_results: List[Dict], request_id_to_result_id: Dict[int, int]):
-        return self.result_handler.upload_attachments(report_results, request_id_to_result_id)
+    def upload_attachments(
+        self, report_results: List[Dict], request_id_to_result_id: Dict[int, int], total_attachments: int
+    ):
+        return self.result_handler.upload_attachments(report_results, request_id_to_result_id, total_attachments)
 
     def add_results(self, run_id: int) -> Tuple[List, str, int]:
         return self.result_handler.add_results(run_id)
 
     def handle_futures(self, futures, action_string, progress_bar) -> Tuple[list, str]:
+        responses_by_request = {} if action_string == "add_results" else None
         responses = []
         error_message = ""
         try:
@@ -300,10 +303,11 @@ class ApiRequestHandler:
                 arguments = futures[future]
                 response = future.result()
                 if not response.error_message:
-                    responses.append(response)
                     if action_string == "add_results":
+                        responses_by_request[id(arguments)] = response
                         progress_bar.update(len(arguments["results"]))
                     else:
+                        responses.append(response)
                         if action_string == "add_case":
                             arguments = arguments.to_dict()
                             arguments.pop("case_id")
@@ -323,6 +327,11 @@ class ApiRequestHandler:
         except KeyboardInterrupt:
             self.__cancel_running_futures(futures, action_string)
             raise KeyboardInterrupt
+
+        if action_string == "add_results" and responses_by_request:
+            request_bodies = list(futures.values())
+            responses = [responses_by_request[id(req)] for req in request_bodies if id(req) in responses_by_request]
+
         return responses, error_message
 
     def close_run(self, run_id: int) -> Tuple[dict, str]:
