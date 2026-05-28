@@ -8,10 +8,14 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.14.3]
 
-_released 05-26-2026
+_released 05-28-2026
 
 ### Added
+ - **New `results` command**: Added results command which allows users to list or update existing test results in TestRail, also supports pagination and JSON output.
+ - Optimized attachment uploading with updated progress tracking.
+
 ### Fixed
+ - Fixed an issue where attachments are not consistently uploading especially for large data uploads with unable to find result_id error.
 
 ## [1.14.2]
 
