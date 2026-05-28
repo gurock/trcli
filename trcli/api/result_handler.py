@@ -3,6 +3,7 @@ ResultHandler - Handles all test result-related operations for TestRail
 
 It manages all test result operations including:
 - Adding test results
+- Editing existing test results
 - Uploading attachments to results
 - Retrieving results after cancellation
 """
@@ -225,6 +226,155 @@ class ResultHandler:
                 self.environment.log(f"Assigning failed results: 0/0, Done.")
 
         return responses, error_message, progress_bar.n
+
+    def get_results(self, test_id: int, offset: int = 0, limit: int = 250) -> Tuple[List[Dict], str]:
+        """
+        Get test results for a specific test.
+
+        :param test_id: TestRail test ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        # Build API endpoint with pagination
+        endpoint = f"get_results/{test_id}&offset={offset}&limit={limit}"
+
+        # Make API request
+        response = self.client.send_get(endpoint)
+
+        if response.error_message:
+            return [], response.error_message
+
+        # API returns a dict with pagination metadata and 'results' key
+        response_data = response.response_text
+        if isinstance(response_data, dict) and "results" in response_data:
+            results = response_data["results"]
+        elif isinstance(response_data, list):
+            # Fallback for direct list response (older API format)
+            results = response_data
+        else:
+            results = []
+
+        return results, None
+
+    def get_results_for_run(self, run_id: int, offset: int = 0, limit: int = 250) -> Tuple[List[Dict], str]:
+        """
+        Get test results for all tests in a run.
+
+        :param run_id: TestRail run ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        # Build API endpoint with pagination
+        endpoint = f"get_results_for_run/{run_id}&offset={offset}&limit={limit}"
+
+        # Make API request
+        response = self.client.send_get(endpoint)
+
+        if response.error_message:
+            return [], response.error_message
+
+        # API returns a dict with pagination metadata and 'results' key
+        response_data = response.response_text
+        if isinstance(response_data, dict) and "results" in response_data:
+            results = response_data["results"]
+        elif isinstance(response_data, list):
+            # Fallback for direct list response (older API format)
+            results = response_data
+        else:
+            results = []
+
+        return results, None
+
+    def get_results_for_case(
+        self, run_id: int, case_id: int, offset: int = 0, limit: int = 250
+    ) -> Tuple[List[Dict], str]:
+        """
+        Get test results for a specific case in a run.
+
+        :param run_id: TestRail run ID
+        :param case_id: TestRail case ID
+        :param offset: Pagination offset (default: 0)
+        :param limit: Pagination limit (default: 250)
+        :returns: Tuple of (results_list, error_message)
+        """
+        # Build API endpoint with pagination
+        endpoint = f"get_results_for_case/{run_id}/{case_id}&offset={offset}&limit={limit}"
+
+        # Make API request
+        response = self.client.send_get(endpoint)
+
+        if response.error_message:
+            return [], response.error_message
+
+        # API returns a dict with pagination metadata and 'results' key
+        response_data = response.response_text
+        if isinstance(response_data, dict) and "results" in response_data:
+            results = response_data["results"]
+        elif isinstance(response_data, list):
+            # Fallback for direct list response (older API format)
+            results = response_data
+        else:
+            results = []
+
+        return results, None
+
+    def edit_result(
+        self,
+        result_id: int,
+        status_id: int = None,
+        comment: str = None,
+        version: str = None,
+        elapsed: str = None,
+        defects: str = None,
+        assignedto_id: int = None,
+        custom_fields: Dict = None,
+    ) -> Tuple[bool, str]:
+        """
+        Edit an existing test result.
+
+        :param result_id: TestRail result ID to edit
+        :param status_id: Test status ID (1=Passed, 2=Blocked, 3=Untested, 4=Retest, 5=Failed)
+        :param comment: Comment/notes for the result
+        :param version: Version or build tested against
+        :param elapsed: Time elapsed (e.g., "1m 5s" or "65s")
+        :param defects: Comma-separated list of defect IDs
+        :param assignedto_id: User ID to assign the test to
+        :param custom_fields: Dictionary of custom field values
+        :returns: Tuple of (success, error_message)
+        """
+        # Build request body with only provided parameters
+        body = {}
+
+        if status_id is not None:
+            body["status_id"] = status_id
+        if comment is not None:
+            body["comment"] = comment
+        if version is not None:
+            body["version"] = version
+        if elapsed is not None:
+            body["elapsed"] = elapsed
+        if defects is not None:
+            body["defects"] = defects
+        if assignedto_id is not None:
+            body["assignedto_id"] = assignedto_id
+
+        # Add custom fields if provided
+        if custom_fields:
+            body.update(custom_fields)
+
+        # Validate that at least one field is being updated
+        if not body:
+            return False, "No fields provided to update"
+
+        # Make API request
+        response = self.client.send_post(f"edit_result/{result_id}", payload=body)
+
+        if response.error_message:
+            return False, response.error_message
+
+        return True, None
 
     @staticmethod
     def retrieve_results_after_cancelling(futures) -> list:

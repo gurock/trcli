@@ -44,6 +44,7 @@ Supported and loaded modules:
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
     - labels: Manage labels (add, update, delete, list)
+    - results: Manage test results (list, update)
     - references: Manage references (cases and runs)
 ```
 
@@ -92,6 +93,7 @@ Commands:
   export_gherkin Export BDD test case from TestRail as .feature file
   import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
+  results        Manage test results in TestRail
   parse_cucumber Parse Cucumber JSON results and upload to TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
@@ -1356,6 +1358,75 @@ When a test run MUST created before using one of the parse commands, use the `ad
 tests are run across parallel, independent test nodes, all nodes should report their results into the same test run.
 First, use the `add_run` command to create a new run; then, pass the run title and id to each of the test nodes, which
 will be used to upload all results into the same test run.
+
+#### Managing Test Results
+
+The `results` command provides comprehensive test result management capabilities with two subcommands: `list` and `update`.
+
+##### Listing Test Results
+
+Retrieve test results from TestRail with flexible filtering options:
+
+```bash
+# List results for a specific test
+trcli -c myconfig.yml results list --test-id 1001
+
+# List all results for a run
+trcli -c myconfig.ymlresults list --run-id 100
+
+# List results for a specific case within a run
+trcli -c myconfig.ymlresults list --case-id 200 --run-id 100
+
+# Use pagination
+trcli -c myconfig.yml results list --test-id 1001 --offset 10 --limit 50
+
+# Output as JSON for processing
+trcli results list --test-id 1001 --json-output
+
+# Show all fields including custom fields in detail
+trcli results list --run-id 100 --show-all-fields
+```
+
+**Filtering options:**
+- `--test-id`: Get results for a specific test (mutually exclusive with other filters)
+- `--run-id`: Get results for all tests in a run (can be used alone or with --case-id)
+- `--case-id`: Get results for a specific case (requires --run-id)
+- `--offset`: Pagination offset (default: 0)
+- `--limit`: Pagination limit (default: 250)
+- `--json-output`: Output raw JSON response from API
+- `--show-all-fields`: Show all fields including custom fields in detail
+
+##### Updating Test Results
+
+Update existing test results after they have been created. Useful for re-run scenarios, adding comments, linking defects, or correcting result data:
+
+```bash
+# Update test result status and add comment
+trcli -c myconfig.yml results update --result-id 12345 --status-id 5 --comment "Test failed due to timeout"
+
+# Update multiple fields at once
+trcli -c myconfig.yml results update --result-id 12345 \
+  --status-id 1 \
+  --comment "Passed after retry" \
+  --elapsed "45s" \
+  --defects "BUG-456" \
+  --version "2.1.0"
+
+# Update custom fields (JSON format)
+trcli -c myconfig.yml results update --result-id 12345 \
+  --custom-fields '{"custom_test_environment": "Production", "custom_browser": "Chrome"}'
+
+# Assign result to a user
+trcli -c myconfig.yml results update --result-id 12345 --assignedto-id 7 --comment "Needs investigation"
+```
+
+**Status IDs:** 1=Passed, 2=Blocked, 3=Untested, 4=Retest, 5=Failed
+
+For complete documentation:
+```bash
+trcli results list --help
+trcli results update --help
+```
 
 #### Labels Management
 
