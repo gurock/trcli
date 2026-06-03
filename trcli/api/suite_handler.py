@@ -161,3 +161,48 @@ class SuiteHandler:
         """
         response = self.client.send_post(f"delete_suite/{suite_id}", payload={})
         return response.response_text, response.error_message
+
+    def get_suite(self, suite_id: int) -> Tuple[dict, str]:
+        """
+        Retrieve a single test suite by ID
+
+        :param suite_id: TestRail suite ID
+        :returns: Tuple with (suite_data_dict, error_message)
+        """
+        response = self.client.send_get(f"get_suite/{suite_id}")
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
+
+    def get_suites(
+        self,
+        project_id: int,
+        limit: int = 250,
+        offset: int = 0,
+    ) -> Tuple[dict, str]:
+        """
+        Retrieve test suites for a project with pagination
+
+        :param project_id: TestRail project ID
+        :param limit: Maximum number of suites to return (default: 250)
+        :param offset: Offset for pagination (default: 0)
+        :returns: Tuple with (paginated_response_dict, error_message)
+                  Response dict contains: suites, offset, limit, size, _links
+        """
+        # Build query parameters
+        params = []
+        if limit != 250:
+            params.append(f"limit={limit}")
+        if offset > 0:
+            params.append(f"offset={offset}")
+
+        # Build URL
+        query_string = "&".join(params) if params else ""
+        url = f"get_suites/{project_id}"
+        if query_string:
+            url = f"{url}&{query_string}"
+
+        response = self.client.send_get(url)
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
