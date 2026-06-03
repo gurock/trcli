@@ -12,6 +12,7 @@ The TestRail CLI currently supports:
 - **Auto-generating test cases from OpenAPI specifications**
 - **Creating new test runs for results to be uploaded to**
 - **Managing project labels for better organization and categorization**
+- **Retrieving and listing test cases with advanced filtering**
 
 To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
@@ -46,6 +47,7 @@ Supported and loaded modules:
     - labels: Manage labels (add, update, delete, list)
     - results: Manage test results (list, update)
     - references: Manage references (cases and runs)
+    - cases: Manage test cases (get, list with filters)
 ```
 
 CLI general reference
@@ -90,6 +92,7 @@ Options:
 
 Commands:
   add_run        Add a new test run in TestRail
+  cases          Manage test cases in TestRail
   export_gherkin Export BDD test case from TestRail as .feature file
   import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
@@ -1428,6 +1431,250 @@ trcli results list --help
 trcli results update --help
 ```
 
+#### Managing Test Cases
+
+The TestRail CLI provides the `cases` command for retrieving and listing test cases from TestRail. This command is useful for discovering test cases, exporting case data, and integrating with external tools or CI/CD pipelines.
+
+##### Cases Command Overview
+
+The `cases` command supports two subcommands:
+
+| Subcommand | Purpose | Use Case |
+|------------|---------|----------|
+| `cases get` | Retrieve a single test case by ID | Get detailed information about a specific test case |
+| `cases list` | List test cases with filters | Discover cases, export case data, filter by suite/priority |
+
+##### Reference
+
+```shell
+$ trcli cases --help
+Usage: trcli cases [OPTIONS] COMMAND [ARGS]...
+
+  Manage test cases in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single test case by ID
+  list  List test cases from TestRail
+```
+
+##### Retrieving a Single Test Case
+
+Get detailed information about a specific test case by its ID:
+
+```shell
+# Get a test case (using config file)
+$ trcli cases get -c config.yml --case-id 123
+
+# Get a test case with all parameters
+$ trcli cases get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --case-id 123
+
+# Get case with all fields displayed
+$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+
+# Get case as JSON (for piping to jq or other tools)
+$ trcli cases get -c config.yml --case-id 123 --json-output
+```
+
+**Output example:**
+```
+Cases Get Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: user@example.com)
+> Project: Your Project
+
+Retrieving case ID 123...
+
+Case ID: 123
+  Title: Login functionality test
+  Section ID: 1
+  Suite ID: 2
+  Template ID: 1
+  Type ID: 1
+  Priority ID: 2
+  References: JIRA-123, JIRA-456
+  Created By: 1
+  Created On: 1646317844
+  Updated By: 1
+  Updated On: 1646317844
+  Labels: automated, regression
+  Custom Fields: 3 field(s)
+```
+
+**JSON output example:**
+```json
+{
+  "id": 123,
+  "title": "Login functionality test",
+  "section_id": 1,
+  "suite_id": 2,
+  "template_id": 1,
+  "type_id": 1,
+  "priority_id": 2,
+  "refs": "JIRA-123, JIRA-456",
+  "created_by": 1,
+  "created_on": 1646317844,
+  "updated_by": 1,
+  "updated_on": 1646317844,
+  "labels": [
+    {
+      "id": 1,
+      "title": "automated"
+    },
+    {
+      "id": 2,
+      "title": "regression"
+    }
+  ],
+  "custom_steps": "Step 1\nStep 2\nStep 3"
+}
+```
+
+##### Listing Test Cases with Filters
+
+List test cases from a project with optional filtering by suite, priority, or text search:
+
+```shell
+# List all cases in a project (using config file)
+$ trcli cases list -c config.yml
+
+# List cases with suite filter
+$ trcli cases list -c config.yml --suite-id 2
+
+# List cases with priority filter (high priority only)
+$ trcli cases list -c config.yml --priority-id 4
+
+# List cases with multiple priorities
+$ trcli cases list -c config.yml --priority-id "3,4"
+
+# List cases with text search
+$ trcli cases list -c config.yml --filter "login"
+
+# Combine multiple filters
+$ trcli cases list -c config.yml --suite-id 2 --priority-id 4 --filter "authentication"
+
+# Pagination support
+$ trcli cases list -c config.yml --offset 250 --limit 100
+
+# JSON output for integration with other tools
+$ trcli cases list -c config.yml --suite-id 2 --json-output | jq '.cases[].title'
+```
+
+**Output example:**
+```
+Cases List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: user@example.com)
+> Project: Your Project
+
+Retrieving cases for project ID 1 (suite_id=2)...
+Found 3 case(s) (showing 1-3):
+
+  Case ID: 123
+    Title: Login functionality test
+    Section ID: 1
+    Suite ID: 2
+    Priority ID: 2
+    Type ID: 1
+    Labels: automated, regression
+    Custom Fields: 3 field(s)
+
+  Case ID: 124
+    Title: Password validation test
+    Section ID: 1
+    Suite ID: 2
+    Priority ID: 3
+    Type ID: 1
+    Labels: automated
+    Custom Fields: 2 field(s)
+
+  Case ID: 125
+    Title: User registration test
+    Section ID: 1
+    Suite ID: 2
+    Priority ID: 2
+    Type ID: 1
+    References: JIRA-789
+    Custom Fields: 3 field(s)
+```
+
+##### Configuration File Support
+
+The `cases` command supports configuration files, allowing you to specify connection details and project information once:
+
+**config.yml:**
+```yaml
+host: https://yourinstance.testrail.io
+username: user@example.com
+password: your_password
+project: Your Project          # Project name (required)
+```
+
+Then use with the `-c` flag:
+```shell
+$ trcli cases list -c config.yml
+$ trcli cases get -c config.yml --case-id 123
+```
+
+##### Command Options Reference
+
+**Get Command:**
+```shell
+$ trcli cases get --help
+Options:
+  --case-id          Case ID to retrieve.  [x>=1; required]
+  --json-output      Output case as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+**List Command:**
+```shell
+$ trcli cases list --help
+Options:
+  --suite-id         Filter by suite ID.  [x>=1]
+  --priority-id      Filter by priority ID (comma-separated for multiple, e.g., '3,4').
+  --filter           Filter by text search (case title).
+  --offset           Offset for pagination (default: 0).
+  --limit            Limit for pagination (default: 250).
+  --json-output      Output cases as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+##### Use Cases
+
+**1. Export case data for documentation:**
+```shell
+$ trcli cases list -c config.yml --json-output > cases_export.json
+```
+
+**2. Find all high-priority cases:**
+```shell
+$ trcli cases list -c config.yml --priority-id 4
+```
+
+**3. Integration with CI/CD pipelines:**
+```shell
+# Get test cases and pipe to analysis tool
+$ trcli cases list -c config.yml --suite-id 2 --json-output | jq -r '.cases[] | select(.labels[].title == "automated") | .title'
+```
+
+**4. Discover cases by keyword:**
+```shell
+$ trcli cases list -c config.yml --filter "API"
+```
+
+**5. Verify case details before test execution:**
+```shell
+$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
@@ -2028,490 +2275,6 @@ $ trcli -h https://yourinstance.testrail.io --username <your_username> --passwor
   --project "Web App" \
   labels tests get --test-ids "4001,4002,4003"
 ```
-
-#### References Management
-
-The TestRail CLI provides comprehensive reference management capabilities using the `references` command. References help link test assets to external requirements, user stories, or other documentation, making it easier to track test coverage and maintain traceability.
-
-The TestRail CLI supports complete reference management for test cases with the following operations:
-- **Add**: Add references to existing test cases without removing existing ones
-- **Update**: Replace all existing references with new ones
-- **Delete**: Remove all or specific references from test cases
-
-All reference operations support validation and error handling, with a 2000-character limit for the total references field per test case.
-
-##### Reference Management Features
-
-**Test Case References Support:**
-- **Add** references to test cases while preserving existing ones (2000 characters maximum, single or multiple test cases)
-- **Update** references by replacing existing ones entirely
-- **Delete** all references or specific references from test cases
-
-###### Adding References to Test Cases
-Add references to test cases without removing existing ones. New references are appended to any existing references.
-
-```shell
-# Add references to a single test case
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases add --case-ids 123 --refs "REQ-001,REQ-002"
-
-# Add references to multiple test cases
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases add --case-ids "123,124,125" --refs "STORY-456,BUG-789"
-```
-
-**Output example:**
-```
-Adding references to 2 test case(s)...
-References: REQ-001, REQ-002
-  ✓ Test case 123: References added successfully
-  ✓ Test case 124: References added successfully
-Successfully added references to 2 test case(s)
-```
-
-###### Updating References on Test Cases
-Replace all existing references with new ones. This completely overwrites any existing references.
-
-```shell
-# Update references for a single test case
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases update --case-ids 123 --refs "REQ-003,REQ-004"
-
-# Update references for multiple test cases
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases update --case-ids "123,124" --refs "EPIC-100,STORY-200"
-```
-
-**Output example:**
-```
-Updating references for 2 test case(s)...
-New references: REQ-003, REQ-004
-  ✓ Test case 123: References updated successfully
-  ✓ Test case 124: References updated successfully
-Successfully updated references for 2 test case(s)
-```
-
-###### Deleting References from Test Cases
-Remove all references or specific references from test cases.
-
-```shell
-# Delete all references from test cases
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases delete --case-ids "123,124"
-
-# Delete specific references from test cases
-$ trcli -h https://yourinstance.testrail.io --username <your_username> --password <your_password> \
-  --project "Your Project" \
-  references cases delete --case-ids "123,124" --refs "REQ-001,STORY-456"
-```
-
-**Output example:**
-```
-Deleting all references from 2 test case(s)...
-  ✓ Test case 123: All references deleted successfully
-  ✓ Test case 124: All references deleted successfully
-Successfully deleted references from 2 test case(s)
-```
-
-##### Reference Management Command Reference
-
-**Main References Command:**
-```shell
-$ trcli references --help
-Usage: trcli references [OPTIONS] COMMAND [ARGS]...
-
-  Manage references in TestRail
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  cases  Manage references for test cases
-```
-
-**Test Cases References Commands:**
-```shell
-$ trcli references cases --help
-Usage: trcli references cases [OPTIONS] COMMAND [ARGS]...
-
-  Manage references for test cases
-
-Options:
-  --help  Show this message and exit.
-
-Commands:
-  add     Add references to test cases
-  delete  Delete all or specific references from test cases
-  update  Update references on test cases by replacing existing ones
-```
-
-**Add References Command:**
-```shell
-$ trcli references cases add --help
-Options:
-  --case-ids  Comma-separated list of test case IDs [required]
-  --refs      Comma-separated list of references to add [required]
-  --help      Show this message and exit.
-```
-
-**Update References Command:**
-```shell
-$ trcli references cases update --help
-Options:
-  --case-ids  Comma-separated list of test case IDs [required]
-  --refs      Comma-separated list of references to replace existing ones [required]
-  --help      Show this message and exit.
-```
-
-**Delete References Command:**
-```shell
-$ trcli references cases delete --help
-Options:
-  --case-ids  Comma-separated list of test case IDs [required]
-  --refs      Comma-separated list of specific references to delete (optional)
-  --help      Show this message and exit.
-```
-
-### Reference
-```shell
-$ trcli add_run --help
-TestRail CLI v1.15.0
-Copyright 2025 Gurock Software GmbH - www.gurock.com
-Usage: trcli add_run [OPTIONS]
-
-Options:
-  --title                Title of Test Run to be created or updated in
-                         TestRail.
-  --run-id               ID of existing test run to update. If not provided, 
-                         a new run will be created.  [x>=1]
-  --suite-id             Suite ID to submit results to.  [x>=1]
-  --run-description      Summary text to be added to the test run.
-  --milestone-id         Milestone ID to which the Test Run should be
-                         associated to.  [x>=1]
-  --run-start-date       The expected or scheduled start date of this test run in MM/DD/YYYY format
-  --run-end-date         The expected or scheduled end date of this test run in MM/DD/YYYY format
-  --run-assigned-to-id   The ID of the user the test run should be assigned
-                         to.  [x>=1]
-  --clear-run-assigned-to-id  Clear the assignee of the test run (only valid
-                         when updating with --run-id).
-  --clear-run-description  Clear the description of the test run (only valid
-                         when updating with --run-id).
-  --clear-milestone-id   Clear the milestone association of the test run (only
-                         valid when updating with --run-id).
-  --clear-run-start-date  Clear the start date of the test run (only valid
-                         when updating with --run-id).
-  --clear-run-end-date   Clear the end date of the test run (only valid when
-                         updating with --run-id).
-  --clear-run-case-ids   Clear all case IDs from the test run (only valid when
-                         updating with --run-id).
-  --run-include-all      Use this option to include all test cases in this test run.
-  --auto-close-run       Use this option to automatically close the created run.
-  --run-case-ids         Comma separated list of test case IDs to include in
-                         the test run (i.e.: 1,2,3,4).
-  --run-refs             A comma-separated list of references/requirements (up to 250 characters)
-  --run-refs-action      Action to perform on references: 'add' (default), 'update' (replace all), 
-                         or 'delete' (remove all or specific)
-  -f, --file             Write run title and id to file.
-  --help                 Show this message and exit.
-```
-
-If the file parameter is used, the run title and id are written to the file in yaml format. Example:
-```text
-title: Run Title
-run_id: 1
-```
-
-This file can be used as the config file (or appended to an existing config file) in a later run.
-
-### Managing References in Test Runs
-
-The `add_run` command supports comprehensive reference management for test runs. References are stored in TestRail's "References" field and can contain up to 250 characters.
-
-#### Adding References to New Runs
-
-When creating a new test run, you can add references using the `--run-refs` option:
-
-```bash
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --title "My Test Run" --run-refs "JIRA-100,JIRA-200,REQ-001"
-```
-
-#### Managing References in Existing Runs
-
-For existing test runs, you can use the `--run-refs-action` option to specify how references should be handled:
-
-**Add References (default behavior):**
-```bash
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" \
-  --run-refs "JIRA-300,JIRA-400" --run-refs-action "add"
-```
-
-**Update (Replace) All References:**
-```bash
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" \
-  --run-refs "NEW-100,NEW-200" --run-refs-action "update"
-```
-
-**Delete Specific References:**
-```bash
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" \
-  --run-refs "JIRA-100,JIRA-200" --run-refs-action "delete"
-```
-
-**Delete All References:**
-```bash
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" \
-  --run-refs-action "delete"
-```
-
-#### Reference Management Rules
-
-- **Character Limit**: References field supports up to 250 characters
-- **Format**: Comma-separated list of reference IDs
-- **Duplicate Prevention**: When adding references, duplicates are automatically prevented
-- **Action Requirements**: `update` and `delete` actions require an existing run (--run-id must be provided)
-- **Validation**: Invalid reference formats are rejected with clear error messages
-
-### Managing Assignees in Test Runs
-
-The `add_run` command supports comprehensive assignee management for test runs. You can assign runs to users when creating or updating them, and clear assignees when needed.
-
-#### Assigning Runs to Users
-
-When creating a new test run or updating an existing one, you can assign it to a user using the `--run-assigned-to-id` option:
-
-```bash
-# Create a new run and assign to user ID 5
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --title "My Test Run" --run-assigned-to-id 5
-
-# Update an existing run and change the assignee
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --run-assigned-to-id 10
-```
-
-#### Clearing Assignees from Test Runs
-
-To remove the assignee from an existing test run, use the `--clear-run-assigned-to-id` flag:
-
-```bash
-# Clear the assignee from an existing run
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-assigned-to-id
-```
-
-#### Assignee Management Rules
-
-- **Update Mode Only**: The `--clear-run-assigned-to-id` flag can only be used when updating an existing run (requires `--run-id`)
-- **Mutually Exclusive**: You cannot use both `--run-assigned-to-id` and `--clear-run-assigned-to-id` in the same command
-
-### Clearing Run Attributes
-
-The `add_run` command provides `--clear-*` flags to remove (set to null) various run attributes during updates. All clear flags require `--run-id` and are mutually exclusive with their corresponding set parameters.
-
-#### Available Clear Flags
-
-| Flag | Clears | API Effect | Mutually Exclusive With |
-|------|--------|------------|------------------------|
-| `--clear-run-description` | Description text | Sets `description: null` | `--run-description` |
-| `--clear-milestone-id` | Milestone association | Sets `milestone_id: null` | `--milestone-id` |
-| `--clear-run-start-date` | Start date | Sets `start_on: null` | `--run-start-date` |
-| `--clear-run-end-date` | End date | Sets `due_on: null` | `--run-end-date` |
-| `--clear-run-case-ids` | All case selections | Sets `include_all: false, case_ids: []` | `--run-case-ids`, `--run-include-all` |
-
-#### Clear Description Example
-
-```bash
-# Clear the description from a run
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-description
-```
-
-#### Clear Milestone Example
-
-```bash
-# Remove milestone association
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-milestone-id
-```
-
-#### Clear Dates Example
-
-```bash
-# Clear start date
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-start-date
-
-# Clear end date
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-end-date
-
-# Clear both dates at once
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-start-date --clear-run-end-date
-```
-
-#### Clear Case Selection Example
-
-```bash
-# Clear all case selections (empty run)
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "My Test Run" --clear-run-case-ids
-```
-
-#### Clear Multiple Attributes Example
-
-```bash
-# Clear multiple attributes in one command
-trcli -y -h https://example.testrail.io/ --project "My Project" \
-  add_run --run-id 123 --title "Clean Run" \
-  --clear-run-description \
-  --clear-milestone-id \
-  --clear-run-start-date \
-  --clear-run-end-date
-```
-
-Generating test cases from OpenAPI specs
------------------
-
-The `parse_openapi` command allows you to automatically generate and upload test cases to TestRail based on an
-OpenAPI specification. This feature is intended to be used once to quickly bootstrap your test case design,
-providing you with a solid base of test cases, which you can further expand on TestRail.
-
-### Reference
-```shell
-$ trcli parse_openapi --help
-TestRail CLI v1.15.0
-Copyright 2025 Gurock Software GmbH - www.gurock.com
-Usage: trcli parse_openapi [OPTIONS]
-
-  Parse OpenAPI spec and create cases in TestRail
-
-Options:
-  -f, --file      Filename and path.
-  --suite-id      Suite ID to create the tests in (if project is multi-suite).
-                  [x>=1]
-  --case-fields   List of case fields and values for new test cases creation.
-                  Usage: --case-fields type_id:1 --case-fields priority_id:3
-  --help          Show this message and exit.
-```
-
-### OpenAPI specification example
-```yaml
-openapi: 3.0.0
-info:
-  description: This is a sample API.
-  version: 1.0.0
-  title: My API
-paths:
-  /pet:
-    post:
-      summary: Add a new pet to the store
-      description: Add new pet to the store inventory.
-      operationId: addPet
-      responses:
-        '200':
-          description: Pet created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid request
-      requestBody:
-        $ref: '#/components/schemas/Pet'
-  '/pet/{petId}':
-    get:
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
-      parameters:
-        - name: petId
-          in: path
-          description: ID of pet to return
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid request
-        '404':
-          description: Pet not found
-components:
-  schemas:
-    Pet:
-      type: object
-      required:
-        - name
-      properties:
-        id:
-          type: integer
-          format: int64
-          readOnly: true
-        name:
-          description: The name given to a pet
-          type: string
-          example: Guru
-```
-
-### Generating test cases
-
-The test cases are generated based on the OpenAPI specification paths, operation verbs and possible response
-status codes, which provides a good basic test coverage for an API, although we recommend you further
-expand your test cases to cover specific business logic and workflows.
-
-| Pattern                               | Test case title example                           |
-|---------------------------------------|---------------------------------------------------|
-| `VERB /path -> status_code (summary)` | `GET /pet/{petId} -> 200 (Successful operation) ` |
-
-Parameter sources
------------------
-You can choose to set parameters from different sources, like a default config file,
-environment variables, custom config file, cli parameters or in some cases use
-default values.
-The priority of setting parameters from different sources is as per the table below, where 1 is the highest priority.
-
-| priority | source                |
-|----------|-----------------------|
-| 1        | cli parameters        |
-| 2        | custom config file    |
-| 3        | environment variables |
-| 4        | default config file   |
-| 5        | default value         |
-
-For more details, please refer to the [Parameter sources](https://support.gurock.com/hc/en-us/articles/12974525736084) documentation. 
-
-Return values and messaging
----------------------------
-trcli tool will return `0` to the console in case of success and value greater than `1` (usually `1` or `2`) in other cases.
-Messages that are being printed on the console are being redirected to `sys.stdout` or `sys.stderr`.
-
-
-Multithreading
---------------
-trcli allows users to upload test cases and results using multithreading. This is enabled by default and set to `MAX_WORKERS_ADD_CASE = 5` and
- `MAX_WORKERS_ADD_RESULTS = 10` in `trcli/settings.py`. To disable multithreading, set those to `1`.
-
-During performance tests we discovered that using more than 10 workers didn't improve time of upload and could cause errors. Please set it accordingly to your machine specs.
-Average time for uploading:
-- 2000 test cases was around 460 seconds
-- 5000 test cases was around 1000 seconds
 
 ### Parallel Pagination (Experimental)
 
