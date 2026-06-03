@@ -1,3 +1,4 @@
+import json
 from unittest import mock
 
 import pytest
@@ -19,7 +20,7 @@ class TestCmdGetCases:
         "--suite-id", "10",
     ]
 
-    @mock.patch("trcli.commands.cmd_get_cases._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_cases.create_api_client")
     def test_happy_path_returns_json(self, mock_create_client):
         """Successful API response prints JSON to stdout."""
         cases_data = [{"id": 100, "title": "Login test"}, {"id": 101, "title": "Logout test"}]
@@ -32,10 +33,9 @@ class TestCmdGetCases:
         result = runner.invoke(trcli_cli, self.BASE_ARGS, catch_exceptions=False)
 
         assert result.exit_code == 0
-        assert '"Login test"' in result.output
-        assert '"Logout test"' in result.output
+        assert json.loads(result.output) == cases_data
 
-    @mock.patch("trcli.commands.cmd_get_cases._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_cases.create_api_client")
     def test_happy_path_paginated(self, mock_create_client):
         """Paginated API response collects all pages."""
         page1 = {
@@ -56,11 +56,13 @@ class TestCmdGetCases:
         result = runner.invoke(trcli_cli, self.BASE_ARGS, catch_exceptions=False)
 
         assert result.exit_code == 0
-        assert '"Case 1"' in result.output
-        assert '"Case 2"' in result.output
+        assert json.loads(result.output) == [
+            {"id": 1, "title": "Case 1"},
+            {"id": 2, "title": "Case 2"},
+        ]
         assert mock_client.send_get.call_count == 2
 
-    @mock.patch("trcli.commands.cmd_get_cases._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_cases.create_api_client")
     def test_with_section_id_filter(self, mock_create_client):
         """Optional --section-id is appended to the API URL."""
         cases_data = [{"id": 100, "title": "Filtered case"}]
@@ -77,7 +79,7 @@ class TestCmdGetCases:
         call_args = mock_client.send_get.call_args[0][0]
         assert "section_id=5" in call_args
 
-    @mock.patch("trcli.commands.cmd_get_cases._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_cases.create_api_client")
     def test_api_error_message_exits_with_code_1(self, mock_create_client):
         """API error message is output with exit code 1."""
         mock_client = mock_create_client.return_value
@@ -91,7 +93,7 @@ class TestCmdGetCases:
         assert result.exit_code == 1
         assert "Timeout" in result.output
 
-    @mock.patch("trcli.commands.cmd_get_cases._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_cases.create_api_client")
     def test_api_non_200_status_exits_with_code_1(self, mock_create_client):
         """Non-200 status code prints error with exit code 1."""
         mock_client = mock_create_client.return_value

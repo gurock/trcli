@@ -113,6 +113,12 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
+    - get_plans: List test plans as JSON
+    - get_plan: Get a test plan as JSON
+    - get_suites: List test suites as JSON
+    - get_sections: List test sections as JSON
+    - get_cases: List test cases as JSON
+    - get_case: Get a test case as JSON
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)"""
 

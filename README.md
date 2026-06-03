@@ -2484,7 +2484,7 @@ expand your test cases to cover specific business logic and workflows.
 Reading data from TestRail
 -----------------
 
-The TestRail CLI provides read-only commands to retrieve plans, suites, and cases from TestRail as JSON.
+The TestRail CLI provides read-only commands to retrieve plans, suites, sections, and cases from TestRail as JSON.
 These commands output JSON directly to stdout, making them easy to integrate with other tools
 via piping (e.g., `jq`).
 
@@ -2495,6 +2495,7 @@ via piping (e.g., `jq`).
 | `get_plans` | List all test plans for a project |
 | `get_plan` | Get a single test plan by ID |
 | `get_suites` | List all test suites for a project |
+| `get_sections` | List test sections for a project or suite |
 | `get_cases` | List test cases for a project and suite |
 | `get_case` | Get a single test case by ID |
 
@@ -2516,6 +2517,12 @@ trcli --host https://example.testrail.io --username user@example.com --key YOUR_
 ```shell
 trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
   get_suites --project-id 1
+```
+
+**List test sections (with optional suite filter):**
+```shell
+trcli --host https://example.testrail.io --username user@example.com --key YOUR_API_KEY \
+  get_sections --project-id 1 --suite-id 3
 ```
 
 **List test cases (with optional section filter):**
@@ -2542,6 +2549,7 @@ export TR_CLI_USERNAME=user@example.com
 export TR_CLI_KEY=YOUR_API_KEY
 
 trcli get_plans --project-id 1
+trcli get_sections --project-id 1 --suite-id 3
 trcli get_case --case-id 5001
 ```
 

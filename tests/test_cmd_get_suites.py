@@ -1,3 +1,4 @@
+import json
 from unittest import mock
 
 import pytest
@@ -18,7 +19,7 @@ class TestCmdGetSuites:
         "--project-id", "1",
     ]
 
-    @mock.patch("trcli.commands.cmd_get_suites._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_suites.create_api_client")
     def test_happy_path_returns_json(self, mock_create_client):
         """Successful API response prints JSON to stdout."""
         suites_data = [{"id": 1, "name": "Suite A"}, {"id": 2, "name": "Suite B"}]
@@ -31,11 +32,10 @@ class TestCmdGetSuites:
         result = runner.invoke(trcli_cli, self.BASE_ARGS, catch_exceptions=False)
 
         assert result.exit_code == 0
-        assert '"Suite A"' in result.output
-        assert '"Suite B"' in result.output
+        assert json.loads(result.output) == suites_data
         mock_client.send_get.assert_called_once_with("get_suites/1")
 
-    @mock.patch("trcli.commands.cmd_get_suites._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_suites.create_api_client")
     def test_api_error_message_exits_with_code_1(self, mock_create_client):
         """API error message is output with exit code 1."""
         mock_client = mock_create_client.return_value
@@ -49,7 +49,7 @@ class TestCmdGetSuites:
         assert result.exit_code == 1
         assert "Connection refused" in result.output
 
-    @mock.patch("trcli.commands.cmd_get_suites._create_api_client")
+    @mock.patch("trcli.commands.cmd_get_suites.create_api_client")
     def test_api_non_200_status_exits_with_code_1(self, mock_create_client):
         """Non-200 status code prints error with exit code 1."""
         mock_client = mock_create_client.return_value

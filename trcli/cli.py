@@ -313,8 +313,6 @@ class TRCLI(click.MultiCommand):
     def __init__(self, *args, **kwargs):
         # Use invoke_without_command=True to be able to print
         # short tool description when starting without parameters
-        print(TOOL_VERSION)
-
         # Check for updates (non-blocking)
         try:
             update_message = check_for_updates(__version__)

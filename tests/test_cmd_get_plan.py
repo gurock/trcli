@@ -1,8 +1,10 @@
+import json
 from unittest import mock
 
 import pytest
 from click.testing import CliRunner
 
+from trcli.api.api_client import APIClientResult
 from trcli.cli import cli as trcli_cli
 
 
@@ -17,30 +19,29 @@ class TestCmdGetPlan:
         "--plan-id", "42",
     ]
 
-    @mock.patch("trcli.commands.cmd_get_plan.ApiRequestHandler")
-    @mock.patch("trcli.commands.cmd_get_plan.APIClient")
-    def test_happy_path_returns_json(self, mock_api_client_cls, mock_handler_cls):
+    @mock.patch("trcli.commands.cmd_get_plan.create_api_client")
+    def test_happy_path_returns_json(self, mock_create_client):
         """Successful API response prints JSON to stdout."""
         plan_data = {"id": 42, "name": "My Plan", "entries": []}
-        mock_handler = mock_handler_cls.return_value
-        mock_handler.get_plan.return_value = (plan_data, None)
-        mock_api_client_cls.build_uploader_metadata.return_value = {}
+        mock_client = mock_create_client.return_value
+        mock_client.send_get.return_value = APIClientResult(
+            status_code=200, response_text=plan_data, error_message=""
+        )
 
         runner = CliRunner()
         result = runner.invoke(trcli_cli, self.BASE_ARGS, catch_exceptions=False)
 
         assert result.exit_code == 0
-        assert '"My Plan"' in result.output
-        assert '"id": 42' in result.output
-        mock_handler.get_plan.assert_called_once()
+        assert json.loads(result.output) == plan_data
+        mock_client.send_get.assert_called_once_with("get_plan/42")
 
-    @mock.patch("trcli.commands.cmd_get_plan.ApiRequestHandler")
-    @mock.patch("trcli.commands.cmd_get_plan.APIClient")
-    def test_api_error_exits_with_code_1(self, mock_api_client_cls, mock_handler_cls):
+    @mock.patch("trcli.commands.cmd_get_plan.create_api_client")
+    def test_api_error_exits_with_code_1(self, mock_create_client):
         """API error is output with exit code 1."""
-        mock_handler = mock_handler_cls.return_value
-        mock_handler.get_plan.return_value = (None, "Plan not found")
-        mock_api_client_cls.build_uploader_metadata.return_value = {}
+        mock_client = mock_create_client.return_value
+        mock_client.send_get.return_value = APIClientResult(
+            status_code=400, response_text={"error": "Plan not found"}, error_message="Plan not found"
+        )
 
         runner = CliRunner()
         result = runner.invoke(trcli_cli, self.BASE_ARGS)
@@ -73,7 +74,7 @@ class TestCmdGetPlan:
         result = runner.invoke(trcli_cli, args)
 
         assert result.exit_code == 1
-        assert "server address" in result.output
+        assert "--host is required" in result.output
 
     def test_missing_password_and_key_exits_nonzero(self):
         """Missing both -p and -k triggers an error."""
@@ -87,4 +88,4 @@ class TestCmdGetPlan:
         result = runner.invoke(trcli_cli, args)
 
         assert result.exit_code == 1
-        assert "password" in result.output or "key" in result.output
+        assert "--password or --key is required" in result.output
