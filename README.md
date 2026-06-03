@@ -1675,6 +1675,149 @@ $ trcli cases list -c config.yml --filter "API"
 $ trcli cases get -c config.yml --case-id 123 --show-all-fields
 ```
 
+#### Managing Test Suites
+
+The TestRail CLI provides the `suites` command for retrieving and listing test suites from TestRail. This command is useful for discovering suites in multi-suite projects, exporting suite data, and integrating with external tools or CI/CD pipelines.
+
+**Note on Suite Modes:**
+- **Single-suite projects** : Have one suite per project.
+- **Multi-suite projects or Single Suite with Baseline Support** : Can contain multiple test suites with different IDs.
+- The `suites` command works transparently for both modes
+
+##### Suites Command Overview
+
+The `suites` command supports two subcommands:
+
+| Subcommand | Purpose | Use Case |
+|------------|---------|----------|
+| `suites get` | Retrieve a single test suite by ID | Get detailed information about a specific suite |
+| `suites list` | List test suites in a project | Discover suites, export suite data, pagination support |
+
+##### Reference
+
+```shell
+$ trcli suites --help
+Usage: trcli suites [OPTIONS] COMMAND [ARGS]...
+
+  Manage test suites in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single test suite by ID
+  list  List test suites from TestRail
+```
+
+##### Retrieving a Single Test Suite
+
+Get detailed information about a specific test suite by its ID :
+
+**Note:** This gets the suite's information regardless of the project selected
+
+```shell
+# Get suite with all fields displayed
+$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+
+# Get suite as JSON (for piping to jq or other tools)
+$ trcli suites get -c config.yml --suite-id 1 --json-output
+```
+
+##### Listing Test Suites
+
+List test suites from a project with pagination support:
+
+```shell
+# List all suites in a project (using config file)
+$ trcli suites list -c config.yml
+
+# List all suites with all parameters
+$ trcli suites list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli suites list -c config.yml --offset 250 --limit 100
+
+# JSON output for integration with other tools
+$ trcli suites list -c config.yml --json-output | jq '.suites[].name'
+
+# Show all fields for each suite
+$ trcli suites list -c config.yml --show-all-fields
+```
+
+##### Configuration File Support
+
+The `suites` command supports configuration files, allowing you to specify connection details and project information once:
+
+**config.yml:**
+```yaml
+host: https://yourinstance.testrail.io
+username: user@example.com
+password: your_password
+project: Your Project          # Project name (required)
+```
+
+Then use with the `-c` flag:
+```shell
+$ trcli suites list -c config.yml
+$ trcli suites get -c config.yml --suite-id 1
+```
+
+##### Command Options Reference
+
+**Get Command:**
+```shell
+$ trcli suites get --help
+Options:
+  --suite-id         Suite ID to retrieve.  [x>=1; required]
+  --json-output      Output suite as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+**List Command:**
+```shell
+$ trcli suites list --help
+Options:
+  --offset           Offset for pagination (default: 0).
+  --limit            Limit for pagination (default: 250).
+  --json-output      Output suites as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+##### Use Cases
+
+**1. Export suite data for documentation:**
+```shell
+$ trcli suites list -c config.yml --json-output > suites_export.json
+```
+
+**2. Discover suites in a multi-suite project:**
+```shell
+$ trcli suites list -c config.yml
+```
+
+**3. Integration with CI/CD pipelines:**
+```shell
+# Get all suite names and process them
+$ trcli suites list -c config.yml --json-output | jq -r '.suites[] | .name'
+```
+
+**4. Verify suite details before test execution:**
+```shell
+$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+```
+
+**5. Identify suite IDs for multi-suite workflows:**
+```shell
+# Find suite ID by name
+$ trcli suites list -c config.yml --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
