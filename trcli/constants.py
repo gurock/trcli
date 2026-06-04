@@ -92,6 +92,7 @@ COMMAND_FAULT_MAPPING = dict(
     results=dict(**FAULT_MAPPING),
     cases=dict(**FAULT_MAPPING),
     suites=dict(**FAULT_MAPPING),
+    plans=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(

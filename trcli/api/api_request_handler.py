@@ -15,6 +15,7 @@ from trcli.api.result_handler import ResultHandler
 from trcli.api.run_handler import RunHandler
 from trcli.api.bdd_handler import BddHandler
 from trcli.api.case_handler import CaseHandler
+from trcli.api.plan_handler import PlanHandler
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -84,6 +85,7 @@ class ApiRequestHandler:
             handle_futures_callback=self.handle_futures,
             retrieve_results_callback=ApiRequestHandler.retrieve_results_after_cancelling,
         )
+        self.plan_handler = PlanHandler(api_client, environment)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
