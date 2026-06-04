@@ -138,3 +138,48 @@ class SectionHandler:
                 error_message = response.error_message
                 break
         return responses, error_message
+
+    def get_section(self, section_id: int) -> Tuple[dict, str]:
+        """
+        Retrieve a single section by ID
+
+        :param section_id: TestRail section ID
+        :returns: Tuple with (section_data_dict, error_message)
+        """
+        response = self.client.send_get(f"get_section/{section_id}")
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
+
+    def get_sections(
+        self,
+        project_id: int,
+        suite_id: int,
+        limit: int = 250,
+        offset: int = 0,
+    ) -> Tuple[dict, str]:
+        """
+        Retrieve sections for a project and suite with pagination
+
+        :param project_id: TestRail project ID
+        :param suite_id: TestRail suite ID (required)
+        :param limit: Maximum number of sections to return (default: 250)
+        :param offset: Offset for pagination (default: 0)
+        :returns: Tuple with (paginated_response_dict, error_message)
+                  Response dict contains: sections, offset, limit, size, _links
+        """
+        # Build query parameters
+        params = [f"suite_id={suite_id}"]  # suite_id is required
+        if limit != 250:
+            params.append(f"limit={limit}")
+        if offset > 0:
+            params.append(f"offset={offset}")
+
+        # Build URL
+        query_string = "&".join(params)
+        url = f"get_sections/{project_id}&{query_string}"
+
+        response = self.client.send_get(url)
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
