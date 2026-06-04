@@ -1818,6 +1818,136 @@ $ trcli suites get -c config.yml --suite-id 1 --show-all-fields
 $ trcli suites list -c config.yml --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
 ```
 
+#### Managing Test Plans
+
+The TestRail CLI provides the `plans` command for retrieving and listing test plans from TestRail. Test plans are containers for organizing multiple test runs, often used for release testing across different configurations or environments. This command is useful for monitoring test execution progress, exporting plan data, and integrating with CI/CD pipelines.
+
+##### Plans Command Overview
+
+The `plans` command supports two subcommands:
+
+| Subcommand | Purpose | Use Case |
+|------------|---------|----------|
+| `plans get` | Retrieve a single test plan by ID | Get detailed information about a plan including all entries and runs |
+| `plans list` | List test plans in a project | Discover plans, monitor progress, export plan data with pagination |
+
+##### Reference
+
+```shell
+$ trcli plans --help
+Usage: trcli plans [OPTIONS] COMMAND [ARGS]...
+
+  Manage test plans in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single test plan by ID
+  list  List test plans from TestRail
+```
+
+##### Retrieving a Single Test Plan
+
+Get detailed information about a specific test plan by its ID, including all entries and runs:
+
+```shell
+# Get a test plan (using config file)
+$ trcli plans get -c config.yml --plan-id 10
+
+# Get a test plan with all parameters
+$ trcli plans get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --plan-id 10
+
+# Get plan with all fields displayed
+$ trcli plans get -c config.yml --plan-id 10 --show-all-fields
+
+# Get plan as JSON (for piping to jq or other tools)
+$ trcli plans get -c config.yml --plan-id 10 --json-output
+``` 
+
+##### Listing Test Plans
+
+List test plans from a project with pagination support:
+
+```shell
+# List all plans in a project (using config file)
+$ trcli plans list -c config.yml
+
+# List all plans with all parameters
+$ trcli plans list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli plans list -c config.yml --offset 250 --limit 100
+
+# JSON output for integration with other tools
+$ trcli plans list -c config.yml --json-output | jq '.plans[].name'
+
+# Show all fields for each plan
+$ trcli plans list -c config.yml --show-all-fields
+```
+
+##### Configuration File Support
+
+The `plans` command supports configuration files, allowing you to specify connection details and project information once:
+
+**config.yml:**
+```yaml
+host: https://yourinstance.testrail.io
+username: user@example.com
+password: your_password
+project: Your Project          # Project name (required)
+```
+
+Then use with the `-c` flag:
+```shell
+$ trcli plans list -c config.yml
+$ trcli plans get -c config.yml --plan-id 10
+```
+
+##### Command Options Reference
+
+**Get Command:**
+```shell
+$ trcli plans get --help
+Options:
+  --plan-id          Plan ID to retrieve.  [x>=1; required]
+  --json-output      Output plan as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+**List Command:**
+```shell
+$ trcli plans list --help
+Options:
+  --offset           Offset for pagination (default: 0).
+  --limit            Limit for pagination (default: 250).
+  --json-output      Output plans as raw JSON from API.
+  --show-all-fields  Show all fields including custom fields in detail.
+  --help             Show this message and exit.
+```
+
+##### Use Cases
+
+**1. Monitor release testing progress:**
+```shell
+$ trcli plans get -c config.yml --plan-id 10
+```
+
+**2. Export plan data for reporting:**
+```shell
+$ trcli plans list -c config.yml --json-output > plans_report.json
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
