@@ -83,16 +83,16 @@ def get(
 
         environment.log(f"  Suite ID: {section_data.get('suite_id', 'N/A')}")
         environment.log(f"  Depth: {section_data.get('depth', 0)}")
-        environment.log(f"  Display Order: {section_data.get('display_order', 'N/A')}")
-
-        parent_id = section_data.get("parent_id")
-        if parent_id:
-            environment.log(f"  Parent Section ID: {parent_id}")
-        else:
-            environment.log("  Parent Section ID: (root level)")
 
         if show_all_fields:
-            # Show all other fields
+            environment.log(f"  Display Order: {section_data.get('display_order', 'N/A')}")
+
+            parent_id = section_data.get("parent_id")
+            if parent_id:
+                environment.log(f"  Parent Section ID: {parent_id}")
+            else:
+                environment.log("  Parent Section ID: (root level)")
+
             standard_fields = ["id", "name", "description", "suite_id", "depth", "display_order", "parent_id"]
             other_fields = {k: v for k, v in section_data.items() if k not in standard_fields}
             if other_fields:
@@ -226,9 +226,5 @@ def list(
 
                     environment.log(f"{indent}  Suite ID: {section.get('suite_id', 'N/A')}")
                     environment.log(f"{indent}  Depth: {depth}")
-
-                    parent_id = section.get("parent_id")
-                    if parent_id:
-                        environment.log(f"{indent}  Parent ID: {parent_id}")
 
                     environment.log("")
