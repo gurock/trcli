@@ -1948,6 +1948,83 @@ $ trcli plans get -c config.yml --plan-id 10
 $ trcli plans list -c config.yml --json-output > plans_report.json
 ```
 
+### Managing Sections
+
+The TestRail CLI provides the `sections` command for retrieving and listing sections from TestRail. Sections are used to organize test cases within a project and create a hierarchical structure for managing test repositories. This command is useful for exploring project organization, auditing test structures, exporting section data, and integrating section information into automation workflows.
+
+### Sections Command Overview
+
+The `sections` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `sections get` | Retrieve a single section by ID | Get detailed information about a section including its hierarchy and metadata |
+| `sections list` | List sections in a suite | Discover project structure, export section data, and navigate test repositories |
+
+### Reference
+
+```shell
+
+$ trcli sections --help
+
+Usage: trcli sections [OPTIONS] COMMAND [ARGS]...
+  Manage sections in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single section by ID
+  list  List sections from TestRail
+```
+
+##### Retreiving a Single Section
+
+Get detailed information about a specific section by its ID:
+
+```shell
+# Get a section (using config file)
+$ trcli sections get -c config.yml --section-id 10
+
+# Get a section with all parameters
+$ trcli sections get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --section-id 10
+
+# Get section with all fields displayed
+$ trcli sections get -c config.yml --section-id 10 --show-all-fields
+
+# Get section as JSON (for piping to jq or other tools)
+$ trcli sections get -c config.yml --section-id 10 --json-output
+```
+##### Listing Sections
+
+List sections from a project with pagination support:
+
+```shell
+# List all sections in a project (using config file)
+$ trcli sections list -c config.yml
+
+# List all sections with all parameters
+$ trcli sections list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli sections list -c config.yml --offset 250 --limit 100
+
+# JSON output for integration with other tools
+$ trcli sections list -c config.yml --json-output | jq '.sections[].name'
+
+# Show all fields for each section
+$ trcli sections list -c config.yml --show-all-fields
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
