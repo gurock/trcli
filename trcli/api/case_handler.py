@@ -261,3 +261,60 @@ class CaseHandler:
                 update_response.error_message or f"Failed to update automation_id (HTTP {update_response.status_code})"
             )
             return False, error_msg
+
+    def get_case(self, case_id: int) -> Tuple[dict, str]:
+        """
+        Retrieve a single test case by ID
+
+        :param case_id: TestRail case ID
+        :returns: Tuple with (case_data_dict, error_message)
+        """
+        response = self.client.send_get(f"get_case/{case_id}")
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
+
+    def get_cases(
+        self,
+        project_id: int,
+        suite_id: int = None,
+        priority_id: str = None,
+        filter_text: str = None,
+        limit: int = 250,
+        offset: int = 0,
+    ) -> Tuple[dict, str]:
+        """
+        Retrieve test cases for a project with optional filters
+
+        :param project_id: TestRail project ID
+        :param suite_id: Optional suite ID filter
+        :param priority_id: Optional priority ID filter (comma-separated for multiple)
+        :param filter_text: Optional text search filter
+        :param limit: Maximum number of cases to return (default: 250)
+        :param offset: Offset for pagination (default: 0)
+        :returns: Tuple with (paginated_response_dict, error_message)
+                  Response dict contains: cases, offset, limit, size, _links
+        """
+        # Build query parameters
+        params = []
+        if suite_id is not None:
+            params.append(f"suite_id={suite_id}")
+        if priority_id is not None:
+            params.append(f"priority_id={priority_id}")
+        if filter_text is not None:
+            params.append(f"filter={filter_text}")
+        if limit != 250:
+            params.append(f"limit={limit}")
+        if offset > 0:
+            params.append(f"offset={offset}")
+
+        # Build URL
+        query_string = "&".join(params) if params else ""
+        url = f"get_cases/{project_id}"
+        if query_string:
+            url = f"{url}&{query_string}"
+
+        response = self.client.send_get(url)
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""

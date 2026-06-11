@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.0]
+
+_released 06-11-2026
+
+### Added
+ - **New data query commands**: These commands provide read-only access to TestRail data, enabling AI agents and automation tools to query test management information for intelligent workflows; Added `cases`, `suites`, `sections`, and `plans` commands with `get` and `list` subcommands for querying TestRail data. All commands support pagination (`--offset`, `--limit`), JSON output (`--json-output`), detailed view (`--show-all-fields`), and flexible project specification.
+
 ## [1.14.3]
 
 _released 05-28-2026
