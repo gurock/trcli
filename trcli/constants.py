@@ -119,7 +119,12 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
     - labels: Manage labels (projects, cases, and tests)
-    - references: Manage references (cases and runs)"""
+    - results: Manage test results (list, update)
+    - references: Manage references (cases and runs)
+    - cases: Query test cases data (get and list)
+    - suites: Query test suites data (get and list)
+    - sections: Query test sections data (get and list)
+    - plans: Query test plans data (get and list)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
