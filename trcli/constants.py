@@ -94,6 +94,7 @@ COMMAND_FAULT_MAPPING = dict(
     suites=dict(**FAULT_MAPPING),
     plans=dict(**FAULT_MAPPING),
     sections=dict(**FAULT_MAPPING),
+    runs=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -119,7 +120,13 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
     - labels: Manage labels (projects, cases, and tests)
-    - references: Manage references (cases and runs)"""
+    - references: Manage references (cases and runs)
+    - cases: Query test cases
+    - suites: Query test suites
+    - sections: Query test sections
+    - plans: Query test plans
+    - runs: Query test runs
+    - results: Query and update test results"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""

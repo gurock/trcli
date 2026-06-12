@@ -376,6 +376,52 @@ class RunHandler:
         response = self.client.send_post(f"delete_run/{run_id}", payload={})
         return response.response_text, response.error_message
 
+    def get_run(self, run_id: int) -> Tuple[dict, str]:
+        """
+        Retrieve a single test run by ID
+
+        :param run_id: TestRail run ID
+        :returns: Tuple with (run_data_dict, error_message)
+        """
+        response = self.client.send_get(f"get_run/{run_id}")
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
+
+    def get_runs(
+        self,
+        project_id: int,
+        limit: int = 250,
+        offset: int = 0,
+    ) -> Tuple[dict, str]:
+        """
+        Retrieve test runs for a project with pagination.
+        Only returns test runs that are not part of a test plan.
+
+        :param project_id: TestRail project ID
+        :param limit: Maximum number of runs to return (default: 250)
+        :param offset: Offset for pagination (default: 0)
+        :returns: Tuple with (paginated_response_dict, error_message)
+                  Response dict contains: runs, offset, limit, size, _links
+        """
+        # Build query parameters
+        params = []
+        if limit != 250:
+            params.append(f"limit={limit}")
+        if offset > 0:
+            params.append(f"offset={offset}")
+
+        # Build URL
+        query_string = "&".join(params) if params else ""
+        url = f"get_runs/{project_id}"
+        if query_string:
+            url = f"{url}&{query_string}"
+
+        response = self.client.send_get(url)
+        if response.error_message:
+            return {}, response.error_message
+        return response.response_text, ""
+
     def add_plan(
         self,
         project_id: int,

@@ -73,6 +73,12 @@ trcli_description = (
     "    - add_run: Create a new test run\n"
     "    - labels: Manage labels (projects, cases, and tests)\n"
     "    - references: Manage references (cases and runs)\n"
+    "    - cases: Query test cases\n"
+    "    - suites: Query test suites\n"
+    "    - sections: Query test sections\n"
+    "    - plans: Query test plans\n"
+    "    - runs: Query test runs\n"
+    "    - results: Query and update test results\n"
 )
 
 trcli_help_description = "TestRail CLI"
