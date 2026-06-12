@@ -6,6 +6,13 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.1]
+
+_released 06-24-2026
+
+### Added
+ - **Added more data query commands for comprehensive AI automation support**
+
 ## [1.15.0]
 
 _released 06-11-2026
