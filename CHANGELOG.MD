@@ -12,6 +12,7 @@ _released 06-24-2026
 
 ### Added
  - **New `runs` command**: Query and retrieve test run information from TestRail with `get` and `list` subcommands. Provides execution metrics, status tracking, and configuration details. Note: Only returns standalone runs (not runs within test plans).
+ - **New `milestones` command**: Query and retrieve milestone information from TestRail with `get` and `list` subcommands. Track project milestones, monitor completion status, due dates, and references.
 
 ## [1.15.0]
 

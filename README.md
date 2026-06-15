@@ -102,6 +102,11 @@ Commands:
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
+  results        Manage test results in TestRail
+  sections       Manage test sections in TestRail
+  suites         Manage test suites in TestRail
+  runs           Manage test runs in TestRail
+  milestones     Manage milestones in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2102,6 +2107,83 @@ $ trcli -c config.yml runs list --json-output | jq '.runs[].name'
 
 # Show all fields for each run
 $ trcli -c config.yml runs list --show-all-fields
+```
+
+### Managing Milestones
+
+The TestRail CLI provides the `milestones` command for retrieving and listing milestones from TestRail. Milestones represent important project dates and deliverables, helping track progress toward releases and major project goals. This command is useful for monitoring milestone status, tracking completion dates, exporting milestone data, and integrating milestone information into project management workflows.
+
+### Milestones Command Overview
+
+The `milestones` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `milestones get` | Retrieve a single milestone by ID | Get detailed information about a milestone including status, due dates, and completion |
+| `milestones list` | List milestones in a project | Track project milestones, monitor progress, and export milestone data |
+
+### Reference
+
+```shell
+
+$ trcli milestones --help
+
+Usage: trcli milestones [OPTIONS] COMMAND [ARGS]...
+  Manage milestones in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single milestone by ID
+  list  List milestones from TestRail
+```
+
+##### Retrieving a Single Milestone
+
+Get detailed information about a specific milestone by its ID:
+
+```shell
+# Get a milestone (using config file)
+$ trcli -c config.yml milestones get --milestone-id 1
+
+# Get a milestone with all parameters
+$ trcli milestones get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --milestone-id 1
+
+# Get milestone with all fields displayed (includes timestamps, references, URL, etc.)
+$ trcli -c config.yml milestones get --milestone-id 1 --show-all-fields
+
+# Get milestone as JSON (for piping to jq or other tools)
+$ trcli -c config.yml milestones get --milestone-id 1 --json-output
+```
+##### Listing Milestones
+
+List milestones from a project with pagination support:
+
+```shell
+# List all milestones in a project (using config file)
+$ trcli -c config.yml milestones list
+
+# List all milestones with all parameters
+$ trcli milestones list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml milestones list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml milestones list --json-output | jq '.milestones[].name'
+
+# Show all fields for each milestone
+$ trcli -c config.yml milestones list --show-all-fields
 ```
 
 #### Labels Management
