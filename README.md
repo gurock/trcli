@@ -108,6 +108,7 @@ Commands:
   runs           Manage test runs in TestRail
   milestones     Manage milestones in TestRail
   statuses       Manage test statuses in TestRail
+  casefields     List case fields in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2336,6 +2337,40 @@ Case Status ID: 2
 
 
 Case status listing completed successfully.
+```
+
+### Case Fields Command
+
+The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.
+
+#### Reference
+
+```shell
+$ trcli casefields --help
+
+Usage: trcli casefields [OPTIONS]
+  List all case fields from TestRail
+
+Options:
+  --json-output      Output case fields as raw JSON from API.
+  --show-all-fields  Show all fields including configs and options.
+  --help             Show this message and exit.
+```
+
+#### Listing Case Fields
+
+```shell
+# List all case fields
+$ trcli -c config.yml casefields
+
+# Show all fields including configurations
+$ trcli -c config.yml casefields --show-all-fields
+
+# Filter to show only fields for a specific project (auto-filters when --project is specified)
+$ trcli -c config.yml --project "Your Project" casefields
+
+# JSON output
+$ trcli -c config.yml casefields --json-output | jq '.[].label'
 ```
 
 #### Labels Management
