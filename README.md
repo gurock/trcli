@@ -109,6 +109,7 @@ Commands:
   milestones     Manage milestones in TestRail
   statuses       Manage test statuses in TestRail
   casefields     List case fields in TestRail
+  resultfields   List result fields in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2367,10 +2368,85 @@ $ trcli -c config.yml casefields
 $ trcli -c config.yml casefields --show-all-fields
 
 # Filter to show only fields for a specific project (auto-filters when --project is specified)
-$ trcli -c config.yml --project "Your Project" casefields
+$ trcli -c config.yml casefields --project "Your Project"
 
 # JSON output
 $ trcli -c config.yml casefields --json-output | jq '.[].label'
+```
+
+### Result Fields Command
+
+The TestRail CLI provides the `resultfields` command for retrieving all available test result custom fields from TestRail. This command helps you understand what custom fields are available for test results, their types, configurations, which projects they apply to, and which templates use them.
+
+#### Reference
+
+```shell
+$ trcli resultfields --help
+
+Usage: trcli resultfields [OPTIONS]
+  List all result fields from TestRail
+
+Options:
+  --json-output      Output result fields as raw JSON from API.
+  --show-all-fields  Show all fields including configs and options.
+  --help             Show this message and exit.
+```
+
+#### Listing Result Fields
+
+```shell
+# List all result fields
+$ trcli -c config.yml resultfields
+
+# Show all fields including configurations
+$ trcli -c config.yml resultfields --show-all-fields
+
+# Filter to show only fields for a specific project (auto-filters when --project is specified)
+$ trcli -c config.yml --project "Your Project" resultfields 
+
+# JSON output
+$ trcli -c config.yml resultfields --json-output | jq '.[].label'
+```
+
+**Note:** When a project is specified (via `--project` in the CLI or from your config file), the command automatically filters result fields to show only those applicable to that project. This includes:
+- Global fields (applicable to all projects)
+- Project-specific fields (where the project ID is in the field's project_ids list)
+
+#### Example Output
+
+```shell
+$ trcli -c config.yml resultfields
+
+Result Fields List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+> Project: Your Project
+> Filtering fields for this project
+Retrieving result fields for project ID 1...
+Found 5 result field(s):
+
+Field ID: 19
+  Label: Input
+  Name: ai_input
+  System Name: custom_ai_input
+  Type: Text (ID: 3)
+  Active: Yes
+
+Field ID: 20
+  Label: Output
+  Name: ai_output
+  System Name: custom_ai_output
+  Type: Text (ID: 3)
+  Active: Yes
+
+Field ID: 11
+  Label: Steps
+  Name: step_results
+  System Name: custom_step_results
+  Type: Step Results (ID: 11)
+  Active: Yes
+
+
+Result field listing completed successfully.
 ```
 
 #### Labels Management
