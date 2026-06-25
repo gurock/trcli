@@ -80,6 +80,7 @@ trcli_description = (
     "    - runs: Query test runs\n"
     "    - milestones: Query milestones\n"
     "    - configurations: Query configurations\n"
+    "    - statuses: Query test statuses\n"
     "    - results: Query and update test results\n"
 )
 
