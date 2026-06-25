@@ -78,6 +78,7 @@ trcli_description = (
     "    - sections: Query test sections\n"
     "    - plans: Query test plans\n"
     "    - runs: Query test runs\n"
+    "    - milestones: Query milestones\n"
     "    - results: Query and update test results\n"
 )
 

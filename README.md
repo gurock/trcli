@@ -102,6 +102,11 @@ Commands:
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
   parse_robot    Parse Robot Framework report and upload results to TestRail
   references     Manage references in TestRail
+  results        Manage test results in TestRail
+  sections       Manage test sections in TestRail
+  suites         Manage test suites in TestRail
+  runs           Manage test runs in TestRail
+  milestones     Manage milestones in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -1466,7 +1471,7 @@ Get detailed information about a specific test case by its ID:
 
 ```shell
 # Get a test case (using config file)
-$ trcli cases get -c config.yml --case-id 123
+$ trcli -c config.yml cases get --case-id 123
 
 # Get a test case with all parameters
 $ trcli cases get \
@@ -1477,10 +1482,10 @@ $ trcli cases get \
   --case-id 123
 
 # Get case with all fields displayed
-$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+$ trcli -c config.yml cases get --case-id 123 --show-all-fields
 
 # Get case as JSON (for piping to jq or other tools)
-$ trcli cases get -c config.yml --case-id 123 --json-output
+$ trcli -c config.yml cases get --case-id 123 --json-output
 ```
 
 **Output example:**
@@ -1542,28 +1547,28 @@ List test cases from a project with optional filtering by suite, priority, or te
 
 ```shell
 # List all cases in a project (using config file)
-$ trcli cases list -c config.yml
+$ trcli -c config.yml cases list
 
 # List cases with suite filter
-$ trcli cases list -c config.yml --suite-id 2
+$ trcli -c config.yml cases list --suite-id 2
 
 # List cases with priority filter (high priority only)
-$ trcli cases list -c config.yml --priority-id 4
+$ trcli -c config.yml cases list --priority-id 4
 
 # List cases with multiple priorities
-$ trcli cases list -c config.yml --priority-id "3,4"
+$ trcli -c config.yml cases list --priority-id "3,4"
 
 # List cases with text search
-$ trcli cases list -c config.yml --filter "login"
+$ trcli -c config.yml cases list --filter "login"
 
 # Combine multiple filters
-$ trcli cases list -c config.yml --suite-id 2 --priority-id 4 --filter "authentication"
+$ trcli -c config.yml cases list --suite-id 2 --priority-id 4 --filter "authentication"
 
 # Pagination support
-$ trcli cases list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml cases list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli cases list -c config.yml --suite-id 2 --json-output | jq '.cases[].title'
+$ trcli -c config.yml cases list --suite-id 2 --json-output | jq '.cases[].title'
 ```
 
 **Output example:**
@@ -1617,8 +1622,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli cases list -c config.yml
-$ trcli cases get -c config.yml --case-id 123
+$ trcli -c config.yml cases list
+$ trcli -c config.yml cases get --case-id 123
 ```
 
 ##### Command Options Reference
@@ -1651,28 +1656,28 @@ Options:
 
 **1. Export case data for documentation:**
 ```shell
-$ trcli cases list -c config.yml --json-output > cases_export.json
+$ trcli -c config.yml cases list --json-output > cases_export.json
 ```
 
 **2. Find all high-priority cases:**
 ```shell
-$ trcli cases list -c config.yml --priority-id 4
+$ trcli -c config.yml cases list --priority-id 4
 ```
 
 **3. Integration with CI/CD pipelines:**
 ```shell
 # Get test cases and pipe to analysis tool
-$ trcli cases list -c config.yml --suite-id 2 --json-output | jq -r '.cases[] | select(.labels[].title == "automated") | .title'
+$ trcli -c config.yml cases list --suite-id 2 --json-output | jq -r '.cases[] | select(.labels[].title == "automated") | .title'
 ```
 
 **4. Discover cases by keyword:**
 ```shell
-$ trcli cases list -c config.yml --filter "API"
+$ trcli -c config.yml cases list --filter "API"
 ```
 
 **5. Verify case details before test execution:**
 ```shell
-$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+$ trcli -c config.yml cases get --case-id 123 --show-all-fields
 ```
 
 #### Managing Test Suites
@@ -1717,10 +1722,10 @@ Get detailed information about a specific test suite by its ID :
 
 ```shell
 # Get suite with all fields displayed
-$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+$ trcli -c config.yml suites get --suite-id 1 --show-all-fields
 
 # Get suite as JSON (for piping to jq or other tools)
-$ trcli suites get -c config.yml --suite-id 1 --json-output
+$ trcli -c config.yml suites get --suite-id 1 --json-output
 ```
 
 ##### Listing Test Suites
@@ -1729,7 +1734,7 @@ List test suites from a project with pagination support:
 
 ```shell
 # List all suites in a project (using config file)
-$ trcli suites list -c config.yml
+$ trcli -c config.yml suites list
 
 # List all suites with all parameters
 $ trcli suites list \
@@ -1739,13 +1744,13 @@ $ trcli suites list \
   --project "Your Project"
 
 # Pagination support
-$ trcli suites list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml suites list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli suites list -c config.yml --json-output | jq '.suites[].name'
+$ trcli -c config.yml suites list --json-output | jq '.suites[].name'
 
 # Show all fields for each suite
-$ trcli suites list -c config.yml --show-all-fields
+$ trcli -c config.yml suites list --show-all-fields
 ```
 
 ##### Configuration File Support
@@ -1762,8 +1767,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli suites list -c config.yml
-$ trcli suites get -c config.yml --suite-id 1
+$ trcli -c config.yml suites list
+$ trcli -c config.yml suites get --suite-id 1
 ```
 
 ##### Command Options Reference
@@ -1793,29 +1798,29 @@ Options:
 
 **1. Export suite data for documentation:**
 ```shell
-$ trcli suites list -c config.yml --json-output > suites_export.json
+$ trcli -c config.yml suites list --json-output > suites_export.json
 ```
 
 **2. Discover suites in a multi-suite project:**
 ```shell
-$ trcli suites list -c config.yml
+$ trcli -c config.yml suites list
 ```
 
 **3. Integration with CI/CD pipelines:**
 ```shell
 # Get all suite names and process them
-$ trcli suites list -c config.yml --json-output | jq -r '.suites[] | .name'
+$ trcli -c config.yml suites list --json-output | jq -r '.suites[] | .name'
 ```
 
 **4. Verify suite details before test execution:**
 ```shell
-$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+$ trcli -c config.yml suites get --suite-id 1 --show-all-fields
 ```
 
 **5. Identify suite IDs for multi-suite workflows:**
 ```shell
 # Find suite ID by name
-$ trcli suites list -c config.yml --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
+$ trcli -c config.yml suites list --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
 ```
 
 #### Managing Test Plans
@@ -1853,7 +1858,7 @@ Get detailed information about a specific test plan by its ID, including all ent
 
 ```shell
 # Get a test plan (using config file)
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans get --plan-id 10
 
 # Get a test plan with all parameters
 $ trcli plans get \
@@ -1864,10 +1869,10 @@ $ trcli plans get \
   --plan-id 10
 
 # Get plan with all fields displayed
-$ trcli plans get -c config.yml --plan-id 10 --show-all-fields
+$ trcli -c config.yml plans get --plan-id 10 --show-all-fields
 
 # Get plan as JSON (for piping to jq or other tools)
-$ trcli plans get -c config.yml --plan-id 10 --json-output
+$ trcli -c config.yml plans get --plan-id 10 --json-output
 ``` 
 
 ##### Listing Test Plans
@@ -1876,7 +1881,7 @@ List test plans from a project with pagination support:
 
 ```shell
 # List all plans in a project (using config file)
-$ trcli plans list -c config.yml
+$ trcli -c config.yml plans list
 
 # List all plans with all parameters
 $ trcli plans list \
@@ -1886,13 +1891,13 @@ $ trcli plans list \
   --project "Your Project"
 
 # Pagination support
-$ trcli plans list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml plans list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli plans list -c config.yml --json-output | jq '.plans[].name'
+$ trcli -c config.yml plans list --json-output | jq '.plans[].name'
 
 # Show all fields for each plan
-$ trcli plans list -c config.yml --show-all-fields
+$ trcli -c config.yml plans list --show-all-fields
 ```
 
 ##### Configuration File Support
@@ -1909,8 +1914,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli plans list -c config.yml
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans list
+$ trcli -c config.yml plans get --plan-id 10
 ```
 
 ##### Command Options Reference
@@ -1940,12 +1945,12 @@ Options:
 
 **1. Monitor release testing progress:**
 ```shell
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans get --plan-id 10
 ```
 
 **2. Export plan data for reporting:**
 ```shell
-$ trcli plans list -c config.yml --json-output > plans_report.json
+$ trcli -c config.yml plans list --json-output > plans_report.json
 ```
 
 ### Managing Sections
@@ -1984,7 +1989,7 @@ Get detailed information about a specific section by its ID:
 
 ```shell
 # Get a section (using config file)
-$ trcli sections get -c config.yml --section-id 10
+$ trcli -c config.yml sections get --section-id 10
 
 # Get a section with all parameters
 $ trcli sections get \
@@ -1995,10 +2000,10 @@ $ trcli sections get \
   --section-id 10
 
 # Get section with all fields displayed
-$ trcli sections get -c config.yml --section-id 10 --show-all-fields
+$ trcli -c config.yml sections get --section-id 10 --show-all-fields
 
 # Get section as JSON (for piping to jq or other tools)
-$ trcli sections get -c config.yml --section-id 10 --json-output
+$ trcli -c config.yml sections get --section-id 10 --json-output
 ```
 ##### Listing Sections
 
@@ -2006,7 +2011,7 @@ List sections from a project with pagination support:
 
 ```shell
 # List all sections in a project (using config file)
-$ trcli sections list -c config.yml
+$ trcli -c config.yml sections list
 
 # List all sections with all parameters
 $ trcli sections list \
@@ -2016,13 +2021,13 @@ $ trcli sections list \
   --project "Your Project"
 
 # Pagination support
-$ trcli sections list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml sections list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli sections list -c config.yml --json-output | jq '.sections[].name'
+$ trcli -c config.yml sections list --json-output | jq '.sections[].name'
 
 # Show all fields for each section
-$ trcli sections list -c config.yml --show-all-fields
+$ trcli -c config.yml sections list --show-all-fields
 ```
 
 ### Managing Runs
@@ -2063,7 +2068,7 @@ Get detailed information about a specific run by its ID:
 
 ```shell
 # Get a run (using config file)
-$ trcli runs get -c config.yml --run-id 100
+$ trcli -c config.yml runs get --run-id 100
 
 # Get a run with all parameters
 $ trcli runs get \
@@ -2074,10 +2079,10 @@ $ trcli runs get \
   --run-id 100
 
 # Get run with all fields displayed (includes timestamps, config IDs, milestone, etc.)
-$ trcli runs get -c config.yml --run-id 100 --show-all-fields
+$ trcli -c config.yml runs get --run-id 100 --show-all-fields
 
 # Get run as JSON (for piping to jq or other tools)
-$ trcli runs get -c config.yml --run-id 100 --json-output
+$ trcli -c config.yml runs get --run-id 100 --json-output
 ```
 ##### Listing Runs
 
@@ -2085,7 +2090,7 @@ List runs from a project with pagination support:
 
 ```shell
 # List all runs in a project (using config file)
-$ trcli runs list -c config.yml
+$ trcli -c config.yml runs list
 
 # List all runs with all parameters
 $ trcli runs list \
@@ -2095,13 +2100,90 @@ $ trcli runs list \
   --project "Your Project"
 
 # Pagination support
-$ trcli runs list -c config.yml --offset 0 --limit 50
+$ trcli -c config.yml runs list --offset 0 --limit 50
 
 # JSON output for integration with other tools
-$ trcli runs list -c config.yml --json-output | jq '.runs[].name'
+$ trcli -c config.yml runs list --json-output | jq '.runs[].name'
 
 # Show all fields for each run
-$ trcli runs list -c config.yml --show-all-fields
+$ trcli -c config.yml runs list --show-all-fields
+```
+
+### Managing Milestones
+
+The TestRail CLI provides the `milestones` command for retrieving and listing milestones from TestRail. Milestones represent important project dates and deliverables, helping track progress toward releases and major project goals. This command is useful for monitoring milestone status, tracking completion dates, exporting milestone data, and integrating milestone information into project management workflows.
+
+### Milestones Command Overview
+
+The `milestones` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `milestones get` | Retrieve a single milestone by ID | Get detailed information about a milestone including status, due dates, and completion |
+| `milestones list` | List milestones in a project | Track project milestones, monitor progress, and export milestone data |
+
+### Reference
+
+```shell
+
+$ trcli milestones --help
+
+Usage: trcli milestones [OPTIONS] COMMAND [ARGS]...
+  Manage milestones in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single milestone by ID
+  list  List milestones from TestRail
+```
+
+##### Retrieving a Single Milestone
+
+Get detailed information about a specific milestone by its ID:
+
+```shell
+# Get a milestone (using config file)
+$ trcli -c config.yml milestones get --milestone-id 1
+
+# Get a milestone with all parameters
+$ trcli milestones get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --milestone-id 1
+
+# Get milestone with all fields displayed (includes timestamps, references, URL, etc.)
+$ trcli -c config.yml milestones get --milestone-id 1 --show-all-fields
+
+# Get milestone as JSON (for piping to jq or other tools)
+$ trcli -c config.yml milestones get --milestone-id 1 --json-output
+```
+##### Listing Milestones
+
+List milestones from a project with pagination support:
+
+```shell
+# List all milestones in a project (using config file)
+$ trcli -c config.yml milestones list
+
+# List all milestones with all parameters
+$ trcli milestones list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml milestones list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml milestones list --json-output | jq '.milestones[].name'
+
+# Show all fields for each milestone
+$ trcli -c config.yml milestones list --show-all-fields
 ```
 
 #### Labels Management
