@@ -2025,6 +2025,85 @@ $ trcli sections list -c config.yml --json-output | jq '.sections[].name'
 $ trcli sections list -c config.yml --show-all-fields
 ```
 
+### Managing Runs
+
+The TestRail CLI provides the `runs` command for retrieving and listing test runs from TestRail. Test runs represent the execution of a set of test cases, tracking their results and providing execution metrics. This command is useful for monitoring test execution progress, auditing run configurations, exporting run data, and integrating run information into automation workflows.
+
+**Note:** The `runs` command only returns standalone test runs (runs not part of a test plan). To query runs within test plans, use the `plans` command.
+
+### Runs Command Overview
+
+The `runs` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `runs get` | Retrieve a single run by ID | Get detailed information about a run including execution status, test counts, and configuration |
+| `runs list` | List runs in a project | Monitor active runs, track execution progress, and export run data |
+
+### Reference
+
+```shell
+
+$ trcli runs --help
+
+Usage: trcli runs [OPTIONS] COMMAND [ARGS]...
+  Manage runs in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single run by ID
+  list  List runs from TestRail
+```
+
+##### Retrieving a Single Run
+
+Get detailed information about a specific run by its ID:
+
+```shell
+# Get a run (using config file)
+$ trcli runs get -c config.yml --run-id 100
+
+# Get a run with all parameters
+$ trcli runs get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --run-id 100
+
+# Get run with all fields displayed (includes timestamps, config IDs, milestone, etc.)
+$ trcli runs get -c config.yml --run-id 100 --show-all-fields
+
+# Get run as JSON (for piping to jq or other tools)
+$ trcli runs get -c config.yml --run-id 100 --json-output
+```
+##### Listing Runs
+
+List runs from a project with pagination support:
+
+```shell
+# List all runs in a project (using config file)
+$ trcli runs list -c config.yml
+
+# List all runs with all parameters
+$ trcli runs list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli runs list -c config.yml --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli runs list -c config.yml --json-output | jq '.runs[].name'
+
+# Show all fields for each run
+$ trcli runs list -c config.yml --show-all-fields
+```
+
 #### Labels Management
 
 The TestRail CLI provides comprehensive label management capabilities using the `labels` command. Labels help categorize and organize your test management assets efficiently, making it easier to filter and manage test cases, runs, and projects.
