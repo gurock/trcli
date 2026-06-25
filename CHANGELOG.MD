@@ -15,6 +15,7 @@ _released 06-24-2026
  - **New `milestones` command**: Query and retrieve milestone information from TestRail with `get` and `list` subcommands. Track project milestones, monitor completion status, due dates, and references.
  - **New `configurations` command**: Query and retrieve configuration information from TestRail using `list` subcommand. Lists down configurations set in an entire project regardless of project type (single or multi-suite).
  - **New `statuses` command**: Query and retrieve status information from TestRail with `all`: List all test result statuses (Passed, Failed, Blocked, etc.) with system/custom flags, colors, and behavior properties and `case`: List all case statuses (Approved, Draft, etc.) for case workflow management (requires TestRail Enterprise 7.3+)
+ - **New `casefields` command**: Query and retrieve all test case custom fields from TestRail. Lists available fields with their types, configurations, and project applicability. Supports `--project` to show only fields applicable to a specific project (overrides project in config file), and `--show-all-fields` for detailed configuration information including field options and requirements.
 
 
 ## [1.15.0]

@@ -19,6 +19,7 @@ from trcli.api.plan_handler import PlanHandler
 from trcli.api.milestone_handler import MilestoneHandler
 from trcli.api.configuration_handler import ConfigurationHandler
 from trcli.api.status_handler import StatusHandler
+from trcli.api.case_field_handler import CaseFieldHandler
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -92,6 +93,7 @@ class ApiRequestHandler:
         self.milestone_handler = MilestoneHandler(api_client)
         self.configuration_handler = ConfigurationHandler(api_client)
         self.status_handler = StatusHandler(api_client)
+        self.case_field_handler = CaseFieldHandler(api_client)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
