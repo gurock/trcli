@@ -126,17 +126,17 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - add_run: Create a new test run
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)
-    - cases: Query test cases
-    - suites: Query test suites
-    - sections: Query test sections
-    - plans: Query test plans
+    - cases: Query test cases (get and list)
+    - suites: Query test suites (get and list)
+    - sections: Query test sections (get and list)
+    - plans: Query test plans (get and list)
     - runs: Query test runs
     - milestones: Query milestones
     - configurations: Query configurations
     - statuses: Query test statuses
     - casefields: Query test case custom fields
     - resultfields: Query test result custom fields
-    - results: Query and update test results"""
+    - results: Query and update test results (list, update)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""

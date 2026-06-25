@@ -48,6 +48,9 @@ Supported and loaded modules:
     - results: Manage test results (list, update)
     - references: Manage references (cases and runs)
     - cases: Manage test cases (get, list with filters)
+    - suites: Query test suites data (get and list)
+    - sections: Query test sections data (get and list)
+    - plans: Query test plans data (get and list)
 ```
 
 CLI general reference
@@ -96,7 +99,6 @@ Commands:
   export_gherkin Export BDD test case from TestRail as .feature file
   import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
-  results        Manage test results in TestRail
   parse_cucumber Parse Cucumber JSON results and upload to TestRail
   parse_junit    Parse JUnit report and upload results to TestRail
   parse_openapi  Parse OpenAPI spec and create cases in TestRail
