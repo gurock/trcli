@@ -73,6 +73,17 @@ trcli_description = (
     "    - add_run: Create a new test run\n"
     "    - labels: Manage labels (projects, cases, and tests)\n"
     "    - references: Manage references (cases and runs)\n"
+    "    - cases: Query test cases (get and list)\n"
+    "    - suites: Query test suites (get and list)\n"
+    "    - sections: Query test sections (get and list)\n"
+    "    - plans: Query test plans (get and list)\n"
+    "    - runs: Query test runs\n"
+    "    - milestones: Query milestones\n"
+    "    - configurations: Query configurations\n"
+    "    - statuses: Query test statuses\n"
+    "    - casefields: Query test case custom fields\n"
+    "    - resultfields: Query test result custom fields\n"
+    "    - results: Query and update test results (list, update)\n"
 )
 
 trcli_help_description = "TestRail CLI"

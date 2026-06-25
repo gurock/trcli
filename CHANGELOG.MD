@@ -6,6 +6,19 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.1]
+
+_released 06-24-2026
+
+### Added
+ - **New `runs` command**: Query and retrieve test run information from TestRail with `get` and `list` subcommands. Provides execution metrics, status tracking, and configuration details. Note: Only returns standalone runs (not runs within test plans).
+ - **New `milestones` command**: Query and retrieve milestone information from TestRail with `get` and `list` subcommands. Track project milestones, monitor completion status, due dates, and references.
+ - **New `configurations` command**: Query and retrieve configuration information from TestRail using `list` subcommand. Lists down configurations set in an entire project regardless of project type (single or multi-suite).
+ - **New `statuses` command**: Query and retrieve status information from TestRail with `all`: List all test result statuses (Passed, Failed, Blocked, etc.) with system/custom flags, colors, and behavior properties and `case`: List all case statuses (Approved, Draft, etc.) for case workflow management (requires TestRail Enterprise 7.3+)
+ - **New `casefields` command**: Query and retrieve all test case custom fields from TestRail. Lists available fields with their types, configurations, and project applicability. Supports auto-filtering to show only fields applicable to a specific project when `--project` is specified, and `--show-all-fields` for detailed configuration information including field options and requirements.
+ - **New `resultfields` command**: Query and retrieve all test result custom fields from TestRail. Lists available fields with their types, configurations, project applicability, and template associations. Particularly useful for understanding which templates use specific result fields. Supports auto-filtering by project and `--show-all-fields` for detailed configuration.
+
+
 ## [1.15.0]
 
 _released 06-11-2026

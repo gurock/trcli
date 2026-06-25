@@ -34,7 +34,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.15.0
+TestRail CLI v1.15.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -57,7 +57,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.15.0
+TestRail CLI v
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -107,6 +107,12 @@ Commands:
   results        Manage test results in TestRail
   sections       Manage test sections in TestRail
   suites         Manage test suites in TestRail
+  runs           Manage test runs in TestRail
+  milestones     Manage milestones in TestRail
+  configurations Manage testing configurations in TestRail
+  statuses       Manage test statuses in TestRail
+  casefields     List case fields in TestRail
+  resultfields   List result fields in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -1471,7 +1477,7 @@ Get detailed information about a specific test case by its ID:
 
 ```shell
 # Get a test case (using config file)
-$ trcli cases get -c config.yml --case-id 123
+$ trcli -c config.yml cases get --case-id 123
 
 # Get a test case with all parameters
 $ trcli cases get \
@@ -1482,10 +1488,10 @@ $ trcli cases get \
   --case-id 123
 
 # Get case with all fields displayed
-$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+$ trcli -c config.yml cases get --case-id 123 --show-all-fields
 
 # Get case as JSON (for piping to jq or other tools)
-$ trcli cases get -c config.yml --case-id 123 --json-output
+$ trcli -c config.yml cases get --case-id 123 --json-output
 ```
 
 **Output example:**
@@ -1547,28 +1553,28 @@ List test cases from a project with optional filtering by suite, priority, or te
 
 ```shell
 # List all cases in a project (using config file)
-$ trcli cases list -c config.yml
+$ trcli -c config.yml cases list
 
 # List cases with suite filter
-$ trcli cases list -c config.yml --suite-id 2
+$ trcli -c config.yml cases list --suite-id 2
 
 # List cases with priority filter (high priority only)
-$ trcli cases list -c config.yml --priority-id 4
+$ trcli -c config.yml cases list --priority-id 4
 
 # List cases with multiple priorities
-$ trcli cases list -c config.yml --priority-id "3,4"
+$ trcli -c config.yml cases list --priority-id "3,4"
 
 # List cases with text search
-$ trcli cases list -c config.yml --filter "login"
+$ trcli -c config.yml cases list --filter "login"
 
 # Combine multiple filters
-$ trcli cases list -c config.yml --suite-id 2 --priority-id 4 --filter "authentication"
+$ trcli -c config.yml cases list --suite-id 2 --priority-id 4 --filter "authentication"
 
 # Pagination support
-$ trcli cases list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml cases list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli cases list -c config.yml --suite-id 2 --json-output | jq '.cases[].title'
+$ trcli -c config.yml cases list --suite-id 2 --json-output | jq '.cases[].title'
 ```
 
 **Output example:**
@@ -1622,8 +1628,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli cases list -c config.yml
-$ trcli cases get -c config.yml --case-id 123
+$ trcli -c config.yml cases list
+$ trcli -c config.yml cases get --case-id 123
 ```
 
 ##### Command Options Reference
@@ -1656,28 +1662,28 @@ Options:
 
 **1. Export case data for documentation:**
 ```shell
-$ trcli cases list -c config.yml --json-output > cases_export.json
+$ trcli -c config.yml cases list --json-output > cases_export.json
 ```
 
 **2. Find all high-priority cases:**
 ```shell
-$ trcli cases list -c config.yml --priority-id 4
+$ trcli -c config.yml cases list --priority-id 4
 ```
 
 **3. Integration with CI/CD pipelines:**
 ```shell
 # Get test cases and pipe to analysis tool
-$ trcli cases list -c config.yml --suite-id 2 --json-output | jq -r '.cases[] | select(.labels[].title == "automated") | .title'
+$ trcli -c config.yml cases list --suite-id 2 --json-output | jq -r '.cases[] | select(.labels[].title == "automated") | .title'
 ```
 
 **4. Discover cases by keyword:**
 ```shell
-$ trcli cases list -c config.yml --filter "API"
+$ trcli -c config.yml cases list --filter "API"
 ```
 
 **5. Verify case details before test execution:**
 ```shell
-$ trcli cases get -c config.yml --case-id 123 --show-all-fields
+$ trcli -c config.yml cases get --case-id 123 --show-all-fields
 ```
 
 #### Managing Test Suites
@@ -1722,10 +1728,10 @@ Get detailed information about a specific test suite by its ID :
 
 ```shell
 # Get suite with all fields displayed
-$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+$ trcli -c config.yml suites get --suite-id 1 --show-all-fields
 
 # Get suite as JSON (for piping to jq or other tools)
-$ trcli suites get -c config.yml --suite-id 1 --json-output
+$ trcli -c config.yml suites get --suite-id 1 --json-output
 ```
 
 ##### Listing Test Suites
@@ -1734,7 +1740,7 @@ List test suites from a project with pagination support:
 
 ```shell
 # List all suites in a project (using config file)
-$ trcli suites list -c config.yml
+$ trcli -c config.yml suites list
 
 # List all suites with all parameters
 $ trcli suites list \
@@ -1744,13 +1750,13 @@ $ trcli suites list \
   --project "Your Project"
 
 # Pagination support
-$ trcli suites list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml suites list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli suites list -c config.yml --json-output | jq '.suites[].name'
+$ trcli -c config.yml suites list --json-output | jq '.suites[].name'
 
 # Show all fields for each suite
-$ trcli suites list -c config.yml --show-all-fields
+$ trcli -c config.yml suites list --show-all-fields
 ```
 
 ##### Configuration File Support
@@ -1767,8 +1773,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli suites list -c config.yml
-$ trcli suites get -c config.yml --suite-id 1
+$ trcli -c config.yml suites list
+$ trcli -c config.yml suites get --suite-id 1
 ```
 
 ##### Command Options Reference
@@ -1798,29 +1804,29 @@ Options:
 
 **1. Export suite data for documentation:**
 ```shell
-$ trcli suites list -c config.yml --json-output > suites_export.json
+$ trcli -c config.yml suites list --json-output > suites_export.json
 ```
 
 **2. Discover suites in a multi-suite project:**
 ```shell
-$ trcli suites list -c config.yml
+$ trcli -c config.yml suites list
 ```
 
 **3. Integration with CI/CD pipelines:**
 ```shell
 # Get all suite names and process them
-$ trcli suites list -c config.yml --json-output | jq -r '.suites[] | .name'
+$ trcli -c config.yml suites list --json-output | jq -r '.suites[] | .name'
 ```
 
 **4. Verify suite details before test execution:**
 ```shell
-$ trcli suites get -c config.yml --suite-id 1 --show-all-fields
+$ trcli -c config.yml suites get --suite-id 1 --show-all-fields
 ```
 
 **5. Identify suite IDs for multi-suite workflows:**
 ```shell
 # Find suite ID by name
-$ trcli suites list -c config.yml --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
+$ trcli -c config.yml suites list --json-output | jq '.suites[] | select(.name=="API Tests") | .id'
 ```
 
 #### Managing Test Plans
@@ -1858,7 +1864,7 @@ Get detailed information about a specific test plan by its ID, including all ent
 
 ```shell
 # Get a test plan (using config file)
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans get --plan-id 10
 
 # Get a test plan with all parameters
 $ trcli plans get \
@@ -1869,10 +1875,10 @@ $ trcli plans get \
   --plan-id 10
 
 # Get plan with all fields displayed
-$ trcli plans get -c config.yml --plan-id 10 --show-all-fields
+$ trcli -c config.yml plans get --plan-id 10 --show-all-fields
 
 # Get plan as JSON (for piping to jq or other tools)
-$ trcli plans get -c config.yml --plan-id 10 --json-output
+$ trcli -c config.yml plans get --plan-id 10 --json-output
 ``` 
 
 ##### Listing Test Plans
@@ -1881,7 +1887,7 @@ List test plans from a project with pagination support:
 
 ```shell
 # List all plans in a project (using config file)
-$ trcli plans list -c config.yml
+$ trcli -c config.yml plans list
 
 # List all plans with all parameters
 $ trcli plans list \
@@ -1891,13 +1897,13 @@ $ trcli plans list \
   --project "Your Project"
 
 # Pagination support
-$ trcli plans list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml plans list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli plans list -c config.yml --json-output | jq '.plans[].name'
+$ trcli -c config.yml plans list --json-output | jq '.plans[].name'
 
 # Show all fields for each plan
-$ trcli plans list -c config.yml --show-all-fields
+$ trcli -c config.yml plans list --show-all-fields
 ```
 
 ##### Configuration File Support
@@ -1914,8 +1920,8 @@ project: Your Project          # Project name (required)
 
 Then use with the `-c` flag:
 ```shell
-$ trcli plans list -c config.yml
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans list
+$ trcli -c config.yml plans get --plan-id 10
 ```
 
 ##### Command Options Reference
@@ -1945,12 +1951,12 @@ Options:
 
 **1. Monitor release testing progress:**
 ```shell
-$ trcli plans get -c config.yml --plan-id 10
+$ trcli -c config.yml plans get --plan-id 10
 ```
 
 **2. Export plan data for reporting:**
 ```shell
-$ trcli plans list -c config.yml --json-output > plans_report.json
+$ trcli -c config.yml plans list --json-output > plans_report.json
 ```
 
 ### Managing Sections
@@ -1989,7 +1995,7 @@ Get detailed information about a specific section by its ID:
 
 ```shell
 # Get a section (using config file)
-$ trcli sections get -c config.yml --section-id 10
+$ trcli -c config.yml sections get --section-id 10
 
 # Get a section with all parameters
 $ trcli sections get \
@@ -2000,10 +2006,10 @@ $ trcli sections get \
   --section-id 10
 
 # Get section with all fields displayed
-$ trcli sections get -c config.yml --section-id 10 --show-all-fields
+$ trcli -c config.yml sections get --section-id 10 --show-all-fields
 
 # Get section as JSON (for piping to jq or other tools)
-$ trcli sections get -c config.yml --section-id 10 --json-output
+$ trcli -c config.yml sections get --section-id 10 --json-output
 ```
 ##### Listing Sections
 
@@ -2011,7 +2017,7 @@ List sections from a project with pagination support:
 
 ```shell
 # List all sections in a project (using config file)
-$ trcli sections list -c config.yml
+$ trcli -c config.yml sections list
 
 # List all sections with all parameters
 $ trcli sections list \
@@ -2021,13 +2027,631 @@ $ trcli sections list \
   --project "Your Project"
 
 # Pagination support
-$ trcli sections list -c config.yml --offset 250 --limit 100
+$ trcli -c config.yml sections list --offset 250 --limit 100
 
 # JSON output for integration with other tools
-$ trcli sections list -c config.yml --json-output | jq '.sections[].name'
+$ trcli -c config.yml sections list --json-output | jq '.sections[].name'
 
 # Show all fields for each section
-$ trcli sections list -c config.yml --show-all-fields
+$ trcli -c config.yml sections list --show-all-fields
+```
+
+### Managing Runs
+
+The TestRail CLI provides the `runs` command for retrieving and listing test runs from TestRail. Test runs represent the execution of a set of test cases, tracking their results and providing execution metrics. This command is useful for monitoring test execution progress, auditing run configurations, exporting run data, and integrating run information into automation workflows.
+
+**Note:** The `runs` command only returns standalone test runs (runs not part of a test plan). To query runs within test plans, use the `plans` command.
+
+### Runs Command Overview
+
+The `runs` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `runs get` | Retrieve a single run by ID | Get detailed information about a run including execution status, test counts, and configuration |
+| `runs list` | List runs in a project | Monitor active runs, track execution progress, and export run data |
+
+### Reference
+
+```shell
+
+$ trcli runs --help
+
+Usage: trcli runs [OPTIONS] COMMAND [ARGS]...
+  Manage runs in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single run by ID
+  list  List runs from TestRail
+```
+
+##### Retrieving a Single Run
+
+Get detailed information about a specific run by its ID:
+
+```shell
+# Get a run (using config file)
+$ trcli -c config.yml runs get --run-id 100
+
+# Get a run with all parameters
+$ trcli runs get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --run-id 100
+
+# Get run with all fields displayed (includes timestamps, config IDs, milestone, etc.)
+$ trcli -c config.yml runs get --run-id 100 --show-all-fields
+
+# Get run as JSON (for piping to jq or other tools)
+$ trcli -c config.yml runs get --run-id 100 --json-output
+```
+##### Listing Runs
+
+List runs from a project with pagination support:
+
+```shell
+# List all runs in a project (using config file)
+$ trcli -c config.yml runs list
+
+# List all runs with all parameters
+$ trcli runs list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml runs list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml runs list --json-output | jq '.runs[].name'
+
+# Show all fields for each run
+$ trcli -c config.yml runs list --show-all-fields
+```
+
+### Managing Milestones
+
+The TestRail CLI provides the `milestones` command for retrieving and listing milestones from TestRail. Milestones represent important project dates and deliverables, helping track progress toward releases and major project goals. This command is useful for monitoring milestone status, tracking completion dates, exporting milestone data, and integrating milestone information into project management workflows.
+
+### Milestones Command Overview
+
+The `milestones` command supports two subcommands:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `milestones get` | Retrieve a single milestone by ID | Get detailed information about a milestone including status, due dates, and completion |
+| `milestones list` | List milestones in a project | Track project milestones, monitor progress, and export milestone data |
+
+### Reference
+
+```shell
+
+$ trcli milestones --help
+
+Usage: trcli milestones [OPTIONS] COMMAND [ARGS]...
+  Manage milestones in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a single milestone by ID
+  list  List milestones from TestRail
+```
+
+##### Retrieving a Single Milestone
+
+Get detailed information about a specific milestone by its ID:
+
+```shell
+# Get a milestone (using config file)
+$ trcli -c config.yml milestones get --milestone-id 1
+
+# Get a milestone with all parameters
+$ trcli milestones get \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --milestone-id 1
+
+# Get milestone with all fields displayed (includes timestamps, references, URL, etc.)
+$ trcli -c config.yml milestones get --milestone-id 1 --show-all-fields
+
+# Get milestone as JSON (for piping to jq or other tools)
+$ trcli -c config.yml milestones get --milestone-id 1 --json-output
+```
+##### Listing Milestones
+
+List milestones from a project with pagination support:
+
+```shell
+# List all milestones in a project (using config file)
+$ trcli -c config.yml milestones list
+
+# List all milestones with all parameters
+$ trcli milestones list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml milestones list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml milestones list --json-output | jq '.milestones[].name'
+
+# Show all fields for each milestone
+$ trcli -c config.yml milestones list --show-all-fields
+```
+### Retrieving Configurations
+
+The TestRail CLI provides the `configurations` command for retrieving and listing testing configurations from TestRail. This retrieves all configurations in a project regardless of project type (single suite or multisuite).
+
+### Configurations Command Overview
+
+The `configurations` command supports one subcommand:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `configurations list` | List all configurations in a project | Monitor configurations set in a project |
+
+### Reference
+
+```shell
+
+$ trcli configurations --help
+
+Usage: trcli configurations [OPTIONS] COMMAND [ARGS]...
+  Manage configurations in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  list  List configurations from TestRail
+```
+##### Listing Configurations
+
+List configurations from a project with pagination support:
+
+```shell
+# List all configurations in a project (using config file)
+$ trcli -c config.yml milestones list
+
+# List all configurations with all parameters
+$ trcli configurations list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml configurations list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml configurations list --json-output | jq '.configurations[].name'
+
+# Show all fields for each configurations (will show Group ID)
+$ trcli -c config.yml configurations list --show-all-fields
+```
+
+### Statuses Command
+
+The TestRail CLI provides the `statuses` command for retrieving status information from TestRail. This includes both test result statuses (Passed, Failed, Blocked, etc.) and case statuses (Approved, Draft, etc.). These statuses are crucial for mapping test results correctly and managing test case workflows.
+
+#### Statuses Command Overview
+
+The `statuses` command supports two subcommands:
+
+| Subcommand | Purpose | API Endpoint |
+|------------|---------|--------------|
+| `all` | List all test result statuses | Retrieve available test result statuses (Passed, Failed, Blocked, etc.) |
+| `case` | List all case statuses (Enterprise 7.3+) | Retrieve test case statuses (Approved, Draft, etc.) for case workflows |
+
+#### Reference
+
+```shell
+$ trcli statuses --help
+
+Usage: trcli statuses [OPTIONS] COMMAND [ARGS]...
+  Manage test statuses in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  all   List all test result statuses from TestRail
+  case  List all case statuses from TestRail (Enterprise 7.3+)
+```
+
+##### Listing Test Result Statuses
+
+List all test result statuses available for a project:
+
+```shell
+# List all test result statuses (using config file)
+$ trcli -c config.yml statuses all
+
+# List all statuses with all parameters
+$ trcli statuses all \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including color values
+$ trcli -c config.yml statuses all --show-all-fields
+
+# JSON output for integration with other tools
+$ trcli -c config.yml statuses all --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses all
+
+Statuses List (Test Result Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving test result statuses for project ID 1...
+Found 5 test result status(es):
+
+Status ID: 1
+  Name: passed
+  Label: Passed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+Status ID: 2
+  Name: blocked
+  Label: Blocked
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 3
+  Name: untested
+  Label: Untested
+  System Status: Yes
+  Is Untested: Yes
+  Is Final: No
+
+Status ID: 4
+  Name: retest
+  Label: Retest
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 5
+  Name: failed
+  Label: Failed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+
+Status listing completed successfully.
+```
+
+##### Listing Case Statuses
+
+List all case statuses (requires TestRail Enterprise 7.3+):
+
+```shell
+# List all case statuses (using config file)
+$ trcli -c config.yml statuses case
+
+# List case statuses with all parameters
+$ trcli statuses case \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including abbreviations
+$ trcli -c config.yml statuses case --show-all-fields
+
+# JSON output for integration
+$ trcli -c config.yml statuses case --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses case
+
+Statuses List (Case Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving case statuses...
+Note: This command requires TestRail Enterprise 7.3 or later.
+Found 2 case status(es):
+
+Case Status ID: 1
+  Name: Approved
+  Is Default: No
+  Is Approved: Yes
+
+Case Status ID: 2
+  Name: Draft
+  Is Default: Yes
+  Is Approved: No
+
+
+Case status listing completed successfully.
+```
+
+### Statuses Command
+
+The TestRail CLI provides the `statuses` command for retrieving status information from TestRail. This includes both test result statuses (Passed, Failed, Blocked, etc.) and case statuses (Approved, Draft, etc.). These statuses are crucial for mapping test results correctly and managing test case workflows.
+
+#### Statuses Command Overview
+
+The `statuses` command supports two subcommands:
+
+| Subcommand | Purpose | API Endpoint |
+|------------|---------|--------------|
+| `all` | List all test result statuses | Retrieve available test result statuses (Passed, Failed, Blocked, etc.) |
+| `case` | List all case statuses (Enterprise 7.3+) | Retrieve test case statuses (Approved, Draft, etc.) for case workflows |
+
+#### Reference
+
+```shell
+$ trcli statuses --help
+
+Usage: trcli statuses [OPTIONS] COMMAND [ARGS]...
+  Manage test statuses in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  all   List all test result statuses from TestRail
+  case  List all case statuses from TestRail (Enterprise 7.3+)
+```
+
+##### Listing Test Result Statuses
+
+List all test result statuses available for a project:
+
+```shell
+# List all test result statuses (using config file)
+$ trcli -c config.yml statuses all
+
+# List all statuses with all parameters
+$ trcli statuses all \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including color values
+$ trcli -c config.yml statuses all --show-all-fields
+
+# JSON output for integration with other tools
+$ trcli -c config.yml statuses all --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses all
+
+Statuses List (Test Result Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving test result statuses for project ID 1...
+Found 5 test result status(es):
+
+Status ID: 1
+  Name: passed
+  Label: Passed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+Status ID: 2
+  Name: blocked
+  Label: Blocked
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 3
+  Name: untested
+  Label: Untested
+  System Status: Yes
+  Is Untested: Yes
+  Is Final: No
+
+Status ID: 4
+  Name: retest
+  Label: Retest
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 5
+  Name: failed
+  Label: Failed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+
+Status listing completed successfully.
+```
+
+##### Listing Case Statuses
+
+List all case statuses (requires TestRail Enterprise 7.3+):
+
+```shell
+# List all case statuses (using config file)
+$ trcli -c config.yml statuses case
+
+# List case statuses with all parameters
+$ trcli statuses case \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including abbreviations
+$ trcli -c config.yml statuses case --show-all-fields
+
+# JSON output for integration
+$ trcli -c config.yml statuses case --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses case
+
+Statuses List (Case Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving case statuses...
+Note: This command requires TestRail Enterprise 7.3 or later.
+Found 2 case status(es):
+
+Case Status ID: 1
+  Name: Approved
+  Is Default: No
+  Is Approved: Yes
+
+Case Status ID: 2
+  Name: Draft
+  Is Default: Yes
+  Is Approved: No
+
+
+Case status listing completed successfully.
+```
+
+### Case Fields Command
+
+The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.
+
+#### Reference
+
+```shell
+$ trcli casefields --help
+
+Usage: trcli casefields [OPTIONS]
+  List all case fields from TestRail
+
+Options:
+  --json-output      Output case fields as raw JSON from API.
+  --show-all-fields  Show all fields including configs and options.
+  --help             Show this message and exit.
+```
+
+#### Listing Case Fields
+
+```shell
+# List all case fields
+$ trcli -c config.yml casefields
+
+# Show all fields including configurations
+$ trcli -c config.yml casefields --show-all-fields
+
+# Filter to show only fields for a specific project (auto-filters when --project is specified)
+$ trcli -c config.yml casefields --project "Your Project"
+
+# JSON output
+$ trcli -c config.yml casefields --json-output | jq '.[].label'
+```
+
+### Result Fields Command
+
+The TestRail CLI provides the `resultfields` command for retrieving all available test result custom fields from TestRail. This command helps you understand what custom fields are available for test results, their types, configurations, which projects they apply to, and which templates use them.
+
+#### Reference
+
+```shell
+$ trcli resultfields --help
+
+Usage: trcli resultfields [OPTIONS]
+  List all result fields from TestRail
+
+Options:
+  --json-output      Output result fields as raw JSON from API.
+  --show-all-fields  Show all fields including configs and options.
+  --help             Show this message and exit.
+```
+
+#### Listing Result Fields
+
+```shell
+# List all result fields
+$ trcli -c config.yml resultfields
+
+# Show all fields including configurations
+$ trcli -c config.yml resultfields --show-all-fields
+
+# Filter to show only fields for a specific project (auto-filters when --project is specified)
+$ trcli -c config.yml --project "Your Project" resultfields 
+
+# JSON output
+$ trcli -c config.yml resultfields --json-output | jq '.[].label'
+```
+
+**Note:** When a project is specified (via `--project` in the CLI or from your config file), the command automatically filters result fields to show only those applicable to that project. This includes:
+- Global fields (applicable to all projects)
+- Project-specific fields (where the project ID is in the field's project_ids list)
+
+#### Example Output
+
+```shell
+$ trcli -c config.yml resultfields
+
+Result Fields List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+> Project: Your Project
+> Filtering fields for this project
+Retrieving result fields for project ID 1...
+Found 5 result field(s):
+
+Field ID: 19
+  Label: Input
+  Name: ai_input
+  System Name: custom_ai_input
+  Type: Text (ID: 3)
+  Active: Yes
+
+Field ID: 20
+  Label: Output
+  Name: ai_output
+  System Name: custom_ai_output
+  Type: Text (ID: 3)
+  Active: Yes
+
+Field ID: 11
+  Label: Steps
+  Name: step_results
+  System Name: custom_step_results
+  Type: Step Results (ID: 11)
+  Active: Yes
+
+
+Result field listing completed successfully.
 ```
 
 #### Labels Management
@@ -2782,7 +3406,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.15.0
+TestRail CLI v1.15.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -2992,7 +3616,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.15.0
+TestRail CLI v1.15.1
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
