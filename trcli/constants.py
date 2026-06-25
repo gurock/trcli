@@ -96,6 +96,7 @@ COMMAND_FAULT_MAPPING = dict(
     sections=dict(**FAULT_MAPPING),
     runs=dict(**FAULT_MAPPING),
     milestones=dict(**FAULT_MAPPING),
+    configurations=dict(**FAULT_MAPPING),
     statuses=dict(**FAULT_MAPPING),
 )
 
@@ -129,6 +130,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - plans: Query test plans
     - runs: Query test runs
     - milestones: Query milestones
+    - configurations: Query configurations
     - statuses: Query test statuses
     - results: Query and update test results"""
 

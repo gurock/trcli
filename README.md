@@ -107,6 +107,7 @@ Commands:
   suites         Manage test suites in TestRail
   runs           Manage test runs in TestRail
   milestones     Manage milestones in TestRail
+  configurations Manage testing configurations in TestRail
   statuses       Manage test statuses in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
@@ -2185,6 +2186,157 @@ $ trcli -c config.yml milestones list --json-output | jq '.milestones[].name'
 
 # Show all fields for each milestone
 $ trcli -c config.yml milestones list --show-all-fields
+```
+
+### Statuses Command
+
+The TestRail CLI provides the `statuses` command for retrieving status information from TestRail. This includes both test result statuses (Passed, Failed, Blocked, etc.) and case statuses (Approved, Draft, etc.). These statuses are crucial for mapping test results correctly and managing test case workflows.
+
+#### Statuses Command Overview
+
+The `statuses` command supports two subcommands:
+
+| Subcommand | Purpose | API Endpoint |
+|------------|---------|--------------|
+| `all` | List all test result statuses | Retrieve available test result statuses (Passed, Failed, Blocked, etc.) |
+| `case` | List all case statuses (Enterprise 7.3+) | Retrieve test case statuses (Approved, Draft, etc.) for case workflows |
+
+#### Reference
+
+```shell
+$ trcli statuses --help
+
+Usage: trcli statuses [OPTIONS] COMMAND [ARGS]...
+  Manage test statuses in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  all   List all test result statuses from TestRail
+  case  List all case statuses from TestRail (Enterprise 7.3+)
+```
+
+##### Listing Test Result Statuses
+
+List all test result statuses available for a project:
+
+```shell
+# List all test result statuses (using config file)
+$ trcli -c config.yml statuses all
+
+# List all statuses with all parameters
+$ trcli statuses all \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including color values
+$ trcli -c config.yml statuses all --show-all-fields
+
+# JSON output for integration with other tools
+$ trcli -c config.yml statuses all --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses all
+
+Statuses List (Test Result Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving test result statuses for project ID 1...
+Found 5 test result status(es):
+
+Status ID: 1
+  Name: passed
+  Label: Passed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+Status ID: 2
+  Name: blocked
+  Label: Blocked
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 3
+  Name: untested
+  Label: Untested
+  System Status: Yes
+  Is Untested: Yes
+  Is Final: No
+
+Status ID: 4
+  Name: retest
+  Label: Retest
+  System Status: Yes
+  Is Untested: No
+  Is Final: No
+
+Status ID: 5
+  Name: failed
+  Label: Failed
+  System Status: Yes
+  Is Untested: No
+  Is Final: Yes
+
+
+Status listing completed successfully.
+```
+
+##### Listing Case Statuses
+
+List all case statuses (requires TestRail Enterprise 7.3+):
+
+```shell
+# List all case statuses (using config file)
+$ trcli -c config.yml statuses case
+
+# List case statuses with all parameters
+$ trcli statuses case \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Show all fields including abbreviations
+$ trcli -c config.yml statuses case --show-all-fields
+
+# JSON output for integration
+$ trcli -c config.yml statuses case --json-output | jq '.[].name'
+```
+
+**Example Output:**
+
+```shell
+$ trcli -c config.yml statuses case
+
+Statuses List (Case Statuses) Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
+> Project: Your Project
+
+Retrieving case statuses...
+Note: This command requires TestRail Enterprise 7.3 or later.
+Found 2 case status(es):
+
+Case Status ID: 1
+  Name: Approved
+  Is Default: No
+  Is Approved: Yes
+
+Case Status ID: 2
+  Name: Draft
+  Is Default: Yes
+  Is Approved: No
+
+
+Case status listing completed successfully.
 ```
 
 ### Statuses Command
