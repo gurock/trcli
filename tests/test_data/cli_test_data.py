@@ -82,6 +82,7 @@ trcli_description = (
     "    - configurations: Query configurations\n"
     "    - statuses: Query test statuses\n"
     "    - casefields: Query test case custom fields\n"
+    "    - resultfields: Query test result custom fields\n"
     "    - results: Query and update test results\n"
 )
 
