@@ -96,6 +96,7 @@ COMMAND_FAULT_MAPPING = dict(
     sections=dict(**FAULT_MAPPING),
     runs=dict(**FAULT_MAPPING),
     milestones=dict(**FAULT_MAPPING),
+    configurations=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -128,6 +129,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - plans: Query test plans
     - runs: Query test runs
     - milestones: Query milestones
+    - configurations: Query configurations
     - results: Query and update test results"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
