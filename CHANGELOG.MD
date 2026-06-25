@@ -8,7 +8,7 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 
 ## [1.15.1]
 
-_released 06-24-2026
+_released 06-25-2026
 
 ### Added
  - **New `runs` command**: Query and retrieve test run information from TestRail with `get` and `list` subcommands. Provides execution metrics, status tracking, and configuration details. Note: Only returns standalone runs (not runs within test plans).
