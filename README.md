@@ -2187,6 +2187,57 @@ $ trcli -c config.yml milestones list --json-output | jq '.milestones[].name'
 # Show all fields for each milestone
 $ trcli -c config.yml milestones list --show-all-fields
 ```
+### Retrieving Configurations
+
+The TestRail CLI provides the `configurations` command for retrieving and listing testing configurations from TestRail. This retrieves all configurations in a project regardless of project type (single suite or multisuite).
+
+### Configurations Command Overview
+
+The `configurations` command supports one subcommand:
+
+| Subcommand | Purpose |
+|------------|---------|
+| `configurations list` | List all configurations in a project | Monitor configurations set in a project |
+
+### Reference
+
+```shell
+
+$ trcli configurations --help
+
+Usage: trcli configurations [OPTIONS] COMMAND [ARGS]...
+  Manage configurations in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  list  List configurations from TestRail
+```
+##### Listing Configurations
+
+List configurations from a project with pagination support:
+
+```shell
+# List all configurations in a project (using config file)
+$ trcli -c config.yml milestones list
+
+# List all configurations with all parameters
+$ trcli configurations list \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project"
+
+# Pagination support
+$ trcli -c config.yml configurations list --offset 0 --limit 50
+
+# JSON output for integration with other tools
+$ trcli -c config.yml configurations list --json-output | jq '.configurations[].name'
+
+# Show all fields for each configurations (will show Group ID)
+$ trcli -c config.yml configurations list --show-all-fields
+```
 
 ### Statuses Command
 
