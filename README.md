@@ -114,6 +114,7 @@ Commands:
   casefields     List case fields in TestRail
   resultfields   List result fields in TestRail
   priorities     List test case priorities in TestRail
+  casetypes      List test case types in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2446,6 +2447,58 @@ Priority listing completed successfully.
 ```
 
 **Note:** The `[DEFAULT]` marker indicates which priority is set as the default for new test cases in TestRail. Priorities are global settings and apply across all projects in your TestRail instance.
+
+### Case Types Command
+
+The TestRail CLI provides the `casetypes` command for retrieving all available test case types from TestRail. This command helps you understand the different case type classifications configured in your TestRail instance, such as Automated, Functionality, Performance, and others, including which type is set as the default.
+
+#### Reference
+
+```shell
+$ trcli casetypes --help
+
+Usage: trcli casetypes [OPTIONS] COMMAND [ARGS]...
+  Manage test case types in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  list  List all test case types from TestRail
+```
+
+#### Listing Case Types
+
+```shell
+# List all case types
+$ trcli -h https://yourinstance.testrail.io -u user@example.com -p password casetypes list
+
+# With config file
+$ trcli casetypes list -c config.yml
+
+# JSON output
+$ trcli casetypes list -c config.yml --json-output
+```
+
+#### Example Output
+
+```shell
+$ trcli casetypes list -c config.yml
+
+Case Types List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+Retrieving case types...
+Found 4 case type(s).
+
+ID: 1 | Name: Automated
+ID: 2 | Name: Functionality
+ID: 3 | Name: Performance
+ID: 6 | Name: Other [DEFAULT]
+
+Case type listing completed successfully.
+```
+
+**Note:** The `[DEFAULT]` marker indicates which case type is set as the default for new test cases in TestRail. Case types are global settings and apply across all projects in your TestRail instance.
 
 ### Case Fields Command
 
