@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.2]
+
+_released 07-08-2026
+### Added
+ - **New `priorities` command**
+ - **New `casetypes` command**
+ - **New `users` command**
+ - **New `projects` command**
+ - **New `templates` command**
+ - **New `tests` command**
+ - **New `add` subcommand for `plans`**
+
 ## [1.15.1]
 
 _released 06-25-2026
