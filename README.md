@@ -115,6 +115,7 @@ Commands:
   resultfields   List result fields in TestRail
   priorities     List test case priorities in TestRail
   casetypes      List test case types in TestRail
+  users          Query users in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2499,6 +2500,72 @@ Case type listing completed successfully.
 ```
 
 **Note:** The `[DEFAULT]` marker indicates which case type is set as the default for new test cases in TestRail. Case types are global settings and apply across all projects in your TestRail instance.
+
+### Users Command
+
+The TestRail CLI provides the `users` command for retrieving user information from TestRail. This command supports getting individual users by ID or email, retrieving the current authenticated user, and listing all users or users with access to a specific project.
+
+#### Reference
+
+```shell
+$ trcli users --help
+
+Usage: trcli users [OPTIONS] COMMAND [ARGS]...
+  Manage users in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a specific user from TestRail
+  list  List all users from TestRail
+```
+
+#### Getting a Specific User
+
+The `get` subcommand retrieves information about a single user using one of three mutually exclusive options:
+
+```shell
+# Get the current authenticated user
+$ trcli -c config.yml users get --current
+
+# Get user by ID
+$ trcli -c config.yml users get --user-id 5
+
+# Get user by email
+$ trcli -c config.yml users get --email john.doe@example.com
+
+# Show all fields including admin status and enterprise fields
+$ trcli -c config.yml users get --user-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml users get --current --json-output
+```
+
+#### Listing Users
+
+The `list` subcommand retrieves multiple users. Without `--project-id`, it lists all users (requires administrator privileges). With `--project-id`, it lists only users with access to that specific project.
+
+```shell
+# List all users (admin only)
+$ trcli -c config.yml users list
+
+# List users for a specific project
+$ trcli -c config.yml users list --project-id 5
+
+# Show all fields for each user
+$ trcli -c config.yml users list --project-id 3 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml users list --json-output
+```
+
+**Note:**
+- The `get` subcommand requires one of `--current`, `--user-id`, or `--email` (mutually exclusive)
+- Listing all users without `--project-id` requires administrator privileges (TestRail 6.6+)
+- When using `--project-id`, only users with explicit project access are returned (inactive users and users without project access are excluded)
+- Enterprise-specific fields (SSO, assigned projects) are only available in TestRail Enterprise
+- The `--show-all-fields` option displays additional information including admin status, groups, MFA requirements, and enterprise fields
 
 ### Case Fields Command
 
