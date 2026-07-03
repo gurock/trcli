@@ -253,3 +253,50 @@ class TestCmdProjects:
             mock_client.api_request_handler.project_handler.get_projects.assert_called_once_with(
                 is_completed=None, limit=2, offset=10
             )
+
+    def test_get_project_invalid_id_zero(self):
+        """Test validation rejects project ID of 0."""
+        result = self.runner.invoke(cmd_projects.get, ["--project-id", "0"], obj=self.environment)
+
+        assert result.exit_code != 0
+        assert "0 is not in the range x>=1" in result.output
+
+    def test_get_project_invalid_id_negative(self):
+        """Test validation rejects negative project ID."""
+        result = self.runner.invoke(cmd_projects.get, ["--project-id", "-1"], obj=self.environment)
+
+        assert result.exit_code != 0
+        assert "-1 is not in the range x>=1" in result.output
+
+    @mock.patch("trcli.commands.cmd_projects.ProjectBasedClient")
+    def test_get_project_with_groups(self, mock_project_client):
+        """Test project retrieval with groups displayed."""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.project_handler.get_project.return_value = (
+            {
+                "id": 1,
+                "name": "Test Project",
+                "is_completed": False,
+                "suite_mode": 3,
+                "users": [{"user_id": 2, "global_role": "Tester", "project_role": "Tester"}],
+                "groups": [
+                    {"id": 1, "role": "Tester", "role_id": 3},
+                    {"id": 2, "role": "Designer", "role_id": 2},
+                ],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(
+                cmd_projects.get, ["--project-id", "1", "--show-all-fields"], obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            assert mock_log.called
+            # Verify groups are mentioned in logs
+            log_calls = [str(call) for call in mock_log.call_args_list]
+            groups_mentioned = any("Groups: 2 group(s)" in str(call) for call in log_calls)
+            assert groups_mentioned

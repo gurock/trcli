@@ -43,6 +43,13 @@ def display_project(env: Environment, project: dict, show_all_fields: bool = Fal
         groups = project.get("groups", [])
         if groups:
             env.log(f"  Groups: {len(groups)} group(s)")
+            for group in groups[:5]:  # Show first 5 groups
+                group_id = group.get("id")
+                role = group.get("role", "N/A")
+                role_id = group.get("role_id", "N/A")
+                env.log(f"    - Group ID: {group_id}, Role: {role} (Role ID: {role_id})")
+            if len(groups) > 5:
+                env.log(f"    ... and {len(groups) - 5} more")
 
 
 @click.group(context_settings=CONTEXT_SETTINGS)
@@ -55,7 +62,9 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
 
 
 @cli.command()
-@click.option("--project-id", type=int, metavar="<id>", required=True, help="Get project by project ID.")
+@click.option(
+    "--project-id", type=click.IntRange(min=1), metavar="<id>", required=True, help="Get project by project ID."
+)
 @click.option("--json-output", is_flag=True, help="Output project as raw JSON from API.")
 @click.option("--show-all-fields", is_flag=True, help="Show all fields including announcement, users, and groups.")
 @click.pass_context
