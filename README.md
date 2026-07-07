@@ -1838,12 +1838,13 @@ The TestRail CLI provides the `plans` command for retrieving and listing test pl
 
 ##### Plans Command Overview
 
-The `plans` command supports two subcommands:
+The `plans` command supports three subcommands:
 
 | Subcommand | Purpose | Use Case |
 |------------|---------|----------|
 | `plans get` | Retrieve a single test plan by ID | Get detailed information about a plan including all entries and runs |
 | `plans list` | List test plans in a project | Discover plans, monitor progress, export plan data with pagination |
+| `plans add` | Create a new test plan | Create plans with entries, milestones, and scheduled dates |
 
 ##### Reference
 
@@ -1857,6 +1858,7 @@ Options:
   --help  Show this message and exit.
 
 Commands:
+  add   Create a new test plan
   get   Get a single test plan by ID
   list  List test plans from TestRail
 ```
@@ -1909,6 +1911,123 @@ $ trcli -c config.yml plans list --json-output | jq '.plans[].name'
 $ trcli -c config.yml plans list --show-all-fields
 ```
 
+##### Creating a Test Plan
+
+Create a new test plan in TestRail with optional entries, milestones, and scheduled dates:
+
+```shell
+# Create a basic test plan
+$ trcli plans add \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --name "Release 2.0 Testing"
+
+# Create a plan with description and milestone
+$ trcli -c config.yml plans add \
+  --name "Q4 Regression Testing" \
+  --description "Comprehensive regression tests for Q4 release" \
+  --milestone-id 5
+
+# Create a plan with scheduled dates (MM/DD/YYYY format)
+$ trcli -c config.yml plans add \
+  --name "Sprint 10 Testing" \
+  --start-on "01/01/2022" \
+  --due-on "01/15/2022"
+
+# Create a plan with entries (test runs) from JSON string
+# Use --entries for simple, inline entries (good for scripting)
+# Note: Each entry must specify either "include_all": true or provide "case_ids"
+$ trcli -c config.yml plans add \
+  --name "Multi-Suite Testing" \
+  --entries '[{"suite_id": 1, "name": "API Tests", "include_all": true}, {"suite_id": 2, "name": "UI Tests", "include_all": true}]'
+
+# Create a plan with entries from a JSON file
+# Use --entries-file for complex entries with multiple runs/configs (more readable)
+$ trcli -c config.yml plans add \
+  --name "Complex Test Plan" \
+  --entries-file entries.json
+
+# Get JSON output for programmatic use
+$ trcli -c config.yml plans add \
+  --name "Automated Plan" \
+  --json-output
+```
+
+**Example entries.json file:**
+
+Each entry represents a test run (or group of runs for multi-config scenarios). TestRail requires you to specify which test cases to include using one of these methods:
+
+1. **Include all cases**: Set `"include_all": true`
+2. **Specific cases**: Provide `"case_ids": [1, 2, 3]`
+3. **Using runs array**: For multi-configuration plans, use `"runs"` with case specifications
+
+```json
+[
+  {
+    "suite_id": 1,
+    "name": "Smoke Tests",
+    "description": "Critical path tests",
+    "assignedto_id": 5,
+    "include_all": true
+  },
+  {
+    "suite_id": 2,
+    "name": "Regression Tests - Specific Cases",
+    "description": "Selected regression test cases",
+    "case_ids": [1, 2, 3, 4, 5]
+  },
+  {
+    "suite_id": 3,
+    "name": "Multi-Configuration Tests",
+    "description": "Cross-browser testing",
+    "config_ids": [1, 2],
+    "runs": [
+      {
+        "config_ids": [1, 2],
+        "case_ids": [10, 11, 12]
+      }
+    ]
+  }
+]
+```
+
+**Entry Field Reference:**
+- `suite_id` (required): ID of the test suite
+- `name` (optional): Name for the test run(s)
+- `description` (optional): Description for the test run(s)
+- `include_all` (optional): Include all test cases from the suite (default: false)
+- `case_ids` (optional): Array of specific test case IDs to include
+- `assignedto_id` (optional): User ID to assign the run to
+- `config_ids` (optional): Configuration IDs for multi-config runs
+- `runs` (optional): Array of run configurations (required when using `config_ids`)
+
+**Important Notes for Multi-Configuration Entries:**
+
+When using `config_ids` for multi-configuration testing (e.g., different browsers, platforms):
+
+1. **The `runs` array is REQUIRED** when you specify `config_ids`
+2. **Each run object must include `config_ids`** - repeat the same config_ids from the entry level
+3. **Specify test cases** in the run object using either `case_ids` or `include_all: true`
+
+Example for cross-browser testing:
+```json
+{
+  "suite_id": 3,
+  "name": "Browser Tests",
+  "config_ids": [16, 15],        // Chrome (16), Firefox (15)
+  "runs": [
+    {
+      "config_ids": [16, 15],    // Must repeat config_ids here
+      "case_ids": [100, 101, 102]
+    }
+  ]
+}
+```
+
+This creates one run that tests cases 100, 101, 102 across Chrome and Firefox configurations.
+
 ##### Configuration File Support
 
 The `plans` command supports configuration files, allowing you to specify connection details and project information once:
@@ -1950,6 +2069,28 @@ Options:
   --help             Show this message and exit.
 ```
 
+**Add Command:**
+```shell
+$ trcli plans add --help
+Options:
+  --name <name>             Name of the test plan.  [required]
+  --description <description>
+                            Description of the test plan.
+  --milestone-id <id>       ID of the milestone to link.  [x>=1]
+  --entries <json>          JSON array of plan entries inline. Use this for
+                            simple entries or scripting. Mutually exclusive
+                            with --entries-file.
+  --entries-file <path>     Path to JSON file containing plan entries. Use this
+                            for complex entries with multiple runs/configs.
+                            Mutually exclusive with --entries.
+  --start-on                The scheduled start date of this test plan in
+                            MM/DD/YYYY format
+  --due-on                  The scheduled due date of this test plan in
+                            MM/DD/YYYY format
+  --json-output             Output created plan as raw JSON from API.
+  --help                    Show this message and exit.
+```
+
 ##### Use Cases
 
 **1. Monitor release testing progress:**
@@ -1960,6 +2101,15 @@ $ trcli -c config.yml plans get --plan-id 10
 **2. Export plan data for reporting:**
 ```shell
 $ trcli -c config.yml plans list --json-output > plans_report.json
+```
+
+**3. Create a test plan for a new release:**
+```shell
+$ trcli -c config.yml plans add \
+  --name "Release 3.0 Testing" \
+  --description "Full regression and feature testing for v3.0" \
+  --milestone-id 8 \
+  --entries-file release_plan_entries.json
 ```
 
 ### Managing Sections
