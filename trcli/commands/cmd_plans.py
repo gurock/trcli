@@ -343,8 +343,13 @@ def list(
 
 
 @cli.command()
-@click.option("--name", type=str, required=True, metavar="<name>", help="Name of the test plan.")
-@click.option("--description", type=str, metavar="<description>", help="Description of the test plan.")
+@click.option("--name", type=str, metavar="<name>", help="Name of the test plan (can also be provided in JSON file).")
+@click.option(
+    "--description",
+    type=str,
+    metavar="<description>",
+    help="Description of the test plan (can also be provided in JSON file).",
+)
 @click.option("--milestone-id", type=click.IntRange(min=1), metavar="<id>", help="ID of the milestone to link.")
 @click.option(
     "--entries",
@@ -415,38 +420,103 @@ def add(
     due_timestamp = convert_date_to_timestamp(due_on) if due_on else None
 
     # Parse entries from JSON string or file
+    # Support two formats:
+    # 1. Array format: [{"suite_id": 1, ...}]
+    # 2. Plan format: {"name": "...", "entries": [...]}
     parsed_entries = None
+    json_plan_name = None
+    json_description = None
+    json_milestone_id = None
+
     if entries_file:
         try:
             with open(entries_file, "r") as f:
-                parsed_entries = json.load(f)
-            if not isinstance(parsed_entries, builtins.list):
-                environment.elog("Error: Entries file must contain a JSON array")
+                json_data = json.load(f)
+
+            # Detect format: dict with "entries" key OR array
+            if isinstance(json_data, dict) and "entries" in json_data:
+                # Plan format - extract plan-level fields
+                parsed_entries = json_data.get("entries")
+                json_plan_name = json_data.get("name")
+                json_description = json_data.get("description")
+                json_milestone_id = json_data.get("milestone_id")
+
+                # Warn if command-line args will override JSON fields
+                if json_plan_name and name and name != json_plan_name:
+                    environment.log(f"Note: Using --name '{name}' instead of JSON name '{json_plan_name}'")
+                if json_description and description and description != json_description:
+                    environment.log(f"Note: Using --description from command line instead of JSON description")
+                if json_milestone_id and milestone_id and milestone_id != json_milestone_id:
+                    environment.log(
+                        f"Note: Using --milestone-id {milestone_id} instead of JSON milestone_id {json_milestone_id}"
+                    )
+
+            elif isinstance(json_data, builtins.list):
+                # Array format - just entries
+                parsed_entries = json_data
+            else:
+                environment.elog(
+                    "Error: Entries file must contain either a JSON array or an object with 'entries' field"
+                )
                 raise SystemExit(1)
+
         except json.JSONDecodeError as e:
             environment.elog(f"Error: Invalid JSON in entries file: {e}")
             raise SystemExit(1)
         except Exception as e:
             environment.elog(f"Error: Failed to read entries file: {e}")
             raise SystemExit(1)
+
     elif entries:
         try:
-            parsed_entries = json.loads(entries)
-            if not isinstance(parsed_entries, builtins.list):
-                environment.elog("Error: Entries must be a JSON array")
+            json_data = json.loads(entries)
+
+            # Detect format: dict with "entries" key OR array
+            if isinstance(json_data, dict) and "entries" in json_data:
+                # Plan format - extract plan-level fields
+                parsed_entries = json_data.get("entries")
+                json_plan_name = json_data.get("name")
+                json_description = json_data.get("description")
+                json_milestone_id = json_data.get("milestone_id")
+
+                # Warn if command-line args will override JSON fields
+                if json_plan_name and name and name != json_plan_name:
+                    environment.log(f"Note: Using --name '{name}' instead of JSON name '{json_plan_name}'")
+                if json_description and description and description != json_description:
+                    environment.log(f"Note: Using --description from command line instead of JSON description")
+                if json_milestone_id and milestone_id and milestone_id != json_milestone_id:
+                    environment.log(
+                        f"Note: Using --milestone-id {milestone_id} instead of JSON milestone_id {json_milestone_id}"
+                    )
+
+            elif isinstance(json_data, builtins.list):
+                # Array format - just entries
+                parsed_entries = json_data
+            else:
+                environment.elog("Error: Entries must be either a JSON array or an object with 'entries' field")
                 raise SystemExit(1)
+
         except json.JSONDecodeError as e:
             environment.elog(f"Error: Invalid JSON in entries parameter: {e}")
             raise SystemExit(1)
 
-    environment.log(f"Creating plan '{name}' in project ID {project_client.project.project_id}...")
+    # Use JSON fields as fallback if command-line args not provided
+    final_name = name if name else json_plan_name
+    final_description = description if description else json_description
+    final_milestone_id = milestone_id if milestone_id else json_milestone_id
+
+    if not final_name:
+        environment.elog("Error: Plan name is required (use --name or provide 'name' in JSON)")
+        raise SystemExit(1)
+
+    environment.log(f"Creating plan '{final_name}' in project ID {project_client.project.project_id}...")
 
     # Create the plan
     plan, error_message = project_client.api_request_handler.plan_handler.add_plan(
         project_id=project_client.project.project_id,
-        name=name,
-        description=description,
-        milestone_id=milestone_id,
+        name=final_name,
+        description=final_description,
+        milestone_id=final_milestone_id,
         entries=parsed_entries,
         start_on=start_timestamp,
         due_on=due_timestamp,

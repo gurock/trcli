@@ -1955,13 +1955,12 @@ $ trcli -c config.yml plans add \
   --json-output
 ```
 
-**Example entries.json file:**
+**JSON File Formats:**
 
-Each entry represents a test run (or group of runs for multi-config scenarios). TestRail requires you to specify which test cases to include using one of these methods:
+TRCLI supports **two JSON formats** for entries files, making it easy to migrate from Bruno/Postman or reuse API request bodies:
 
-1. **Include all cases**: Set `"include_all": true`
-2. **Specific cases**: Provide `"case_ids": [1, 2, 3]`
-3. **Using runs array**: For multi-configuration plans, use `"runs"` with case specifications
+**Format 1: Entries Array (Original)**
+Just the entries array - plan-level fields come from command-line arguments:
 
 ```json
 [
@@ -1992,6 +1991,55 @@ Each entry represents a test run (or group of runs for multi-config scenarios). 
   }
 ]
 ```
+
+**Format 2: Full Plan Object**
+Complete plan structure with plan-level fields - can be copied directly from API tools:
+
+```json
+{
+  "name": "Release 3.0 Testing",
+  "description": "Full regression and feature testing",
+  "milestone_id": 5,
+  "entries": [
+    {
+      "suite_id": 1,
+      "name": "Smoke Tests",
+      "include_all": true
+    },
+    {
+      "suite_id": 2,
+      "name": "Regression Tests",
+      "case_ids": [1, 2, 3, 4, 5]
+    }
+  ]
+}
+```
+
+**Usage:**
+```bash
+# Format 1: Requires --name on command line
+$ trcli plans add --name "Release 3.0" --entries-file entries.json
+
+# Format 2: Name comes from JSON file (command-line args override if provided)
+$ trcli plans add --entries-file full_plan.json
+
+# Command-line arguments always take precedence
+$ trcli plans add --name "CLI Name" --entries-file full_plan.json
+# Note: Using --name 'CLI Name' instead of JSON name 'Release 3.0 Testing'
+```
+
+**Field Priority:**
+- Command-line arguments **always override** JSON file values
+- If no command-line argument provided, value from JSON is used
+- Warnings are shown when command-line overrides JSON values
+
+**Entry Requirements:**
+
+Each entry represents a test run (or group of runs for multi-config scenarios). TestRail requires you to specify which test cases to include:
+
+1. **Include all cases**: Set `"include_all": true`
+2. **Specific cases**: Provide `"case_ids": [1, 2, 3]`
+3. **Using runs array**: For multi-configuration plans, specify cases in the runs array
 
 **Entry Field Reference:**
 - `suite_id` (required): ID of the test suite
