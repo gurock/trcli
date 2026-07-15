@@ -7,7 +7,7 @@ from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
 def print_config(env: Environment):
-    env.log(
+    config_msg = (
         f"Parser Results Execution Parameters"
         f"\n> TestRail instance: {env.host} (user: {env.username})"
         f"\n> Project: {env.project if env.project else env.project_id}"
@@ -23,6 +23,9 @@ def print_config(env: Environment):
         f"\n> Refs: {env.run_refs}"
         f"\n> Refs Action: {env.run_refs_action if hasattr(env, 'run_refs_action') else 'add'}"
     )
+    if hasattr(env, "dynamic_filters") and env.dynamic_filters:
+        config_msg += f"\n> Dynamic Filters: {env.dynamic_filters}"
+    env.log(config_msg)
 
 
 def write_run_to_file(environment: Environment, run_id: int):
@@ -141,6 +144,19 @@ def write_run_to_file(environment: Environment, run_id: int):
     metavar="",
     help="Action to perform on references: 'add' (default), 'update' (replace all), or 'delete' (remove all or specific)",
 )
+@click.option(
+    "--dynamic-filters",
+    type=click.Path(exists=True),
+    metavar="",
+    help="Path to JSON file containing dynamic filter criteria. Enables auto-updating runs that continuously sync with test case repository.",
+)
+@click.option(
+    "--dynamic-filters-mode",
+    type=click.Choice(["1", "2"], case_sensitive=False),
+    default="1",
+    metavar="",
+    help="Mode for combining dynamic filter conditions: '1' (AND - match all, default) or '2' (OR - match any). Only used if not specified in JSON file.",
+)
 @click.option("-f", "--file", type=click.Path(), metavar="", help="Write run data to file.")
 @click.pass_context
 @pass_environment
@@ -178,6 +194,22 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     if environment.run_case_ids and environment.run_include_all:
         environment.elog("Error: --run-case-ids and --run-include-all cannot be used together.")
         exit(1)
+
+    # Validation: dynamic filters are mutually exclusive with case_ids, include_all, and clear_run_case_ids
+    if hasattr(environment, "dynamic_filters") and environment.dynamic_filters:
+        if environment.run_case_ids:
+            environment.elog(
+                "Error: --dynamic-filters and --run-case-ids cannot be used together. Dynamic filters automatically determine which cases to include."
+            )
+            exit(1)
+        if environment.run_include_all:
+            environment.elog(
+                "Error: --dynamic-filters and --run-include-all cannot be used together. Dynamic filters automatically determine which cases to include."
+            )
+            exit(1)
+        if hasattr(environment, "clear_run_case_ids") and environment.clear_run_case_ids:
+            environment.elog("Error: --dynamic-filters and --clear-run-case-ids cannot be used together.")
+            exit(1)
 
     # Validation: clear-run-description requires --run-id and is mutually exclusive
     if hasattr(environment, "clear_run_description") and environment.clear_run_description and not environment.run_id:

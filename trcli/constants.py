@@ -106,6 +106,7 @@ COMMAND_FAULT_MAPPING = dict(
     projects=dict(**FAULT_MAPPING),
     templates=dict(**FAULT_MAPPING),
     tests=dict(**FAULT_MAPPING),
+    fields=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -130,6 +131,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
+    - fields: Manage fields (list dynamic filter fields)
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)
     - cases: Query test cases (get and list)

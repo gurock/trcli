@@ -27,6 +27,7 @@ from trcli.api.user_handler import UserHandler
 from trcli.api.project_handler import ProjectHandler
 from trcli.api.template_handler import TemplateHandler
 from trcli.api.test_handler import TestHandler
+from trcli.api.dynamic_filter_handler import DynamicFilterHandler
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -108,6 +109,7 @@ class ApiRequestHandler:
         self.project_handler = ProjectHandler(api_client)
         self.template_handler = TemplateHandler(api_client)
         self.test_handler = TestHandler(api_client)
+        self.dynamic_filter_handler = DynamicFilterHandler(api_client, environment)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
@@ -256,6 +258,7 @@ class ApiRequestHandler:
         include_all: bool = False,
         refs: str = None,
         case_ids: List[int] = None,
+        dynamic_filters: Dict = None,
     ) -> Tuple[int, str]:
         return self.run_handler.add_run(
             project_id,
@@ -269,6 +272,7 @@ class ApiRequestHandler:
             include_all,
             refs,
             case_ids,
+            dynamic_filters,
         )
 
     def update_run(

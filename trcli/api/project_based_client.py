@@ -194,6 +194,25 @@ class ProjectBasedClient:
         """
         If a run_id is provided, update the test run; otherwise, add a new test run.
         """
+        # Load dynamic filters from file if provided
+        dynamic_filters_data = None
+        dynamic_filters_file = getattr(self.environment, "dynamic_filters", None)
+        if dynamic_filters_file and isinstance(dynamic_filters_file, str):
+            from trcli.api.dynamic_filters_utils import load_dynamic_filters_from_file
+
+            filters, error = load_dynamic_filters_from_file(dynamic_filters_file)
+            if error:
+                self.environment.elog(f"Error loading dynamic filters: {error}")
+                return None, error
+
+            # Apply mode from --dynamic-filters-mode if not specified in JSON file
+            dynamic_filters_mode = getattr(self.environment, "dynamic_filters_mode", None)
+            if dynamic_filters_mode:
+                if "mode" not in filters or not filters["mode"]:
+                    filters["mode"] = dynamic_filters_mode
+
+            dynamic_filters_data = filters
+
         if not self.environment.run_id:
             self.environment.log(f"Creating test run. ", new_line=False)
             added_run, error_message = self.api_request_handler.add_run(
@@ -208,6 +227,7 @@ class ProjectBasedClient:
                 include_all=bool(self.environment.run_include_all),
                 refs=self.environment.run_refs,
                 case_ids=self.environment.run_case_ids,
+                dynamic_filters=dynamic_filters_data,
             )
             run_id = added_run
         else:
