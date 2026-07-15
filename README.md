@@ -44,6 +44,7 @@ Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
+    - fields: Manage fields (list dynamic filter fields)
     - labels: Manage labels (add, update, delete, list)
     - results: Manage test results (list, update)
     - references: Manage references (cases and runs)
@@ -97,6 +98,7 @@ Commands:
   add_run        Add a new test run in TestRail
   cases          Manage test cases in TestRail
   export_gherkin Export BDD test case from TestRail as .feature file
+  fields         Manage fields in TestRail
   import_gherkin Upload Gherkin .feature file to TestRail
   labels         Manage labels in TestRail
   parse_cucumber Parse Cucumber JSON results and upload to TestRail
@@ -3966,6 +3968,279 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
   --clear-run-start-date \
   --clear-run-end-date
 ```
+
+### Dynamic Filters for Auto-Updating Test Runs
+
+The `add_run` command supports **dynamic filters**, which enable you to create auto-updating test runs that continuously synchronize with your test case repository. Instead of manually selecting specific test cases, dynamic filters allow TestRail to automatically include cases that match your filter criteria, even as your test suite evolves.
+
+#### Why Use Dynamic Filters?
+
+Dynamic filters are ideal for scenarios where:
+- You want test runs to automatically include new test cases that match certain criteria
+- You need to maintain test runs for specific priorities, milestones, or custom fields
+- Your test suite is actively growing and you want runs to stay current
+- You want to avoid manually updating run case selections
+
+#### Discovering Available Filter Fields
+
+Before creating dynamic filters, use the `fields list-dynamic` command to discover which fields are available for filtering in your project:
+
+```bash
+# List available dynamic filter fields
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  fields list-dynamic
+
+# Output as JSON for programmatic use
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  fields list-dynamic --json-output
+```
+
+This command shows:
+- Available fields (system and custom)
+- Field types (Dropdown, Checkbox, String, Date, etc.)
+- Supported operators for each field
+- Available options for dropdown fields
+
+#### Creating Dynamic Filter Files
+
+Dynamic filters are defined in JSON files. The TestRail CLI supports two formats:
+
+**Full Format** (recommended for complex filters):
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:priority_id": {"values": [1, 2]},
+    "cases:is_automated": {"value": true},
+    "cases:title": {
+      "mode": "2",
+      "filters": [
+        {"op": 5, "value": "login"},
+        {"op": 5, "value": "auth"}
+      ]
+    }
+  }
+}
+```
+
+**Simplified Format** (auto-wrapped with mode="1"):
+```json
+{
+  "cases:priority_id": {"values": [1, 2]},
+  "cases:type_id": {"values": [1]}
+}
+```
+
+#### Filter Modes
+
+Filters support two combination modes:
+- **`"1"`** (AND mode): Test cases must match ALL filter conditions
+- **`"2"`** (OR mode): Test cases must match ANY filter condition
+
+You can specify the mode at two levels:
+1. **Top-level mode**: How to combine different field filters
+2. **Field-level mode**: How to combine multiple conditions within a single field
+
+#### Supported Filter Types
+
+**1. Checkbox Fields** - Boolean fields like "Is Automated"
+```json
+{
+  "cases:is_automated": {"value": true}
+}
+```
+
+**2. Dropdown Fields** - Single-select fields like Priority, Type, Milestone, User
+
+Select a single option:
+```json
+{
+  "cases:priority_id": {"value": 1}
+}
+```
+
+Or select multiple options (OR logic):
+```json
+{
+  "cases:priority_id": {"values": [1, 2, 3]},
+  "cases:type_id": {"values": ["all"]}
+}
+```
+
+**3. Multi-Select Fields** - Multiple selection fields with optional AND/OR mode
+```json
+{
+  "cases:custom_tags": {
+    "mode": "2",
+    "values": [1, 2, 3]
+  }
+}
+```
+
+**4. Operator-Based Fields** - Text, number, and date fields with operators
+```json
+{
+  "cases:title": {
+    "mode": "1",
+    "filters": [
+      {"op": 5, "value": "login"},
+      {"op": 6, "value": "deprecated"}
+    ]
+  }
+}
+```
+
+**Supported Operators:**
+- **1**: Is (exact match)
+- **2**: Is Not
+- **3**: Is Before (dates)
+- **4**: Is After (dates)
+- **5**: Contains (text)
+- **6**: Does not contain (text)
+- **7**: Is Less (numbers)
+- **8**: Is More (numbers)
+
+#### Using Dynamic Filters with add_run
+
+Create a new test run with dynamic filters:
+
+```bash
+# Create auto-updating run with dynamic filters
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "Automated Tests - High Priority" \
+  --suite-id 1 \
+  --dynamic-filters ./filters/high_priority.json
+```
+
+Specify filter mode via command line (overrides JSON if not specified in file):
+
+```bash
+# Use OR mode for top-level filter combination
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "P1 or P2 Tests" \
+  --suite-id 1 \
+  --dynamic-filters ./filters/priorities.json \
+  --dynamic-filters-mode "2"
+```
+
+#### Case Selection Precedence
+
+When creating test runs, case selection follows this precedence (highest to lowest):
+
+1. **`--run-case-ids`** - Explicit case IDs (highest priority)
+2. **`--dynamic-filters`** - Dynamic filter criteria
+3. **`--run-include-all`** - Include all suite cases (lowest priority)
+
+**Important:** These options are mutually exclusive. You can only use one at a time.
+
+#### Complete Examples
+
+**Example 1: High Priority Automated Tests**
+
+Create `filters/high_priority_automated.json`:
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:priority_id": {"values": [1, 2]},
+    "cases:is_automated": {"value": true}
+  }
+}
+```
+
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "P1/P2 Automated Tests" \
+  --suite-id 1 \
+  --dynamic-filters ./filters/high_priority_automated.json \
+  --milestone-id 5
+```
+
+**Example 2: Authentication Tests**
+
+Create `filters/auth_tests.json`:
+```json
+{
+  "mode": "2",
+  "filters": {
+    "cases:title": {
+      "mode": "2",
+      "filters": [
+        {"op": 5, "value": "login"},
+        {"op": 5, "value": "authentication"},
+        {"op": 5, "value": "password"}
+      ]
+    },
+    "cases:section_id": {"values": [42]}
+  }
+}
+```
+
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "Auth & Security Tests" \
+  --suite-id 1 \
+  --dynamic-filters ./filters/auth_tests.json
+```
+
+**Example 3: Regression Test Run**
+
+Create `filters/regression.json`:
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:type_id": {"values": [1, 2]},
+    "cases:priority_id": {"values": [1, 2, 3]},
+    "cases:custom_automation_status": {"values": [1]}
+  }
+}
+```
+
+```bash
+trcli -y -h https://example.testrail.io/ --project "My Project" \
+  add_run --title "Nightly Regression" \
+  --suite-id 1 \
+  --dynamic-filters ./filters/regression.json \
+  --run-assigned-to-id 5 \
+  --run-refs "SPRINT-42"
+```
+
+#### Benefits of Dynamic Filters
+
+1. **Automatic Updates**: Test runs automatically include new cases that match criteria
+2. **Maintainability**: No manual case selection needed as suite grows
+3. **Consistency**: Ensure runs always include the right test cases
+4. **Flexibility**: Complex filter combinations for precise case selection
+5. **Traceability**: Filter criteria stored in version-controlled JSON files
+
+#### Validation and Error Handling
+
+The CLI validates dynamic filter files before sending to TestRail:
+
+```bash
+# Invalid JSON format
+Error: Invalid JSON: Expecting property name enclosed in double quotes
+
+# Missing required keys
+Error: Invalid filter for cases:priority_id: Field filter must have 'value', 'values', or 'filters'
+
+# Invalid field name
+Error: Field name must start with 'cases:' prefix: priority_id
+
+# Empty filters
+Error: 'filters' object cannot be empty - at least one filter field required
+```
+
+#### Tips and Best Practices
+
+1. **Start Simple**: Begin with basic filters and add complexity as needed
+2. **Use Field Discovery**: Always check available fields with `fields list-dynamic` first
+3. **Test Your Filters**: Create a test run to verify your filters select the expected cases
+4. **Version Control**: Store filter JSON files in your repository alongside test code
+5. **Document Filters**: Add comments in JSON describing the purpose of complex filters
+6. **Combine with Other Options**: Use dynamic filters with milestones, assignees, refs, etc.
+7. **Field Names**: Always prefix field names with `"cases:"` (e.g., `"cases:priority_id"`)
 
 Generating test cases from OpenAPI specs
 -----------------
