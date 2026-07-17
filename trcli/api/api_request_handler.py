@@ -600,6 +600,12 @@ class ApiRequestHandler:
             if isinstance(response.response_text, str):
                 error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
                 return [], error_msg
+            # Check if response is an empty dict or missing expected key (e.g., service unavailable)
+            if not isinstance(response.response_text, dict) or entity not in response.response_text:
+                error_msg = FAULT_MAPPING["invalid_api_response"].format(
+                    error_details=f"Expected '{entity}' key in response but got: {str(response.response_text)[:200]}"
+                )
+                return [], error_msg
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
@@ -637,6 +643,13 @@ class ApiRequestHandler:
 
         if isinstance(response.response_text, str):
             error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
+            return [], error_msg
+
+        # Check if response is an empty dict or missing expected key (e.g., service unavailable)
+        if not isinstance(response.response_text, dict) or entity not in response.response_text:
+            error_msg = FAULT_MAPPING["invalid_api_response"].format(
+                error_details=f"Expected '{entity}' key in response but got: {str(response.response_text)[:200]}"
+            )
             return [], error_msg
 
         # Collect first page results

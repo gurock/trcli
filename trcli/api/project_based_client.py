@@ -205,11 +205,18 @@ class ProjectBasedClient:
                 self.environment.elog(f"Error loading dynamic filters: {error}")
                 return None, error
 
-            # Apply mode from --dynamic-filters-mode if not specified in JSON file
+            # Apply mode from --dynamic-filters-mode if not explicitly specified in JSON file
             dynamic_filters_mode = getattr(self.environment, "dynamic_filters_mode", None)
-            if dynamic_filters_mode:
-                if "mode" not in filters or not filters["mode"]:
-                    filters["mode"] = dynamic_filters_mode
+            mode_from_json = filters.pop("_mode_from_json", True)  # Remove internal flag
+
+            if dynamic_filters_mode and not mode_from_json:
+                # CLI flag overrides only when JSON file didn't specify mode
+                filters["mode"] = dynamic_filters_mode
+                self.environment.log(f"Using filter mode '{dynamic_filters_mode}' from --dynamic-filters-mode flag")
+            elif mode_from_json:
+                self.environment.log(f"Using filter mode '{filters.get('mode', '1')}' from JSON file")
+            else:
+                self.environment.log(f"Using default filter mode '1' (AND)")
 
             dynamic_filters_data = filters
 

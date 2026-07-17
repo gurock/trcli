@@ -32,7 +32,9 @@ class TestLoadDynamicFiltersFromFile:
             os.unlink(f.name)
 
         assert error == ""
-        assert filters == {"mode": "1", "filters": {"cases:priority_id": {"values": [1, 2]}}}
+        assert filters["mode"] == "1"
+        assert filters["filters"] == {"cases:priority_id": {"values": [1, 2]}}
+        assert filters["_mode_from_json"] is True
 
     def test_load_simplified_format_auto_wrapped(self):
         """Test loading filters in simplified format (auto-wrapped with mode=1)"""
@@ -43,7 +45,9 @@ class TestLoadDynamicFiltersFromFile:
             os.unlink(f.name)
 
         assert error == ""
-        assert filters == {"mode": "1", "filters": {"cases:priority_id": {"values": [1, 2]}}}
+        assert filters["mode"] == "1"
+        assert filters["filters"] == {"cases:priority_id": {"values": [1, 2]}}
+        assert filters["_mode_from_json"] is False
 
     def test_load_invalid_json(self):
         """Test loading file with invalid JSON"""
@@ -307,3 +311,171 @@ class TestConstants:
         assert OPERATORS[1] == "Is"
         assert OPERATORS[5] == "Contains"
         assert OPERATORS[8] == "Is More"
+
+
+class TestModePrecedence:
+    """Tests for mode precedence behavior between JSON file and CLI flag"""
+
+    def test_mode_explicitly_provided_in_full_format(self):
+        """Test that _mode_from_json flag is True when mode is in JSON (full format)"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"mode": "2", "filters": {"cases:priority_id": {"values": [1, 2]}}},
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "2"
+        assert filters["_mode_from_json"] is True
+
+    def test_mode_not_provided_in_simplified_format(self):
+        """Test that _mode_from_json flag is False when using simplified format (no mode in JSON)"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump({"cases:priority_id": {"values": [1, 2]}}, f)
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "1"  # Default mode added by validation
+        assert filters["_mode_from_json"] is False  # Mode was NOT in original JSON
+
+    def test_mode_not_provided_in_full_format_without_mode_key(self):
+        """Test that _mode_from_json flag is False when full format used but no mode key"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"filters": {"cases:priority_id": {"values": [1, 2]}}},
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "1"  # Default mode added by validation
+        assert filters["_mode_from_json"] is False  # Mode was NOT in original JSON
+
+    def test_mode_precedence_json_mode_1_provided(self):
+        """Test that mode '1' from JSON is preserved"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"mode": "1", "filters": {"cases:priority_id": {"values": [1, 2]}}},
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "1"
+        assert filters["_mode_from_json"] is True
+
+    def test_mode_precedence_json_mode_2_provided(self):
+        """Test that mode '2' from JSON is preserved"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"mode": "2", "filters": {"cases:priority_id": {"values": [1, 2]}}},
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "2"
+        assert filters["_mode_from_json"] is True
+
+    def test_mode_flag_allows_cli_override_for_simplified_format(self):
+        """Test that simplified format (no mode) allows CLI override via _mode_from_json=False"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump({"cases:priority_id": {"values": [1, 2]}}, f)
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        # Initially has default mode "1"
+        assert filters["mode"] == "1"
+        # But flag indicates it can be overridden
+        assert filters["_mode_from_json"] is False
+
+        # Simulate CLI override (this would happen in project_based_client.py)
+        mode_from_json = filters.pop("_mode_from_json", True)
+        cli_mode = "2"
+        if cli_mode and not mode_from_json:
+            filters["mode"] = cli_mode
+
+        assert filters["mode"] == "2"  # Successfully overridden by CLI
+
+    def test_mode_flag_prevents_cli_override_when_json_has_mode(self):
+        """Test that JSON mode takes precedence over CLI via _mode_from_json=True"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {"mode": "1", "filters": {"cases:priority_id": {"values": [1, 2]}}},
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "1"
+        assert filters["_mode_from_json"] is True
+
+        # Simulate CLI override attempt (this would happen in project_based_client.py)
+        mode_from_json = filters.pop("_mode_from_json", True)
+        cli_mode = "2"
+        if cli_mode and not mode_from_json:
+            filters["mode"] = cli_mode
+
+        assert filters["mode"] == "1"  # JSON mode preserved, CLI ignored
+
+    def test_complex_filter_with_explicit_mode(self):
+        """Test complex filter with explicit mode in JSON"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {
+                    "mode": "2",
+                    "filters": {
+                        "cases:priority_id": {"values": [1, 2]},
+                        "cases:is_automated": {"value": True},
+                        "cases:title": {"mode": "1", "filters": [{"op": 5, "value": "test"}]},
+                    },
+                },
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "2"
+        assert filters["_mode_from_json"] is True
+        # Field-level mode is independent
+        assert filters["filters"]["cases:title"]["mode"] == "1"
+
+    def test_complex_filter_without_top_level_mode(self):
+        """Test complex filter without top-level mode (should allow CLI override)"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            json.dump(
+                {
+                    "filters": {
+                        "cases:priority_id": {"values": [1, 2]},
+                        "cases:is_automated": {"value": True},
+                        "cases:title": {"mode": "2", "filters": [{"op": 5, "value": "test"}]},
+                    }
+                },
+                f,
+            )
+            f.flush()
+            filters, error = load_dynamic_filters_from_file(f.name)
+            os.unlink(f.name)
+
+        assert error == ""
+        assert filters["mode"] == "1"  # Default
+        assert filters["_mode_from_json"] is False  # Can be overridden
+        # Field-level mode is independent
+        assert filters["filters"]["cases:title"]["mode"] == "2"

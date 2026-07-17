@@ -55,15 +55,21 @@ def load_dynamic_filters_from_file(file_path: str) -> Tuple[Dict[str, Any], str]
         with open(file_path, "r") as f:
             filters = json.load(f)
 
+        # Track if mode was explicitly provided in JSON file
+        mode_explicitly_provided = "mode" in filters
+
         # Normalize: if no top-level "filters" key, wrap it
         if "filters" not in filters:
-            # Simplified format - wrap it with default mode
-            filters = {"mode": "1", "filters": filters}
+            # Simplified format - wrap it (don't set mode yet - let validation handle it)
+            filters = {"filters": filters}
 
-        # Validate structure
+        # Validate structure (this will add default mode if not present)
         is_valid, error = validate_dynamic_filters_structure(filters)
         if not is_valid:
             return {}, error
+
+        # Mark whether mode was explicitly provided (for CLI override logic)
+        filters["_mode_from_json"] = mode_explicitly_provided
 
         return filters, ""
     except json.JSONDecodeError as e:

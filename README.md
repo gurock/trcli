@@ -4031,15 +4031,127 @@ Dynamic filters are defined in JSON files. The TestRail CLI supports two formats
 }
 ```
 
-#### Filter Modes
+#### Filter Modes - AND and OR modes
 
-Filters support two combination modes:
-- **`"1"`** (AND mode): Test cases must match ALL filter conditions
-- **`"2"`** (OR mode): Test cases must match ANY filter condition
+Dynamic filters support a **two types of mode** for powerful and flexible case selection:
 
-You can specify the mode at two levels:
-1. **Top-level mode**: How to combine different field filters
-2. **Field-level mode**: How to combine multiple conditions within a single field
+- **Mode `"1"` (AND)**: Test cases must match **ALL** field conditions
+  - Example: Priority = P1 **AND** Automated = true **AND** Title contains "login"
+  - Only cases satisfying every single field filter are included
+
+- **Mode `"2"` (OR)**: Test cases must match **ANY** field condition
+  - Example: Priority = P1 **OR** Automated = true **OR** Title contains "login"
+  - Cases matching at least one field filter are included
+
+##### **Mode Precedence and Defaults**
+
+When creating test runs with dynamic filters, the mode is determined in this order:
+
+1. **JSON file mode** (if explicitly specified) - Takes highest priority
+2. **`--dynamic-filters-mode` CLI flag** - Used only if JSON has no mode
+3. **Default: `"1"` (AND)** - Applied if neither JSON nor CLI specifies mode (also the current default in Web UI)
+
+##### **Mode Examples**
+
+**Example 1: AND Mode (all conditions must match)**
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:priority_id": {"values": [1, 2]},
+    "cases:is_automated": {"value": true},
+    "cases:title": {
+      "mode": "2",
+      "filters": [
+        {"op": 5, "value": "login"},
+        {"op": 5, "value": "auth"}
+      ]
+    }
+  }
+}
+```
+
+**Matches**: Test cases that are:
+- Priority P1 **OR** P2 (from values array)
+- **AND** Is Automated = true
+- **AND** Title contains "login" **OR** "auth" (field-level mode "2")
+
+**Test Case Examples**:
+```
+MATCH: "Test user login flow" | P1 | Automated: Yes
+MATCH: "OAuth authentication" | P2 | Automated: Yes
+NO MATCH: "Test user login flow" | P1 | Automated: No (fails automation check)
+NO MATCH: "Test checkout process" | P1 | Automated: Yes (fails title check)
+```
+
+**Example 2: OR Mode (any condition matches)**
+```json
+{
+  "mode": "2",
+  "filters": {
+    "cases:priority_id": {"values": [1]},
+    "cases:label_id": {
+      "mode": "1",
+      "values": [4, 7]
+    }
+  }
+}
+```
+
+**Matches**: Test cases that are:
+- Priority P1
+- **OR** Have labels "Smoke" **AND** "Regression" (field-level mode "1")
+
+**Test Case Examples**:
+```
+MATCH: "Any test" | P1 | Labels: []
+MATCH: "Any test" | P3 | Labels: [Smoke, Regression]
+MATCH: "Any test" | P1 | Labels: [Smoke, Regression]
+NO MATCH: "Any test" | P3 | Labels: [Smoke] (needs both labels or P1 priority)
+```
+
+**Example 3: Complex Nested Modes**
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:section_id": {"values": [10, 20]},
+    "cases:title": {
+      "mode": "1",
+      "filters": [
+        {"op": 5, "value": "API"},
+        {"op": 6, "value": "deprecated"}
+      ]
+    },
+    "cases:custom_automation_status": {"value": 1}
+  }
+}
+```
+
+**Matches**: Test cases that are:
+- In section 10 **OR** 20
+- **AND** Title contains "API" **AND** does not contain "deprecated"
+- **AND** Automation Status = Ready (value 1)
+
+**Test Case Examples**:
+```
+MATCH: "API endpoint validation" | Section 10 | Status: Ready
+NO MATCH: "API endpoint deprecated" | Section 10 | Status: Ready (contains "deprecated")
+NO MATCH: "API endpoint validation" | Section 30 | Status: Ready (wrong section)
+```
+
+##### **Mode Usage Guidelines**
+
+**Use AND Mode (`"1"`)** when:
+- You need strict filtering (e.g., "P1 AND automated AND in sprint-5 label")
+- All conditions are required for test case inclusion
+- Default behavior is desired
+
+**Use OR Mode (`"2"`)** when:
+- You want broader test case selection (e.g., "P1 cases OR smoke label cases")
+- Any single condition qualifies a case for inclusion
+- Creating comprehensive test runs
+
 
 #### Supported Filter Types
 
@@ -4100,6 +4212,253 @@ Or select multiple options (OR logic):
 - **7**: Is Less (numbers)
 - **8**: Is More (numbers)
 
+#### Filter Format Examples with Acceptance Criteria
+
+This section provides concrete examples showing which test cases would match each filter configuration.
+
+##### **Scenario 1: High Priority Smoke Tests**
+
+**Filter Configuration**:
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:priority_id": {"values": [1, 2]},
+    "cases:label_id": {"values": [4]}
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Priority must be P1 (ID: 1) **OR** P2 (ID: 2)
+- **AND** Must have label "Smoke" (ID: 4)
+
+**Test Case Matching Table**:
+
+| Test Case | Priority | Labels | Match? | Reason |
+|-----------|----------|--------|--------|--------|
+| "User login validation" | P1 | [Smoke] | ✅ Yes | P1 priority AND has Smoke label |
+| "Password reset flow" | P2 | [Smoke, Regression] | ✅ Yes | P2 priority AND has Smoke label |
+| "User logout" | P3 | [Smoke] | ❌ No | Priority P3 doesn't match (needs P1 or P2) |
+| "Database migration" | P1 | [Regression] | ❌ No | Missing Smoke label |
+| "API health check" | P1 | [] | ❌ No | No labels (needs Smoke) |
+
+**Expected Result**: Only test cases 1 and 2 included in run.
+
+---
+
+##### **Scenario 2: Authentication Module Tests (Any Title Match)**
+
+**Filter Configuration**:
+```json
+{
+  "cases:title": {
+    "mode": "2",
+    "filters": [
+      {"op": 5, "value": "login"},
+      {"op": 5, "value": "authentication"},
+      {"op": 5, "value": "password"},
+      {"op": 5, "value": "OAuth"}
+    ]
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Title must contain **ANY** of: "login", "authentication", "password", or "OAuth"
+- No other filters applied (all priorities, types, etc.)
+
+**Test Case Matching Table**:
+
+| Test Case Title | Match? | Reason |
+|-----------------|--------|--------|
+| "Test user login with valid credentials" | ✅ Yes | Contains "login" |
+| "OAuth2 authentication flow" | ✅ Yes | Contains "OAuth" and "authentication" |
+| "Password strength validation" | ✅ Yes | Contains "password" |
+| "Reset password via email" | ✅ Yes | Contains "password" |
+| "User profile update" | ❌ No | Doesn't contain any keyword |
+| "Session timeout handling" | ❌ No | Doesn't contain any keyword |
+
+**Expected Result**: First 4 test cases included in run.
+
+---
+
+##### **Scenario 3: Automated Non-Deprecated API Tests**
+
+**Filter Configuration**:
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:is_automated": {"value": true},
+    "cases:type_id": {"values": [3]},
+    "cases:title": {
+      "mode": "1",
+      "filters": [
+        {"op": 5, "value": "API"},
+        {"op": 6, "value": "deprecated"}
+      ]
+    }
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Must be automated (is_automated = true)
+- **AND** Must be type "API Test" (ID: 3)
+- **AND** Title must contain "API"
+- **AND** Title must NOT contain "deprecated"
+
+**Test Case Matching Table**:
+
+| Test Case | Automated | Type | Match? | Reason |
+|-----------|-----------|------|--------|--------|
+| "API endpoint validation" | Yes | API Test | ✅ Yes | All conditions met |
+| "API response time check" | Yes | API Test | ✅ Yes | All conditions met |
+| "API v1 endpoint (deprecated)" | Yes | API Test | ❌ No | Contains "deprecated" |
+| "API health check" | No | API Test | ❌ No | Not automated |
+| "UI login test with API" | Yes | Functional | ❌ No | Wrong test type |
+
+**Expected Result**: Only first 2 test cases included in run.
+
+---
+
+##### **Scenario 4: Date Range Filter (Recently Updated)**
+
+**Filter Configuration**:
+```json
+{
+  "cases:updated_on": {
+    "mode": "1",
+    "filters": [
+      {"op": 4, "value": 1704067200}
+    ]
+  }
+}
+```
+
+**Note**: Unix timestamp 1704067200 = 2024-01-01 00:00:00 UTC
+
+**Acceptance Criteria**:
+- Updated date must be **after** January 1, 2024 (operator 4 = "Is After")
+
+**Test Case Matching Table**:
+
+| Test Case | Updated On | Match? | Reason |
+|-----------|------------|--------|--------|
+| "New feature test" | 2024-06-15 | ✅ Yes | After 2024-01-01 |
+| "Recently modified test" | 2024-03-20 | ✅ Yes | After 2024-01-01 |
+| "Legacy test case" | 2023-12-15 | ❌ No | Before 2024-01-01 |
+| "Old regression test" | 2022-05-10 | ❌ No | Before 2024-01-01 |
+
+**Expected Result**: First 2 test cases included in run.
+
+---
+
+##### **Scenario 5: Integer Range (Estimated Duration)**
+
+**Filter Configuration**:
+```json
+{
+  "cases:estimate": {
+    "mode": "1",
+    "filters": [
+      {"op": 8, "value": 60},
+      {"op": 7, "value": 300}
+    ]
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Estimate must be **more than** 60 seconds (operator 8 = "Is More")
+- **AND** Estimate must be **less than** 300 seconds (operator 7 = "Is Less")
+- Result: Tests between 1-5 minutes duration
+
+**Test Case Matching Table**:
+
+| Test Case | Estimate (seconds) | Match? | Reason |
+|-----------|-------------------|--------|--------|
+| "Quick smoke test" | 30 | ❌ No | Less than 60s |
+| "Standard API test" | 120 | ✅ Yes | Between 60-300s |
+| "Login flow test" | 180 | ✅ Yes | Between 60-300s |
+| "Full regression suite" | 600 | ❌ No | More than 300s |
+
+**Expected Result**: Test cases 2 and 3 included in run.
+
+---
+
+##### **Scenario 6: Multi-Select with AND Logic (Multiple Labels Required)**
+
+**Filter Configuration**:
+```json
+{
+  "cases:label_id": {
+    "mode": "1",
+    "values": [4, 7, 9]
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Must have label "Smoke" (ID: 4)
+- **AND** Must have label "Regression" (ID: 7)
+- **AND** Must have label "Critical" (ID: 9)
+- All three labels required
+
+**Test Case Matching Table**:
+
+| Test Case | Labels | Match? | Reason |
+|-----------|--------|--------|--------|
+| "Core functionality test" | [Smoke, Regression, Critical] | ✅ Yes | Has all 3 labels |
+| "Login test" | [Smoke, Regression] | ❌ No | Missing "Critical" label |
+| "Payment flow" | [Regression, Critical] | ❌ No | Missing "Smoke" label |
+| "UI validation" | [Smoke] | ❌ No | Missing "Regression" and "Critical" |
+
+**Expected Result**: Only first test case included in run.
+
+---
+
+##### **Scenario 7: Complex Real-World Filter (CI Pipeline)**
+
+**Filter Configuration**:
+```json
+{
+  "mode": "1",
+  "filters": {
+    "cases:priority_id": {"values": [1, 2]},
+    "cases:is_automated": {"value": true},
+    "cases:milestone_id": {"values": [5]},
+    "cases:title": {
+      "mode": "2",
+      "filters": [
+        {"op": 5, "value": "smoke"},
+        {"op": 5, "value": "critical"}
+      ]
+    }
+  }
+}
+```
+
+**Acceptance Criteria**:
+- Priority must be P1 or P2
+- **AND** Must be automated
+- **AND** Must be in milestone "Release 2.0" (ID: 5)
+- **AND** Title contains "smoke" **OR** "critical"
+
+**Test Case Matching Table**:
+
+| Test Case | Priority | Auto | Milestone | Title | Match? |
+|-----------|----------|------|-----------|-------|--------|
+| "Critical login smoke test" | P1 | Yes | Release 2.0 | Contains both | ✅ Yes |
+| "Smoke test - API health" | P2 | Yes | Release 2.0 | Contains "smoke" | ✅ Yes |
+| "Critical payment flow" | P1 | Yes | Release 2.0 | Contains "critical" | ✅ Yes |
+| "Smoke test - dashboard" | P3 | Yes | Release 2.0 | Contains "smoke" | ❌ No (P3) |
+| "Critical login test" | P1 | No | Release 2.0 | Contains "critical" | ❌ No (Not automated) |
+| "Critical login test" | P1 | Yes | Release 1.0 | Contains "critical" | ❌ No (Wrong milestone) |
+
+**Expected Result**: First 3 test cases included in run.
+
 #### Using Dynamic Filters with add_run
 
 Create a new test run with dynamic filters:
@@ -4112,10 +4471,11 @@ trcli -y -h https://example.testrail.io/ --project "My Project" \
   --dynamic-filters ./filters/high_priority.json
 ```
 
-Specify filter mode via command line (overrides JSON if not specified in file):
+Specify filter mode via command line (used only when JSON file doesn't specify mode):
 
 ```bash
 # Use OR mode for top-level filter combination
+# This only applies if priorities.json doesn't have a "mode" key
 trcli -y -h https://example.testrail.io/ --project "My Project" \
   add_run --title "P1 or P2 Tests" \
   --suite-id 1 \
