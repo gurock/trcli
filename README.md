@@ -4005,6 +4005,8 @@ This command shows:
 
 Dynamic filters are defined in JSON files. The TestRail CLI supports two formats:
 
+**Note:** JSON files can use any whitespace formatting (spaces, tabs, minified, etc.) - the parser handles all valid JSON formats.
+
 **Full Format** (recommended for complex filters):
 ```json
 {
