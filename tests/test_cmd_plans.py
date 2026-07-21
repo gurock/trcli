@@ -25,6 +25,10 @@ class TestCmdPlans:
         mock_client_instance = MagicMock()
         mock_project_client.return_value = mock_client_instance
         mock_client_instance.project.project_id = project_id
+        # Mock validate_and_process_plan_entries to pass through entries unchanged
+        mock_client_instance.api_request_handler.plan_handler.validate_and_process_plan_entries.side_effect = (
+            lambda entries, cli_mode=None: (entries, "")
+        )
         return mock_client_instance
 
     @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
@@ -591,11 +595,11 @@ class TestCmdPlans:
             assert isinstance(call_kwargs["due_on"], int)
 
     def test_add_plan_mutually_exclusive_entries(self):
-        """Test validation of mutually exclusive --entries and --entries-file"""
+        """Test validation of mutually exclusive --entries and --dynamic-filters"""
         import tempfile
         import os
 
-        # Create a temporary file for entries-file parameter
+        # Create a temporary file for dynamic-filters parameter
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("[]")
             temp_file = f.name
@@ -606,7 +610,7 @@ class TestCmdPlans:
             ) as mock_elog:
                 result = self.runner.invoke(
                     cmd_plans.add,
-                    ["--name", "Test Plan", "--entries", "[]", "--entries-file", temp_file],
+                    ["--name", "Test Plan", "--entries", "[]", "--dynamic-filters", temp_file],
                     obj=self.environment,
                 )
 
