@@ -1951,6 +1951,18 @@ $ trcli -c config.yml plans add \
   --name "Complex Test Plan" \
   --entries-file entries.json
 
+# Create a plan with dynamic filters in entries (inline)
+$ trcli -c config.yml plans add \
+  --name "Automated High Priority Tests" \
+  --entries '[{"suite_id": 1, "name": "Smoke Tests", "runs": [{"dynamic_filters": {"cases:priority_id": {"values": [1,2]}}}]}]'
+
+# Create a plan with dynamic filters from file
+# Dynamic filters are specified in the runs array within entries
+$ trcli -c config.yml plans add \
+  --name "Sprint 5 Test Plan" \
+  --entries-file plan_with_filters.json \
+  --dynamic-filters-mode 2
+
 # Get JSON output for programmatic use
 $ trcli -c config.yml plans add \
   --name "Automated Plan" \
@@ -2052,6 +2064,7 @@ Each entry represents a test run (or group of runs for multi-config scenarios). 
 - `assignedto_id` (optional): User ID to assign the run to
 - `config_ids` (optional): Configuration IDs for multi-config runs
 - `runs` (optional): Array of run configurations (required when using `config_ids`)
+- `dynamic_filters` (optional): Dynamic filter criteria for auto-updating test runs (see Dynamic Filters section for details)
 
 **Important Notes for Multi-Configuration Entries:**
 
@@ -2077,6 +2090,66 @@ Example for cross-browser testing:
 ```
 
 This creates one run that tests cases 100, 101, 102 across Chrome and Firefox configurations.
+
+**Dynamic Filters in Plan Entries:**
+
+You can use dynamic filters in plan entries to create auto-updating test runs. Dynamic filters are specified in the `runs` array and follow the same syntax as the `add_run` command (see [Dynamic Filters for Auto-Updating Test Runs](#dynamic-filters-for-auto-updating-test-runs) for detailed documentation).
+
+Example entry with dynamic filters:
+```json
+{
+  "suite_id": 1,
+  "name": "High Priority Automated Tests",
+  "runs": [
+    {
+      "dynamic_filters": {
+        "mode": "1",
+        "filters": {
+          "cases:priority_id": {"values": [1, 2]},
+          "cases:is_automated": {"value": true}
+        }
+      }
+    }
+  ]
+}
+```
+
+**Using --dynamic-filters-mode flag:**
+
+The `--dynamic-filters-mode` flag controls the filter mode for all runs in the plan (same precedence as `add_run`):
+
+```bash
+# Apply OR mode to all runs without explicit mode in JSON
+trcli plans add \
+  --name "Sprint Plan" \
+  --entries-file plan.json \
+  --dynamic-filters-mode 2
+```
+
+**Mode Precedence:**
+1. **JSON mode** (if explicitly specified in JSON) - Takes highest priority
+2. **CLI mode** (`--dynamic-filters-mode`) - Applied to runs without explicit mode
+3. **Default "1"** (AND) - Used if neither JSON nor CLI specifies mode
+
+**Simplified format auto-wrapping:**
+```json
+{
+  "runs": [
+    {
+      "dynamic_filters": {
+        "cases:priority_id": {"values": [1, 2]}
+      }
+    }
+  ]
+}
+```
+This automatically wraps to include `"mode": "1"` and the `"filters"` wrapper.
+
+**Validation rules:**
+- `dynamic_filters` and `case_ids` are mutually exclusive
+- `dynamic_filters` and `include_all: true` are mutually exclusive
+- Filter criteria must match at least one test case in the suite
+- All field names must use the `"cases:"` prefix
 
 ##### Configuration File Support
 
@@ -4603,412 +4676,6 @@ Error: 'filters' object cannot be empty - at least one filter field required
 5. **Document Filters**: Add comments in JSON describing the purpose of complex filters
 6. **Combine with Other Options**: Use dynamic filters with milestones, assignees, refs, etc.
 7. **Field Names**: Always prefix field names with `"cases:"` (e.g., `"cases:priority_id"`)
-
-### Dynamic Filters in Test Plans
-
-Dynamic filters can also be used when creating test plans with the `plans add` command. This allows you to create plans with multiple runs, each having its own dynamic filter criteria.
-
-#### Key Features
-
-- **Run-Level Filters**: Apply different filters to individual runs within a plan entry
-- **Multiple Entries**: Each entry in a plan can have different filter criteria
-- **Mixed Selection Methods**: Combine dynamic filters, explicit case_ids, and include_all in different runs
-- **Same Validation**: All validation rules from `add_run` apply to plan entries
-- **Automatic Handling**: When using `dynamic_filters`, `include_all` is automatically set to `false` if not specified
-
-#### Basic Usage
-
-Dynamic filters are specified in a JSON file using the `--dynamic-filters` flag:
-
-```bash
-trcli plans add \
-  --name "Sprint 5 Test Plan" \
-  --dynamic-filters plan_with_filters.json
-```
-
-**Example: plan_with_filters.json**
-```json
-{
-  "name": "Sprint 5 Test Plan",
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "Smoke Tests",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "mode": "1",
-            "filters": {
-              "cases:label_id": {"values": [4]},
-              "cases:priority_id": {"values": [1, 2]}
-            }
-          }
-        }
-      ]
-    },
-    {
-      "suite_id": 1,
-      "name": "Regression Tests",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "cases:is_automated": {"value": true}
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### Simplified Format
-
-Just like with `add_run`, you can use the simplified format without the `"filters"` wrapper:
-
-```json
-{
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "Priority 1 Tests",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "cases:priority_id": {"values": [1]}
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-This automatically wraps to:
-```json
-{
-  "dynamic_filters": {
-    "mode": "1",
-    "filters": {
-      "cases:priority_id": {"values": [1]}
-    }
-  }
-}
-```
-
-#### Mode Override with --dynamic-filters-mode
-
-The `--dynamic-filters-mode` flag allows you to override the filter mode for ALL runs in the plan (consistent with `add_run` behavior):
-
-```bash
-# Apply mode "2" (OR) to all runs in the plan
-trcli plans add \
-  --name "Sprint 5 Test Plan" \
-  --dynamic-filters plan_with_filters.json \
-  --dynamic-filters-mode 2
-```
-
-**Precedence Rules:**
-- **JSON mode takes precedence**: If a run has explicit `"mode": "1"` or `"mode": "2"` in JSON, it will NOT be overridden
-- **CLI mode applies to simplified format**: Runs using simplified format (no explicit mode) will use the CLI mode
-- **Default is "1" (AND)**: If no CLI mode and no JSON mode, defaults to "1"
-
-**Example with Mixed Modes:**
-
-```json
-{
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "Entry 1",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "mode": "1",  // Explicit mode - won't be overridden
-            "filters": {
-              "cases:priority_id": {"values": [1, 2]}
-            }
-          }
-        }
-      ]
-    },
-    {
-      "suite_id": 1,
-      "name": "Entry 2",
-      "runs": [
-        {
-          "dynamic_filters": {
-            // No explicit mode - will use CLI mode
-            "cases:label_id": {"values": [4]}
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-```bash
-# Entry 1 keeps mode "1" (explicit in JSON)
-# Entry 2 uses mode "2" (from CLI flag)
-trcli plans add \
-  --dynamic-filters plan.json \
-  --dynamic-filters-mode 2
-```
-
-#### Multiple Runs with Different Filters
-
-Create entries with multiple runs, each using different selection methods:
-
-```json
-{
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "Multi-Run Entry",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "cases:priority_id": {"values": [1, 2]}
-          }
-        },
-        {
-          "case_ids": [10, 20, 30]
-        },
-        {
-          "include_all": true
-        }
-      ]
-    }
-  ]
-}
-```
-
-#### Using Config IDs with Filters
-
-Dynamic filters work with configuration IDs:
-
-```json
-{
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "Multi-Config Tests",
-      "runs": [
-        {
-          "config_ids": [1, 2, 3],
-          "dynamic_filters": {
-            "cases:priority_id": {"values": [1, 2]},
-            "cases:label_id": {"values": [4]}
-          }
-        }
-      ]
-    }
-  ]
-}
-```
-
-This creates runs for each config (1, 2, 3), all using the same dynamic filter criteria.
-
-#### Validation Rules for Plans
-
-The same validation rules from `add_run` apply to each run in plan entries:
-
-**Important: Filters Must Match Test Cases**
-
-Dynamic filters must match at least one test case in the suite. If a filter matches zero test cases, TestRail will reject the entry with an error. Before creating plans with dynamic filters:
-- Verify the suite contains test cases
-- Ensure filter criteria will match at least one case
-- Confirm all field names exist in the suite (use `fields list-dynamic` to check available fields)
-
-**Invalid: dynamic_filters with case_ids**
-```json
-{
-  "runs": [
-    {
-      "case_ids": [1, 2, 3],
-      "dynamic_filters": {
-        "cases:priority_id": {"values": [1]}
-      }
-    }
-  ]
-}
-```
-**Error:** `Entry 'Entry Name', Run 1: dynamic_filters and case_ids cannot be used together`
-
-**Invalid: dynamic_filters with include_all=true**
-```json
-{
-  "runs": [
-    {
-      "include_all": true,
-      "dynamic_filters": {
-        "cases:priority_id": {"values": [1]}
-      }
-    }
-  ]
-}
-```
-**Error:** `Entry 'Entry Name', Run 1: dynamic_filters and include_all=true cannot be used together`
-
-**Invalid: Empty filters**
-```json
-{
-  "runs": [
-    {
-      "dynamic_filters": {
-        "mode": "1",
-        "filters": {}
-      }
-    }
-  ]
-}
-```
-**Error:** `Entry 'Entry Name', Run 1: 'filters' object cannot be empty`
-
-**Invalid: Missing "cases:" prefix**
-```json
-{
-  "runs": [
-    {
-      "dynamic_filters": {
-        "priority_id": {"values": [1, 2]}
-      }
-    }
-  ]
-}
-```
-**Error:** `Entry 'Entry Name', Run 1: Field name must start with 'cases:' prefix: priority_id`
-
-#### Error Messages with Context
-
-All validation errors include entry name and run index for easy debugging:
-
-```
-Error: Entry 'Smoke Tests', Run 2: dynamic_filters and case_ids cannot be used together. Choose one case selection method.
-```
-
-If an entry has no name, the index is used:
-```
-Error: Entry 'Entry 1', Run 1: 'filters' object cannot be empty - at least one filter field required
-```
-
-#### Complete Example
-
-Here's a comprehensive example showing multiple entries with different filter strategies:
-
-```json
-{
-  "name": "Release 2.0 Test Plan",
-  "description": "Comprehensive testing for release 2.0",
-  "milestone_id": 5,
-  "entries": [
-    {
-      "suite_id": 1,
-      "name": "High Priority Smoke Tests",
-      "description": "Critical path tests",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "mode": "1",
-            "filters": {
-              "cases:priority_id": {"values": [1, 2]},
-              "cases:label_id": {"values": [4]},
-              "cases:is_automated": {"value": true}
-            }
-          }
-        }
-      ]
-    },
-    {
-      "suite_id": 1,
-      "name": "Regression Tests - All Browsers",
-      "runs": [
-        {
-          "config_ids": [1, 2, 3],
-          "dynamic_filters": {
-            "cases:title": {
-              "mode": "2",
-              "filters": [
-                {"op": 5, "value": "login"},
-                {"op": 5, "value": "authentication"}
-              ]
-            }
-          }
-        }
-      ]
-    },
-    {
-      "suite_id": 2,
-      "name": "Manual Tests",
-      "runs": [
-        {
-          "dynamic_filters": {
-            "cases:is_automated": {"value": false},
-            "cases:priority_id": {"values": [1]}
-          }
-        }
-      ]
-    },
-    {
-      "suite_id": 1,
-      "name": "Specific Test Cases",
-      "runs": [
-        {
-          "case_ids": [101, 102, 103, 104]
-        }
-      ]
-    }
-  ]
-}
-```
-
-Create the plan:
-```bash
-trcli plans add --dynamic-filters release_plan.json
-```
-
-Output:
-```
-Plans Add Execution Parameters
-> TestRail instance: https://example.testrail.io (user: admin@example.com)
-> Project: My Project
-
-Creating plan 'Release 2.0 Test Plan' in project ID 1...
-
-Plan created successfully!
-  Plan ID: 123
-  Name: Release 2.0 Test Plan
-  URL: https://example.testrail.io/index.php?/plans/view/123
-  Milestone ID: 5
-  Entries: 4 test run(s)
-    - High Priority Smoke Tests: 15 test case(s)
-    - Regression Tests - All Browsers: 45 test case(s)
-    - Manual Tests: 8 test case(s)
-    - Specific Test Cases: 4 test case(s)
-
-Plan creation completed successfully.
-```
-
-#### Differences from add_run
-
-| Aspect | add_run | plans add |
-|--------|---------|-----------|
-| **Filter Input** | `--dynamic-filters <file>` | `--dynamic-filters <file>` |
-| **Mode Override** | `--dynamic-filters-mode` flag | `--dynamic-filters-mode` flag |
-| **Validation Context** | Single run | Entry name + run index |
-| **Complexity** | Single filter set | Multiple filter sets per plan |
-| **Error Messages** | Simple | Include entry/run context |
-| **Mode Precedence** | JSON > CLI > Default | JSON > CLI > Default |
-
-#### Tips for Plans with Dynamic Filters
-
-1. **Name Your Entries**: Always provide entry names for clearer error messages
-2. **Test Filters First**: Use `add_run` to test filter criteria before adding to plans
-3. **Mix Selection Methods**: Use dynamic filters for some runs, case_ids for others
-4. **Config Strategy**: Apply same filter across multiple configs using config_ids
-5. **Validate Locally**: JSON structure errors are caught before API calls
-6. **Use CLI Mode for Consistency**: Use `--dynamic-filters-mode` to set the same mode for all runs with simplified format
-7. **JSON Mode for Granularity**: Specify explicit mode in JSON when different runs need different modes
 
 Generating test cases from OpenAPI specs
 -----------------

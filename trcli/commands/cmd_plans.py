@@ -355,20 +355,20 @@ def list(
     "--entries",
     type=str,
     metavar="<json>",
-    help="JSON array of plan entries inline. Use this for simple entries or scripting. Mutually exclusive with --dynamic-filters.",
+    help="JSON array of plan entries inline. Use this for simple entries or scripting. Mutually exclusive with --entries-file.",
 )
 @click.option(
-    "--dynamic-filters",
+    "--entries-file",
     type=click.Path(exists=True),
     metavar="<path>",
-    help="Path to JSON file containing plan entries with dynamic filter criteria. Enables auto-updating runs that continuously sync with test case repository. Mutually exclusive with --entries.",
+    help="Path to JSON file containing plan entries. Use this for complex entries with multiple runs/configs. Mutually exclusive with --entries.",
 )
 @click.option(
     "--dynamic-filters-mode",
     type=click.Choice(["1", "2"], case_sensitive=False),
     default="1",
     metavar="",
-    help="Mode for combining dynamic filter conditions: '1' (AND - match all, default) or '2' (OR - match any). Applies to all runs in the plan if not specified in JSON file. Only used with --dynamic-filters.",
+    help="Mode for combining dynamic filter conditions: '1' (AND - match all, default) or '2' (OR - match any). Applies to all runs in the plan if not specified in JSON file. Used when entries contain dynamic_filters.",
 )
 @click.option(
     "--start-on",
@@ -394,7 +394,7 @@ def add(
     description: str,
     milestone_id: int,
     entries: str,
-    dynamic_filters: str,
+    entries_file: str,
     dynamic_filters_mode: str,
     start_on: list,
     due_on: list,
@@ -406,9 +406,9 @@ def add(
     environment.check_for_required_parameters()
 
     # Validation: mutually exclusive entries flags
-    if entries and dynamic_filters:
+    if entries and entries_file:
         environment.elog(
-            "Error: --entries and --dynamic-filters cannot be used together. Choose one method to provide entries."
+            "Error: --entries and --entries-file cannot be used together. Choose one method to provide entries."
         )
         raise SystemExit(1)
 
@@ -436,9 +436,9 @@ def add(
     json_description = None
     json_milestone_id = None
 
-    if dynamic_filters:
+    if entries_file:
         try:
-            with open(dynamic_filters, "r") as f:
+            with open(entries_file, "r") as f:
                 json_data = json.load(f)
 
             # Detect format: dict with "entries" key OR array
@@ -519,11 +519,10 @@ def add(
 
     # Validate and process plan entries (handles dynamic filters)
     if parsed_entries:
-        # Pass CLI mode if --dynamic-filters-mode was specified and --dynamic-filters was used
-        cli_mode = dynamic_filters_mode if dynamic_filters else None
+        # Pass CLI mode for dynamic_filters_mode override
         validated_entries, validation_error = (
             project_client.api_request_handler.plan_handler.validate_and_process_plan_entries(
-                parsed_entries, cli_mode=cli_mode
+                parsed_entries, cli_mode=dynamic_filters_mode
             )
         )
         if validation_error:

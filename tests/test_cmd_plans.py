@@ -595,11 +595,11 @@ class TestCmdPlans:
             assert isinstance(call_kwargs["due_on"], int)
 
     def test_add_plan_mutually_exclusive_entries(self):
-        """Test validation of mutually exclusive --entries and --dynamic-filters"""
+        """Test validation of mutually exclusive --entries and --entries-file"""
         import tempfile
         import os
 
-        # Create a temporary file for dynamic-filters parameter
+        # Create a temporary file for entries-file parameter
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("[]")
             temp_file = f.name
@@ -610,7 +610,7 @@ class TestCmdPlans:
             ) as mock_elog:
                 result = self.runner.invoke(
                     cmd_plans.add,
-                    ["--name", "Test Plan", "--entries", "[]", "--dynamic-filters", temp_file],
+                    ["--name", "Test Plan", "--entries", "[]", "--entries-file", temp_file],
                     obj=self.environment,
                 )
 
