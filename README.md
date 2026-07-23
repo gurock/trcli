@@ -2619,6 +2619,30 @@ $ trcli -c config.yml projects list --json-output
 - Pagination parameters `--limit` and `--offset` allow you to retrieve projects in manageable batches
 - The `--show-all-fields` option displays additional information including announcement, users, groups, and default role
 
+### Templates Command
+
+The `templates` command provides functionality to query available templates (field layouts) for test cases in a TestRail project. Templates define which fields are available when creating or editing test cases, such as "Test Case (Text)", "Test Case (Steps)", "Exploratory Session", "Behaviour Driven Development", or "AI Evaluation".
+
+The `templates` command supports one subcommand:
+- **list**: List all templates available for a specific project
+
+#### Listing Templates
+
+The `list` subcommand retrieves all templates (field layouts) for a specific project.
+
+```shell
+# List all templates for a project
+$ trcli -c config.yml templates list --project-id 1
+
+# JSON output
+$ trcli -c config.yml templates list --project-id 1 --json-output
+```
+
+**Note:**
+- The `--project-id` parameter is required and must be a valid project ID (x>=1)
+- Each template has a unique ID, name, and indicates whether it's the default template for the project
+- Templates control which fields are available when creating test cases
+
 ### Case Fields Command
 
 The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.

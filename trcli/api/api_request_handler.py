@@ -25,6 +25,7 @@ from trcli.api.priority_handler import PriorityHandler
 from trcli.api.case_type_handler import CaseTypeHandler
 from trcli.api.user_handler import UserHandler
 from trcli.api.project_handler import ProjectHandler
+from trcli.api.template_handler import TemplateHandler
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -104,6 +105,7 @@ class ApiRequestHandler:
         self.case_type_handler = CaseTypeHandler(api_client)
         self.user_handler = UserHandler(api_client)
         self.project_handler = ProjectHandler(api_client)
+        self.template_handler = TemplateHandler(api_client)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
