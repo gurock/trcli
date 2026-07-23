@@ -2567,6 +2567,58 @@ $ trcli -c config.yml users list --json-output
 - Enterprise-specific fields (SSO, assigned projects) are only available in TestRail Enterprise
 - The `--show-all-fields` option displays additional information including admin status, groups, MFA requirements, and enterprise fields
 
+### Projects Command
+
+The `projects` command provides functionality to query and retrieve project information from TestRail. This command allows you to get details about specific projects or list all projects in your TestRail instance.
+
+The `projects` command supports two subcommands:
+- **get**: Retrieve detailed information about a specific project by ID
+- **list**: List all projects or filter by completion status with pagination support
+
+#### Getting a Specific Project
+
+The `get` subcommand retrieves detailed information about a single project using its project ID.
+
+```shell
+# Get a specific project by ID
+$ trcli -c config.yml projects get --project-id 1
+
+# Get project with all fields (includes users, groups, announcement)
+$ trcli -c config.yml projects get --project-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml projects get --project-id 1 --json-output
+```
+
+#### Listing Projects
+
+The `list` subcommand retrieves multiple projects. You can list all projects or filter by completion status, and use pagination to manage large numbers of projects.
+
+```shell
+# List all projects
+$ trcli -c config.yml projects list
+
+# List only active projects
+$ trcli -c config.yml projects list --is-completed 0
+
+# List only completed projects  
+$ trcli -c config.yml projects list --is-completed 1
+
+# List with pagination
+$ trcli -c config.yml projects list --limit 10 --offset 0
+
+# Show all fields for each project
+$ trcli -c config.yml projects list --show-all-fields
+
+# JSON output
+$ trcli -c config.yml projects list --json-output
+```
+
+**Note:**
+- The `--is-completed` filter accepts 0 for active projects or 1 for completed projects
+- Pagination parameters `--limit` and `--offset` allow you to retrieve projects in manageable batches
+- The `--show-all-fields` option displays additional information including announcement, users, groups, and default role
+
 ### Case Fields Command
 
 The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.

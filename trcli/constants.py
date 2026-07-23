@@ -103,6 +103,7 @@ COMMAND_FAULT_MAPPING = dict(
     priorities=dict(**FAULT_MAPPING),
     casetypes=dict(**FAULT_MAPPING),
     users=dict(**FAULT_MAPPING),
+    projects=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -142,6 +143,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - priorities: Query test case priorities
     - casetypes: Query test case types
     - users: Query users (get and list)
+    - projects: Query projects (get and list)
     - results: Query and update test results (list, update)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.

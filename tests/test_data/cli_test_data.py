@@ -86,6 +86,7 @@ trcli_description = (
     "    - priorities: Query test case priorities\n"
     "    - casetypes: Query test case types\n"
     "    - users: Query users (get and list)\n"
+    "    - projects: Query projects (get and list)\n"
     "    - results: Query and update test results (list, update)\n"
 )
 
