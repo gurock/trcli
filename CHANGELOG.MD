@@ -6,6 +6,18 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.2]
+
+_released 07-23-2026
+### Added
+ - **New `priorities` command**: Query all available test case priorities from TestRail using list subcommand.
+ - **New `casetypes` command**: Allows retrieving all available test case types/classifications in your TestRail instance.
+ - **New `users` command**: This command supports getting individual users by ID or email, retrieving the current authenticated user, and listing all users or users with access to a specific project.
+ - **New `projects` command**: Query and retrieve project information from TestRail. This command allows you to get details about specific projects or list all projects in your TestRail instance.
+ - **New `templates` command**: Query available templates (field layouts) for test cases in a TestRail project. Templates define which fields are available when creating or editing test cases
+ - **New `tests` command**: Query test instances in TestRail. Tests are the actual instances of test cases within a test run, containing execution status, assignments, and results.
+ - **New `add` subcommand for `plans`**: Allows users to create plans with entries, milestones, and scheduled dates.
+
 ## [1.15.1]
 
 _released 06-25-2026

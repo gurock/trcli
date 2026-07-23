@@ -34,7 +34,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.15.1
+TestRail CLI v1.15.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -57,7 +57,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v
+TestRail CLI v1.15.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -113,6 +113,9 @@ Commands:
   statuses       Manage test statuses in TestRail
   casefields     List case fields in TestRail
   resultfields   List result fields in TestRail
+  priorities     List test case priorities in TestRail
+  casetypes      List test case types in TestRail
+  users          Query users in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -1835,12 +1838,13 @@ The TestRail CLI provides the `plans` command for retrieving and listing test pl
 
 ##### Plans Command Overview
 
-The `plans` command supports two subcommands:
+The `plans` command supports three subcommands:
 
 | Subcommand | Purpose | Use Case |
 |------------|---------|----------|
 | `plans get` | Retrieve a single test plan by ID | Get detailed information about a plan including all entries and runs |
 | `plans list` | List test plans in a project | Discover plans, monitor progress, export plan data with pagination |
+| `plans add` | Create a new test plan | Create plans with entries, milestones, and scheduled dates |
 
 ##### Reference
 
@@ -1854,6 +1858,7 @@ Options:
   --help  Show this message and exit.
 
 Commands:
+  add   Create a new test plan
   get   Get a single test plan by ID
   list  List test plans from TestRail
 ```
@@ -1906,6 +1911,171 @@ $ trcli -c config.yml plans list --json-output | jq '.plans[].name'
 $ trcli -c config.yml plans list --show-all-fields
 ```
 
+##### Creating a Test Plan
+
+Create a new test plan in TestRail with optional entries, milestones, and scheduled dates:
+
+```shell
+# Create a basic test plan
+$ trcli plans add \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> \
+  --password <your_password> \
+  --project "Your Project" \
+  --name "Release 2.0 Testing"
+
+# Create a plan with description and milestone
+$ trcli -c config.yml plans add \
+  --name "Q4 Regression Testing" \
+  --description "Comprehensive regression tests for Q4 release" \
+  --milestone-id 5
+
+# Create a plan with scheduled dates (MM/DD/YYYY format)
+$ trcli -c config.yml plans add \
+  --name "Sprint 10 Testing" \
+  --start-on "01/01/2022" \
+  --due-on "01/15/2022"
+
+# Create a plan with entries (test runs) from JSON string
+# Use --entries for simple, inline entries (good for scripting)
+# Note: Each entry must specify either "include_all": true or provide "case_ids"
+$ trcli -c config.yml plans add \
+  --name "Multi-Suite Testing" \
+  --entries '[{"suite_id": 1, "name": "API Tests", "include_all": true}, {"suite_id": 2, "name": "UI Tests", "include_all": true}]'
+
+# Create a plan with entries from a JSON file
+# Use --entries-file for complex entries with multiple runs/configs (more readable)
+$ trcli -c config.yml plans add \
+  --name "Complex Test Plan" \
+  --entries-file entries.json
+
+# Get JSON output for programmatic use
+$ trcli -c config.yml plans add \
+  --name "Automated Plan" \
+  --json-output
+```
+
+**JSON File Formats:**
+
+TRCLI supports **two JSON formats** for entries files, making it easy to migrate from Bruno/Postman or reuse API request bodies:
+
+**Format 1: Entries Array (Original)**
+Just the entries array - plan-level fields come from command-line arguments:
+
+```json
+[
+  {
+    "suite_id": 1,
+    "name": "Smoke Tests",
+    "description": "Critical path tests",
+    "assignedto_id": 5,
+    "include_all": true
+  },
+  {
+    "suite_id": 2,
+    "name": "Regression Tests - Specific Cases",
+    "description": "Selected regression test cases",
+    "case_ids": [1, 2, 3, 4, 5]
+  },
+  {
+    "suite_id": 3,
+    "name": "Multi-Configuration Tests",
+    "description": "Cross-browser testing",
+    "config_ids": [1, 2],
+    "runs": [
+      {
+        "config_ids": [1, 2],
+        "case_ids": [10, 11, 12]
+      }
+    ]
+  }
+]
+```
+
+**Format 2: Full Plan Object**
+Complete plan structure with plan-level fields - can be copied directly from API tools:
+
+```json
+{
+  "name": "Release 3.0 Testing",
+  "description": "Full regression and feature testing",
+  "milestone_id": 5,
+  "entries": [
+    {
+      "suite_id": 1,
+      "name": "Smoke Tests",
+      "include_all": true
+    },
+    {
+      "suite_id": 2,
+      "name": "Regression Tests",
+      "case_ids": [1, 2, 3, 4, 5]
+    }
+  ]
+}
+```
+
+**Usage:**
+```bash
+# Format 1: Requires --name on command line
+$ trcli plans add --name "Release 3.0" --entries-file entries.json
+
+# Format 2: Name comes from JSON file (command-line args override if provided)
+$ trcli plans add --entries-file full_plan.json
+
+# Command-line arguments always take precedence
+$ trcli plans add --name "CLI Name" --entries-file full_plan.json
+# Note: Using --name 'CLI Name' instead of JSON name 'Release 3.0 Testing'
+```
+
+**Field Priority:**
+- Command-line arguments **always override** JSON file values
+- If no command-line argument provided, value from JSON is used
+- Warnings are shown when command-line overrides JSON values
+
+**Entry Requirements:**
+
+Each entry represents a test run (or group of runs for multi-config scenarios). TestRail requires you to specify which test cases to include:
+
+1. **Include all cases**: Set `"include_all": true`
+2. **Specific cases**: Provide `"case_ids": [1, 2, 3]`
+3. **Using runs array**: For multi-configuration plans, specify cases in the runs array
+
+**Entry Field Reference:**
+- `suite_id` (required): ID of the test suite
+- `name` (optional): Name for the test run(s)
+- `description` (optional): Description for the test run(s)
+- `include_all` (optional): Include all test cases from the suite (default: false)
+- `case_ids` (optional): Array of specific test case IDs to include
+- `assignedto_id` (optional): User ID to assign the run to
+- `config_ids` (optional): Configuration IDs for multi-config runs
+- `runs` (optional): Array of run configurations (required when using `config_ids`)
+
+**Important Notes for Multi-Configuration Entries:**
+
+When using `config_ids` for multi-configuration testing (e.g., different browsers, platforms):
+
+1. **The `runs` array is REQUIRED** when you specify `config_ids`
+2. **Each run object must include `config_ids`** - repeat the same config_ids from the entry level
+3. **Specify test cases** in the run object using either `case_ids` or `include_all: true`
+
+Example for cross-browser testing:
+```json
+{
+  "suite_id": 3,
+  "name": "Browser Tests",
+  "config_ids": [16, 15],        // Chrome (16), Firefox (15)
+  "runs": [
+    {
+      "config_ids": [16, 15],    // Must repeat config_ids here
+      "case_ids": [100, 101, 102]
+    }
+  ]
+}
+```
+
+This creates one run that tests cases 100, 101, 102 across Chrome and Firefox configurations.
+
 ##### Configuration File Support
 
 The `plans` command supports configuration files, allowing you to specify connection details and project information once:
@@ -1947,6 +2117,28 @@ Options:
   --help             Show this message and exit.
 ```
 
+**Add Command:**
+```shell
+$ trcli plans add --help
+Options:
+  --name <name>             Name of the test plan.  [required]
+  --description <description>
+                            Description of the test plan.
+  --milestone-id <id>       ID of the milestone to link.  [x>=1]
+  --entries <json>          JSON array of plan entries inline. Use this for
+                            simple entries or scripting. Mutually exclusive
+                            with --entries-file.
+  --entries-file <path>     Path to JSON file containing plan entries. Use this
+                            for complex entries with multiple runs/configs.
+                            Mutually exclusive with --entries.
+  --start-on                The scheduled start date of this test plan in
+                            MM/DD/YYYY format
+  --due-on                  The scheduled due date of this test plan in
+                            MM/DD/YYYY format
+  --json-output             Output created plan as raw JSON from API.
+  --help                    Show this message and exit.
+```
+
 ##### Use Cases
 
 **1. Monitor release testing progress:**
@@ -1957,6 +2149,15 @@ $ trcli -c config.yml plans get --plan-id 10
 **2. Export plan data for reporting:**
 ```shell
 $ trcli -c config.yml plans list --json-output > plans_report.json
+```
+
+**3. Create a test plan for a new release:**
+```shell
+$ trcli -c config.yml plans add \
+  --name "Release 3.0 Testing" \
+  --description "Full regression and feature testing for v3.0" \
+  --milestone-id 8 \
+  --entries-file release_plan_entries.json
 ```
 
 ### Managing Sections
@@ -2394,156 +2595,316 @@ Case Status ID: 2
 Case status listing completed successfully.
 ```
 
-### Statuses Command
+### Priorities Command
 
-The TestRail CLI provides the `statuses` command for retrieving status information from TestRail. This includes both test result statuses (Passed, Failed, Blocked, etc.) and case statuses (Approved, Draft, etc.). These statuses are crucial for mapping test results correctly and managing test case workflows.
-
-#### Statuses Command Overview
-
-The `statuses` command supports two subcommands:
-
-| Subcommand | Purpose | API Endpoint |
-|------------|---------|--------------|
-| `all` | List all test result statuses | Retrieve available test result statuses (Passed, Failed, Blocked, etc.) |
-| `case` | List all case statuses (Enterprise 7.3+) | Retrieve test case statuses (Approved, Draft, etc.) for case workflows |
+The TestRail CLI provides the `priorities` command for retrieving all available test case priorities from TestRail. This command helps you understand the priority levels configured in your TestRail instance, including their IDs, names, short names, display order, and which priority is set as the default.
 
 #### Reference
 
 ```shell
-$ trcli statuses --help
+$ trcli priorities --help
 
-Usage: trcli statuses [OPTIONS] COMMAND [ARGS]...
-  Manage test statuses in TestRail
+Usage: trcli priorities [OPTIONS] COMMAND [ARGS]...
+  Manage test case priorities in TestRail
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  all   List all test result statuses from TestRail
-  case  List all case statuses from TestRail (Enterprise 7.3+)
+  list  List all test case priorities from TestRail
 ```
 
-##### Listing Test Result Statuses
-
-List all test result statuses available for a project:
+#### Listing Priorities
 
 ```shell
-# List all test result statuses (using config file)
-$ trcli -c config.yml statuses all
+# List all priorities
+$ trcli priorities list -h https://yourinstance.testrail.io -u user@example.com -p password
 
-# List all statuses with all parameters
-$ trcli statuses all \
-  --host https://yourinstance.testrail.io \
-  --username <your_username> \
-  --password <your_password> \
-  --project "Your Project"
+# Show all fields including priority order
+$ trcli priorities list -c config.yml --show-all-fields
 
-# Show all fields including color values
-$ trcli -c config.yml statuses all --show-all-fields
-
-# JSON output for integration with other tools
-$ trcli -c config.yml statuses all --json-output | jq '.[].name'
+# JSON output
+$ trcli priorities list -c config.yml --json-output
 ```
 
-**Example Output:**
+#### Example Output
 
 ```shell
-$ trcli -c config.yml statuses all
+$ trcli priorities list -c config.yml
 
-Statuses List (Test Result Statuses) Execution Parameters
-> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
-> Project: Your Project
+Priorities List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+Retrieving priorities...
+Found 4 priority level(s).
 
-Retrieving test result statuses for project ID 1...
-Found 5 test result status(es):
+ID: 1 | Name: 1 - Don't Test | Short: 1 - Don't
+ID: 2 | Name: 2 - Low | Short: 2 - Low
+ID: 3 | Name: 3 - Medium | Short: 3 - Med
+ID: 4 | Name: 4 - Must Test | Short: 4 - Must [DEFAULT]
 
-Status ID: 1
-  Name: passed
-  Label: Passed
-  System Status: Yes
-  Is Untested: No
-  Is Final: Yes
-
-Status ID: 2
-  Name: blocked
-  Label: Blocked
-  System Status: Yes
-  Is Untested: No
-  Is Final: No
-
-Status ID: 3
-  Name: untested
-  Label: Untested
-  System Status: Yes
-  Is Untested: Yes
-  Is Final: No
-
-Status ID: 4
-  Name: retest
-  Label: Retest
-  System Status: Yes
-  Is Untested: No
-  Is Final: No
-
-Status ID: 5
-  Name: failed
-  Label: Failed
-  System Status: Yes
-  Is Untested: No
-  Is Final: Yes
-
-
-Status listing completed successfully.
+Priority listing completed successfully.
 ```
 
-##### Listing Case Statuses
+**Note:** The `[DEFAULT]` marker indicates which priority is set as the default for new test cases in TestRail. Priorities are global settings and apply across all projects in your TestRail instance.
 
-List all case statuses (requires TestRail Enterprise 7.3+):
+### Case Types Command
+
+The TestRail CLI provides the `casetypes` command for retrieving all available test case types from TestRail. This command helps you understand the different case type classifications configured in your TestRail instance, such as Automated, Functionality, Performance, and others, including which type is set as the default.
+
+#### Reference
 
 ```shell
-# List all case statuses (using config file)
-$ trcli -c config.yml statuses case
+$ trcli casetypes --help
 
-# List case statuses with all parameters
-$ trcli statuses case \
-  --host https://yourinstance.testrail.io \
-  --username <your_username> \
-  --password <your_password> \
-  --project "Your Project"
+Usage: trcli casetypes [OPTIONS] COMMAND [ARGS]...
+  Manage test case types in TestRail
 
-# Show all fields including abbreviations
-$ trcli -c config.yml statuses case --show-all-fields
+Options:
+  --help  Show this message and exit.
 
-# JSON output for integration
-$ trcli -c config.yml statuses case --json-output | jq '.[].name'
+Commands:
+  list  List all test case types from TestRail
 ```
 
-**Example Output:**
+#### Listing Case Types
 
 ```shell
-$ trcli -c config.yml statuses case
+# List all case types
+$ trcli -h https://yourinstance.testrail.io -u user@example.com -p password casetypes list
 
-Statuses List (Case Statuses) Execution Parameters
-> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
-> Project: Your Project
+# With config file
+$ trcli casetypes list -c config.yml
 
-Retrieving case statuses...
-Note: This command requires TestRail Enterprise 7.3 or later.
-Found 2 case status(es):
-
-Case Status ID: 1
-  Name: Approved
-  Is Default: No
-  Is Approved: Yes
-
-Case Status ID: 2
-  Name: Draft
-  Is Default: Yes
-  Is Approved: No
-
-
-Case status listing completed successfully.
+# JSON output
+$ trcli casetypes list -c config.yml --json-output
 ```
+
+#### Example Output
+
+```shell
+$ trcli casetypes list -c config.yml
+
+Case Types List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+Retrieving case types...
+Found 4 case type(s).
+
+ID: 1 | Name: Automated
+ID: 2 | Name: Functionality
+ID: 3 | Name: Performance
+ID: 6 | Name: Other [DEFAULT]
+
+Case type listing completed successfully.
+```
+
+**Note:** The `[DEFAULT]` marker indicates which case type is set as the default for new test cases in TestRail. Case types are global settings and apply across all projects in your TestRail instance.
+
+### Users Command
+
+The TestRail CLI provides the `users` command for retrieving user information from TestRail. This command supports getting individual users by ID or email, retrieving the current authenticated user, and listing all users or users with access to a specific project.
+
+#### Reference
+
+```shell
+$ trcli users --help
+
+Usage: trcli users [OPTIONS] COMMAND [ARGS]...
+  Manage users in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  get   Get a specific user from TestRail
+  list  List all users from TestRail
+```
+
+#### Getting a Specific User
+
+The `get` subcommand retrieves information about a single user using one of three mutually exclusive options:
+
+```shell
+# Get the current authenticated user
+$ trcli -c config.yml users get --current
+
+# Get user by ID
+$ trcli -c config.yml users get --user-id 5
+
+# Get user by email
+$ trcli -c config.yml users get --email john.doe@example.com
+
+# Show all fields including admin status and enterprise fields
+$ trcli -c config.yml users get --user-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml users get --current --json-output
+```
+
+#### Listing Users
+
+The `list` subcommand retrieves multiple users. Without `--project-id`, it lists all users (requires administrator privileges). With `--project-id`, it lists only users with access to that specific project.
+
+```shell
+# List all users (admin only)
+$ trcli -c config.yml users list
+
+# List users for a specific project
+$ trcli -c config.yml users list --project-id 5
+
+# Show all fields for each user
+$ trcli -c config.yml users list --project-id 3 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml users list --json-output
+```
+
+**Note:**
+- The `get` subcommand requires one of `--current`, `--user-id`, or `--email` (mutually exclusive)
+- Listing all users without `--project-id` requires administrator privileges (TestRail 6.6+)
+- When using `--project-id`, only users with explicit project access are returned (inactive users and users without project access are excluded)
+- Enterprise-specific fields (SSO, assigned projects) are only available in TestRail Enterprise
+- The `--show-all-fields` option displays additional information including admin status, groups, MFA requirements, and enterprise fields
+
+### Projects Command
+
+The `projects` command provides functionality to query and retrieve project information from TestRail. This command allows you to get details about specific projects or list all projects in your TestRail instance.
+
+The `projects` command supports two subcommands:
+- **get**: Retrieve detailed information about a specific project by ID
+- **list**: List all projects or filter by completion status with pagination support
+
+#### Getting a Specific Project
+
+The `get` subcommand retrieves detailed information about a single project using its project ID.
+
+```shell
+# Get a specific project by ID
+$ trcli -c config.yml projects get --project-id 1
+
+# Get project with all fields (includes users, groups, announcement)
+$ trcli -c config.yml projects get --project-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml projects get --project-id 1 --json-output
+```
+
+#### Listing Projects
+
+The `list` subcommand retrieves multiple projects. You can list all projects or filter by completion status, and use pagination to manage large numbers of projects.
+
+```shell
+# List all projects
+$ trcli -c config.yml projects list
+
+# List only active projects
+$ trcli -c config.yml projects list --is-completed 0
+
+# List only completed projects  
+$ trcli -c config.yml projects list --is-completed 1
+
+# List with pagination
+$ trcli -c config.yml projects list --limit 10 --offset 0
+
+# Show all fields for each project
+$ trcli -c config.yml projects list --show-all-fields
+
+# JSON output
+$ trcli -c config.yml projects list --json-output
+```
+
+**Note:**
+- The `--is-completed` filter accepts 0 for active projects or 1 for completed projects
+- Pagination parameters `--limit` and `--offset` allow you to retrieve projects in manageable batches
+- The `--show-all-fields` option displays additional information including announcement, users, groups, and default role
+
+### Templates Command
+
+The `templates` command provides functionality to query available templates (field layouts) for test cases in a TestRail project. Templates define which fields are available when creating or editing test cases, such as "Test Case (Text)", "Test Case (Steps)", "Exploratory Session", "Behaviour Driven Development", or "AI Evaluation".
+
+The `templates` command supports one subcommand:
+- **list**: List all templates available for a specific project
+
+#### Listing Templates
+
+The `list` subcommand retrieves all templates (field layouts) for a specific project.
+
+```shell
+# List all templates for a project
+$ trcli -c config.yml templates list --project-id 1
+
+# JSON output
+$ trcli -c config.yml templates list --project-id 1 --json-output
+```
+
+**Note:**
+- The `--project-id` parameter is required and must be a valid project ID (x>=1)
+- Each template has a unique ID, name, and indicates whether it's the default template for the project
+- Templates control which fields are available when creating test cases
+
+### Tests Command
+
+The `tests` command provides functionality to query test instances in TestRail. Tests are the actual instances of test cases within a test run, containing execution status, assignments, and results. This is different from test cases (which are templates) and test results (which are the outcomes).
+
+The `tests` command supports two subcommands:
+- **get**: Retrieve detailed information about a specific test by ID
+- **list**: List all tests for a specific test run with filtering and pagination support
+
+#### Getting a Specific Test
+
+The `get` subcommand retrieves detailed information about a single test using its test ID.
+
+```shell
+# Get a specific test by ID
+$ trcli -c config.yml tests get --test-id 100
+
+# Get test with all fields (includes custom fields and labels)
+$ trcli -c config.yml tests get --test-id 100 --show-all-fields
+
+# Get test with results and attachments
+$ trcli -c config.yml tests get --test-id 100 --with-data 1
+
+# Get test with results and show all details
+$ trcli -c config.yml tests get --test-id 100 --with-data 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml tests get --test-id 100 --json-output
+```
+
+#### Listing Tests
+
+The `list` subcommand retrieves all tests for a specific test run. You can filter by status ID, labels ID, and use pagination to manage large numbers of tests.
+
+```shell
+# List all tests for a run
+$ trcli -c config.yml tests list --run-id 1
+
+# List only failed and retest tests
+$ trcli -c config.yml tests list --run-id 1 --status-id 4,5
+
+# List tests with specific labels
+$ trcli -c config.yml tests list --run-id 1 --label-id 1,2
+
+# List with pagination
+$ trcli -c config.yml tests list --run-id 1 --limit 30 --offset 0
+
+# Show all fields for each test
+$ trcli -c config.yml tests list --run-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml tests list --run-id 1 --json-output
+
+# Combine filters
+$ trcli -c config.yml tests list --run-id 1 --status-id 4,5 --limit 30 --offset 0
+```
+
+**Note:**
+- The `--test-id` parameter for get and `--run-id` parameter for list are required and must be valid IDs (x>=1)
+- The `--with-data` parameter (0 or 1) controls whether to include test results and attachments in the response (only for get command)
+- The `--status-id` filter accepts a comma-separated list of status IDs (e.g., "1,5" for Passed and Failed)
+- The `--label-id` filter accepts a comma-separated list of label IDs
+- Pagination parameters `--limit` and `--offset` allow you to retrieve tests in manageable batches (default limit: 250)
+- The `--show-all-fields` option displays additional information including custom fields, labels, estimates, and assignments
+- Tests are different from test cases: tests are instances of test cases within a specific run
 
 ### Case Fields Command
 
@@ -3406,7 +3767,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.15.1
+TestRail CLI v1.15.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -3616,7 +3977,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.15.1
+TestRail CLI v1.15.2
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 
