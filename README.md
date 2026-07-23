@@ -2643,6 +2643,71 @@ $ trcli -c config.yml templates list --project-id 1 --json-output
 - Each template has a unique ID, name, and indicates whether it's the default template for the project
 - Templates control which fields are available when creating test cases
 
+### Tests Command
+
+The `tests` command provides functionality to query test instances in TestRail. Tests are the actual instances of test cases within a test run, containing execution status, assignments, and results. This is different from test cases (which are templates) and test results (which are the outcomes).
+
+The `tests` command supports two subcommands:
+- **get**: Retrieve detailed information about a specific test by ID
+- **list**: List all tests for a specific test run with filtering and pagination support
+
+#### Getting a Specific Test
+
+The `get` subcommand retrieves detailed information about a single test using its test ID.
+
+```shell
+# Get a specific test by ID
+$ trcli -c config.yml tests get --test-id 100
+
+# Get test with all fields (includes custom fields and labels)
+$ trcli -c config.yml tests get --test-id 100 --show-all-fields
+
+# Get test with results and attachments
+$ trcli -c config.yml tests get --test-id 100 --with-data 1
+
+# Get test with results and show all details
+$ trcli -c config.yml tests get --test-id 100 --with-data 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml tests get --test-id 100 --json-output
+```
+
+#### Listing Tests
+
+The `list` subcommand retrieves all tests for a specific test run. You can filter by status ID, labels ID, and use pagination to manage large numbers of tests.
+
+```shell
+# List all tests for a run
+$ trcli -c config.yml tests list --run-id 1
+
+# List only failed and retest tests
+$ trcli -c config.yml tests list --run-id 1 --status-id 4,5
+
+# List tests with specific labels
+$ trcli -c config.yml tests list --run-id 1 --label-id 1,2
+
+# List with pagination
+$ trcli -c config.yml tests list --run-id 1 --limit 30 --offset 0
+
+# Show all fields for each test
+$ trcli -c config.yml tests list --run-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml tests list --run-id 1 --json-output
+
+# Combine filters
+$ trcli -c config.yml tests list --run-id 1 --status-id 4,5 --limit 30 --offset 0
+```
+
+**Note:**
+- The `--test-id` parameter for get and `--run-id` parameter for list are required and must be valid IDs (x>=1)
+- The `--with-data` parameter (0 or 1) controls whether to include test results and attachments in the response (only for get command)
+- The `--status-id` filter accepts a comma-separated list of status IDs (e.g., "1,5" for Passed and Failed)
+- The `--label-id` filter accepts a comma-separated list of label IDs
+- Pagination parameters `--limit` and `--offset` allow you to retrieve tests in manageable batches (default limit: 250)
+- The `--show-all-fields` option displays additional information including custom fields, labels, estimates, and assignments
+- Tests are different from test cases: tests are instances of test cases within a specific run
+
 ### Case Fields Command
 
 The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.

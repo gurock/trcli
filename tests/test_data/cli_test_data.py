@@ -88,6 +88,7 @@ trcli_description = (
     "    - users: Query users (get and list)\n"
     "    - projects: Query projects (get and list)\n"
     "    - templates: Query templates (list)\n"
+    "    - tests: Query tests (get and list)\n"
     "    - results: Query and update test results (list, update)\n"
 )
 
