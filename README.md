@@ -113,6 +113,7 @@ Commands:
   statuses       Manage test statuses in TestRail
   casefields     List case fields in TestRail
   resultfields   List result fields in TestRail
+  priorities     List test case priorities in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2394,156 +2395,57 @@ Case Status ID: 2
 Case status listing completed successfully.
 ```
 
-### Statuses Command
+### Priorities Command
 
-The TestRail CLI provides the `statuses` command for retrieving status information from TestRail. This includes both test result statuses (Passed, Failed, Blocked, etc.) and case statuses (Approved, Draft, etc.). These statuses are crucial for mapping test results correctly and managing test case workflows.
-
-#### Statuses Command Overview
-
-The `statuses` command supports two subcommands:
-
-| Subcommand | Purpose | API Endpoint |
-|------------|---------|--------------|
-| `all` | List all test result statuses | Retrieve available test result statuses (Passed, Failed, Blocked, etc.) |
-| `case` | List all case statuses (Enterprise 7.3+) | Retrieve test case statuses (Approved, Draft, etc.) for case workflows |
+The TestRail CLI provides the `priorities` command for retrieving all available test case priorities from TestRail. This command helps you understand the priority levels configured in your TestRail instance, including their IDs, names, short names, display order, and which priority is set as the default.
 
 #### Reference
 
 ```shell
-$ trcli statuses --help
+$ trcli priorities --help
 
-Usage: trcli statuses [OPTIONS] COMMAND [ARGS]...
-  Manage test statuses in TestRail
+Usage: trcli priorities [OPTIONS] COMMAND [ARGS]...
+  Manage test case priorities in TestRail
 
 Options:
   --help  Show this message and exit.
 
 Commands:
-  all   List all test result statuses from TestRail
-  case  List all case statuses from TestRail (Enterprise 7.3+)
+  list  List all test case priorities from TestRail
 ```
 
-##### Listing Test Result Statuses
-
-List all test result statuses available for a project:
+#### Listing Priorities
 
 ```shell
-# List all test result statuses (using config file)
-$ trcli -c config.yml statuses all
+# List all priorities
+$ trcli priorities list -h https://yourinstance.testrail.io -u user@example.com -p password
 
-# List all statuses with all parameters
-$ trcli statuses all \
-  --host https://yourinstance.testrail.io \
-  --username <your_username> \
-  --password <your_password> \
-  --project "Your Project"
+# Show all fields including priority order
+$ trcli priorities list -c config.yml --show-all-fields
 
-# Show all fields including color values
-$ trcli -c config.yml statuses all --show-all-fields
-
-# JSON output for integration with other tools
-$ trcli -c config.yml statuses all --json-output | jq '.[].name'
+# JSON output
+$ trcli priorities list -c config.yml --json-output
 ```
 
-**Example Output:**
+#### Example Output
 
 ```shell
-$ trcli -c config.yml statuses all
+$ trcli priorities list -c config.yml
 
-Statuses List (Test Result Statuses) Execution Parameters
-> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
-> Project: Your Project
+Priorities List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+Retrieving priorities...
+Found 4 priority level(s).
 
-Retrieving test result statuses for project ID 1...
-Found 5 test result status(es):
+ID: 1 | Name: 1 - Don't Test | Short: 1 - Don't
+ID: 2 | Name: 2 - Low | Short: 2 - Low
+ID: 3 | Name: 3 - Medium | Short: 3 - Med
+ID: 4 | Name: 4 - Must Test | Short: 4 - Must [DEFAULT]
 
-Status ID: 1
-  Name: passed
-  Label: Passed
-  System Status: Yes
-  Is Untested: No
-  Is Final: Yes
-
-Status ID: 2
-  Name: blocked
-  Label: Blocked
-  System Status: Yes
-  Is Untested: No
-  Is Final: No
-
-Status ID: 3
-  Name: untested
-  Label: Untested
-  System Status: Yes
-  Is Untested: Yes
-  Is Final: No
-
-Status ID: 4
-  Name: retest
-  Label: Retest
-  System Status: Yes
-  Is Untested: No
-  Is Final: No
-
-Status ID: 5
-  Name: failed
-  Label: Failed
-  System Status: Yes
-  Is Untested: No
-  Is Final: Yes
-
-
-Status listing completed successfully.
+Priority listing completed successfully.
 ```
 
-##### Listing Case Statuses
-
-List all case statuses (requires TestRail Enterprise 7.3+):
-
-```shell
-# List all case statuses (using config file)
-$ trcli -c config.yml statuses case
-
-# List case statuses with all parameters
-$ trcli statuses case \
-  --host https://yourinstance.testrail.io \
-  --username <your_username> \
-  --password <your_password> \
-  --project "Your Project"
-
-# Show all fields including abbreviations
-$ trcli -c config.yml statuses case --show-all-fields
-
-# JSON output for integration
-$ trcli -c config.yml statuses case --json-output | jq '.[].name'
-```
-
-**Example Output:**
-
-```shell
-$ trcli -c config.yml statuses case
-
-Statuses List (Case Statuses) Execution Parameters
-> TestRail instance: https://yourinstance.testrail.io (user: test@example.com)
-> Project: Your Project
-
-Retrieving case statuses...
-Note: This command requires TestRail Enterprise 7.3 or later.
-Found 2 case status(es):
-
-Case Status ID: 1
-  Name: Approved
-  Is Default: No
-  Is Approved: Yes
-
-Case Status ID: 2
-  Name: Draft
-  Is Default: Yes
-  Is Approved: No
-
-
-Case status listing completed successfully.
-```
+**Note:** The `[DEFAULT]` marker indicates which priority is set as the default for new test cases in TestRail. Priorities are global settings and apply across all projects in your TestRail instance.
 
 ### Case Fields Command
 
