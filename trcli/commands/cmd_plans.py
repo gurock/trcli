@@ -1,10 +1,29 @@
 import builtins
 import click
 import json
+from datetime import datetime, timezone
 
 from trcli.api.project_based_client import ProjectBasedClient
 from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+
+def convert_date_to_timestamp(date_list):
+    """
+    Convert a date list [MM, DD, YYYY] to UNIX timestamp.
+
+    :param date_list: List of [month, day, year]
+    :returns: UNIX timestamp (int) or None if conversion fails
+    """
+    if not date_list:
+        return None
+    if not hasattr(date_list, "__len__") or len(date_list) != 3:
+        return None
+    try:
+        dt = datetime(date_list[2], date_list[0], date_list[1], tzinfo=timezone.utc)
+        return int(dt.timestamp())
+    except (ValueError, IndexError, TypeError):
+        return None
 
 
 def print_config(env: Environment, action: str):
@@ -321,3 +340,220 @@ def list(
                         environment.log(f"    Milestone ID: {plan.get('milestone_id')}")
 
                     environment.log("")
+
+
+@cli.command()
+@click.option("--name", type=str, metavar="<name>", help="Name of the test plan (can also be provided in JSON file).")
+@click.option(
+    "--description",
+    type=str,
+    metavar="<description>",
+    help="Description of the test plan (can also be provided in JSON file).",
+)
+@click.option("--milestone-id", type=click.IntRange(min=1), metavar="<id>", help="ID of the milestone to link.")
+@click.option(
+    "--entries",
+    type=str,
+    metavar="<json>",
+    help="JSON array of plan entries inline. Use this for simple entries or scripting. Mutually exclusive with --entries-file.",
+)
+@click.option(
+    "--entries-file",
+    type=click.Path(exists=True),
+    metavar="<path>",
+    help="Path to JSON file containing plan entries. Use this for complex entries with multiple runs/configs. Mutually exclusive with --entries.",
+)
+@click.option(
+    "--start-on",
+    metavar="",
+    default=None,
+    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3],
+    help="The scheduled start date of this test plan in MM/DD/YYYY format",
+)
+@click.option(
+    "--due-on",
+    metavar="",
+    default=None,
+    type=lambda x: [int(i) for i in x.split("/") if len(x.split("/")) == 3],
+    help="The scheduled due date of this test plan in MM/DD/YYYY format",
+)
+@click.option("--json-output", is_flag=True, help="Output created plan as raw JSON from API.")
+@click.pass_context
+@pass_environment
+def add(
+    environment: Environment,
+    context: click.Context,
+    name: str,
+    description: str,
+    milestone_id: int,
+    entries: str,
+    entries_file: str,
+    start_on: list,
+    due_on: list,
+    json_output: bool,
+    *args,
+    **kwargs,
+):
+    """Create a new test plan"""
+    environment.check_for_required_parameters()
+
+    # Validation: mutually exclusive entries flags
+    if entries and entries_file:
+        environment.elog(
+            "Error: --entries and --entries-file cannot be used together. Choose one method to provide entries."
+        )
+        raise SystemExit(1)
+
+    print_config(environment, "Add")
+
+    # Create ProjectBasedClient to resolve project
+    project_client = ProjectBasedClient(
+        environment=environment,
+        suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
+    )
+
+    # Resolve project (converts name to ID if needed)
+    project_client.resolve_project()
+
+    # Convert dates from MM/DD/YYYY to UNIX timestamps
+    start_timestamp = convert_date_to_timestamp(start_on) if start_on else None
+    due_timestamp = convert_date_to_timestamp(due_on) if due_on else None
+
+    # Parse entries from JSON string or file
+    # Support two formats:
+    # 1. Array format: [{"suite_id": 1, ...}]
+    # 2. Plan format: {"name": "...", "entries": [...]}
+    parsed_entries = None
+    json_plan_name = None
+    json_description = None
+    json_milestone_id = None
+
+    if entries_file:
+        try:
+            with open(entries_file, "r") as f:
+                json_data = json.load(f)
+
+            # Detect format: dict with "entries" key OR array
+            if isinstance(json_data, dict) and "entries" in json_data:
+                # Plan format - extract plan-level fields
+                parsed_entries = json_data.get("entries")
+                json_plan_name = json_data.get("name")
+                json_description = json_data.get("description")
+                json_milestone_id = json_data.get("milestone_id")
+
+                # Warn if command-line args will override JSON fields
+                if json_plan_name and name and name != json_plan_name:
+                    environment.log(f"Note: Using --name '{name}' instead of JSON name '{json_plan_name}'")
+                if json_description and description and description != json_description:
+                    environment.log(f"Note: Using --description from command line instead of JSON description")
+                if json_milestone_id and milestone_id and milestone_id != json_milestone_id:
+                    environment.log(
+                        f"Note: Using --milestone-id {milestone_id} instead of JSON milestone_id {json_milestone_id}"
+                    )
+
+            elif isinstance(json_data, builtins.list):
+                # Array format - just entries
+                parsed_entries = json_data
+            else:
+                environment.elog(
+                    "Error: Entries file must contain either a JSON array or an object with 'entries' field"
+                )
+                raise SystemExit(1)
+
+        except json.JSONDecodeError as e:
+            environment.elog(f"Error: Invalid JSON in entries file: {e}")
+            raise SystemExit(1)
+        except Exception as e:
+            environment.elog(f"Error: Failed to read entries file: {e}")
+            raise SystemExit(1)
+
+    elif entries:
+        try:
+            json_data = json.loads(entries)
+
+            # Detect format: dict with "entries" key OR array
+            if isinstance(json_data, dict) and "entries" in json_data:
+                # Plan format - extract plan-level fields
+                parsed_entries = json_data.get("entries")
+                json_plan_name = json_data.get("name")
+                json_description = json_data.get("description")
+                json_milestone_id = json_data.get("milestone_id")
+
+                # Warn if command-line args will override JSON fields
+                if json_plan_name and name and name != json_plan_name:
+                    environment.log(f"Note: Using --name '{name}' instead of JSON name '{json_plan_name}'")
+                if json_description and description and description != json_description:
+                    environment.log(f"Note: Using --description from command line instead of JSON description")
+                if json_milestone_id and milestone_id and milestone_id != json_milestone_id:
+                    environment.log(
+                        f"Note: Using --milestone-id {milestone_id} instead of JSON milestone_id {json_milestone_id}"
+                    )
+
+            elif isinstance(json_data, builtins.list):
+                # Array format - just entries
+                parsed_entries = json_data
+            else:
+                environment.elog("Error: Entries must be either a JSON array or an object with 'entries' field")
+                raise SystemExit(1)
+
+        except json.JSONDecodeError as e:
+            environment.elog(f"Error: Invalid JSON in entries parameter: {e}")
+            raise SystemExit(1)
+
+    # Use JSON fields as fallback if command-line args not provided
+    final_name = name if name else json_plan_name
+    final_description = description if description else json_description
+    final_milestone_id = milestone_id if milestone_id else json_milestone_id
+
+    if not final_name:
+        environment.elog("Error: Plan name is required (use --name or provide 'name' in JSON)")
+        raise SystemExit(1)
+
+    environment.log(f"Creating plan '{final_name}' in project ID {project_client.project.project_id}...")
+
+    # Create the plan
+    plan, error_message = project_client.api_request_handler.plan_handler.add_plan(
+        project_id=project_client.project.project_id,
+        name=final_name,
+        description=final_description,
+        milestone_id=final_milestone_id,
+        entries=parsed_entries,
+        start_on=start_timestamp,
+        due_on=due_timestamp,
+    )
+
+    if error_message:
+        environment.elog(f"Error: Failed to create plan: {error_message}")
+        raise SystemExit(1)
+
+    if not plan or not plan.get("id"):
+        environment.elog("Error: Plan creation returned unexpected response")
+        raise SystemExit(1)
+
+    # Handle output format
+    if json_output:
+        print(json.dumps(plan, indent=2))
+    else:
+        environment.log(f"\nPlan created successfully!")
+        environment.log(f"  Plan ID: {plan.get('id')}")
+        environment.log(f"  Name: {plan.get('name')}")
+        environment.log(f"  URL: {plan.get('url', 'N/A')}")
+        if plan.get("milestone_id"):
+            environment.log(f"  Milestone ID: {plan.get('milestone_id')}")
+        if plan.get("entries"):
+            environment.log(f"  Entries: {len(plan.get('entries'))} test run(s)")
+            for entry in plan.get("entries", []):
+                entry_name = entry.get("name", "N/A")
+                # Calculate total test count across all runs in this entry
+                total_tests = 0
+                for run in entry.get("runs", []):
+                    total_tests += (
+                        run.get("untested_count", 0)
+                        + run.get("passed_count", 0)
+                        + run.get("failed_count", 0)
+                        + run.get("blocked_count", 0)
+                        + run.get("retest_count", 0)
+                    )
+                environment.log(f"    - {entry_name}: {total_tests} test case(s)")
+
+    environment.log("\nPlan creation completed successfully.")

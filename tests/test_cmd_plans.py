@@ -422,3 +422,338 @@ class TestCmdPlans:
             mock_client.api_request_handler.plan_handler.get_plans.assert_called_once_with(
                 project_id=99, limit=250, offset=0
             )
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_success(self, mock_project_client):
+        """Test successful plan creation"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Test Plan",
+                "description": "Test Description",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(cmd_plans.add, ["--name", "Test Plan"], obj=self.environment)
+
+            assert result.exit_code == 0
+            mock_client.resolve_project.assert_called_once()
+            mock_client.api_request_handler.plan_handler.add_plan.assert_called_once()
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_with_description(self, mock_project_client):
+        """Test plan creation with description"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Test Plan",
+                "description": "Test Description",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(
+                cmd_plans.add, ["--name", "Test Plan", "--description", "Test Description"], obj=self.environment
+            )
+
+            assert result.exit_code == 0
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_with_entries_json(self, mock_project_client):
+        """Test plan creation with entries as JSON string"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Test Plan",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [
+                    {
+                        "suite_id": 1,
+                        "name": "Test Run",
+                        "runs": [
+                            {
+                                "id": 1,
+                                "untested_count": 5,
+                                "passed_count": 0,
+                                "failed_count": 0,
+                                "blocked_count": 0,
+                                "retest_count": 0,
+                            }
+                        ],
+                    }
+                ],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(
+                cmd_plans.add, ["--name", "Test Plan", "--entries", '[{"suite_id": 1}]'], obj=self.environment
+            )
+
+            assert result.exit_code == 0
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_api_error(self, mock_project_client):
+        """Test handling of API errors when creating plan"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = ({}, "API Error")
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ), patch.object(self.environment, "elog") as mock_elog:
+            result = self.runner.invoke(cmd_plans.add, ["--name", "Test Plan"], obj=self.environment)
+
+            assert result.exit_code == 1
+            assert mock_elog.called
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_json_output(self, mock_project_client):
+        """Test plan creation with JSON output"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Test Plan",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(cmd_plans.add, ["--name", "Test Plan", "--json-output"], obj=self.environment)
+
+            assert result.exit_code == 0
+            assert '"id": 100' in result.output
+            assert '"name": "Test Plan"' in result.output
+
+    def test_add_plan_invalid_entries_json(self):
+        """Test validation of invalid JSON in entries parameter"""
+        result = self.runner.invoke(
+            cmd_plans.add, ["--name", "Test Plan", "--entries", "invalid json"], obj=self.environment
+        )
+
+        assert result.exit_code == 1
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_with_dates(self, mock_project_client):
+        """Test plan creation with start and due dates in MM/DD/YYYY format"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Test Plan",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(
+                cmd_plans.add,
+                ["--name", "Test Plan", "--start-on", "01/15/2022", "--due-on", "02/15/2022"],
+                obj=self.environment,
+            )
+
+            assert result.exit_code == 0
+            # Verify that add_plan was called with converted timestamps
+            call_kwargs = mock_client.api_request_handler.plan_handler.add_plan.call_args[1]
+            assert call_kwargs["start_on"] is not None
+            assert call_kwargs["due_on"] is not None
+            # Verify timestamps are integers
+            assert isinstance(call_kwargs["start_on"], int)
+            assert isinstance(call_kwargs["due_on"], int)
+
+    def test_add_plan_mutually_exclusive_entries(self):
+        """Test validation of mutually exclusive --entries and --entries-file"""
+        import tempfile
+        import os
+
+        # Create a temporary file for entries-file parameter
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+            f.write("[]")
+            temp_file = f.name
+
+        try:
+            with patch.object(self.environment, "check_for_required_parameters"), patch.object(
+                self.environment, "elog"
+            ) as mock_elog:
+                result = self.runner.invoke(
+                    cmd_plans.add,
+                    ["--name", "Test Plan", "--entries", "[]", "--entries-file", temp_file],
+                    obj=self.environment,
+                )
+
+                assert result.exit_code == 1
+                assert mock_elog.called
+                assert "cannot be used together" in str(mock_elog.call_args)
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_file):
+                os.unlink(temp_file)
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_with_multi_config_entries(self, mock_project_client):
+        """Test plan creation with multi-configuration entries"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Multi-Config Plan",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [
+                    {
+                        "suite_id": 1,
+                        "name": "Browser Tests",
+                        "config_ids": [1, 2],
+                        "runs": [
+                            {
+                                "id": 1,
+                                "name": "Browser Tests - Chrome",
+                                "config": "Chrome",
+                                "untested_count": 5,
+                                "passed_count": 0,
+                                "failed_count": 0,
+                                "blocked_count": 0,
+                                "retest_count": 0,
+                            },
+                            {
+                                "id": 2,
+                                "name": "Browser Tests - Firefox",
+                                "config": "Firefox",
+                                "untested_count": 5,
+                                "passed_count": 0,
+                                "failed_count": 0,
+                                "blocked_count": 0,
+                                "retest_count": 0,
+                            },
+                        ],
+                    }
+                ],
+            },
+            "",
+        )
+
+        entries_json = '[{"suite_id": 1, "name": "Browser Tests", "config_ids": [1, 2], "runs": [{"config_ids": [1, 2], "case_ids": [10, 11, 12]}]}]'
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(
+                cmd_plans.add, ["--name", "Multi-Config Plan", "--entries", entries_json], obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            # Verify that add_plan was called
+            mock_client.api_request_handler.plan_handler.add_plan.assert_called_once()
+            # Verify the entries structure was passed correctly
+            call_kwargs = mock_client.api_request_handler.plan_handler.add_plan.call_args[1]
+            assert call_kwargs["entries"] is not None
+            assert len(call_kwargs["entries"]) == 1
+            assert call_kwargs["entries"][0]["config_ids"] == [1, 2]
+            assert call_kwargs["entries"][0]["runs"][0]["config_ids"] == [1, 2]
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_with_plan_format_json(self, mock_project_client):
+        """Test plan creation with plan-format JSON (includes name, description in JSON)"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "Plan from JSON",
+                "description": "JSON Description",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [
+                    {
+                        "suite_id": 1,
+                        "name": "Test Run",
+                        "runs": [
+                            {
+                                "id": 1,
+                                "untested_count": 5,
+                                "passed_count": 0,
+                                "failed_count": 0,
+                                "blocked_count": 0,
+                                "retest_count": 0,
+                            }
+                        ],
+                    }
+                ],
+            },
+            "",
+        )
+
+        # Plan format JSON with name, description, entries
+        plan_json = '{"name": "Plan from JSON", "description": "JSON Description", "entries": [{"suite_id": 1, "include_all": true}]}'
+
+        with patch.object(self.environment, "log"), patch.object(self.environment, "set_parameters"), patch.object(
+            self.environment, "check_for_required_parameters"
+        ):
+            result = self.runner.invoke(cmd_plans.add, ["--entries", plan_json], obj=self.environment)
+
+            assert result.exit_code == 0
+            # Verify that add_plan was called with values from JSON
+            call_kwargs = mock_client.api_request_handler.plan_handler.add_plan.call_args[1]
+            assert call_kwargs["name"] == "Plan from JSON"
+            assert call_kwargs["description"] == "JSON Description"
+            assert call_kwargs["entries"] is not None
+
+    @mock.patch("trcli.commands.cmd_plans.ProjectBasedClient")
+    def test_add_plan_cli_overrides_json(self, mock_project_client):
+        """Test that CLI arguments override JSON values"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.plan_handler.add_plan.return_value = (
+            {
+                "id": 100,
+                "name": "CLI Plan Name",
+                "url": "https://test.testrail.com/index.php?/plans/view/100",
+                "project_id": 1,
+                "entries": [],
+            },
+            "",
+        )
+
+        # JSON with name, but CLI also provides name
+        plan_json = '{"name": "JSON Plan Name", "entries": [{"suite_id": 1, "include_all": true}]}'
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(
+                cmd_plans.add, ["--name", "CLI Plan Name", "--entries", plan_json], obj=self.environment
+            )
+
+            assert result.exit_code == 0
+            # Verify CLI name was used
+            call_kwargs = mock_client.api_request_handler.plan_handler.add_plan.call_args[1]
+            assert call_kwargs["name"] == "CLI Plan Name"
+            # Verify warning was logged
+            mock_log.assert_any_call("Note: Using --name 'CLI Plan Name' instead of JSON name 'JSON Plan Name'")
