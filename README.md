@@ -2618,13 +2618,16 @@ Commands:
 
 ```shell
 # List all priorities
-$ trcli priorities list -h https://yourinstance.testrail.io -u user@example.com -p password
+$ trcli -c config.yml priorities list
 
 # Show all fields including priority order
-$ trcli priorities list -c config.yml --show-all-fields
+$ trcli -c config.yml priorities list --show-all-fields
 
 # JSON output
-$ trcli priorities list -c config.yml --json-output
+$ trcli -c config.yml priorities list --json-output
+
+# Without config file (inline credentials)
+$ trcli -h https://yourinstance.testrail.io -u user@example.com -p password priorities list
 ```
 
 #### Example Output
@@ -2670,13 +2673,13 @@ Commands:
 
 ```shell
 # List all case types
-$ trcli -h https://yourinstance.testrail.io -u user@example.com -p password casetypes list
-
-# With config file
-$ trcli casetypes list -c config.yml
+$ trcli -c config.yml casetypes list
 
 # JSON output
-$ trcli casetypes list -c config.yml --json-output
+$ trcli -c config.yml casetypes list --json-output
+
+# Without config file (inline credentials)
+$ trcli -h https://yourinstance.testrail.io -u user@example.com -p password casetypes list
 ```
 
 #### Example Output
@@ -4056,6 +4059,223 @@ components:
           type: string
           example: Guru
 ```
+
+### Test Data Management using Variables and Datasets (NOTE: Supported for TestRail Enterprise 7.6 or later only)
+
+TestRail Enterprise provides **Test Data Management** functionality that allows you to define variables and datasets for your test cases. TRCLI provides commands to manage both variables and datasets programmatically.
+
+**Key Concepts:**
+- **Variables**: Reusable parameters that can be referenced in test cases (e.g., `browser`, `username`, `api_endpoint`)
+- **Datasets**: Collections of variable values representing different test scenarios (e.g., `Chrome_Dataset`, `Firefox_Dataset`)
+
+#### Naming Conventions and Validation Rules
+
+Both variables and datasets must follow these naming rules:
+
+| Rule | Description |
+|------|-------------|
+| **Characters** | Only letters (A-Z, a-z), numbers (0-9), and underscores (_) |
+| **No Spaces** | Spaces are not allowed in names |
+| **No Special Characters** | Cannot use special characters like -, ., /, %, @, etc. |
+| **Cannot Start with Underscore** | Names cannot begin with an underscore (_) |
+| **Maximum Length** | Maximum 50 characters |
+| **Uniqueness** | Must be unique within a project |
+| **Case-Sensitive** | Names are case-sensitive (e.g., `Chrome` and `chrome` are different) |
+
+#### Variables Command
+
+Manage test data variables for your project.
+
+##### Listing Variables
+
+```bash
+# List all variables for a project
+trcli -c config.yml variables list
+
+# With pagination
+trcli -c config.yml variables list --offset 250 --limit 100
+
+# JSON output for integration
+trcli -c config.yml variables list --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  variables list
+```
+
+##### Adding a Variable
+
+```bash
+# Create a new variable
+trcli -c config.yml variables add --name "browser"
+
+# JSON output
+trcli -c config.yml variables add --name "test_user" --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  variables add --name "api_endpoint"
+```
+
+##### Updating a Variable
+
+```bash
+# Update an existing variable
+trcli -c config.yml variables update --variable-id 123 --name "web_browser"
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  variables update --variable-id 456 --name "api_url"
+```
+
+##### Deleting a Variable
+
+```bash
+# Delete a variable (also deletes corresponding values from datasets)
+trcli -c config.yml variables delete --variable-id 123
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  variables delete --variable-id 456
+```
+
+**Note:** Deleting a variable will also delete the corresponding values from all datasets.
+
+#### Datasets Command
+
+Manage test data datasets for your project.
+
+##### Listing Datasets
+
+```bash
+# List all datasets for a project
+trcli -c config.yml datasets list
+
+# With pagination
+trcli -c config.yml datasets list --offset 250 --limit 100
+
+# JSON output
+trcli -c config.yml datasets list --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  datasets list
+```
+
+##### Viewing a Dataset
+
+```bash
+# Show a specific dataset with all variable values
+trcli -c config.yml datasets show --dataset-id 123
+
+# JSON output
+trcli -c config.yml datasets show --dataset-id 456 --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  datasets show --dataset-id 789
+```
+
+##### Adding a Dataset
+
+```bash
+# Create a new dataset with variables
+trcli -c config.yml datasets add \
+  --name "Chrome_Dataset" \
+  --variables '{"browser":"Chrome","version":"120.0"}'
+
+# Create a dataset without initial variables
+trcli -c config.yml datasets add --name "Firefox_Dataset"
+
+# JSON output
+trcli -c config.yml datasets add \
+  --name "Edge_Dataset" \
+  --variables '{"browser":"Edge","version":"119.0"}' \
+  --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  datasets add --name "Safari_Dataset" \
+  --variables '{"browser":"Safari","version":"17.0"}'
+```
+
+**Variables Format:**
+- Must be a JSON object with variable_name: value pairs
+- **Important:** Before adding a dataset with variables, ensure all variable names have been created in the project. If you reference a non-existent variable, the API will return an error.
+- All values must be strings
+- Example: `'{"browser":"Chrome","os":"Windows","version":"1.0"}'`
+
+##### Updating a Dataset
+
+```bash
+# Update dataset name only
+trcli -c config.yml datasets update \
+  --dataset-id 123 \
+  --name "Chrome_Latest"
+
+# Update variables only
+trcli -c config.yml datasets update \
+  --dataset-id 456 \
+  --variables '{"browser":"Chrome","version":"121.0"}'
+
+# Update both name and variables
+trcli -c config.yml datasets update \
+  --dataset-id 789 \
+  --name "Production_Environment" \
+  --variables '{"api_url":"https://api.prod.com","timeout":"30"}'
+
+# JSON output
+trcli -c config.yml datasets update \
+  --dataset-id 123 \
+  --name "Updated_Dataset" \
+  --json-output
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  datasets update --dataset-id 456 --name "New_Dataset_Name"
+```
+
+**Note:** At least one of `--name` or `--variables` must be provided for update.
+
+##### Deleting a Dataset
+
+```bash
+# Delete a dataset (cannot delete "Default" dataset)
+trcli -c config.yml datasets delete --dataset-id 123
+
+# Without config file (inline credentials)
+trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  datasets delete --dataset-id 456
+```
+
+**Note:** Cannot delete the "Default" dataset. Deleting a dataset will also remove the dataset's values.
 
 ### Generating test cases
 
