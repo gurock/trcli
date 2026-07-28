@@ -237,11 +237,13 @@ class PlanHandler:
         Validate and process plan entries with dynamic filters support.
 
         This method:
-        1. Validates dynamic_filters structure in each run
+        1. Validates dynamic_filters structure in each run or entry
         2. Checks mutual exclusivity (filters vs case_ids/include_all)
         3. Auto-wraps simplified filter format
         4. Removes internal _mode_from_json flag
         5. Applies CLI mode override if specified (CLI > JSON precedence)
+        6. Ensures default mode "1" is added when not specified
+        7. Supports flat entry format (dynamic_filters at entry level without runs array)
 
         :param entries: List of plan entry dictionaries
         :param cli_mode: Optional CLI mode parameter ("1" or "2") to override JSON mode for all runs
@@ -254,10 +256,56 @@ class PlanHandler:
 
         for entry_idx, entry in enumerate(entries):
             entry_name = entry.get("name", f"Entry {entry_idx + 1}")
+
+            if "dynamic_filters" in entry:
+                entry_label = f"Entry '{entry_name}'"
+                dynamic_filters = entry["dynamic_filters"]
+
+                if "case_ids" in entry and entry["case_ids"]:
+                    return (
+                        [],
+                        f"{entry_label}: dynamic_filters and case_ids cannot be used together. Choose one case selection method.",
+                    )
+
+                # Validation: Mutual exclusivity with include_all=true
+                if entry.get("include_all") is True:
+                    return (
+                        [],
+                        f"{entry_label}: dynamic_filters and include_all=true cannot be used together. Set include_all=false or omit it when using dynamic filters.",
+                    )
+
+                # Track if mode was explicitly provided in the JSON
+                mode_was_in_json = "mode" in dynamic_filters
+
+                if "filters" not in dynamic_filters:
+                    dynamic_filters = {"mode": "1", "filters": dynamic_filters}
+                    mode_was_in_json = False
+
+                if cli_mode and not mode_was_in_json:
+                    dynamic_filters["mode"] = cli_mode
+                elif "mode" not in dynamic_filters:
+                    # Ensure default mode "1" is set if not specified anywhere
+                    dynamic_filters["mode"] = "1"
+
+                is_valid, error = validate_dynamic_filters_structure(dynamic_filters)
+                if not is_valid:
+                    return [], f"{entry_label}: {error}"
+
+                if "_mode_from_json" in dynamic_filters:
+                    del dynamic_filters["_mode_from_json"]
+
+                entry["dynamic_filters"] = dynamic_filters
+
+                if "include_all" not in entry:
+                    entry["include_all"] = False
+
+                processed_entries.append(entry)
+                continue
+
             runs = entry.get("runs", [])
 
             if not runs:
-                # No runs, just pass through
+                # No runs and no entry-level dynamic_filters, just pass through
                 processed_entries.append(entry)
                 continue
 
@@ -298,6 +346,9 @@ class PlanHandler:
                     if cli_mode and not mode_was_in_json:
                         # No explicit mode in JSON, apply CLI mode
                         dynamic_filters["mode"] = cli_mode
+                    elif "mode" not in dynamic_filters:
+                        # Ensure default mode "1" is set if not specified anywhere
+                        dynamic_filters["mode"] = "1"
 
                     # Validate filter structure
                     is_valid, error = validate_dynamic_filters_structure(dynamic_filters)
