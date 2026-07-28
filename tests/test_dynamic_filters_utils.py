@@ -189,11 +189,12 @@ class TestValidateFieldFilter:
         assert error == ""
 
     def test_validate_operator_based_missing_mode(self):
-        """Test validation rejects operator-based filter without mode"""
+        """Test validation adds default mode '1' when operator-based filter has no mode"""
         field_filter = {"filters": [{"op": 5, "value": "test"}]}
         is_valid, error = validate_field_filter("cases:title", field_filter)
-        assert is_valid is False
-        assert "Filters with operators require 'mode'" in error
+        assert is_valid is True
+        assert error == ""
+        assert field_filter["mode"] == "1"  # Mode should be added automatically
 
     def test_validate_operator_based_invalid_mode(self):
         """Test validation rejects invalid mode in operator-based filter"""

@@ -170,7 +170,8 @@ def validate_field_filter(field_name: str, field_filter: dict) -> Tuple[bool, st
     elif has_filters:
         # Format 3: Operator-based {"mode": "1/2", "filters": [...]}
         if not has_mode:
-            return False, "Filters with operators require 'mode'"
+            # Default to AND mode if not specified
+            field_filter["mode"] = "1"
 
         if field_filter["mode"] not in ["1", "2"]:
             return False, "Filter mode must be '1' (match all) or '2' (match any)"
