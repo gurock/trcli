@@ -108,6 +108,7 @@ COMMAND_FAULT_MAPPING = dict(
     tests=dict(**FAULT_MAPPING),
     variables=dict(**FAULT_MAPPING),
     datasets=dict(**FAULT_MAPPING),
+    groups=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -152,7 +153,8 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - tests: Query tests (get and list)
     - results: Query and update test results (list, update)
     - variables: Manage test data variables (list, add, update, delete)
-    - datasets: Manage test data datasets (list, show, add, update, delete)"""
+    - datasets: Manage test data datasets (list, show, add, update, delete)
+    - groups: Manage groups (list, show)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
