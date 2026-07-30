@@ -4259,7 +4259,9 @@ trcli -h https://yourinstance.testrail.io \
   datasets update --dataset-id 456 --name "New_Dataset_Name"
 ```
 
-**Note:** At least one of `--name` or `--variables` must be provided for update.
+**Note:**
+- At least one of `--name` or `--variables` must be provided for update
+- When updating name only, existing variables are automatically preserved (API requirement)
 
 ##### Deleting a Dataset
 

@@ -111,21 +111,29 @@ class DatasetsHandler:
         """
         Update an existing dataset
 
+        Note: TestRail API requires the 'variables' field to always be present in update requests.
+        If only name is provided, an empty variables object {} will be sent, which preserves
+        existing variables.
+
         :param dataset_id: TestRail dataset ID
         :param name: New name for the dataset (optional)
         :param variables: Dictionary of variable_name: value pairs (optional)
         :returns: Tuple with (updated_dataset_dict, error_message)
         """
-        payload = {}
+        if name is None and variables is None:
+            return {}, "Error: At least one field (name or variables) must be provided for update"
 
+        # Build payload
+        payload = {}
         if name is not None:
             payload["name"] = name
 
-        if variables:
+        # TestRail API requires 'variables' field to always be present
+        # If variables not provided, send empty dict to preserve existing variables
+        if variables is not None:
             payload["variables"] = variables
-
-        if not payload:
-            return {}, "Error: At least one field (name or variables) must be provided for update"
+        else:
+            payload["variables"] = {}
 
         response = self.client.send_post(f"update_dataset/{dataset_id}", payload)
         if response.error_message:
