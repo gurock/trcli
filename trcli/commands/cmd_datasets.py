@@ -155,7 +155,7 @@ def show(
     "--variables",
     type=str,
     metavar="<json>",
-    help='JSON object of variable_name: value pairs. Example: \'{"browser":"Chrome","version":"1.0"}\'',
+    help='JSON object of variable_name: value pairs. Example: {"browser":"Chrome","version":"1.0"}',
 )
 @click.option("--json-output", is_flag=True, help="Output created dataset as raw JSON from API.")
 @click.pass_context
@@ -234,7 +234,7 @@ def add(
     "--variables",
     type=str,
     metavar="<json>",
-    help='JSON object of variable_name: value pairs to update. Example: \'{"browser":"Firefox"}\'',
+    help='JSON object of variable_name: value pairs to update. Example: {"browser":"Firefox"}',
 )
 @click.option("--json-output", is_flag=True, help="Output updated dataset as raw JSON from API.")
 @click.pass_context
