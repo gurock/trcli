@@ -175,13 +175,15 @@ def add(
     print_config(environment, "Add")
 
     # Parse variables JSON if provided
+    # Note: None means --variables not provided, {} means empty object provided
     parsed_variables = None
     if variables:
         try:
             parsed_variables = json.loads(variables)
             if not isinstance(parsed_variables, dict):
-                environment.elog('Error: --variables must be a JSON object (e.g., \'{"var1":"value1"}\')')
+                environment.elog('Error: --variables must be a JSON object (e.g., {"var1":"value1"})')
                 raise SystemExit(1)
+            # Empty object {} is valid - it creates a dataset with no variables
         except json.JSONDecodeError as e:
             environment.elog(f"Error: Invalid JSON in --variables: {e}")
             raise SystemExit(1)
@@ -260,13 +262,15 @@ def update(
     print_config(environment, "Update")
 
     # Parse variables JSON if provided
+    # Note: None means --variables not provided, {} means empty object provided
     parsed_variables = None
     if variables:
         try:
             parsed_variables = json.loads(variables)
             if not isinstance(parsed_variables, dict):
-                environment.elog('Error: --variables must be a JSON object (e.g., \'{"var1":"value1"}\')')
+                environment.elog('Error: --variables must be a JSON object (e.g., {"var1":"value1"})')
                 raise SystemExit(1)
+            # Empty object {} is valid - it will preserve existing variables (API behavior)
         except json.JSONDecodeError as e:
             environment.elog(f"Error: Invalid JSON in --variables: {e}")
             raise SystemExit(1)

@@ -4202,8 +4202,11 @@ trcli -c config.yml datasets add \
   --name "Chrome_Dataset" \
   --variables '{"browser":"Chrome","version":"120.0"}'
 
-# Create a dataset without initial variables
+# Create a dataset without initial variables (sends empty object {})
 trcli -c config.yml datasets add --name "Firefox_Dataset"
+
+# Create a dataset with explicit empty variables (same as above)
+trcli -c config.yml datasets add --name "Firefox_Dataset" --variables "{}"
 
 # JSON output
 trcli -c config.yml datasets add \
@@ -4229,10 +4232,16 @@ trcli -h https://yourinstance.testrail.io \
 ##### Updating a Dataset
 
 ```bash
-# Update dataset name only
+# Update dataset name only (preserves existing variables)
 trcli -c config.yml datasets update \
   --dataset-id 123 \
   --name "Chrome_Latest"
+
+# Update name with explicit empty variables (also preserves existing variables)
+trcli -c config.yml datasets update \
+  --dataset-id 123 \
+  --name "Chrome_Latest" \
+  --variables "{}"
 
 # Update variables only
 trcli -c config.yml datasets update \
@@ -4261,7 +4270,9 @@ trcli -h https://yourinstance.testrail.io \
 
 **Note:**
 - At least one of `--name` or `--variables` must be provided for update
-- When updating name only, existing variables are automatically preserved (API requirement)
+- When updating name only (without `--variables`), existing variables are automatically preserved
+- Passing `--variables "{}"` (empty object) also preserves existing variables - same behavior as omitting `--variables`
+- To clear all variables from a dataset, you would need to update with explicit empty values for each variable
 
 ##### Deleting a Dataset
 

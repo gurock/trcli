@@ -89,12 +89,16 @@ class DatasetsHandler:
         :param project_id: TestRail project ID
         :param name: Name of the dataset (required)
         :param variables: Dictionary of variable_name: value pairs (optional)
+                         If None, sends empty dict {}. If empty dict {}, also sends {}.
         :returns: Tuple with (created_dataset_dict, error_message)
         """
         payload = {"name": name}
 
-        if variables:
+        # Always include variables field, use {} if not provided
+        if variables is not None:
             payload["variables"] = variables
+        else:
+            payload["variables"] = {}
 
         response = self.client.send_post(f"add_dataset/{project_id}", payload)
         if response.error_message:
