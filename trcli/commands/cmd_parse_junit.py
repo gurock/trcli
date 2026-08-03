@@ -107,8 +107,11 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             run_id = multisuite_uploader.last_plan_id
         else:
             # Normal mode: process each suite separately
+            # Defer close_run if test_run_ref is provided to attach references first
+            defer_close = environment.test_run_ref is not None
+
             for suite in parsed_suites:
-                result_uploader = ResultsUploader(environment=environment, suite=suite)
+                result_uploader = ResultsUploader(environment=environment, suite=suite, defer_close_run=defer_close)
                 result_uploader.upload_results()
 
                 if run_id is None and hasattr(result_uploader, "last_run_id"):
@@ -118,8 +121,13 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 if hasattr(result_uploader, "case_update_results"):
                     case_update_results = result_uploader.case_update_results
 
+        # Handle test run references BEFORE closing the run
         if environment.test_run_ref and run_id:
             _handle_test_run_references(environment, run_id)
+
+        # Close run after references are attached (if deferred and close_run flag is set)
+        if environment.close_run and environment.test_run_ref and run_id:
+            _close_test_run(environment, run_id)
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:
@@ -161,6 +169,24 @@ def _validate_test_run_ref(test_run_ref: str) -> str:
         return f"Error: --test-run-ref exceeds 250 character limit ({len(test_run_ref)} characters)"
 
     return None
+
+
+def _close_test_run(environment: Environment, run_id: int):
+    """
+    Close the test run.
+    """
+    from trcli.api.project_based_client import ProjectBasedClient
+    from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+    project_client = ProjectBasedClient(environment=environment, suite=TestRailSuite(name="temp", suite_id=1))
+    project_client.resolve_project()
+
+    environment.log("Closing test run. ", new_line=False)
+    response, error_message = project_client.api_request_handler.close_run(run_id)
+
+    if error_message:
+        environment.elog("\n" + error_message)
+        exit(1)
 
 
 def _handle_test_run_references(environment: Environment, run_id: int):
