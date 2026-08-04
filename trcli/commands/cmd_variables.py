@@ -41,7 +41,9 @@ def list(
     """List all variables for a project"""
     environment.check_for_required_parameters()
 
-    print_config(environment, "List")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "List")
 
     # Create ProjectBasedClient to resolve project
     project_client = ProjectBasedClient(
@@ -52,7 +54,8 @@ def list(
     # Resolve project (converts name to ID if needed)
     project_client.resolve_project()
 
-    environment.log(f"Retrieving variables for project ID {project_client.project.project_id}...")
+    if not json_output:
+        environment.log(f"Retrieving variables for project ID {project_client.project.project_id}...")
 
     # Retrieve variables
     response_data, error_message = project_client.api_request_handler.variables_handler.get_variables(
@@ -106,7 +109,9 @@ def add(
     """Create a new variable"""
     environment.check_for_required_parameters()
 
-    print_config(environment, "Add")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "Add")
 
     # Create ProjectBasedClient to resolve project
     project_client = ProjectBasedClient(
@@ -117,7 +122,8 @@ def add(
     # Resolve project (converts name to ID if needed)
     project_client.resolve_project()
 
-    environment.log(f"Creating variable '{name}' in project ID {project_client.project.project_id}...")
+    if not json_output:
+        environment.log(f"Creating variable '{name}' in project ID {project_client.project.project_id}...")
 
     # Create the variable
     variable, error_message = project_client.api_request_handler.variables_handler.add_variable(
@@ -158,9 +164,12 @@ def update(
     **kwargs,
 ):
     """Update an existing variable"""
+    environment.cmd = "variables_update"  # Use ID-based command (no project required)
     environment.check_for_required_parameters()
 
-    print_config(environment, "Update")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "Update")
 
     # Create ProjectBasedClient (needed for environment setup)
     project_client = ProjectBasedClient(
@@ -168,7 +177,8 @@ def update(
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
 
-    environment.log(f"Updating variable ID {variable_id}...")
+    if not json_output:
+        environment.log(f"Updating variable ID {variable_id}...")
 
     # Update the variable
     variable, error_message = project_client.api_request_handler.variables_handler.update_variable(
@@ -208,6 +218,7 @@ def delete(
 
     Note: Deleting a variable will also delete corresponding values from datasets.
     """
+    environment.cmd = "variables_delete"  # Use ID-based command (no project required)
     environment.check_for_required_parameters()
 
     print_config(environment, "Delete")

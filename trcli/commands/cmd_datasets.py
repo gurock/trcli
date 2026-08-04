@@ -41,7 +41,9 @@ def list(
     """List all datasets for a project"""
     environment.check_for_required_parameters()
 
-    print_config(environment, "List")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "List")
 
     # Create ProjectBasedClient to resolve project
     project_client = ProjectBasedClient(
@@ -52,7 +54,8 @@ def list(
     # Resolve project (converts name to ID if needed)
     project_client.resolve_project()
 
-    environment.log(f"Retrieving datasets for project ID {project_client.project.project_id}...")
+    if not json_output:
+        environment.log(f"Retrieving datasets for project ID {project_client.project.project_id}...")
 
     # Retrieve datasets
     response_data, error_message = project_client.api_request_handler.datasets_handler.get_datasets(
@@ -113,9 +116,12 @@ def show(
     **kwargs,
 ):
     """View a specific dataset with all variable values"""
+    environment.cmd = "datasets_show"  # Use ID-based command (no project required)
     environment.check_for_required_parameters()
 
-    print_config(environment, "Show")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "Show")
 
     # Create ProjectBasedClient
     project_client = ProjectBasedClient(
@@ -123,7 +129,8 @@ def show(
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
 
-    environment.log(f"Retrieving dataset ID {dataset_id}...")
+    if not json_output:
+        environment.log(f"Retrieving dataset ID {dataset_id}...")
 
     # Retrieve dataset
     dataset, error_message = project_client.api_request_handler.datasets_handler.get_dataset(dataset_id=dataset_id)
@@ -172,7 +179,9 @@ def add(
     """Create a new dataset"""
     environment.check_for_required_parameters()
 
-    print_config(environment, "Add")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "Add")
 
     # Parse variables JSON if provided
     # Note: None means --variables not provided, {} means empty object provided
@@ -197,7 +206,8 @@ def add(
     # Resolve project (converts name to ID if needed)
     project_client.resolve_project()
 
-    environment.log(f"Creating dataset '{name}' in project ID {project_client.project.project_id}...")
+    if not json_output:
+        environment.log(f"Creating dataset '{name}' in project ID {project_client.project.project_id}...")
 
     # Create the dataset
     dataset, error_message = project_client.api_request_handler.datasets_handler.add_dataset(
@@ -252,6 +262,7 @@ def update(
     **kwargs,
 ):
     """Update an existing dataset"""
+    environment.cmd = "datasets_update"  # Use ID-based command (no project required)
     environment.check_for_required_parameters()
 
     # Validate that at least one field is provided
@@ -259,7 +270,9 @@ def update(
         environment.elog("Error: At least one of --name or --variables must be provided")
         raise SystemExit(1)
 
-    print_config(environment, "Update")
+    # Skip log output when JSON output is requested (for clean JSON-only output)
+    if not json_output:
+        print_config(environment, "Update")
 
     # Parse variables JSON if provided
     # Note: None means --variables not provided, {} means empty object provided
@@ -281,7 +294,8 @@ def update(
         suite=TestRailSuite(name=environment.suite_name, suite_id=environment.suite_id),
     )
 
-    environment.log(f"Updating dataset ID {dataset_id}...")
+    if not json_output:
+        environment.log(f"Updating dataset ID {dataset_id}...")
 
     # Update the dataset
     dataset, error_message = project_client.api_request_handler.datasets_handler.update_dataset(
@@ -328,6 +342,7 @@ def delete(
 
     Note: Cannot delete the Default dataset. Deleting a dataset will also remove the dataset's values.
     """
+    environment.cmd = "datasets_delete"  # Use ID-based command (no project required)
     environment.check_for_required_parameters()
 
     print_config(environment, "Delete")

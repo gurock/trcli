@@ -109,25 +109,33 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             # Normal mode: process each suite separately
             # Defer close_run if test_run_ref is provided to attach references first
             defer_close = environment.test_run_ref is not None
+            run_ids = []  # Track all run IDs created/used
 
             for suite in parsed_suites:
                 result_uploader = ResultsUploader(environment=environment, suite=suite, defer_close_run=defer_close)
                 result_uploader.upload_results()
 
-                if run_id is None and hasattr(result_uploader, "last_run_id"):
-                    run_id = result_uploader.last_run_id
+                # Collect all run IDs (not just the first one)
+                if hasattr(result_uploader, "last_run_id") and result_uploader.last_run_id:
+                    run_ids.append(result_uploader.last_run_id)
+                    # Keep first run_id for backward compatibility
+                    if run_id is None:
+                        run_id = result_uploader.last_run_id
 
                 # Collect case update results
                 if hasattr(result_uploader, "case_update_results"):
                     case_update_results = result_uploader.case_update_results
 
-        # Handle test run references BEFORE closing the run
-        if environment.test_run_ref and run_id:
-            _handle_test_run_references(environment, run_id)
+        # Handle test run references and closing for all runs
+        if environment.test_run_ref and run_ids:
+            # Attach references to all runs
+            for current_run_id in run_ids:
+                _handle_test_run_references(environment, current_run_id)
 
-        # Close run after references are attached (if deferred and close_run flag is set)
-        if environment.close_run and environment.test_run_ref and run_id:
-            _close_test_run(environment, run_id)
+        # Close all runs after references are attached (if deferred and close_run flag is set)
+        if environment.close_run and environment.test_run_ref and run_ids:
+            for current_run_id in run_ids:
+                _close_test_run(environment, current_run_id)
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:

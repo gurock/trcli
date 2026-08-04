@@ -108,6 +108,11 @@ COMMAND_FAULT_MAPPING = dict(
     tests=dict(**FAULT_MAPPING),
     variables=dict(**FAULT_MAPPING),
     datasets=dict(**FAULT_MAPPING),
+    variables_update=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    variables_delete=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_show=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_update=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_delete=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
 )
 
 PROMPT_MESSAGES = dict(
