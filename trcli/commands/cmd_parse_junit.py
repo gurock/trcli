@@ -94,6 +94,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             exit(1)
 
         run_id = None
+        run_ids = []  # Track all run IDs - hoisted to top-level scope to avoid NameError
         case_update_results = {}
 
         # Multisuite mode: use MultisuiteUploader for cross-suite plans
@@ -103,13 +104,14 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             multisuite_uploader = MultisuiteUploader(environment=environment, suite=parsed_suites[0])
             multisuite_uploader.upload_results()
 
-            # Use plan_id for reference handling
-            run_id = multisuite_uploader.last_plan_id
+            # Use plan_id for reference handling - add to run_ids for unified handling
+            plan_id = multisuite_uploader.last_plan_id
+            run_ids = [plan_id]
+            run_id = plan_id
         else:
             # Normal mode: process each suite separately
             # Defer close_run if test_run_ref is provided to attach references first
             defer_close = environment.test_run_ref is not None
-            run_ids = []  # Track all run IDs created/used
 
             for suite in parsed_suites:
                 result_uploader = ResultsUploader(environment=environment, suite=suite, defer_close_run=defer_close)
@@ -118,7 +120,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 # Collect all run IDs (not just the first one)
                 if hasattr(result_uploader, "last_run_id") and result_uploader.last_run_id:
                     run_ids.append(result_uploader.last_run_id)
-                    # Keep first run_id for backward compatibility
+                    # Store first run_id (may be used elsewhere in future)
                     if run_id is None:
                         run_id = result_uploader.last_run_id
 
@@ -129,8 +131,20 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
         # Handle test run references and closing for all runs
         if environment.test_run_ref and run_ids:
             # Attach references to all runs
-            for current_run_id in run_ids:
-                _handle_test_run_references(environment, current_run_id)
+            if environment.json_output and len(run_ids) > 1:
+                # Multiple runs with JSON output: accumulate results into array
+                import json
+
+                all_results = []
+                for current_run_id in run_ids:
+                    result = _handle_test_run_references(environment, current_run_id, return_result=True)
+                    all_results.append(result)
+                # Print single valid JSON array
+                print(json.dumps(all_results, indent=2))
+            else:
+                # Single run or console output: process normally
+                for current_run_id in run_ids:
+                    _handle_test_run_references(environment, current_run_id)
 
         # Close all runs after references are attached (if deferred and close_run flag is set)
         if environment.close_run and environment.test_run_ref and run_ids:
@@ -197,9 +211,17 @@ def _close_test_run(environment: Environment, run_id: int):
         exit(1)
 
 
-def _handle_test_run_references(environment: Environment, run_id: int):
+def _handle_test_run_references(environment: Environment, run_id: int, return_result: bool = False):
     """
     Handle appending references to the test run.
+
+    Args:
+        environment: Environment object
+        run_id: TestRail run ID or plan ID
+        return_result: If True, return result dict instead of printing (for JSON accumulation)
+
+    Returns:
+        dict: Result dictionary if return_result=True, otherwise None
     """
     from trcli.api.project_based_client import ProjectBasedClient
     from trcli.data_classes.dataclass_testrail import TestRailSuite
@@ -210,7 +232,9 @@ def _handle_test_run_references(environment: Environment, run_id: int):
     project_client = ProjectBasedClient(environment=environment, suite=TestRailSuite(name="temp", suite_id=1))
     project_client.resolve_project()
 
-    environment.log(f"Appending references to test run {run_id}...")
+    if not return_result:
+        environment.log(f"Appending references to test run {run_id}...")
+
     run_data, added_refs, skipped_refs, error_message = project_client.api_request_handler.append_run_references(
         run_id, refs
     )
@@ -221,9 +245,14 @@ def _handle_test_run_references(environment: Environment, run_id: int):
 
     final_refs = run_data.get("refs", "") if run_data else ""
 
+    result = {"run_id": run_id, "added": added_refs, "skipped": skipped_refs, "total_references": final_refs}
+
+    # Return result for accumulation (JSON mode with multiple runs)
+    if return_result:
+        return result
+
+    # Print/log result immediately (single run or console mode)
     if environment.json_output:
-        # JSON output
-        result = {"run_id": run_id, "added": added_refs, "skipped": skipped_refs, "total_references": final_refs}
         print(json.dumps(result, indent=2))
     else:
         environment.log(f"References appended successfully:")
