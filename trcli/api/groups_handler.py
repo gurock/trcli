@@ -56,16 +56,15 @@ class GroupsHandler:
         """
         # Build query parameters
         params = []
-        if limit != 250:
-            params.append(f"limit={limit}")
         if offset > 0:
             params.append(f"offset={offset}")
+        if limit != 250:
+            params.append(f"limit={limit}")
 
         # Build URL
-        query_string = "&".join(params) if params else ""
         url = "get_groups"
-        if query_string:
-            url = f"{url}?{query_string}"
+        if params:
+            url += "&" + "&".join(params)
 
         response = self.client.send_get(url)
         if response.error_message:
