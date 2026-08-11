@@ -131,18 +131,18 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
         # Handle test run references and closing for all runs
         if environment.test_run_ref and run_ids:
             # Attach references to all runs
-            if environment.json_output and len(run_ids) > 1:
-                # Multiple runs with JSON output: accumulate results into array
+            if environment.json_output:
+                # JSON output: accumulate results and print as array (or single object for 1 run)
                 import json
 
-                all_results = []
-                for current_run_id in run_ids:
-                    result = _handle_test_run_references(environment, current_run_id, return_result=True)
-                    all_results.append(result)
-                # Print single valid JSON array
-                print(json.dumps(all_results, indent=2))
+                all_results = [
+                    _handle_test_run_references(environment, current_run_id, return_result=True)
+                    for current_run_id in run_ids
+                ]
+                # Single run emits object (backward compatible), multiple runs emit array
+                print(json.dumps(all_results[0] if len(all_results) == 1 else all_results, indent=2))
             else:
-                # Single run or console output: process normally
+                # Console output: process normally
                 for current_run_id in run_ids:
                     _handle_test_run_references(environment, current_run_id)
 
@@ -203,7 +203,9 @@ def _close_test_run(environment: Environment, run_id: int):
     project_client = ProjectBasedClient(environment=environment, suite=TestRailSuite(name="temp", suite_id=1))
     project_client.resolve_project()
 
-    environment.log("Closing test run. ", new_line=False)
+    if not environment.json_output:
+        environment.log("Closing test run. ", new_line=False)
+
     response, error_message = project_client.api_request_handler.close_run(run_id)
 
     if error_message:
