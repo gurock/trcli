@@ -73,6 +73,7 @@ trcli_description = (
     "    - add_run: Create a new test run\n"
     "    - labels: Manage labels (projects, cases, and tests)\n"
     "    - references: Manage references (cases and runs)\n"
+    "    - reports: Manage reports (list and generate)\n"
     "    - cases: Query test cases (get and list)\n"
     "    - suites: Query test suites (get and list)\n"
     "    - sections: Query test sections (get and list)\n"
