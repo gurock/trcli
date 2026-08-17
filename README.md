@@ -106,6 +106,7 @@ Commands:
   references     Manage references in TestRail
   results        Manage test results in TestRail
   sections       Manage test sections in TestRail
+  sharedsteps   Manage sharedsteps in TestRail
   suites         Manage test suites in TestRail
   runs           Manage test runs in TestRail
   milestones     Manage milestones in TestRail
@@ -3014,6 +3015,153 @@ Field ID: 11
 
 Result field listing completed successfully.
 ```
+
+### Shared Steps Management
+
+**Requires TestRail 7.0 or later**
+
+The `sharedsteps` command allows you to manage reusable test step sets in TestRail. Shared steps are reusable sets of test instructions that can be referenced across multiple test cases, ensuring consistency and reducing duplication.
+
+### Why Use Shared Steps?
+
+- **Eliminate Duplication**: Define common procedures once and reuse across test cases
+- **MCP Agent Integration**: Shared steps become reusable knowledge objects for AI agents
+- **CI/CD Propagation**: Update a shared step once to automatically propagate changes to all linked test cases
+- **Consistency**: Ensure uniform test procedures across your test suite
+
+### Available Subcommands
+
+#### `sharedsteps list`
+
+List all shared steps in a project.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps list --project-id <id>
+
+# With all parameters
+trcli sharedsteps list --project-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--project-id <id>` - Project ID (or use `--project` with project name from config)
+- `--json-output` - Output raw JSON from API
+- `--created-by <user_ids>` - Filter by comma-separated creator user IDs
+- `--refs <reference>` - Filter by reference ID (e.g., TR-123)
+- `--limit <n>` - Limit number of results (max 250)
+- `--offset <n>` - Skip N records for pagination
+
+#### `sharedsteps show`
+
+Show detailed information for a specific shared step.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps show --sharedstep-id <id>
+
+# With all parameters
+trcli sharedsteps show --sharedstep-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to display (required)
+- `--json-output` - Output raw JSON from API
+
+#### `sharedsteps create`
+
+Create a new shared step from a JSON file.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps create --name "Login Flow" --steps-file login-steps.json --project-id <id>
+
+# With all parameters
+trcli sharedsteps create --name "Login Flow" --steps-file login-steps.json \
+  --project-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--name <title>` - Title for the shared step (required)
+- `--steps-file <file>` - Path to JSON file containing step definitions (required)
+- `--project-id <id>` - Project ID (or use `--project` with project name from config)
+- `--json-output` - Output created shared step as raw JSON
+
+**JSON File Format:**
+
+The steps file must be a JSON object with a `custom_steps_separated` array:
+
+```json
+{
+  "custom_steps_separated": [
+    {
+      "content": "Open browser and navigate to login page",
+      "expected": "Login page displays"
+    },
+    {
+      "content": "Enter username and password",
+      "expected": "Credentials accepted"
+    },
+    {
+      "content": "Click Login button",
+      "expected": "User logged in successfully"
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `content` (required) - The step description/instruction
+- `expected` (optional) - The expected result
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to update (required)
+- `--name <title>` - New title for the shared step (optional)
+- `--steps-file <file>` - Path to JSON file with new step definitions (optional)
+  - **Warning**: When provided, ALL existing steps will be replaced
+- `--json-output` - Output updated shared step as raw JSON
+
+**Important Notes:**
+- At least one of `--name` or `--steps-file` must be provided
+- When updating steps with `--steps-file`, the new steps completely replace all existing steps
+- Partial updates are not supported - you must provide the complete set of steps
+
+#### `sharedsteps delete`
+
+Delete an existing shared step. **WARNING: This action cannot be undone!**
+
+**Usage:**
+```shell
+# Using config file (recommended)
+# Delete shared step but keep steps in test cases (default)
+trcli -c config.yml sharedsteps delete --sharedstep-id <id>
+
+# Delete shared step AND remove steps from all test cases
+trcli -c config.yml sharedsteps delete --sharedstep-id <id> --no-keep-in-cases
+
+# With all parameters
+trcli sharedsteps delete --sharedstep-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to delete (required)
+- `--no-keep-in-cases` - Delete steps from test cases as well as the shared step repository
+
+**Important Notes:**
+- **Deletion cannot be undone** - use with caution
+- By default (without any flags), deleting a shared step removes it from the repository but preserves the steps in all test cases that used it
+- Use `--no-keep-in-cases` to also remove the steps from all test cases (complete deletion)
+- Requires permission to delete test cases within the project
 
 #### Labels Management
 
