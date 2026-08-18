@@ -364,6 +364,13 @@ def list(
     help="Path to JSON file containing plan entries. Use this for complex entries with multiple runs/configs. Mutually exclusive with --entries.",
 )
 @click.option(
+    "--dynamic-filters-mode",
+    type=click.Choice(["1", "2"], case_sensitive=False),
+    default="1",
+    metavar="",
+    help="Mode for combining dynamic filter conditions: '1' (AND - match all, default) or '2' (OR - match any). Applies to all runs in the plan if not specified in JSON file. Used when entries contain dynamic_filters.",
+)
+@click.option(
     "--start-on",
     metavar="",
     default=None,
@@ -388,6 +395,7 @@ def add(
     milestone_id: int,
     entries: str,
     entries_file: str,
+    dynamic_filters_mode: str,
     start_on: list,
     due_on: list,
     json_output: bool,
@@ -508,6 +516,19 @@ def add(
     if not final_name:
         environment.elog("Error: Plan name is required (use --name or provide 'name' in JSON)")
         raise SystemExit(1)
+
+    # Validate and process plan entries (handles dynamic filters)
+    if parsed_entries:
+        # Pass CLI mode for dynamic_filters_mode override
+        validated_entries, validation_error = (
+            project_client.api_request_handler.plan_handler.validate_and_process_plan_entries(
+                parsed_entries, cli_mode=dynamic_filters_mode
+            )
+        )
+        if validation_error:
+            environment.elog(f"Error: {validation_error}")
+            raise SystemExit(1)
+        parsed_entries = validated_entries
 
     environment.log(f"Creating plan '{final_name}' in project ID {project_client.project.project_id}...")
 

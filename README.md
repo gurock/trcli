@@ -1951,6 +1951,18 @@ $ trcli -c config.yml plans add \
   --name "Complex Test Plan" \
   --entries-file entries.json
 
+# Create a plan with dynamic filters in entries (inline)
+$ trcli -c config.yml plans add \
+  --name "Automated High Priority Tests" \
+  --entries '[{"suite_id": 1, "name": "Smoke Tests", "runs": [{"dynamic_filters": {"cases:priority_id": {"values": [1,2]}}}]}]'
+
+# Create a plan with dynamic filters from file
+# Dynamic filters are specified in the runs array within entries
+$ trcli -c config.yml plans add \
+  --name "Sprint 5 Test Plan" \
+  --entries-file plan_with_filters.json \
+  --dynamic-filters-mode 2
+
 # Get JSON output for programmatic use
 $ trcli -c config.yml plans add \
   --name "Automated Plan" \
@@ -2052,6 +2064,7 @@ Each entry represents a test run (or group of runs for multi-config scenarios). 
 - `assignedto_id` (optional): User ID to assign the run to
 - `config_ids` (optional): Configuration IDs for multi-config runs
 - `runs` (optional): Array of run configurations (required when using `config_ids`)
+- `dynamic_filters` (optional): Dynamic filter criteria for auto-updating test runs (see Dynamic Filters section for details)
 
 **Important Notes for Multi-Configuration Entries:**
 
@@ -2077,6 +2090,66 @@ Example for cross-browser testing:
 ```
 
 This creates one run that tests cases 100, 101, 102 across Chrome and Firefox configurations.
+
+**Dynamic Filters in Plan Entries:**
+
+You can use dynamic filters in plan entries to create auto-updating test runs. Dynamic filters are specified in the `runs` array and follow the same syntax as the `add_run` command (see [Dynamic Filters for Auto-Updating Test Runs](#dynamic-filters-for-auto-updating-test-runs) for detailed documentation).
+
+Example entry with dynamic filters:
+```json
+{
+  "suite_id": 1,
+  "name": "High Priority Automated Tests",
+  "runs": [
+    {
+      "dynamic_filters": {
+        "mode": "1",
+        "filters": {
+          "cases:priority_id": {"values": [1, 2]},
+          "cases:is_automated": {"value": true}
+        }
+      }
+    }
+  ]
+}
+```
+
+**Using --dynamic-filters-mode flag:**
+
+The `--dynamic-filters-mode` flag controls the filter mode for all runs in the plan (same precedence as `add_run`):
+
+```bash
+# Apply OR mode to all runs without explicit mode in JSON
+trcli plans add \
+  --name "Sprint Plan" \
+  --entries-file plan.json \
+  --dynamic-filters-mode 2
+```
+
+**Mode Precedence:**
+1. **JSON mode** (if explicitly specified in JSON) - Takes highest priority
+2. **CLI mode** (`--dynamic-filters-mode`) - Applied to runs without explicit mode
+3. **Default "1"** (AND) - Used if neither JSON nor CLI specifies mode
+
+**Simplified format auto-wrapping:**
+```json
+{
+  "runs": [
+    {
+      "dynamic_filters": {
+        "cases:priority_id": {"values": [1, 2]}
+      }
+    }
+  ]
+}
+```
+This automatically wraps to include `"mode": "1"` and the `"filters"` wrapper.
+
+**Validation rules:**
+- `dynamic_filters` and `case_ids` are mutually exclusive
+- `dynamic_filters` and `include_all: true` are mutually exclusive
+- Filter criteria must match at least one test case in the suite
+- All field names must use the `"cases:"` prefix
 
 ##### Configuration File Support
 
