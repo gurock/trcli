@@ -90,6 +90,8 @@ trcli_description = (
     "    - templates: Query templates (list)\n"
     "    - tests: Query tests (get and list)\n"
     "    - results: Query and update test results (list, update)\n"
+    "    - variables: Manage test data variables (list, add, update, delete)\n"
+    "    - datasets: Manage test data datasets (list, show, add, update, delete)\n"
 )
 
 trcli_help_description = "TestRail CLI"
