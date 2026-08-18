@@ -2843,6 +2843,67 @@ $ trcli -c config.yml users list --json-output
 - Enterprise-specific fields (SSO, assigned projects) are only available in TestRail Enterprise
 - The `--show-all-fields` option displays additional information including admin status, groups, MFA requirements, and enterprise fields
 
+### Groups Command
+
+The TestRail CLI provides the `groups` command for retrieving group information from TestRail. Groups allow you to organize users and manage permissions collectively. This command supports viewing individual groups with their member lists and listing all available groups.
+
+#### Reference
+
+```shell
+$ trcli groups --help
+
+Usage: trcli groups [OPTIONS] COMMAND [ARGS]...
+  Manage groups in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  list  List all groups from TestRail
+  show  Get a specific group from TestRail
+```
+
+#### Viewing a Specific Group
+
+The `show` subcommand retrieves detailed information about a single group, including its name and list of member user IDs.
+
+```shell
+# Get a specific group by ID
+$ trcli -c config.yml groups show --group-id 1
+
+# JSON output
+$ trcli -c config.yml groups show --group-id 3 --json-output
+
+# Without config file (inline credentials)
+$ trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  groups show --group-id 5
+```
+
+#### Listing Groups
+
+The `list` subcommand retrieves all available groups in your TestRail instance with pagination support.
+
+```shell
+# List all groups
+$ trcli -c config.yml groups list
+
+# With pagination
+$ trcli -c config.yml groups list --limit 100 --offset 0
+
+# JSON output
+$ trcli -c config.yml groups list --json-output
+
+# Without config file (inline credentials)
+$ trcli -h https://yourinstance.testrail.io \
+  -u <your_username> \
+  -p <your_password> \
+  --project "Your Project" \
+  groups list
+```
+
 ### Projects Command
 
 The `projects` command provides functionality to query and retrieve project information from TestRail. This command allows you to get details about specific projects or list all projects in your TestRail instance.
