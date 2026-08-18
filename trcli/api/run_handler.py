@@ -60,6 +60,7 @@ class RunHandler:
         include_all: bool = False,
         refs: str = None,
         case_ids: List[int] = None,
+        dynamic_filters: Dict = None,
     ) -> Tuple[int, str]:
         """
         Creates a new test run.
@@ -75,6 +76,7 @@ class RunHandler:
         :param include_all: include all cases
         :param refs: references
         :param case_ids: specific case ids
+        :param dynamic_filters: dynamic filters for auto-updating runs
         :returns: Tuple with run id and error string.
         """
         add_run_data = self.data_provider.add_run(
@@ -86,15 +88,18 @@ class RunHandler:
             assigned_to_id=assigned_to_id,
             include_all=include_all,
             refs=refs,
+            dynamic_filters=dynamic_filters,
         )
 
         # Validate that we have test cases to include in the run
-        # Empty runs are not allowed for parse commands unless include_all is True
+        # Empty runs are not allowed for parse commands unless include_all is True or dynamic_filters is used
         # However, add_run command explicitly allows empty runs for later result uploads
         is_add_run_command = self.environment.cmd == "add_run"
+        has_dynamic_filters = add_run_data.get("dynamic_filters") is not None
         if (
             not is_add_run_command
             and not include_all
+            and not has_dynamic_filters
             and (not add_run_data.get("case_ids") or len(add_run_data["case_ids"]) == 0)
         ):
             error_msg = (

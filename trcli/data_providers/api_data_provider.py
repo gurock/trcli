@@ -92,8 +92,15 @@ class ApiDataProvider:
         assigned_to_id=None,
         include_all=None,
         refs=None,
+        dynamic_filters=None,
     ):
-        """Return body for adding or updating a run."""
+        """Return body for adding or updating a run.
+
+        Case selection precedence (highest to lowest):
+        1. case_ids - Explicit case IDs take highest priority
+        2. dynamic_filters - Dynamic filters if no case_ids specified
+        3. include_all - Include all cases if no case_ids or dynamic_filters
+        """
         if case_ids is None:
             case_ids = [
                 int(case) for section in self.suites_input.testsections for case in section.testcases if int(case) > 0
@@ -106,7 +113,25 @@ class ApiDataProvider:
         ]
         if self.run_description:
             properties.insert(0, f"{self.run_description}\n")
-        body = {"suite_id": self.suites_input.suite_id, "description": "\n".join(properties), "case_ids": case_ids}
+        body = {"suite_id": self.suites_input.suite_id, "description": "\n".join(properties)}
+
+        # Apply case selection precedence logic
+        # Priority 1: dynamic_filters (auto-updating filter criteria)
+        if dynamic_filters:
+            body["dynamic_filters"] = dynamic_filters
+            # When dynamic_filters provided, don't include case_ids or include_all
+        # Priority 2: include_all (include all suite cases)
+        elif include_all is not None:
+            body["include_all"] = include_all
+            # When include_all is set, also include case_ids for compatibility
+            # TestRail ignores case_ids when include_all=True
+            if case_ids:
+                body["case_ids"] = case_ids
+        # Priority 3: case_ids (explicit case selection) - default behavior
+        else:
+            if case_ids:
+                body["case_ids"] = case_ids
+
         if isinstance(start_date, list) and start_date is not None:
             try:
                 dt = datetime(start_date[2], start_date[0], start_date[1], tzinfo=timezone.utc)
@@ -119,8 +144,6 @@ class ApiDataProvider:
                 body["due_on"] = int(dt.timestamp())
             except ValueError:
                 body["due_on"] = None
-        if include_all is not None:
-            body["include_all"] = include_all
         if assigned_to_id is not None:
             body["assignedto_id"] = assigned_to_id
         if refs is not None:
