@@ -4,6 +4,7 @@ Provides methods to retrieve, create, and update sharedsteps.
 """
 
 from typing import List, Tuple, Dict, Optional
+from urllib.parse import urlencode
 
 
 class SharedstepHandler:
@@ -49,29 +50,31 @@ class SharedstepHandler:
             Each shared step dict contains: id, title, project_id, created_by, created_on,
             updated_by, updated_on, custom_steps_separated, case_ids
         """
-        # Build query parameters
-        params = []
+        # Build query parameters dictionary
+        params = {}
         if created_after is not None:
-            params.append(f"created_after={created_after}")
+            params["created_after"] = created_after
         if created_before is not None:
-            params.append(f"created_before={created_before}")
+            params["created_before"] = created_before
         if created_by is not None:
-            params.append(f"created_by={created_by}")
+            params["created_by"] = created_by
         if updated_after is not None:
-            params.append(f"updated_after={updated_after}")
+            params["updated_after"] = updated_after
         if updated_before is not None:
-            params.append(f"updated_before={updated_before}")
+            params["updated_before"] = updated_before
         if refs is not None:
-            params.append(f"refs={refs}")
+            params["refs"] = refs
         if limit is not None:
-            params.append(f"limit={limit}")
+            params["limit"] = limit
         if offset is not None:
-            params.append(f"offset={offset}")
+            params["offset"] = offset
 
-        # Build endpoint URL
+        # Build endpoint URL with properly encoded query string
+        # Note: TestRail base URL already contains '?' (index.php?/api/v2/),
+        # so we use '&' for query parameters, not '?'
         endpoint = f"get_shared_steps/{project_id}"
         if params:
-            endpoint += "?" + "&".join(params)
+            endpoint += "&" + urlencode(params)
 
         response = self.api_client.send_get(endpoint)
 
@@ -160,15 +163,32 @@ class SharedstepHandler:
 
         Returns:
             Tuple of (updated shared step dictionary, error message)
+
+        Note:
+            TestRail API requires custom_steps_separated field in all updates.
+            If only updating title, we fetch the existing steps and include them.
         """
-        payload = {}
+        if title is None and custom_steps_separated is None:
+            return None, "No fields provided for update"
+
+        # If only title is being updated, we need to fetch existing steps
+        # because TestRail API requires custom_steps_separated field
+        if title is not None and custom_steps_separated is None:
+            existing_step, error = self.get_shared_step(shared_step_id)
+            if error:
+                return None, f"Failed to fetch existing shared step: {error}"
+
+            if not existing_step:
+                return None, "Shared step not found"
+
+            # Use existing steps in the update
+            custom_steps_separated = existing_step.get("custom_steps_separated", [])
+
+        # Build payload with required fields
+        payload = {"custom_steps_separated": custom_steps_separated}
+
         if title is not None:
             payload["title"] = title
-        if custom_steps_separated is not None:
-            payload["custom_steps_separated"] = custom_steps_separated
-
-        if not payload:
-            return None, "No fields provided for update"
 
         response = self.api_client.send_post(f"update_shared_step/{shared_step_id}", payload)
 

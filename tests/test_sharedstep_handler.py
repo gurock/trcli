@@ -79,10 +79,11 @@ class TestSharedstepHandler:
 
         assert error == ""
         assert sharedsteps == []
-        # Verify query parameters are included
+        # Verify query parameters are included (URL-encoded with & separator)
         call_args = self.api_client.send_get.call_args[0][0]
-        assert "get_shared_steps/1" in call_args
-        assert "created_by=1,2" in call_args
+        assert "get_shared_steps/1&" in call_args or "get_shared_steps/1?" in call_args
+        # Check for URL-encoded comma
+        assert "created_by=1%2C2" in call_args
         assert "refs=TR-123" in call_args
         assert "limit=50" in call_args
         assert "offset=10" in call_args
@@ -264,9 +265,25 @@ class TestSharedstepHandler:
 
     def test_update_sharedstep_title_only(self):
         """Test updating only the title of a sharedstep."""
-        mock_response = MagicMock()
-        mock_response.error_message = ""
-        mock_response.response_text = {
+        # Mock get_shared_step to return existing step
+        mock_get_response = MagicMock()
+        mock_get_response.error_message = ""
+        mock_get_response.response_text = {
+            "id": 1,
+            "title": "Old Title",
+            "project_id": 2,
+            "created_by": 1,
+            "created_on": 1612555977,
+            "updated_by": 1,
+            "updated_on": 1612555977,
+            "custom_steps_separated": [{"content": "Old step"}],
+            "case_ids": [],
+        }
+
+        # Mock send_post to return updated step
+        mock_post_response = MagicMock()
+        mock_post_response.error_message = ""
+        mock_post_response.response_text = {
             "id": 1,
             "title": "Updated Title",
             "project_id": 2,
@@ -277,7 +294,10 @@ class TestSharedstepHandler:
             "custom_steps_separated": [{"content": "Old step"}],
             "case_ids": [],
         }
-        self.api_client.send_post.return_value = mock_response
+
+        # Configure mock to return different responses for get vs post
+        self.api_client.send_get.return_value = mock_get_response
+        self.api_client.send_post.return_value = mock_post_response
 
         sharedstep, error = self.handler.update_shared_step(shared_step_id=1, title="Updated Title")
 
@@ -285,11 +305,15 @@ class TestSharedstepHandler:
         assert sharedstep is not None
         assert sharedstep["title"] == "Updated Title"
 
-        # Verify only title was sent
+        # Verify get was called to fetch existing steps
+        self.api_client.send_get.assert_called_once_with("get_shared_step/1")
+
+        # Verify post includes both title AND existing steps
         call_args = self.api_client.send_post.call_args
         assert call_args[0][0] == "update_shared_step/1"
         payload = call_args[0][1]
-        assert payload == {"title": "Updated Title"}
+        assert payload["title"] == "Updated Title"
+        assert payload["custom_steps_separated"] == [{"content": "Old step"}]
 
     def test_update_sharedstep_steps_only(self):
         """Test updating only the steps of a sharedstep."""
@@ -355,21 +379,35 @@ class TestSharedstepHandler:
 
     def test_update_sharedstep_api_error(self):
         """Test handling of API errors when updating a sharedstep."""
-        mock_response = MagicMock()
-        mock_response.error_message = "Invalid or unknown test"
-        self.api_client.send_post.return_value = mock_response
+        # Mock get_shared_step to return error (shared step not found)
+        mock_get_response = MagicMock()
+        mock_get_response.error_message = "Invalid or unknown test"
+        self.api_client.send_get.return_value = mock_get_response
 
         sharedstep, error = self.handler.update_shared_step(shared_step_id=999, title="Test")
 
-        assert error == "Invalid or unknown test"
+        assert "Failed to fetch existing shared step" in error
+        assert "Invalid or unknown test" in error
         assert sharedstep is None
 
     def test_update_sharedstep_invalid_response(self):
         """Test handling of invalid response format when updating."""
-        mock_response = MagicMock()
-        mock_response.error_message = ""
-        mock_response.response_text = ["invalid"]
-        self.api_client.send_post.return_value = mock_response
+        # Mock get_shared_step to return valid existing step
+        mock_get_response = MagicMock()
+        mock_get_response.error_message = ""
+        mock_get_response.response_text = {
+            "id": 1,
+            "title": "Old Title",
+            "custom_steps_separated": [{"content": "Old step"}],
+        }
+
+        # Mock send_post to return invalid response
+        mock_post_response = MagicMock()
+        mock_post_response.error_message = ""
+        mock_post_response.response_text = ["invalid"]
+
+        self.api_client.send_get.return_value = mock_get_response
+        self.api_client.send_post.return_value = mock_post_response
 
         sharedstep, error = self.handler.update_shared_step(shared_step_id=1, title="Test")
 

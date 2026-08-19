@@ -9,6 +9,35 @@ from trcli.cli import pass_environment, CONTEXT_SETTINGS, Environment
 from trcli.data_classes.dataclass_testrail import TestRailSuite
 
 
+def strip_html_tags(value: str) -> str:
+    """
+    Strip Froala HTML paragraph tags from text values.
+    TestRail uses Froala editor which wraps content in <p></p> tags.
+
+    Args:
+        value: Text value from TestRail
+
+    Returns:
+        Value with leading <p> and trailing </p> tags removed
+    """
+    if not value:
+        return value
+
+    # Strip whitespace first
+    value = value.strip()
+
+    # Remove leading <p> tag (case-insensitive)
+    if value.lower().startswith("<p>"):
+        value = value[3:]
+
+    # Remove trailing </p> tag (case-insensitive)
+    if value.lower().endswith("</p>"):
+        value = value[:-4]
+
+    # Strip any remaining whitespace after tag removal
+    return value.strip()
+
+
 def print_config(env: Environment, action: str):
     env.log(f"Shared Steps {action} Execution Parameters" f"\n> TestRail instance: {env.host} (user: {env.username})")
 
@@ -40,13 +69,13 @@ def display_sharedstep(env: Environment, sharedstep: dict, show_details: bool = 
             for idx, step in enumerate(steps, 1):
                 env.log(f"    Step {idx}:")
                 if step.get("content"):
-                    env.log(f"      Content: {step.get('content')}")
+                    env.log(f"      Content: {strip_html_tags(step.get('content'))}")
                 if step.get("expected"):
-                    env.log(f"      Expected: {step.get('expected')}")
+                    env.log(f"      Expected: {strip_html_tags(step.get('expected'))}")
                 if step.get("additional_info"):
-                    env.log(f"      Additional Info: {step.get('additional_info')}")
+                    env.log(f"      Additional Info: {strip_html_tags(step.get('additional_info'))}")
                 if step.get("refs"):
-                    env.log(f"      References: {step.get('refs')}")
+                    env.log(f"      References: {strip_html_tags(step.get('refs'))}")
         else:
             env.log("  Steps: None")
 
