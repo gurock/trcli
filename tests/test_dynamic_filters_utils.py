@@ -28,8 +28,12 @@ class TestLoadDynamicFiltersFromFile:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"
@@ -41,8 +45,12 @@ class TestLoadDynamicFiltersFromFile:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"cases:priority_id": {"values": [1, 2]}}, f)
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"
@@ -54,8 +62,12 @@ class TestLoadDynamicFiltersFromFile:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             f.write("{invalid json}")
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert "Invalid JSON" in error
         assert filters == {}
@@ -71,8 +83,12 @@ class TestLoadDynamicFiltersFromFile:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"mode": "1", "filters": {}}, f)
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert "'filters' object cannot be empty" in error
         assert filters == {}
@@ -325,8 +341,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "2"
@@ -337,8 +357,12 @@ class TestModePrecedence:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"cases:priority_id": {"values": [1, 2]}}, f)
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"  # Default mode added by validation
@@ -352,8 +376,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"  # Default mode added by validation
@@ -367,8 +395,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"
@@ -382,8 +414,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "2"
@@ -394,8 +430,12 @@ class TestModePrecedence:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
             json.dump({"cases:priority_id": {"values": [1, 2]}}, f)
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         # Initially has default mode "1"
@@ -419,8 +459,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"
@@ -449,8 +493,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "2"
@@ -472,8 +520,12 @@ class TestModePrecedence:
                 f,
             )
             f.flush()
-            filters, error = load_dynamic_filters_from_file(f.name)
-            os.unlink(f.name)
+            temp_path = f.name
+
+        try:
+            filters, error = load_dynamic_filters_from_file(temp_path)
+        finally:
+            os.unlink(temp_path)
 
         assert error == ""
         assert filters["mode"] == "1"  # Default
