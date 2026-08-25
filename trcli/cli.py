@@ -310,6 +310,68 @@ pass_environment = click.make_pass_decorator(Environment, ensure=True)
 
 
 class TRCLI(click.MultiCommand):
+    # Command groups definition matching the documentation structure
+    # Only includes commands that currently exist in the codebase
+    COMMAND_GROUPS = [
+        (
+            "Test Result Upload Commands",
+            [
+                "parse_junit",
+                "parse_robot",
+                "parse_cucumber",
+            ],
+        ),
+        (
+            "BDD/Gherkin Commands",
+            [
+                "import_gherkin",
+                "export_gherkin",
+            ],
+        ),
+        (
+            "Test Asset Management Commands",
+            [
+                "add_run",
+                "results",
+                "cases",
+                "suites",
+                "sections",
+                "plans",
+                "runs",
+                "tests",
+                "milestones",
+                "labels",
+                "references",
+            ],
+        ),
+        (
+            "Test Case Generation Commands",
+            [
+                "parse_openapi",
+            ],
+        ),
+        (
+            "Configuration & Lookup Commands",
+            [
+                "configurations",
+                "statuses",
+                "casefields",
+                "resultfields",
+                "priorities",
+                "casetypes",
+                "templates",
+                "users",
+                "projects",
+            ],
+        ),
+        (
+            "Utility Commands",
+            [
+                "update",
+            ],
+        ),
+    ]
+
     def __init__(self, *args, **kwargs):
         # Use invoke_without_command=True to be able to print
         # short tool description when starting without parameters
@@ -326,12 +388,65 @@ class TRCLI(click.MultiCommand):
         click.MultiCommand.__init__(self, invoke_without_command=True, *args, **kwargs)
 
     def list_commands(self, context: click.Context):
+        """Returns all available commands in alphabetical order (for backward compatibility)."""
         commands = []
         for filename in cmd_folder.iterdir():
             if filename.name.endswith(".py") and filename.name.startswith("cmd_"):
                 commands.append(filename.name[4:-3])
         commands.sort()
         return commands
+
+    def format_commands(self, context: click.Context, formatter: click.formatting.HelpFormatter):
+        """Override to provide custom grouped command formatting in help output."""
+        # Get all available commands
+        all_commands = self.list_commands(context)
+
+        # Build a set for quick lookup
+        all_commands_set = set(all_commands)
+
+        # Track which commands we've displayed
+        displayed_commands = set()
+
+        # Use the Commands section
+        with formatter.section("Commands"):
+            formatter.write_paragraph()  # Add blank line
+
+            # Format commands by group
+            for group_name, group_commands in self.COMMAND_GROUPS:
+                # Write group header directly (not as part of definition list)
+                formatter.write_text(f"\n  {group_name}:")
+
+                # Build rows for this group's commands
+                rows = []
+                for cmd_name in group_commands:
+                    if cmd_name in all_commands_set:
+                        cmd = self.get_command(context, cmd_name)
+                        if cmd is not None:
+                            help_text = cmd.get_short_help_str(limit=80)
+                            # Indent command names to show they're part of a group
+                            rows.append((f"    {cmd_name}", help_text))
+                            displayed_commands.add(cmd_name)
+
+                # Write this group's commands
+                if rows:
+                    formatter.write_dl(rows)
+                    # Add blank line after each group
+                    formatter.write_paragraph()
+
+            # Add any commands that weren't in our predefined groups (for safety)
+            undisplayed = all_commands_set - displayed_commands
+            if undisplayed:
+                formatter.write_text(f"\n  Other Commands:")
+                rows = []
+                for cmd_name in sorted(undisplayed):
+                    cmd = self.get_command(context, cmd_name)
+                    if cmd is not None:
+                        help_text = cmd.get_short_help_str(limit=80)
+                        rows.append((f"    {cmd_name}", help_text))
+                if rows:
+                    formatter.write_dl(rows)
+                    # Add blank line after section
+                    formatter.write_paragraph()
 
     def get_command(self, context: click.Context, name: str):
         try:
