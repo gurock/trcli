@@ -110,8 +110,9 @@ class PlanHandler:
 
         if entries:
             for entry in entries:
-                has_dynamic_filters = False
-                if "runs" in entry:
+                # Flat format: dynamic_filters directly on the entry (no "runs" array)
+                has_dynamic_filters = "dynamic_filters" in entry
+                if not has_dynamic_filters and "runs" in entry:
                     for run in entry["runs"]:
                         if "dynamic_filters" in run:
                             has_dynamic_filters = True
