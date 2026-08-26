@@ -308,6 +308,7 @@ class ProjectBasedClient:
                 include_all=include_all,
                 case_ids=case_ids,
                 description=description,
+                dynamic_filters=dynamic_filters_data,
             )
         if self.environment.auto_close_run:
             self.environment.log("Closing run. ", new_line=False)

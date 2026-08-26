@@ -144,6 +144,7 @@ class RunHandler:
         include_all: Union[bool, type(...)] = ...,
         case_ids: Union[List[int], type(...)] = ...,
         description: Union[str, None, type(...)] = ...,
+        dynamic_filters: Union[Dict, None] = None,
     ) -> Tuple[dict, str]:
         """
         Updates an existing run
@@ -159,6 +160,8 @@ class RunHandler:
         :param include_all: include all cases (bool) or ... to leave unchanged
         :param case_ids: specific case IDs (List[int]), [] to clear, or ... to leave unchanged
         :param description: description text (str), None to clear, or ... to leave unchanged
+        :param dynamic_filters: dynamic filter criteria for auto-updating runs. When provided,
+            takes priority over include_all/case_ids (mutually exclusive on TestRail's side).
         :returns: Tuple with run and error string.
         """
         run_response = self.client.send_get(f"get_run/{run_id}")
@@ -222,36 +225,43 @@ class RunHandler:
             add_run_data["assignedto_id"] = assigned_to_id  # Can be None (clears) or int (sets)
         # else: Don't include assignedto_id in payload (no change to existing assignee)
 
-        # Handle include_all - only change if explicitly provided
-        if include_all is not ...:
-            add_run_data["include_all"] = include_all
-        else:
-            # Preserve existing value
-            existing_include_all = run_response.response_text.get("include_all", False)
-            add_run_data["include_all"] = existing_include_all
-
-        # Handle case_ids based on include_all state
-        if add_run_data["include_all"]:
-            # include_all=True: Remove case_ids (TestRail includes all suite cases automatically)
+        if dynamic_filters:
+            # dynamic_filters take priority: mutually exclusive with include_all/case_ids
+            # on TestRail's side, so both are cleared from the payload.
+            add_run_data["dynamic_filters"] = dynamic_filters
+            add_run_data["include_all"] = False
             add_run_data.pop("case_ids", None)
         else:
-            # include_all=False: Handle case_ids
-            if case_ids is not ...:
-                # User explicitly provided case_ids - use them
-                add_run_data["case_ids"] = case_ids
+            # Handle include_all - only change if explicitly provided
+            if include_all is not ...:
+                add_run_data["include_all"] = include_all
             else:
-                # Preserve existing case_ids
-                run_tests, error_message = self.__get_all_tests_in_run(run_id)
-                if error_message:
-                    return None, f"Failed to get tests in run: {error_message}"
-                run_case_ids = [test["case_id"] for test in run_tests]
-                # Merge with any case_ids from data provider (from report files)
-                report_case_ids = add_run_data.get("case_ids", [])
-                if report_case_ids:
-                    joint_case_ids = list(set(report_case_ids + run_case_ids))
-                    add_run_data["case_ids"] = joint_case_ids
+                # Preserve existing value
+                existing_include_all = run_response.response_text.get("include_all", False)
+                add_run_data["include_all"] = existing_include_all
+
+            # Handle case_ids based on include_all state
+            if add_run_data["include_all"]:
+                # include_all=True: Remove case_ids (TestRail includes all suite cases automatically)
+                add_run_data.pop("case_ids", None)
+            else:
+                # include_all=False: Handle case_ids
+                if case_ids is not ...:
+                    # User explicitly provided case_ids - use them
+                    add_run_data["case_ids"] = case_ids
                 else:
-                    add_run_data["case_ids"] = run_case_ids
+                    # Preserve existing case_ids
+                    run_tests, error_message = self.__get_all_tests_in_run(run_id)
+                    if error_message:
+                        return None, f"Failed to get tests in run: {error_message}"
+                    run_case_ids = [test["case_id"] for test in run_tests]
+                    # Merge with any case_ids from data provider (from report files)
+                    report_case_ids = add_run_data.get("case_ids", [])
+                    if report_case_ids:
+                        joint_case_ids = list(set(report_case_ids + run_case_ids))
+                        add_run_data["case_ids"] = joint_case_ids
+                    else:
+                        add_run_data["case_ids"] = run_case_ids
 
         plan_id = run_response.response_text["plan_id"]
         config_ids = run_response.response_text["config_ids"]
