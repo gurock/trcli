@@ -104,10 +104,17 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             multisuite_uploader = MultisuiteUploader(environment=environment, suite=parsed_suites[0])
             multisuite_uploader.upload_results()
 
-            # Use plan_id for reference handling - add to run_ids for unified handling
+            # Use the actual per-suite run IDs (not the plan ID) for reference handling
+            # and closing - both append_run_references and close_run operate on individual
+            # runs, not plans. multisuite_uploader.last_run_ids maps {suite_id: run_id}.
             plan_id = multisuite_uploader.last_plan_id
-            run_ids = [plan_id]
-            run_id = plan_id
+            run_ids = list(multisuite_uploader.last_run_ids.values())
+            run_id = run_ids[0] if run_ids else None
+
+            if environment.test_run_ref and not run_ids:
+                environment.elog(
+                    f"Warning: No run IDs found for plan {plan_id}; skipping reference/close-run handling."
+                )
         else:
             # Normal mode: process each suite separately
             # Defer close_run if test_run_ref is provided to attach references first
