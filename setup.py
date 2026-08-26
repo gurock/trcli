@@ -5,6 +5,9 @@ setup(
     name="trcli",
     long_description="The TR CLI (trcli) is a command line tool for interacting with TestRail and uploading test automation results.",
     version=__version__,
+    setup_requires=[
+        "setuptools>=83.0.0",  # Updated to address PYSEC-2026-3447 (Unicode normalization bypass on macOS)
+    ],
     packages=[
         "trcli",
         "trcli.commands",
