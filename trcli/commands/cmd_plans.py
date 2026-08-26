@@ -517,6 +517,17 @@ def add(
         environment.elog("Error: Plan name is required (use --name or provide 'name' in JSON)")
         raise SystemExit(1)
 
+    # Validate entries shape before any further processing to avoid raw tracebacks
+    # on malformed input (e.g. a JSON array of non-object values).
+    if parsed_entries is not None and not isinstance(parsed_entries, builtins.list):
+        environment.elog("Error: 'entries' must be a JSON array of entry objects.")
+        raise SystemExit(1)
+    if parsed_entries and not all(isinstance(entry, dict) for entry in parsed_entries):
+        environment.elog(
+            "Error: Each item in 'entries' must be a JSON object (e.g. {\"suite_id\": 1, ...}), not a plain value."
+        )
+        raise SystemExit(1)
+
     # Validate and process plan entries (handles dynamic filters)
     if parsed_entries:
         # Pass CLI mode for dynamic_filters_mode override
