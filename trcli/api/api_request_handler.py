@@ -27,6 +27,10 @@ from trcli.api.user_handler import UserHandler
 from trcli.api.project_handler import ProjectHandler
 from trcli.api.template_handler import TemplateHandler
 from trcli.api.test_handler import TestHandler
+from trcli.api.variables_handler import VariablesHandler
+from trcli.api.datasets_handler import DatasetsHandler
+from trcli.api.dynamic_filter_handler import DynamicFilterHandler
+from trcli.api.groups_handler import GroupsHandler
 from trcli.cli import Environment
 from trcli.constants import (
     ProjectErrors,
@@ -108,6 +112,10 @@ class ApiRequestHandler:
         self.project_handler = ProjectHandler(api_client)
         self.template_handler = TemplateHandler(api_client)
         self.test_handler = TestHandler(api_client)
+        self.variables_handler = VariablesHandler(api_client, environment)
+        self.datasets_handler = DatasetsHandler(api_client, environment)
+        self.dynamic_filter_handler = DynamicFilterHandler(api_client, environment)
+        self.groups_handler = GroupsHandler(api_client, environment)
 
         # BDD case cache for feature name matching (shared by CucumberParser and JunitParser)
         # Structure: {"{project_id}_{suite_id}": {normalized_name: [case_dict, case_dict, ...]}}
@@ -256,6 +264,7 @@ class ApiRequestHandler:
         include_all: bool = False,
         refs: str = None,
         case_ids: List[int] = None,
+        dynamic_filters: Dict = None,
     ) -> Tuple[int, str]:
         return self.run_handler.add_run(
             project_id,
@@ -269,6 +278,7 @@ class ApiRequestHandler:
             include_all,
             refs,
             case_ids,
+            dynamic_filters,
         )
 
     def update_run(
@@ -284,6 +294,7 @@ class ApiRequestHandler:
         include_all: Union[bool, type(...)] = ...,
         case_ids: Union[List[int], type(...)] = ...,
         description: Union[str, None, type(...)] = ...,
+        dynamic_filters: Union[Dict, None] = None,
     ) -> Tuple[dict, str]:
         return self.run_handler.update_run(
             run_id,
@@ -297,6 +308,7 @@ class ApiRequestHandler:
             include_all,
             case_ids,
             description,
+            dynamic_filters,
         )
 
     def _manage_references(self, existing_refs: str, new_refs: str, action: str) -> str:
@@ -596,6 +608,12 @@ class ApiRequestHandler:
             if isinstance(response.response_text, str):
                 error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
                 return [], error_msg
+            # Check if response is an empty dict or missing expected key (e.g., service unavailable)
+            if not isinstance(response.response_text, dict) or entity not in response.response_text:
+                error_msg = FAULT_MAPPING["invalid_api_response"].format(
+                    error_details=f"Expected '{entity}' key in response but got: {str(response.response_text)[:200]}"
+                )
+                return [], error_msg
             # Endpoints with pagination
             entities = entities + response.response_text[entity]
             if response.response_text["_links"]["next"] is not None:
@@ -633,6 +651,13 @@ class ApiRequestHandler:
 
         if isinstance(response.response_text, str):
             error_msg = FAULT_MAPPING["invalid_api_response"].format(error_details=response.response_text[:200])
+            return [], error_msg
+
+        # Check if response is an empty dict or missing expected key (e.g., service unavailable)
+        if not isinstance(response.response_text, dict) or entity not in response.response_text:
+            error_msg = FAULT_MAPPING["invalid_api_response"].format(
+                error_details=f"Expected '{entity}' key in response but got: {str(response.response_text)[:200]}"
+            )
             return [], error_msg
 
         # Collect first page results
