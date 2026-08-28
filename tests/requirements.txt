@@ -8,6 +8,7 @@ requests-mock
 click==8.2.1
 pyyaml
 junitparser
+robotframework
 pyserde==0.12.*
 requests
 tqdm
