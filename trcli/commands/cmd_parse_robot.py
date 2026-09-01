@@ -1,6 +1,7 @@
 from xml.etree.ElementTree import ParseError
 
 import click
+from robot.errors import DataError
 
 from trcli import settings
 from trcli.api.results_uploader import ResultsUploader
@@ -46,7 +47,11 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
     except FileNotFoundError as e:
         environment.elog(str(e))
         exit(1)
-    except ParseError:
+    except (ParseError, DataError):
+        # ParseError: raw XML is not well-formed (xml.etree.ElementTree).
+        # DataError: XML is well-formed but robot.api.ExecutionResult rejects its
+        # content as invalid Robot Framework result data (e.g. malformed timestamps
+        # or other schema violations) - surfaced by the ExecutionResult-based parser.
         environment.elog(FAULT_MAPPING["invalid_file"])
         exit(1)
     except ValidationException as exception:
