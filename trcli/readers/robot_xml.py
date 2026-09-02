@@ -1,8 +1,9 @@
-from datetime import datetime, timedelta
 from beartype.typing import List, Union
 from pathlib import Path
 from xml.etree import ElementTree
 import glob
+
+from robot.api import ExecutionResult
 
 from trcli.backports import removeprefix
 from trcli.cli import Environment
@@ -20,6 +21,11 @@ from trcli.data_classes.dataclass_testrail import (
     TestRailSeparatedStep,
 )
 from trcli.readers.file_parser import FileParser
+
+# robot.result item ``type`` value for keyword body items, as opposed to Message,
+# For, If, While, Try, Group, Var, etc. Used to replicate the historic
+# xml.etree-based behavior of only capturing direct <kw> children.
+_KEYWORD_ITEM_TYPE = "KEYWORD"
 
 
 class RobotParser(FileParser):
@@ -81,12 +87,25 @@ class RobotParser(FileParser):
 
     def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing Robot Framework report.")
-        tree = ElementTree.parse(self.filepath)
-        root = tree.getroot()
         sections_list = []
+        # Enumerate top-level <suite> elements the same way as before (this correctly
+        # handles both a single genuine RF output.xml - which always has exactly one
+        # top-level <suite> - and the synthetic "<robot><suite/><suite/>...</robot>"
+        # produced by check_file() when merging multiple glob-matched files).
+        root = ElementTree.parse(self.filepath).getroot()
         suite_elements = root.findall("suite")
-        for suite_element in suite_elements:
-            self._find_suites(suite_element, sections_list)
+        if len(suite_elements) == 1:
+            # Common case (a genuine, non-merged RF output.xml)
+            result_suite = ExecutionResult(self.filepath).suite
+            self._find_suites(result_suite, sections_list)
+        else:
+            # Merged-glob case (multiple sibling top-level <suite> elements)
+            for suite_element in suite_elements:
+                wrapper = ElementTree.Element("robot", generator="trcli-isolated-suite")
+                wrapper.append(suite_element)
+                suite_xml = ElementTree.tostring(wrapper, encoding="utf-8")
+                result_suite = ExecutionResult(suite_xml).suite
+                self._find_suites(result_suite, sections_list)
         cases_count = sum(len(section.testcases) for section in sections_list)
         self.env.log(f"Processed {cases_count} test cases in {len(sections_list)} sections.")
         testrail_suites = [
@@ -99,10 +118,10 @@ class RobotParser(FileParser):
 
         return testrail_suites
 
-    def _find_suites(self, suite_element, sections_list: List, namespace=""):
-        name = suite_element.get("name")
+    def _find_suites(self, suite, sections_list: List, namespace=""):
+        name = suite.name
         namespace += f".{name}" if namespace else name
-        tests = suite_element.findall("test")
+        tests = suite.tests
         if tests:
             # Check if section with this namespace already exists (for merged files with duplicate suites)
             section = next((s for s in sections_list if s.name == namespace), None)
@@ -114,17 +133,17 @@ class RobotParser(FileParser):
 
             for test in tests:
                 case_id = None
-                case_name = test.get("name")
+                case_name = test.name
                 attachments = []
                 result_fields = []
                 case_fields = []
                 comments = []
                 quality_rating = None
-                documentation = test.find("doc")
+                documentation = test.doc
                 if self.case_matcher == MatchersParser.NAME:
                     case_id, case_name = MatchersParser.parse_name_with_id(case_name)
-                if documentation is not None:
-                    lines = [line.strip() for line in documentation.text.splitlines()]
+                if documentation:
+                    lines = [line.strip() for line in documentation.splitlines()]
                     for line in lines:
                         if (
                             line.lower().startswith("- testrail_case_id:")
@@ -148,26 +167,21 @@ class RobotParser(FileParser):
                             comments.append(self._remove_tr_prefix(line, "- testrail_result_comment:"))
                         if line.lower().startswith("- testrail_case_field"):
                             case_fields.append(self._remove_tr_prefix(line, "- testrail_case_field:"))
-                status = test.find("status")
-                status_id = self._case_result_statuses[status.get("status").lower()]
 
-                elapsed_time = None
-                # if status contains "elapsed" then obtain it, otherwise calculate it from starttime and endtime
-                if "elapsed" in status.attrib:
-                    elapsed_time = self._parse_rf70_elapsed_time(status.get("elapsed"))
+                status_id = self._case_result_statuses[test.status.lower()]
+                # Prefer elapsed_time (timedelta, microsecond precision) when available;
+                # it was only added to the result model in RF 7.x. Fall back to elapsedtime
+                # (int milliseconds - available across the full supported range, RF 6.0+)
+                # for older versions.
+                if hasattr(test, "elapsed_time"):
+                    elapsed_time_seconds = test.elapsed_time.total_seconds()
                 else:
-                    elapsed_time = self._parse_rf50_time(status.get("endtime")) - self._parse_rf50_time(
-                        status.get("starttime")
-                    )
-
-                error_msg = status.text
-                keywords = test.findall("kw")
-                step_keywords = []
-                for kw in keywords:
-                    kw_result = kw.find("status").get("status")
-                    step = TestRailSeparatedStep(kw.get("name"))
-                    step.status_id = self._case_result_statuses[kw_result.lower()]
-                    step_keywords.append(step)
+                    elapsed_time_seconds = test.elapsedtime / 1000.0
+                # test.message is "" (not None) when a test has no message/failure text;
+                # normalize back to None so it is skipped from the result payload exactly
+                # like the historic (possibly-absent) <status> element text used to be.
+                error_msg = test.message if test.message else None
+                step_keywords = self._extract_top_level_steps(test)
 
                 result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
                 if error:
@@ -179,7 +193,7 @@ class RobotParser(FileParser):
                     raise Exception(error)
                 result = TestRailResult(
                     case_id,
-                    elapsed=f"{elapsed_time.total_seconds()}",
+                    elapsed=f"{elapsed_time_seconds}",
                     status_id=status_id,
                     comment=error_msg,
                     attachments=attachments,
@@ -204,23 +218,38 @@ class RobotParser(FileParser):
                 )
                 section.testcases.append(tr_test)
 
-        for sub_suite_element in suite_element.findall("suite"):
-            self._find_suites(sub_suite_element, sections_list, namespace=namespace)
+        for sub_suite in suite.suites:
+            self._find_suites(sub_suite, sections_list, namespace=namespace)
 
-    @staticmethod
-    def _parse_rf50_time(time_str: str) -> datetime:
-        # "20230712 22:32:12.951"
-        return datetime.strptime(time_str, "%Y%m%d %H:%M:%S.%f")
+    def _extract_top_level_steps(self, test) -> List[TestRailSeparatedStep]:
+        """Build the flat, top-level-only keyword step list for a test.
 
-    @staticmethod
-    def _parse_rf70_time(time_str: str) -> datetime:
-        # "2023-07-12T22:32:12.951000"
-        return datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%f")
+        Replicates the historic xml.etree-based behavior (``test.findall("kw")``),
+        which picked up direct <kw> children of <test> in document order: the
+        [Setup] keyword (if any), each top-level keyword called from the test body
+        (nested/child keywords are NOT recursed into), and the [Teardown] keyword
+        (if any) - in that exact execution order. Messages and control-flow blocks
+        (FOR/IF/WHILE/TRY/GROUP) at the top level are intentionally skipped, exactly
+        as they were before (only <kw> tags were matched).
+        """
+        top_level_keywords = []
+        if test.has_setup:
+            top_level_keywords.append(test.setup)
+        top_level_keywords.extend(item for item in test.body if getattr(item, "type", None) == _KEYWORD_ITEM_TYPE)
+        if test.has_teardown:
+            top_level_keywords.append(test.teardown)
 
-    @staticmethod
-    def _parse_rf70_elapsed_time(timedelta_str: str) -> timedelta:
-        # "0.001000"
-        return timedelta(seconds=float(timedelta_str))
+        step_keywords = []
+        for kw in top_level_keywords:
+            # Use kwname (the unqualified keyword name), not name: under RF 6.0.x,
+            # Keyword.name is fully qualified as "LibraryName.Keyword Name", while
+            # under RF 7.x it already returns the unqualified name. kwname returns
+            # the unqualified name consistently across both, matching the historic
+            # xml.etree-based behavior (which read the plain <kw name="..."> attribute).
+            step = TestRailSeparatedStep(kw.kwname)
+            step.status_id = self._case_result_statuses[kw.status.lower()]
+            step_keywords.append(step)
+        return step_keywords
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:
