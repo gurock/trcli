@@ -22,10 +22,16 @@ from trcli.data_classes.dataclass_testrail import (
 )
 from trcli.readers.file_parser import FileParser
 
-# robot.result item ``type`` value for keyword body items, as opposed to Message,
-# For, If, While, Try, Group, Var, etc. Used to replicate the historic
-# xml.etree-based behavior of only capturing direct <kw> children.
-_KEYWORD_ITEM_TYPE = "KEYWORD"
+# robot.result item ``type`` values that represent an actual keyword call (as opposed
+# to a Message, or a control-flow container like For/If/While/Try/Group/Var/Return/
+# Break/Continue). ``test.setup``/``test.teardown`` are Keyword instances too, just
+# distinguished by their ``type`` being SETUP/TEARDOWN instead of KEYWORD.
+_KEYWORD_LIKE_TYPES = {"KEYWORD", "SETUP", "TEARDOWN"}
+
+# Message levels that get surfaced in a step's "actual" (runtime output) field.
+# FAIL/SKIP are intentionally excluded here: those pseudo-messages duplicate
+# information already conveyed by the keyword's own status_id/failure handling.
+_LOGGED_MESSAGE_LEVELS = {"INFO", "WARN", "ERROR"}
 
 
 class RobotParser(FileParser):
@@ -181,7 +187,17 @@ class RobotParser(FileParser):
                 # normalize back to None so it is skipped from the result payload exactly
                 # like the historic (possibly-absent) <status> element text used to be.
                 error_msg = test.message if test.message else None
-                step_keywords = self._extract_top_level_steps(test)
+                # Build the ordered top-level item list exactly as Robot Framework
+                # executed it: [Setup] (if any), each top-level test-body item, then
+                # [Teardown] (if any). _extract_steps() recurses fully from here,
+                # including into FOR/IF/WHILE/TRY/GROUP blocks nested anywhere below.
+                top_level_items = []
+                if test.has_setup:
+                    top_level_items.append(test.setup)
+                top_level_items.extend(test.body)
+                if test.has_teardown:
+                    top_level_items.append(test.teardown)
+                step_keywords = self._extract_steps(top_level_items)
 
                 result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
                 if error:
@@ -221,35 +237,57 @@ class RobotParser(FileParser):
         for sub_suite in suite.suites:
             self._find_suites(sub_suite, sections_list, namespace=namespace)
 
-    def _extract_top_level_steps(self, test) -> List[TestRailSeparatedStep]:
-        """Build the flat, top-level-only keyword step list for a test.
+    def _extract_steps(self, body_items, level: int = 0) -> List[TestRailSeparatedStep]:
+        """Recursively extract every keyword call in ``body_items`` as a flat,
+        depth-first list of TestRail steps, in exact Robot Framework execution order.
 
-        Replicates the historic xml.etree-based behavior (``test.findall("kw")``),
-        which picked up direct <kw> children of <test> in document order: the
-        [Setup] keyword (if any), each top-level keyword called from the test body
-        (nested/child keywords are NOT recursed into), and the [Teardown] keyword
-        (if any) - in that exact execution order. Messages and control-flow blocks
-        (FOR/IF/WHILE/TRY/GROUP) at the top level are intentionally skipped, exactly
-        as they were before (only <kw> tags were matched).
+        Each real keyword call (``KEYWORD``/``SETUP``/``TEARDOWN`` type items) becomes
+        its own step, formatted as ``"<2-space-indent><name>(<args>)"`` where the
+        indent depth reflects how many keyword calls it is nested beneath (recursing
+        into ``kw.body`` at ``level + 1``). Control-flow containers - FOR, IF/ELSE,
+        WHILE, TRY/EXCEPT, GROUP, and their iteration/branch sub-items - are NOT
+        themselves rendered as a step (they are not keyword calls), but are walked
+        transparently at the *same* level so that keywords called from inside a loop
+        or conditional branch are still captured, at their true keyword-call depth.
+        Message items have no ``body`` to recurse into and are skipped here; their
+        content is instead surfaced via each keyword's own ``actual`` field below.
+
+        This is a finite, single-pass traversal of Robot's own (already-finite,
+        acyclic) execution-result tree - one recursive call per body item, each
+        strictly narrowing to that item's direct children - so it cannot loop
+        infinitely, and recursion depth is bounded by the real keyword-call nesting
+        depth of the test (Python's default recursion limit comfortably covers any
+        realistic Robot Framework suite).
         """
-        top_level_keywords = []
-        if test.has_setup:
-            top_level_keywords.append(test.setup)
-        top_level_keywords.extend(item for item in test.body if getattr(item, "type", None) == _KEYWORD_ITEM_TYPE)
-        if test.has_teardown:
-            top_level_keywords.append(test.teardown)
+        steps = []
+        for item in body_items:
+            item_type = getattr(item, "type", None)
+            nested_body = getattr(item, "body", None)
+            if item_type in _KEYWORD_LIKE_TYPES:
+                steps.append(self._build_step(item, level))
+                if nested_body:
+                    steps.extend(self._extract_steps(nested_body, level + 1))
+            elif nested_body:
+                # Transparent control-flow container (FOR/IF/WHILE/TRY/GROUP and their
+                # ITERATION/branch sub-items): no step of its own, same nesting level.
+                steps.extend(self._extract_steps(nested_body, level))
+        return steps
 
-        step_keywords = []
-        for kw in top_level_keywords:
-            # Use kwname (the unqualified keyword name), not name: under RF 6.0.x,
-            # Keyword.name is fully qualified as "LibraryName.Keyword Name", while
-            # under RF 7.x it already returns the unqualified name. kwname returns
-            # the unqualified name consistently across both, matching the historic
-            # xml.etree-based behavior (which read the plain <kw name="..."> attribute).
-            step = TestRailSeparatedStep(kw.kwname)
-            step.status_id = self._case_result_statuses[kw.status.lower()]
-            step_keywords.append(step)
-        return step_keywords
+    def _build_step(self, kw, level: int) -> TestRailSeparatedStep:
+        """Build a single TestRailSeparatedStep for one keyword call."""
+        indent = "  " * level
+        # Use kwname (the unqualified keyword name), not name: under RF 6.0.x,
+        # Keyword.name is fully qualified as "LibraryName.Keyword Name", while
+        # under RF 7.x it already returns the unqualified name. kwname returns
+        # the unqualified name consistently across both, matching the historic
+        # xml.etree-based behavior (which read the plain <kw name="..."> attribute).
+        args_str = ", ".join(kw.args)
+        step = TestRailSeparatedStep(f"{indent}{kw.kwname}({args_str})")
+        step.status_id = self._case_result_statuses[kw.status.lower()]
+        messages = [f"{msg.level}: {msg.message}" for msg in kw.messages if msg.level in _LOGGED_MESSAGE_LEVELS]
+        if messages:
+            step.actual = "\n".join(messages)
+        return step
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:
