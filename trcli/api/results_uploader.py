@@ -46,6 +46,7 @@ class ResultsUploader(ProjectBasedClient):
         # Check if all test cases already have case_id set (BDD mode or pre-existing cases)
         # Note: In BDD mode, case_id can be -1 (marker for auto-creation) or a real ID
         suite_data = self.api_request_handler.suites_data_from_provider
+        self._warn_if_steps_may_not_display(suite_data)
         all_cases_have_ids = all(
             test_case.case_id is not None and test_case.case_id != 0
             for section in suite_data.testsections
@@ -455,6 +456,46 @@ class ResultsUploader(ProjectBasedClient):
             else:
                 returned_log.append(RevertMessages.suite_deleted)
         return returned_log
+
+    def _warn_if_steps_may_not_display(self, suite_data) -> None:
+        """
+        Warn the user when step-by-step results (custom_step_results, e.g. from parsed
+        Robot Framework/JUnit keyword data) were extracted but no Steps-capable
+        template_id override was supplied.
+
+        Without an explicit template_id (via --case-fields template_id:<id>), newly
+        auto-created test cases fall back to the project's default template (commonly
+        "Test Case (Text)"). custom_step_results is still uploaded correctly to the
+        result, but it will not be rendered as separate Steps in the TestRail UI unless
+        the case uses a template that surfaces that field.
+
+        This is purely an informational warning - it does not block the upload, since
+        template_id values are project/instance specific and trcli cannot safely guess
+        the correct one.
+        """
+        global_case_fields = getattr(self.environment, "case_fields", None) or {}
+        if "template_id" in global_case_fields:
+            return  # user already forced a template for all cases
+
+        has_unattributed_steps = any(
+            test_case.result
+            and test_case.result.custom_step_results
+            and test_case.template_id is None
+            and "template_id" not in (test_case.case_fields or {})
+            for section in suite_data.testsections
+            for test_case in section.testcases
+        )
+
+        if has_unattributed_steps:
+            self.environment.log(
+                "WARNING: Step-by-step results were extracted from the report, but no "
+                "Steps-capable template_id was specified via --case-fields. Test cases "
+                "created with the project's default template may not display these "
+                "steps in the TestRail UI, even though the step data is uploaded "
+                "correctly. Run 'trcli templates list --project-id <id>' to find the "
+                "correct Steps template ID for this project, then re-run with "
+                "'--case-fields template_id:<id>'."
+            )
 
     def _should_use_ai_evaluation_template(self) -> bool:
         """

@@ -17,6 +17,10 @@ class TestRailSeparatedStep:
 
     content: str
     status_id: int = field(default=None, skip_if_default=True)
+    # Runtime log output captured for this step (e.g. Robot Framework keyword messages
+    # filtered to INFO/WARN/ERROR levels). Optional/omitted from the payload when there
+    # is nothing to report, matching status_id's skip_if_default behavior above.
+    actual: str = field(default=None, skip_if_default=True)
 
     def __init__(self, content: str):
         self.content = content

@@ -1,463 +1,652 @@
 {
-    "name": "robotframework_comprehensive_RF50",
-    "suite_id": null,
-    "description": null,
-    "testsections": [
+  "name": "robotframework_comprehensive_RF50",
+  "suite_id": null,
+  "description": null,
+  "testsections": [
+    {
+      "name": "Comprehensive Suite.Api Tests.Authentication.Login",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [
         {
-            "name": "Comprehensive Suite.Api Tests.Authentication.Login",
-            "suite_id": null,
-            "parent_id": null,
-            "description": null,
-            "section_id": null,
-            "testcases": [
-                {
-                    "title": "Successful Login With Nested Keywords",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Perform Login",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Successful Login With Nested Keywords"
-                },
-                {
-                    "title": "Login Fails Deep In Nested Keyword Chain",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "Deeply nested failure at level 4",
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Perform Risky Operation",
-                                "status_id": 5
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Login Fails Deep In Nested Keyword Chain"
-                },
-                {
-                    "title": "Login Test With All Message Levels",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Log All Message Levels",
-                                "status_id": 1
-                            },
-                            {
-                                "content": "Perform Login",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Login Test With All Message Levels"
-                }
+          "title": "Successful Login With Nested Keywords",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Perform Login(john_doe, correct_password)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Enter Credentials(${username}, ${password})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Type Username(${username})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Typing username: ${username}, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Typing username: john_doe"
+              },
+              {
+                "content": "    Type Password(${password})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Typing password, level=DEBUG)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Submit Login Form()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Log(Submitting login form, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Submitting login form"
+              },
+              {
+                "content": "    Click Login Button()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Login button clicked, level=TRACE)",
+                "status_id": 1,
+                "actual": null
+              }
             ],
-            "properties": []
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Successful Login With Nested Keywords"
         },
         {
-            "name": "Comprehensive Suite.Api Tests.Authentication.Logout",
-            "suite_id": null,
-            "parent_id": null,
-            "description": null,
-            "section_id": null,
-            "testcases": [
-                {
-                    "title": "Successful Logout",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": null,
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Log",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Successful Logout"
-                },
-                {
-                    "title": "Logout Test Is Skipped",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 4,
-                        "comment": "Skipping this test intentionally for coverage of SKIP status mapping",
-                        "version": null,
-                        "elapsed": null,
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Skip",
-                                "status_id": 4
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Logout Test Is Skipped"
-                },
-                {
-                    "title": "Logout With Multiple Argument Styles",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Create User With Args",
-                                "status_id": 1
-                            },
-                            {
-                                "content": "Create User With Args",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Logout With Multiple Argument Styles"
-                }
+          "title": "Login Fails Deep In Nested Keyword Chain",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "Deeply nested failure at level 4",
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Perform Risky Operation()",
+                "status_id": 5,
+                "actual": null
+              },
+              {
+                "content": "  Validate Preconditions()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Log(Validating preconditions, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Validating preconditions"
+              },
+              {
+                "content": "  Execute Operation()",
+                "status_id": 5,
+                "actual": null
+              },
+              {
+                "content": "    Prepare Payload()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Preparing request payload, level=DEBUG)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Send Request And Validate()",
+                "status_id": 5,
+                "actual": null
+              },
+              {
+                "content": "      Log(Sending request, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Sending request"
+              },
+              {
+                "content": "      Fail(Deeply nested failure at level 4)",
+                "status_id": 5,
+                "actual": null
+              }
             ],
-            "properties": []
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Login Fails Deep In Nested Keyword Chain"
         },
         {
-            "name": "Comprehensive Suite.Api Tests.User Management.Create User",
-            "suite_id": null,
-            "parent_id": null,
-            "description": null,
-            "section_id": null,
-            "testcases": [
-                {
-                    "title": "Create User Successfully",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Create User With Args",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User Successfully"
-                },
-                {
-                    "title": "Create User With Failing Setup",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "Setup failed:\nIntentional setup failure for test data coverage",
-                        "version": null,
-                        "elapsed": null,
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Failing Setup Keyword",
-                                "status_id": 5
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User With Failing Setup"
-                },
-                {
-                    "title": "Create User With Failing Teardown",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "Teardown failed:\nIntentional teardown failure for test data coverage",
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Log",
-                                "status_id": 1
-                            },
-                            {
-                                "content": "Failing Teardown Keyword",
-                                "status_id": 5
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User With Failing Teardown"
-                }
+          "title": "Login Test With All Message Levels",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Log All Message Levels()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(trace level message, level=TRACE)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(debug level message, level=DEBUG)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(info level message, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: info level message"
+              },
+              {
+                "content": "  Log(warn level message, level=WARN)",
+                "status_id": 1,
+                "actual": "WARN: warn level message"
+              },
+              {
+                "content": "Perform Login(jane_doe, another_password)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Enter Credentials(${username}, ${password})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Type Username(${username})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Typing username: ${username}, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Typing username: jane_doe"
+              },
+              {
+                "content": "    Type Password(${password})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Typing password, level=DEBUG)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Submit Login Form()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "    Log(Submitting login form, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Submitting login form"
+              },
+              {
+                "content": "    Click Login Button()",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "      Log(Login button clicked, level=TRACE)",
+                "status_id": 1,
+                "actual": null
+              }
             ],
-            "properties": []
-        },
-        {
-            "name": "Comprehensive Suite.Api Tests.User Management.Delete User",
-            "suite_id": null,
-            "parent_id": null,
-            "description": null,
-            "section_id": null,
-            "testcases": [
-                {
-                    "title": "Delete User Successfully",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 1,
-                        "comment": null,
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Log",
-                                "status_id": 1
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Delete User.Delete User Successfully"
-                },
-                {
-                    "title": "Delete Nonexistent User Fails",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "User does not exist, cannot delete",
-                        "version": null,
-                        "elapsed": null,
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [
-                            {
-                                "content": "Fail",
-                                "status_id": 5
-                            }
-                        ],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Delete User.Delete Nonexistent User Fails"
-                }
-            ],
-            "properties": []
-        },
-        {
-            "name": "Comprehensive Suite.Reporting.Generate Report",
-            "suite_id": null,
-            "parent_id": null,
-            "description": null,
-            "section_id": null,
-            "testcases": [
-                {
-                    "title": "Generate Daily Report",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "Parent suite setup failed:\nIntentional suite setup failure for test data coverage",
-                        "version": null,
-                        "elapsed": "1s",
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Reporting.Generate Report.Generate Daily Report"
-                },
-                {
-                    "title": "Generate Weekly Report",
-                    "section_id": null,
-                    "case_id": null,
-                    "estimate": null,
-                    "template_id": null,
-                    "type_id": null,
-                    "milestone_id": null,
-                    "refs": null,
-                    "case_fields": {},
-                    "result": {
-                        "case_id": null,
-                        "status_id": 5,
-                        "comment": "Parent suite setup failed:\nIntentional suite setup failure for test data coverage",
-                        "version": null,
-                        "elapsed": null,
-                        "defects": null,
-                        "assignedto_id": null,
-                        "attachments": [],
-                        "result_fields": {},
-                        "junit_result_unparsed": null,
-                        "custom_step_results": [],
-                        "custom_testrail_bdd_scenario_results": []
-                    },
-                    "custom_automation_id": "Comprehensive Suite.Reporting.Generate Report.Generate Weekly Report"
-                }
-            ],
-            "properties": []
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Login Test With All Message Levels"
         }
-    ],
-    "source": "robotframework_comprehensive_RF50.xml"
+      ],
+      "properties": []
+    },
+    {
+      "name": "Comprehensive Suite.Api Tests.Authentication.Logout",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [
+        {
+          "title": "Successful Logout",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": null,
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Log(Logging out user, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Logging out user"
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Successful Logout"
+        },
+        {
+          "title": "Logout Test Is Skipped",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 4,
+            "comment": "Skipping this test intentionally for coverage of SKIP status mapping",
+            "version": null,
+            "elapsed": null,
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Skip(Skipping this test intentionally for coverage of SKIP status mapping)",
+                "status_id": 4,
+                "actual": null
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Logout Test Is Skipped"
+        },
+        {
+          "title": "Logout With Multiple Argument Styles",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Create User With Args(john_doe, john@example.com, role=admin, active=${TRUE})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(Creating user ${username} with email=${email}, role=${role}, active=${active}, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Creating user john_doe with email=john@example.com, role=admin, active=True"
+              },
+              {
+                "content": "Create User With Args(jane_doe, jane@example.com)",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(Creating user ${username} with email=${email}, role=${role}, active=${active}, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Creating user jane_doe with email=jane@example.com, role=member, active=True"
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Logout With Multiple Argument Styles"
+        }
+      ],
+      "properties": []
+    },
+    {
+      "name": "Comprehensive Suite.Api Tests.User Management.Create User",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [
+        {
+          "title": "Create User Successfully",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Create User With Args(alice, alice@example.com, role=admin, active=${TRUE})",
+                "status_id": 1,
+                "actual": null
+              },
+              {
+                "content": "  Log(Creating user ${username} with email=${email}, role=${role}, active=${active}, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Creating user alice with email=alice@example.com, role=admin, active=True"
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User Successfully"
+        },
+        {
+          "title": "Create User With Failing Setup",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "Setup failed:\nIntentional setup failure for test data coverage",
+            "version": null,
+            "elapsed": null,
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Failing Setup Keyword()",
+                "status_id": 5,
+                "actual": null
+              },
+              {
+                "content": "  Fail(Intentional setup failure for test data coverage)",
+                "status_id": 5,
+                "actual": null
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User With Failing Setup"
+        },
+        {
+          "title": "Create User With Failing Teardown",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "Teardown failed:\nIntentional teardown failure for test data coverage",
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Log(Main test body executes fine, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Main test body executes fine"
+              },
+              {
+                "content": "Failing Teardown Keyword()",
+                "status_id": 5,
+                "actual": null
+              },
+              {
+                "content": "  Fail(Intentional teardown failure for test data coverage)",
+                "status_id": 5,
+                "actual": null
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User With Failing Teardown"
+        }
+      ],
+      "properties": []
+    },
+    {
+      "name": "Comprehensive Suite.Api Tests.User Management.Delete User",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [
+        {
+          "title": "Delete User Successfully",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 1,
+            "comment": null,
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Log(Deleting user account, level=INFO)",
+                "status_id": 1,
+                "actual": "INFO: Deleting user account"
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Delete User.Delete User Successfully"
+        },
+        {
+          "title": "Delete Nonexistent User Fails",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "User does not exist, cannot delete",
+            "version": null,
+            "elapsed": null,
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [
+              {
+                "content": "Fail(User does not exist, cannot delete)",
+                "status_id": 5,
+                "actual": null
+              }
+            ],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Delete User.Delete Nonexistent User Fails"
+        }
+      ],
+      "properties": []
+    },
+    {
+      "name": "Comprehensive Suite.Reporting.Generate Report",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [
+        {
+          "title": "Generate Daily Report",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "Parent suite setup failed:\nIntentional suite setup failure for test data coverage",
+            "version": null,
+            "elapsed": "1s",
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Reporting.Generate Report.Generate Daily Report"
+        },
+        {
+          "title": "Generate Weekly Report",
+          "section_id": null,
+          "case_id": null,
+          "estimate": null,
+          "template_id": null,
+          "type_id": null,
+          "milestone_id": null,
+          "refs": null,
+          "case_fields": {},
+          "result": {
+            "case_id": null,
+            "status_id": 5,
+            "comment": "Parent suite setup failed:\nIntentional suite setup failure for test data coverage",
+            "version": null,
+            "elapsed": null,
+            "defects": null,
+            "assignedto_id": null,
+            "attachments": [],
+            "result_fields": {},
+            "junit_result_unparsed": null,
+            "custom_step_results": [],
+            "custom_testrail_bdd_scenario_results": []
+          },
+          "custom_automation_id": "Comprehensive Suite.Reporting.Generate Report.Generate Weekly Report"
+        }
+      ],
+      "properties": []
+    }
+  ],
+  "source": "robotframework_comprehensive_RF50.xml"
 }

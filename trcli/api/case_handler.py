@@ -96,6 +96,28 @@ class CaseHandler:
         ]
         return returned_resources, error_message
 
+    def normalize_automation_id_field(self, case_dict: dict) -> dict:
+        """
+        Rename/remove the automation ID field in a case dict to match whatever is actually
+        sent to (and therefore returned by) the TestRail API for this project, so that any
+        downstream comparison (e.g. --verify) is checking the right field name.
+
+        TestRail projects may expose the automation ID custom field under either the legacy
+        system name (OLD_SYSTEM_NAME_AUTOMATION_ID) or the newer one
+        (UPDATED_SYSTEM_NAME_AUTOMATION_ID) - see `ApiRequestHandler.check_automation_id_field`.
+        This mirrors the exact renaming logic applied in `_add_case_and_update_data` before a
+        case is POSTed, and must be kept in sync with it.
+
+        :param case_dict: dict representation of a case (mutated and returned)
+        :returns: the same dict, with the automation-id key normalized in place
+        """
+        active_field = self._active_automation_id_field
+        if active_field == UPDATED_SYSTEM_NAME_AUTOMATION_ID and OLD_SYSTEM_NAME_AUTOMATION_ID in case_dict:
+            case_dict[UPDATED_SYSTEM_NAME_AUTOMATION_ID] = case_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
+        if self.environment.case_matcher != MatchersParser.AUTO and OLD_SYSTEM_NAME_AUTOMATION_ID in case_dict:
+            case_dict.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
+        return case_dict
+
     def _add_case_and_update_data(self, case: TestRailCase) -> APIClientResult:
         """
         Helper method to add a single case and update its data
@@ -103,12 +125,7 @@ class CaseHandler:
         :param case: TestRailCase object to add
         :returns: APIClientResult
         """
-        case_body = case.to_dict()
-        active_field = self._active_automation_id_field
-        if active_field == UPDATED_SYSTEM_NAME_AUTOMATION_ID and OLD_SYSTEM_NAME_AUTOMATION_ID in case_body:
-            case_body[UPDATED_SYSTEM_NAME_AUTOMATION_ID] = case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
-        if self.environment.case_matcher != MatchersParser.AUTO and OLD_SYSTEM_NAME_AUTOMATION_ID in case_body:
-            case_body.pop(OLD_SYSTEM_NAME_AUTOMATION_ID)
+        case_body = self.normalize_automation_id_field(case.to_dict())
         # Add is_legacy flag for TestRail v9.8.1+ to convert Markdown content to HTML
         case_body["is_legacy"] = True
         response = self.client.send_post(f"add_case/{case_body.pop('section_id')}", case_body)
