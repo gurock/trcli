@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 import pytest
 
 from tests.helpers.results_uploader_helper import (
@@ -453,3 +455,96 @@ class TestResultsUploader:
         assert (
             results_uploader.rollback_changes(suite_id, False, [1, 2], [1, 2], 2) == expected_result
         ), "Revert process not completed as expected in test."
+
+    @pytest.mark.results_uploader
+    def test_warn_if_steps_may_not_display_warns_when_no_template_override(self, result_uploader_data_provider):
+        """A test case with populated custom_step_results but no template_id override
+        (neither on the case nor via global --case-fields) should trigger the warning."""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_fields = {}
+
+        test_case = SimpleNamespace(
+            template_id=None,
+            case_fields={},
+            result=SimpleNamespace(custom_step_results=[SimpleNamespace(content="Step 1")]),
+        )
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(testcases=[test_case])])
+
+        results_uploader._warn_if_steps_may_not_display(suite_data)
+
+        assert environment.log.called, "A warning should have been logged."
+        warning_text = environment.log.call_args[0][0]
+        assert "template_id" in warning_text
+        assert "Steps" in warning_text
+
+    @pytest.mark.results_uploader
+    def test_warn_if_steps_may_not_display_silent_with_global_template_override(self, result_uploader_data_provider):
+        """If the user already forced a template_id via global --case-fields, no warning
+        should be logged even if steps are present."""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_fields = {"template_id": 2}
+
+        test_case = SimpleNamespace(
+            template_id=None,
+            case_fields={},
+            result=SimpleNamespace(custom_step_results=[SimpleNamespace(content="Step 1")]),
+        )
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(testcases=[test_case])])
+
+        results_uploader._warn_if_steps_may_not_display(suite_data)
+
+        environment.log.assert_not_called()
+
+    @pytest.mark.results_uploader
+    def test_warn_if_steps_may_not_display_silent_with_case_level_template_override(
+        self, result_uploader_data_provider
+    ):
+        """If the individual test case already has a template_id set (directly or via its
+        own case_fields), no warning should be logged for it."""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_fields = {}
+
+        test_case = SimpleNamespace(
+            template_id=2,
+            case_fields={},
+            result=SimpleNamespace(custom_step_results=[SimpleNamespace(content="Step 1")]),
+        )
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(testcases=[test_case])])
+
+        results_uploader._warn_if_steps_may_not_display(suite_data)
+
+        environment.log.assert_not_called()
+
+    @pytest.mark.results_uploader
+    def test_warn_if_steps_may_not_display_silent_when_no_steps(self, result_uploader_data_provider):
+        """If no test case has custom_step_results populated, no warning should be logged,
+        regardless of template_id."""
+        (
+            environment,
+            api_request_handler,
+            results_uploader,
+        ) = result_uploader_data_provider
+        environment.case_fields = {}
+
+        test_case = SimpleNamespace(
+            template_id=None,
+            case_fields={},
+            result=SimpleNamespace(custom_step_results=[]),
+        )
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(testcases=[test_case])])
+
+        results_uploader._warn_if_steps_may_not_display(suite_data)
+
+        environment.log.assert_not_called()
