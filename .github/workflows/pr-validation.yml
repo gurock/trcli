@@ -13,15 +13,12 @@ jobs:
   validate-pr:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Check if release branch
         id: check_release
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
         run: |
-          SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
-
-          if echo "$SOURCE_BRANCH" | grep -qE "^release/"; then
+          if [[ "$SOURCE_BRANCH" =~ ^release/ ]]; then
             echo "is_release=true" >> "$GITHUB_OUTPUT"
             echo "Release branch detected: $SOURCE_BRANCH"
           else
@@ -32,36 +29,39 @@ jobs:
       - name: Check for Issue Reference
         id: check_issue
         if: steps.check_release.outputs.is_release == 'false'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          PR_TITLE="${{ github.event.pull_request.title }}"
-          PR_BODY="${{ github.event.pull_request.body }}"
-
-          # Check if PR title or body contains issue reference
-          if echo "$PR_TITLE $PR_BODY" | grep -qE "(TRCLI-[0-9]+|GIT-[0-9]+|#[0-9]+|issues/[0-9]+)"; then
+          # Accepts a ticket reference (TR-123) or the word "Release"
+          # (for release PRs merging into main) anywhere in the PR title.
+          if [[ "$PR_TITLE" =~ TR-[0-9]+ ]] || [[ "$PR_TITLE" =~ [Rr]elease ]]; then
             echo "issue_found=true" >> "$GITHUB_OUTPUT"
-
-            if echo "$PR_TITLE $PR_BODY" | grep -qE "TRCLI-[0-9]+"; then
-              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "TRCLI-[0-9]+" | head -1)
-              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
-              echo "issue_type=JIRA" >> "$GITHUB_OUTPUT"
-
-            elif echo "$PR_TITLE $PR_BODY" | grep -qE "GIT-[0-9]+"; then
-              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "GIT-[0-9]+" | head -1)
-              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
-              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
-
-            elif echo "$PR_TITLE $PR_BODY" | grep -qE "#[0-9]+"; then
-              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "#[0-9]+" | head -1)
-              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
-              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
-
-            elif echo "$PR_BODY" | grep -qE "issues/[0-9]+"; then
-              ISSUE_KEY=$(echo "$PR_BODY" | grep -oE "issues/[0-9]+" | head -1)
-              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
-              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
-            fi
           else
             echo "issue_found=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check PR Description Completeness
+        id: check_description
+        if: steps.check_release.outputs.is_release == 'false'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if grep -qF "Issue being resolved" <<< "$PR_BODY"; then
+            echo "has_issue=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_issue=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -qF "Solution description" <<< "$PR_BODY"; then
+            echo "has_solution=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_solution=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if grep -qF "Steps to test" <<< "$PR_BODY"; then
+            echo "has_test_steps=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_test_steps=false" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Comment on PR if issue reference missing
@@ -70,46 +70,40 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
+            const marker = '<!-- pr-validation:issue-reference -->';
+            const body = [
+              marker,
+              '## ⚠️ Missing Issue Reference',
+              '',
+              'This PR title does not reference an issue. Please include one.',
+              '',
+              '**Examples:**',
+              '- `TR-123: Fix login bug`',
+              '- `Release 1.2.3`',
+            ].join('\n');
+
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## ⚠️ Missing Issue Reference
+              issue_number: context.issue.number,
+            });
+            const existing = comments.find((c) => c.body.includes(marker));
 
-              This PR does not reference an issue. Please include one.
-
-              **JIRA example:**
-              - TRCLI-123
-
-              **GitHub examples:**
-              - GIT-123
-              - Fixes #123
-              - issues/123`
-            })
-
-      - name: Check PR Description Completeness
-        id: check_description
-        if: steps.check_release.outputs.is_release == 'false'
-        run: |
-          PR_BODY="${{ github.event.pull_request.body }}"
-
-          if echo "$PR_BODY" | grep -q "Issue being resolved"; then
-            echo "has_issue=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_issue=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if echo "$PR_BODY" | grep -q "Solution description"; then
-            echo "has_solution=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_solution=false" >> "$GITHUB_OUTPUT"
-          fi
-
-          if echo "$PR_BODY" | grep -q "Steps to test"; then
-            echo "has_test_steps=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_test_steps=false" >> "$GITHUB_OUTPUT"
-          fi
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existing.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body,
+              });
+            }
 
       - name: Generate PR Validation Summary
         uses: actions/github-script@v7
@@ -118,47 +112,28 @@ jobs:
           script: |
             const isRelease = '${{ steps.check_release.outputs.is_release }}' === 'true';
             const issueFound = '${{ steps.check_issue.outputs.issue_found }}' === 'true';
-            const issueKey = '${{ steps.check_issue.outputs.issue_key }}';
-            const issueType = '${{ steps.check_issue.outputs.issue_type }}';
-
             const hasIssue = '${{ steps.check_description.outputs.has_issue }}' === 'true';
             const hasSolution = '${{ steps.check_description.outputs.has_solution }}' === 'true';
             const hasTestSteps = '${{ steps.check_description.outputs.has_test_steps }}' === 'true';
 
-            const skippedStatus = '➖ Skipped (Release Branch)';
+            const skipped = '➖ Skipped (Release Branch)';
+            const status = (ok) => (isRelease ? skipped : ok ? '✅ Present' : '⚠️ Missing');
 
-            const issueStatus = isRelease
-              ? skippedStatus
-              : issueFound
-              ? `✅ Found: ${issueKey} (${issueType})`
-              : '⚠️ Missing';
-
-            const issueSectionStatus = isRelease
-              ? skippedStatus
-              : hasIssue ? '✅ Present' : '⚠️ Missing';
-
-            const solutionStatus = isRelease
-              ? skippedStatus
-              : hasSolution ? '✅ Present' : '⚠️ Missing';
-
-            const testStepsStatus = isRelease
-              ? skippedStatus
-              : hasTestSteps ? '✅ Present' : '⚠️ Missing';
-
-            const summary = `## 📋 PR Validation Summary
-
-            | Check | Status |
-            |-------|--------|
-            | Issue Reference | ${issueStatus} |
-            | Issue Section | ${issueSectionStatus} |
-            | Solution Description | ${solutionStatus} |
-            | Test Steps | ${testStepsStatus} |
-
-            ${isRelease
-              ? '➖ Release branch - all validation checks skipped.'
-              : (issueFound && hasSolution && hasTestSteps
+            const lines = [
+              '## 📋 PR Validation Summary',
+              '',
+              '| Check | Status |',
+              '|-------|--------|',
+              `| Issue Reference | ${status(issueFound)} |`,
+              `| Issue Section | ${status(hasIssue)} |`,
+              `| Solution Description | ${status(hasSolution)} |`,
+              `| Test Steps | ${status(hasTestSteps)} |`,
+              '',
+              isRelease
+                ? '➖ Release branch - all validation checks skipped.'
+                : issueFound && hasSolution && hasTestSteps
                 ? '✅ All checks passed!'
-                : '⚠️ Some optional sections are missing.')}
-            `;
+                : '⚠️ Some optional sections are missing.',
+            ];
 
-            await core.summary.addRaw(summary).write();
+            await core.summary.addRaw(lines.join('\n')).write();
