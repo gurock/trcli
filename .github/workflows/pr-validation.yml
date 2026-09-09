@@ -32,13 +32,59 @@ jobs:
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
         run: |
-          # Accepts a ticket reference (TR-123) or the word "Release"
-          # (for release PRs merging into main) anywhere in the PR title.
-          if [[ "$PR_TITLE" =~ TR-[0-9]+ ]] || [[ "$PR_TITLE" =~ [Rr]elease ]]; then
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
+
+          # Check if PR title or body contains issue reference
+          if echo "$PR_TITLE $PR_BODY" | grep -qE "(TR-[0-9]+|GIT-[0-9]+|#[0-9]+|issues/[0-9]+)"; then
             echo "issue_found=true" >> "$GITHUB_OUTPUT"
+
+            if echo "$PR_TITLE $PR_BODY" | grep -qE "TR-[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "TR-[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+              echo "issue_type=JIRA" >> "$GITHUB_OUTPUT"
+
+            elif echo "$PR_TITLE $PR_BODY" | grep -qE "GIT-[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "GIT-[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
+
+            elif echo "$PR_TITLE $PR_BODY" | grep -qE "#[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_TITLE $PR_BODY" | grep -oE "#[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
+
+            elif echo "$PR_BODY" | grep -qE "issues/[0-9]+"; then
+              ISSUE_KEY=$(echo "$PR_BODY" | grep -oE "issues/[0-9]+" | head -1)
+              echo "issue_key=$ISSUE_KEY" >> "$GITHUB_OUTPUT"
+              echo "issue_type=GitHub" >> "$GITHUB_OUTPUT"
+            fi
           else
             echo "issue_found=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Comment on PR if issue reference missing
+        if: steps.check_release.outputs.is_release == 'false' && steps.check_issue.outputs.issue_found == 'false'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Missing Issue Reference
+
+              This PR does not reference an issue. Please include one.
+
+              **JIRA example:**
+              - TR-123
+
+              **GitHub examples:**
+              - GIT-123
+              - Fixes #123
+              - issues/123`
+            })
 
       - name: Check PR Description Completeness
         id: check_description
