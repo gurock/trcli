@@ -26,6 +26,108 @@ def print_config(env: Environment):
     )
 
 
+def handle_case_update_reporting(environment: Environment, case_update_results: dict):
+    """
+    Handle reporting of case update results (from --update-existing-cases). Shared
+    across parser commands (e.g. parse_junit, parse_robot) since the underlying
+    update mechanism in ResultsUploader.update_existing_cases_with_junit_refs() is
+    itself generic, despite its JUnit-referencing name.
+    """
+    import json
+
+    # Handle None input gracefully
+    if case_update_results is None:
+        return
+
+    if environment.json_output:
+        # JSON output for case updates
+        result = {
+            "summary": {
+                "updated_cases": len(case_update_results.get("updated_cases", [])),
+                "skipped_cases": len(case_update_results.get("skipped_cases", [])),
+                "failed_cases": len(case_update_results.get("failed_cases", [])),
+            },
+            "details": {
+                "updated_cases": case_update_results.get("updated_cases", []),
+                "skipped_cases": case_update_results.get("skipped_cases", []),
+                "failed_cases": case_update_results.get("failed_cases", []),
+            },
+        }
+        print(json.dumps(result, indent=2))
+    else:
+        # Console output for case updates
+        updated_cases = case_update_results.get("updated_cases", [])
+        skipped_cases = case_update_results.get("skipped_cases", [])
+        failed_cases = case_update_results.get("failed_cases", [])
+
+        if updated_cases or skipped_cases or failed_cases:
+            environment.log("Case Updates Summary:")
+            environment.log(f"  Updated cases: {len(updated_cases)}")
+            environment.log(f"  Skipped cases: {len(skipped_cases)}")
+            environment.log(f"  Failed cases: {len(failed_cases)}")
+
+            if updated_cases:
+                environment.log("  Updated case details:")
+                for case_info in updated_cases:
+                    case_id = case_info["case_id"]
+                    added = case_info.get("added_refs", [])
+                    skipped = case_info.get("skipped_refs", [])
+                    updated_fields = case_info.get("updated_fields", [])
+
+                    # Build details message
+                    details = []
+                    if added or skipped:
+                        details.append(f"added {len(added)} refs, skipped {len(skipped)} duplicates")
+                    if updated_fields:
+                        details.append(f"updated {len(updated_fields)} field(s): {', '.join(updated_fields)}")
+
+                    if details:
+                        environment.log(f"    C{case_id}: {'; '.join(details)}")
+                    else:
+                        environment.log(f"    C{case_id}: no changes")
+
+            if skipped_cases:
+                environment.log("  Skipped case details:")
+                for case_info in skipped_cases:
+                    case_id = case_info["case_id"]
+                    reason = case_info.get("reason", "Unknown reason")
+                    environment.log(f"    C{case_id}: {reason}")
+
+            if failed_cases:
+                environment.log("  Failed case details:")
+                for case_info in failed_cases:
+                    case_id = case_info["case_id"]
+                    error = case_info.get("error", "Unknown error")
+                    environment.log(f"    C{case_id}: {error}")
+
+
+def update_existing_cases_options(f):
+    """Options decorator adding --update-existing-cases/--update-strategy, for parser
+    commands whose readers can populate a case's `_junit_case_refs` attribute (e.g.
+    from JUnit testrail_case_field properties or Robot Framework tags) to optionally
+    push those references onto already-existing TestRail cases post-upload."""
+
+    @click.option(
+        "--update-existing-cases",
+        type=click.Choice(["yes", "no"], case_sensitive=False),
+        default="no",
+        metavar="",
+        help="Update existing TestRail cases with references parsed from the report (default: no).",
+    )
+    @click.option(
+        "--update-strategy",
+        type=click.Choice(["append", "replace"], case_sensitive=False),
+        default="append",
+        metavar="",
+        help="Strategy for combining incoming values with existing case field values, whether to append or replace (Note: only applies to references default: append).",
+    )
+    @functools.wraps(f)
+    def wrapper_update_existing_cases_options(*args, **kwargs):
+        return f(*args, **kwargs)
+
+    return wrapper_update_existing_cases_options
+
+
 def resolve_comma_separated_list(ctx, param, value):
     if value:
         try:
