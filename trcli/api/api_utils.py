@@ -7,6 +7,8 @@ This module provides common utilities to reduce code duplication across handlers
 - Type definitions for better type safety
 """
 
+import re
+
 from beartype.typing import List, Tuple, Optional, Literal
 from typing_extensions import TypedDict
 
@@ -79,6 +81,66 @@ def deduplicate_references(references: List[str]) -> List[str]:
             result.append(ref_clean)
             seen.add(ref_clean)
     return result
+
+
+# Recognizes a "bare" Jira-issue-key-shaped tag, e.g. "JIRA-1234", "PROJ-42", "TR-1".
+# Requires an all-caps (letters+digits) project-key prefix followed by a hyphen and
+# digits, so generic noise tags such as "priority-high" or "smoke" are never matched.
+_BARE_JIRA_KEY_RE = re.compile(r"^[A-Z][A-Z0-9]*-\d+$")
+
+# Recognizes an explicit "jira:<value>" or "refs:<value>" tag prefix (case-insensitive
+# on the prefix only). The value after the colon is used verbatim (whitespace-trimmed)
+# with no further shape validation, mirroring the pre-existing
+# "- testrail_case_field: refs:VALUE" documentation-property convention already used
+# by both the Robot Framework and JUnit readers, just applied to tags instead of
+# documentation lines.
+_PREFIXED_REF_TAG_RE = re.compile(r"^(?:jira|refs)\s*:\s*(.+)$", re.IGNORECASE)
+
+
+def extract_jira_references(tags: List[str]) -> List[str]:
+    """
+    Extract TestRail/Jira references from a list of Robot Framework style tags.
+
+    Recognizes three tag conventions (checked independently per-tag; any mix may be
+    present on the same test):
+        - Explicit "jira:<value>" prefix (case-insensitive), e.g. "jira:PROJ-123"
+        - Explicit "refs:<value>" prefix (case-insensitive), e.g. "refs:TSTRAIL-5"
+        - A "bare" Jira-issue-key-shaped tag, e.g. "JIRA-1234" (an all-caps
+          letters/digits project-key prefix, a hyphen, then digits)
+
+    Any tag that doesn't match one of these three conventions (e.g. "priority-high",
+    "smoke") is silently ignored - it isn't a reference and isn't treated as an error.
+
+    Args:
+        tags: Raw list of tag strings from a Robot Framework test (e.g. ``test.tags``)
+
+    Returns:
+        List of extracted, deduplicated reference strings, in first-seen order.
+
+    Example:
+        >>> extract_jira_references(["jira:PROJ-123", "smoke"])
+        ['PROJ-123']
+        >>> extract_jira_references(["JIRA-1234", "priority-high"])
+        ['JIRA-1234']
+        >>> extract_jira_references(["refs:TSTRAIL-5"])
+        ['TSTRAIL-5']
+        >>> extract_jira_references(["JIRA-1", "jira:JIRA-1", "refs:JIRA-1"])
+        ['JIRA-1']
+    """
+    found = []
+    for tag in tags or []:
+        tag = (tag or "").strip()
+        if not tag:
+            continue
+        prefixed_match = _PREFIXED_REF_TAG_RE.match(tag)
+        if prefixed_match:
+            value = prefixed_match.group(1).strip()
+            if value:
+                found.append(value)
+            continue
+        if _BARE_JIRA_KEY_RE.match(tag):
+            found.append(tag)
+    return deduplicate_references(found)
 
 
 def join_references(references: List[str]) -> str:

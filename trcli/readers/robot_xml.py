@@ -5,6 +5,7 @@ import glob
 
 from robot.api import ExecutionResult
 
+from trcli.api.api_utils import extract_jira_references, join_references
 from trcli.backports import removeprefix
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import (
@@ -207,6 +208,13 @@ class RobotParser(FileParser):
                 if error:
                     self.env.elog(error)
                     raise Exception(error)
+                # Extract TestRail/Jira references from the test's Robot Framework tags
+                # (e.g. "jira:PROJ-123", bare "JIRA-1234", or "refs:TSTRAIL-5"). This is
+                # intentionally kept independent from the doc-based
+                # "- testrail_case_field: refs:VALUE" mechanism above (which only ever
+                # lands in case_fields_dict, not here) so existing fixtures relying on
+                # that convention are unaffected.
+                case_refs = join_references(extract_jira_references(list(test.tags)))
                 result = TestRailResult(
                     case_id,
                     elapsed=f"{elapsed_time_seconds}",
@@ -231,7 +239,14 @@ class RobotParser(FileParser):
                         else test.custom_case_automation_id
                     ),
                     case_fields=case_fields_dict,
+                    refs=case_refs if case_refs else None,
                 )
+                if case_refs:
+                    # Temporary, non-serialized attribute consumed by
+                    # results_uploader.update_existing_cases_with_junit_refs() (which
+                    # checks for it generically via hasattr(), despite the name) to
+                    # optionally merge these refs into an already-existing TestRail case.
+                    tr_test._junit_case_refs = case_refs
                 section.testcases.append(tr_test)
 
         for sub_suite in suite.suites:
