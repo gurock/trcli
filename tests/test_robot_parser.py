@@ -182,6 +182,47 @@ class TestRobotParser:
         ), f"Result of parsing XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
 
     @pytest.mark.parse_robot
+    @pytest.mark.parametrize(
+        "input_xml_path, expected_path",
+        [
+            (
+                Path(__file__).parent / "test_data/XML/robotframework_references_login_flow_RF60.xml",
+                Path(__file__).parent / "test_data/json/robotframework_references_login_flow_RF60.json",
+            ),
+            pytest.param(
+                Path(__file__).parent / "test_data/XML/robotframework_references_login_flow_RF70.xml",
+                Path(__file__).parent / "test_data/json/robotframework_references_login_flow_RF70.json",
+                marks=_RF70_SCHEMA_XFAIL,
+            ),
+        ],
+        ids=["RF 6.0 Realworld Login Flow", "RF 7.0 Realworld Login Flow"],
+    )
+    def test_robot_xml_parser_realworld_login_flow(self, input_xml_path: Union[str, Path], expected_path: str, freezer):
+        """Regression test based on a genuinely-generated, real-world-style page-object suite
+        (``tests/test_data/robot_source/realworld_suite/login_dashboard.robot``), modeled after
+        an anonymized customer output.xml sample. Exercises several patterns not covered by the
+        other, more synthetic fixtures: a suite-level [Setup]/[Teardown] (which the parser
+        correctly does NOT surface as part of the test's own custom_step_results, since those
+        keywords are never part of any individual test's body/setup/teardown items), a keyword
+        that returns a value via RETURN and has that value captured in a `${var} = value` INFO
+        message, and a tag using the real-world "refs:<ID>" convention, which the parser
+        extracts into the case's ``refs`` field via ``extract_jira_references()``.
+        """
+        freezer.move_to("2020-05-20 01:00:00")
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = input_xml_path
+        file_reader = RobotParser(env)
+        read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
+        parsing_result_json = asdict(read_junit)
+        parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        file_json = open(expected_path)
+        expected_json = json.load(file_json)
+        assert (
+            DeepDiff(parsing_result_json, expected_json) == {}
+        ), f"Result of parsing XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
+    @pytest.mark.parse_robot
     def test_robot_xml_parser_file_not_found(self):
         with pytest.raises(FileNotFoundError):
             env = Environment()

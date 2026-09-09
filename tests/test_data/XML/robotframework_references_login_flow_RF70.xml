@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.4.2 (Python 3.10.4 on darwin)" generated="2026-09-09T17:57:11.353844" rpa="false" schemaversion="5">
+<suite id="s1" name="Login Dashboard" source="/robot_source/realworld_suite/login_dashboard.robot">
+<kw name="Initialize Test Suite" type="SETUP">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.371314" level="INFO">Initializing test suite...</msg>
+<arg>Initializing test suite...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.371195" elapsed="0.000149"/>
+</kw>
+<doc>Runs once before any test in the suite.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.370995" elapsed="0.000384"/>
+</kw>
+<test id="s1-t1" name="Sample Login And Dashboard Verification" line="17">
+<kw name="Start Application" type="SETUP">
+<kw name="Open Application Under Test">
+<kw name="Launch Browser Session">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.372106" level="INFO">Starting browser session...</msg>
+<arg>Starting browser session...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372004" elapsed="0.000141"/>
+</kw>
+<doc>Simulates starting a browser instance.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.371907" elapsed="0.000290"/>
+</kw>
+<kw name="Navigate To Base URL">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.372488" level="INFO">Navigating to base URL...</msg>
+<arg>Navigating to base URL...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372378" elapsed="0.000133"/>
+</kw>
+<doc>Simulates navigating to the application's base URL.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372269" elapsed="0.000269"/>
+</kw>
+<doc>Simulates launching the application/browser.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.371760" elapsed="0.000800"/>
+</kw>
+<doc>High-level setup step.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.371639" elapsed="0.000941"/>
+</kw>
+<kw name="Log In As User">
+<kw name="Login With Credentials">
+<kw name="Enter Username">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.373178" level="INFO">Entering username: sample_user@example.com</msg>
+<arg>Entering username: ${username}</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.373067" elapsed="0.000133"/>
+</kw>
+<arg>${username}</arg>
+<doc>Simulates entering a username into a login field.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372955" elapsed="0.000274"/>
+</kw>
+<kw name="Enter Password">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.373661" level="INFO">Entering password (masked): SamplePassword123</msg>
+<arg>Entering password (masked): ${password.replace('.', '*')}</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.373404" elapsed="0.000278"/>
+</kw>
+<arg>${password}</arg>
+<doc>Simulates entering a password into a login field.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.373284" elapsed="0.000422"/>
+</kw>
+<kw name="Submit Login Form">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.373943" level="INFO">Submitting login form...</msg>
+<arg>Submitting login form...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.373857" elapsed="0.000106"/>
+</kw>
+<doc>Simulates clicking the login/submit button.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.373762" elapsed="0.000227"/>
+</kw>
+<arg>${username}</arg>
+<arg>${password}</arg>
+<doc>Simulates logging in with a given username and password.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372811" elapsed="0.001198"/>
+</kw>
+<arg>${SAMPLE_USERNAME}</arg>
+<arg>${SAMPLE_PASSWORD}</arg>
+<doc>High-level login step.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.372645" elapsed="0.001386"/>
+</kw>
+<kw name="Verify Dashboard Displayed">
+<kw name="Verify Page Title Equals">
+<kw name="Get Current Page Title">
+<return>
+<value>Sample Dashboard</value>
+<status status="PASS" start="2026-09-09T17:57:11.374410" elapsed="0.000021"/>
+</return>
+<msg time="2026-09-09T17:57:11.374481" level="INFO">${actual_title} = Sample Dashboard</msg>
+<var>${actual_title}</var>
+<doc>Simulates retrieving the current page title.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.374341" elapsed="0.000151"/>
+</kw>
+<kw name="Should Be Equal As Strings" owner="BuiltIn">
+<arg>${actual_title}</arg>
+<arg>${expected_title}</arg>
+<doc>Fails if objects are unequal after converting them to strings.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.374531" elapsed="0.000142"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.374883" level="INFO">Page title verified: Sample Dashboard</msg>
+<arg>Page title verified: ${actual_title}</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.374718" elapsed="0.000185"/>
+</kw>
+<arg>${expected_title}</arg>
+<doc>Simulates verifying that the current page title matches the expected value.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.374217" elapsed="0.000712"/>
+</kw>
+<arg>${EXPECTED_TITLE}</arg>
+<doc>High-level verification step.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.374085" elapsed="0.000866"/>
+</kw>
+<kw name="Stop Application" type="TEARDOWN">
+<kw name="Close Application Under Test">
+<kw name="Log Out Of Application">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.375464" level="INFO">Logging out...</msg>
+<arg>Logging out...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375371" elapsed="0.000114"/>
+</kw>
+<doc>Simulates logging out of the application.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375271" elapsed="0.000241"/>
+</kw>
+<kw name="Quit Browser Session">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.375760" level="INFO">Closing browser session...</msg>
+<arg>Closing browser session...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375668" elapsed="0.000112"/>
+</kw>
+<doc>Simulates closing the browser instance.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375561" elapsed="0.000242"/>
+</kw>
+<doc>Simulates closing the application/browser.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375157" elapsed="0.000669"/>
+</kw>
+<doc>High-level teardown step.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.375040" elapsed="0.000805"/>
+</kw>
+<doc>Verifies a user can log in and reach the dashboard.</doc>
+<tag>refs:TSTRAIL-5</tag>
+<status status="PASS" start="2026-09-09T17:57:11.371410" elapsed="0.004453"/>
+</test>
+<kw name="Finalize Test Suite" type="TEARDOWN">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-09T17:57:11.376263" level="INFO">Finalizing test suite...</msg>
+<arg>Finalizing test suite...</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.376170" elapsed="0.000113"/>
+</kw>
+<doc>Runs once after all tests in the suite.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.376095" elapsed="0.000216"/>
+</kw>
+<doc>Real-world-style page-object suite: a single test that logs in and verifies
+a dashboard, built from several layers of small, single-purpose user keywords
+(the way many real customer suites are structured), rather than one flat test
+body. Modeled after a genuine anonymized customer output.xml sample.</doc>
+<status status="PASS" start="2026-09-09T17:57:11.354505" elapsed="0.021819"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="1" fail="0" skip="0">refs:TSTRAIL-5</stat>
+</tag>
+<suite>
+<stat name="Login Dashboard" id="s1" pass="1" fail="0" skip="0">Login Dashboard</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
