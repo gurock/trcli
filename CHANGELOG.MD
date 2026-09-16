@@ -6,6 +6,12 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.16.0]
+
+### Changed
+ - **Robot Framework step `content` now includes keyword arguments**: When parsing Robot Framework XML reports (`parse_robot`), each extracted step's `content` is now formatted as `KeywordName(arg1, arg2, ...)` instead of just `KeywordName`, and nested keyword calls are now fully captured (including calls inside `FOR`/`IF`/`WHILE`/`TRY` blocks) with indentation reflecting nesting depth. **This is a backward-incompatible change for existing TestRail cases**: if you previously uploaded step results with `trcli`, the step `content` for those cases was recorded without arguments (e.g. `"Log"`). Re-running `parse_robot` against the same suite will now produce different step content (e.g. `"Log(OK)"`), which TestRail will treat as new/changed steps rather than matching the previously uploaded ones - resulting in duplicated or updated steps depending on your upload mode. Review existing Steps-template cases after upgrading if step-level history/matching matters to you.
+ - Robot Framework step `actual` (runtime output) now also surfaces `FAIL`/`SKIP`-level messages, not just `INFO`/`WARN`/`ERROR`. Previously, a failed or skipped step's `actual` field could be empty even though Robot Framework had recorded the failure/skip reason - it is now included.
+
 ## [1.15.2]
 
 _released 07-23-2026

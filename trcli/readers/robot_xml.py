@@ -29,9 +29,13 @@ from trcli.readers.file_parser import FileParser
 _KEYWORD_LIKE_TYPES = {"KEYWORD", "SETUP", "TEARDOWN"}
 
 # Message levels that get surfaced in a step's "actual" (runtime output) field.
-# FAIL/SKIP are intentionally excluded here: those pseudo-messages duplicate
-# information already conveyed by the keyword's own status_id/failure handling.
-_LOGGED_MESSAGE_LEVELS = {"INFO", "WARN", "ERROR"}
+# TRACE/DEBUG are excluded as low-signal/verbose. FAIL and SKIP are included:
+# unlike status_id (a bare pass/fail/skip flag with no text), Robot Framework
+# attaches the actual failure/skip reason (e.g. an assertion's message, or a
+# Skip keyword's message) as a FAIL/SKIP-level entry in the failing/skipped
+# keyword's own kw.messages - without surfacing it here, a failed/skipped step
+# would show its status but no indication of *why*.
+_LOGGED_MESSAGE_LEVELS = {"INFO", "WARN", "ERROR", "FAIL", "SKIP"}
 
 
 class RobotParser(FileParser):
