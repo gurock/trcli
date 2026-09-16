@@ -4,7 +4,37 @@
   "description": null,
   "testsections": [
     {
-      "name": "Comprehensive Suite.Api Tests.Authentication.Login",
+      "name": "Comprehensive Suite",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": null
+    },
+    {
+      "name": "Api Tests",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": "Comprehensive Suite"
+    },
+    {
+      "name": "Authentication",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": "Api Tests"
+    },
+    {
+      "name": "Login",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -262,10 +292,11 @@
           "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Login.Login Test With All Message Levels"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "Authentication"
     },
     {
-      "name": "Comprehensive Suite.Api Tests.Authentication.Logout",
+      "name": "Logout",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -383,10 +414,21 @@
           "custom_automation_id": "Comprehensive Suite.Api Tests.Authentication.Logout.Logout With Multiple Argument Styles"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "Authentication"
     },
     {
-      "name": "Comprehensive Suite.Api Tests.User Management.Create User",
+      "name": "User Management",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": "Api Tests"
+    },
+    {
+      "name": "Create User",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -509,10 +551,11 @@
           "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Create User.Create User With Failing Teardown"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "User Management"
     },
     {
-      "name": "Comprehensive Suite.Api Tests.User Management.Delete User",
+      "name": "Delete User",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -583,10 +626,21 @@
           "custom_automation_id": "Comprehensive Suite.Api Tests.User Management.Delete User.Delete Nonexistent User Fails"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "User Management"
     },
     {
-      "name": "Comprehensive Suite.Reporting.Generate Report",
+      "name": "Reporting",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": "Comprehensive Suite"
+    },
+    {
+      "name": "Generate Report",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -645,7 +699,8 @@
           "custom_automation_id": "Comprehensive Suite.Reporting.Generate Report.Generate Weekly Report"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "Reporting"
     }
   ],
   "source": "robotframework_comprehensive_RF50.xml"

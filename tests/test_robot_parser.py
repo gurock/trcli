@@ -7,6 +7,9 @@ import pytest
 from deepdiff import DeepDiff
 from robot.version import VERSION as ROBOT_VERSION
 
+from tests.helpers.api_client_helpers import TEST_RAIL_URL, create_url
+from trcli.api.api_client import APIClient
+from trcli.api.api_request_handler import ApiRequestHandler
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import MatchersParser
 from trcli.data_classes.dataclass_testrail import TestRailSuite
@@ -79,6 +82,7 @@ class TestRobotParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__simplify_parent_section(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert (
@@ -101,6 +105,22 @@ class TestRobotParser:
             for testcase in section.get("testcases", []):
                 if testcase.get("result", {}).get("quality_rating") is None:
                     testcase["result"].pop("quality_rating", None)
+        return result_json
+
+    def __simplify_parent_section(self, result_json: dict) -> dict:
+        """Collapse each section's `parent_section` field down to just the parent's bare `name`
+        (or `None` for root sections).
+
+        `dataclasses.asdict()` (unlike serde's `to_dict()`) does not honor the `serde_skip`
+        metadata used elsewhere in this codebase to keep `parent_section` in-memory-only - it
+        recurses into it like any other dataclass-valued field, fully re-embedding the parent
+        section's own dict (which itself embeds its own parent, etc.) inside every child. Doing
+        this replacement keeps fixtures compact/human-readable while still faithfully verifying
+        the produced hierarchy (which section is nested under which, by name).
+        """
+        for section in result_json.get("testsections", []):
+            parent = section.get("parent_section")
+            section["parent_section"] = parent["name"] if parent else None
         return result_json
 
     @pytest.mark.parse_robot
@@ -130,6 +150,7 @@ class TestRobotParser:
         file_reader = RobotParser(env)
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
+        parsing_result_json = self.__simplify_parent_section(parsing_result_json)
 
         # Don't remove quality_rating for this test - we want to verify it's present
         file_json = open(expected_path)
@@ -175,11 +196,94 @@ class TestRobotParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__simplify_parent_section(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert (
             DeepDiff(parsing_result_json, expected_json) == {}
         ), f"Result of parsing XML is different than expected \n{DeepDiff(parsing_result_json, expected_json)}"
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_creates_nested_sections_end_to_end(self, requests_mock):
+        """End-to-end test for Section Hierarchy: parses a real multi-level Robot Framework
+        suite tree (Comprehensive Suite -> Api Tests -> Authentication -> Login/Logout, etc,
+        10 sections total across 4 nesting levels) and feeds it straight into
+        `ApiRequestHandler.add_sections`, mocking only the HTTP layer (`add_section` POSTs).
+
+        This verifies the full pipeline end-to-end, not just each layer in isolation:
+        - Multi-level suite structures produce a correspondingly nested section tree.
+        - Sections are POSTed in strict parent-before-child order, and each child's request
+          body carries the real, freshly-created `parent_id` of its actual parent (verified
+          live, in creation order, via the mocked POST callback below - not after the fact).
+        - Section names are clean (no dotted `SuiteA.SuiteB.SuiteC` concatenation).
+        """
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_comprehensive_RF50.xml"
+        file_reader = RobotParser(env)
+        suites_data = file_reader.parse_file()[0]
+
+        # Ground truth, read directly from the freshly-parsed, real object-linked hierarchy
+        # (not from any JSON fixture) - name -> parent's name (or None for roots).
+        expected_parent_by_name = {
+            section.name: (section.parent_section.name if section.parent_section else None)
+            for section in suites_data.testsections
+        }
+        assert len(expected_parent_by_name) == 10, "Comprehensive suite should yield 10 sections"
+        assert any(
+            parent is not None for parent in expected_parent_by_name.values()
+        ), "Fixture should contain at least one nested (non-root) section"
+        # No section name should contain the old dotted "Suite.SubSuite" concatenation.
+        assert all(
+            "." not in name for name in expected_parent_by_name
+        ), "Section names must be clean suite names, not dotted concatenations"
+
+        project_id = 42
+        created_ids_by_name = {}
+        id_counter = iter(range(1000, 1000 + len(expected_parent_by_name)))
+
+        def fake_add_section(request, context):
+            body = request.json()
+            name = body["name"]
+            parent_id = body.get("parent_id")
+            expected_parent_name = expected_parent_by_name[name]
+            if expected_parent_name is None:
+                assert parent_id is None, f"Root section {name!r} should not have a parent_id"
+            else:
+                # The parent must already have been created (topological order) and this
+                # child's parent_id must be exactly that real, freshly-created id.
+                assert (
+                    expected_parent_name in created_ids_by_name
+                ), f"Section {name!r} was POSTed before its parent {expected_parent_name!r}"
+                assert parent_id == created_ids_by_name[expected_parent_name], (
+                    f"Section {name!r} sent parent_id={parent_id}, expected "
+                    f"{created_ids_by_name[expected_parent_name]} (id of {expected_parent_name!r})"
+                )
+            new_id = next(id_counter)
+            created_ids_by_name[name] = new_id
+            context.status_code = 200
+            return {"id": new_id, "suite_id": 1, "name": name, "parent_id": parent_id}
+
+        requests_mock.post(create_url(f"add_section/{project_id}"), json=fake_add_section)
+
+        api_client = APIClient(host_name=TEST_RAIL_URL)
+        api_request_handler = ApiRequestHandler(env, api_client, suites_data, verify=False)
+        resources_added, error = api_request_handler.add_sections(project_id)
+
+        assert error == "", f"add_sections reported an unexpected error: {error}"
+        assert len(resources_added) == 10
+        assert set(created_ids_by_name) == set(
+            expected_parent_by_name
+        ), "Every section in the parsed tree should have been created exactly once"
+        assert all(
+            "." not in resource["name"] for resource in resources_added
+        ), "Created section names must be clean suite names, not dotted concatenations"
+
+        # The live section objects' own `parent_id` must reflect the real, resolved parent id.
+        for section in suites_data.testsections:
+            assert section.section_id == created_ids_by_name[section.name]
+            if section.parent_section is not None:
+                assert section.parent_id == created_ids_by_name[section.parent_section.name]
 
     @pytest.mark.parse_robot
     def test_robot_xml_parser_file_not_found(self):

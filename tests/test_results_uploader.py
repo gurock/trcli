@@ -547,4 +547,87 @@ class TestResultsUploader:
 
         results_uploader._warn_if_steps_may_not_display(suite_data)
 
-        environment.log.assert_not_called()
+
+class TestSectionsSafeToDelete:
+    """Tests for `ResultsUploader._sections_safe_to_delete`.
+
+    Regression coverage for a bug surfaced by the Section Hierarchy feature: nested,
+    Robot-Framework-style suites legitimately produce intermediate/root sections that
+    hold no test cases of their own (only their leaf sub-sections do). The pre-existing
+    "remove empty/unused sections" cleanup logic used to treat any case-less section as
+    unused and tried to delete it - which either got rejected by TestRail (a section
+    with live children can't be removed) or corrupted the hierarchy. These tests lock in
+    the fix: a section is only "safe to delete" if it is both case-less AND childless.
+    """
+
+    @pytest.mark.results_uploader
+    def test_no_added_sections_returns_empty_list(self):
+        empty_suite = SimpleNamespace(testsections=[])
+        assert ResultsUploader._sections_safe_to_delete(None, [{"section_id": 1}], empty_suite) == []
+        assert ResultsUploader._sections_safe_to_delete([], [{"section_id": 1}], empty_suite) == []
+
+    @pytest.mark.results_uploader
+    def test_no_added_test_cases_all_sections_are_empty(self):
+        """If no test cases were added at all, every added section is a candidate - unless
+        it turns out to be a structural parent of another section."""
+        added_sections = [{"section_id": 1, "name": "Leaf"}]
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(parent_id=None)])
+
+        result = ResultsUploader._sections_safe_to_delete(added_sections, None, suite_data)
+
+        assert result == added_sections
+
+    @pytest.mark.results_uploader
+    def test_section_used_by_a_test_case_is_not_safe_to_delete(self):
+        added_sections = [{"section_id": 1, "name": "Used"}, {"section_id": 2, "name": "Unused"}]
+        added_test_cases = [{"section_id": 1}]
+        suite_data = SimpleNamespace(testsections=[SimpleNamespace(parent_id=None), SimpleNamespace(parent_id=None)])
+
+        result = ResultsUploader._sections_safe_to_delete(added_sections, added_test_cases, suite_data)
+
+        assert result == [{"section_id": 2, "name": "Unused"}]
+
+    @pytest.mark.results_uploader
+    def test_parent_section_with_no_direct_cases_is_not_safe_to_delete(self):
+        """Regression test: a section acting as the *parent* of another section (nested
+        Section Hierarchy) must never be treated as unused, even though it holds no test
+        cases of its own - this is the exact scenario that used to trigger TestRail
+        rejecting the delete (or corrupting the hierarchy) for multi-level Robot
+        Framework suites (e.g. "Api" being the parent of "Authentication"/"Checkout")."""
+        added_sections = [
+            {"section_id": 10, "name": "Api"},  # parent section, no direct cases
+            {"section_id": 20, "name": "Authentication"},  # leaf section, has cases
+        ]
+        added_test_cases = [{"section_id": 20}]
+        suite_data = SimpleNamespace(
+            testsections=[
+                SimpleNamespace(section_id=10, parent_id=None),
+                SimpleNamespace(section_id=20, parent_id=10),
+            ]
+        )
+
+        result = ResultsUploader._sections_safe_to_delete(added_sections, added_test_cases, suite_data)
+
+        assert result == [], "Parent section 'Api' must not be deleted just because it holds no cases directly"
+
+    @pytest.mark.results_uploader
+    def test_leaf_section_with_no_cases_and_no_children_is_safe_to_delete(self):
+        """A genuinely unused leaf section (no cases, no children) should still be
+        cleaned up - the fix must not be overly conservative."""
+        added_sections = [
+            {"section_id": 10, "name": "Api"},
+            {"section_id": 20, "name": "Authentication"},
+            {"section_id": 30, "name": "Unused Leftover"},
+        ]
+        added_test_cases = [{"section_id": 20}]
+        suite_data = SimpleNamespace(
+            testsections=[
+                SimpleNamespace(section_id=10, parent_id=None),
+                SimpleNamespace(section_id=20, parent_id=10),
+                SimpleNamespace(section_id=30, parent_id=None),
+            ]
+        )
+
+        result = ResultsUploader._sections_safe_to_delete(added_sections, added_test_cases, suite_data)
+
+        assert result == [{"section_id": 30, "name": "Unused Leftover"}]

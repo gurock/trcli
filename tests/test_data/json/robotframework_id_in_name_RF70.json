@@ -4,7 +4,17 @@
   "description": null,
   "testsections": [
     {
-      "name": "Sub-Tests.Subtests 1",
+      "name": "Sub-Tests",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": null
+    },
+    {
+      "name": "Subtests 1",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -88,10 +98,11 @@
           "custom_automation_id": "Sub-Tests.Subtests 1.Subtest 1b"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "Sub-Tests"
     },
     {
-      "name": "Sub-Tests.Subtests 2",
+      "name": "Subtests 2",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -162,7 +173,8 @@
           "custom_automation_id": "Sub-Tests.Subtests 2.Subtest 2b"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "Sub-Tests"
     }
   ],
   "source": "robotframework_id_in_name_RF70.xml"
