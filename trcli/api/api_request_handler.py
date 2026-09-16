@@ -399,6 +399,9 @@ class ApiRequestHandler:
                         if action_string == "add_case":
                             arguments = arguments.to_dict()
                             arguments.pop("case_id")
+                            # Keep the automation-id field name in sync with whatever was
+                            # actually sent to (and returned by) the API for this project.
+                            arguments = self.case_handler.normalize_automation_id_field(arguments)
                         if not self.response_verifier.verify_returned_data(arguments, response.response_text):
                             responses.append(response)
                             error_message = FAULT_MAPPING["data_verification_error"]

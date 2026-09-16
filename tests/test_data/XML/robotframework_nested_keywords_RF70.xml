@@ -1,0 +1,1240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.4.2 (Python 3.10.4 on darwin)" generated="2026-09-02T17:56:22.220336" rpa="false" schemaversion="5">
+<suite id="s1" name="Nested Keywords" source="/tests/test_data/robot_source/nested_suite/nested_keywords.robot">
+<test id="s1-t1" name="Deep Recursive Nesting" line="8">
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.239792" elapsed="0.000018"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.239582" elapsed="0.000262"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.239906" elapsed="0.000226"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.240595" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.240521" elapsed="0.000104"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.240680" elapsed="0.000169"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.241275" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.241206" elapsed="0.000095"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.241350" elapsed="0.000160"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.241925" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.241859" elapsed="0.000093"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.242000" elapsed="0.000186"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.242597" elapsed="0.000010"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.242532" elapsed="0.000092"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.242671" elapsed="0.000153"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.243236" elapsed="0.000010"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.243169" elapsed="0.000094"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.243312" elapsed="0.000154"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.243872" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.243807" elapsed="0.000091"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.243945" elapsed="0.000149"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.244495" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.244431" elapsed="0.000091"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.244568" elapsed="0.000153"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.245236" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.245157" elapsed="0.000110"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.245324" elapsed="0.000178"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.245962" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.245894" elapsed="0.000097"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.246042" elapsed="0.000166"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.246646" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.246577" elapsed="0.000099"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.246727" elapsed="0.000170"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.247372" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.247295" elapsed="0.000108"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.247460" elapsed="0.000283"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.248404" level="INFO">Reached the bottom</msg>
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.248227" elapsed="0.000204"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.248149" elapsed="0.000302"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.248507" elapsed="0.000012"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<arg>${depth - 1}</arg>
+<doc>Recurses ``0`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.248630" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.248461" elapsed="0.000197"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.248139" elapsed="0.000528"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``1`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.247871" elapsed="0.000820"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.247416" elapsed="0.001289"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.247285" elapsed="0.001429"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``2`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.247019" elapsed="0.001715"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.246686" elapsed="0.002061"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.246567" elapsed="0.002189"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``3`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.246320" elapsed="0.002454"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.246002" elapsed="0.002785"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.245884" elapsed="0.002911"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``4`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.245628" elapsed="0.003185"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.245279" elapsed="0.003547"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.245113" elapsed="0.003721"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``5`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.244844" elapsed="0.004007"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.244532" elapsed="0.004332"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.244423" elapsed="0.004449"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``6`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.244197" elapsed="0.004692"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.243908" elapsed="0.004994"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.243799" elapsed="0.005110"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``7`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.243571" elapsed="0.005355"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.243275" elapsed="0.005664"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.243159" elapsed="0.005788"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``8`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.242931" elapsed="0.006033"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.242634" elapsed="0.006343"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.242523" elapsed="0.006464"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``9`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.242294" elapsed="0.006713"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.241963" elapsed="0.007061"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.241851" elapsed="0.007183"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``10`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.241619" elapsed="0.007436"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.241312" elapsed="0.007758"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.241197" elapsed="0.007885"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``11`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.240957" elapsed="0.008145"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.240639" elapsed="0.008480"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.240512" elapsed="0.008619"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``12`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.240261" elapsed="0.008891"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.239860" elapsed="0.009310"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.239568" elapsed="0.009611"/>
+</if>
+<arg>${12}</arg>
+<doc>Recurses ``${depth}`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.239321" elapsed="0.009878"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.238694" elapsed="0.010566"/>
+</test>
+<test id="s1-t2" name="For Loop With If Else Branches" line="11">
+<kw name="Iterate And Branch" owner="nested_resources">
+<for flavor="IN RANGE">
+<iter>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.250059" level="INFO">Loop iteration 0</msg>
+<arg>Loop iteration ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.249878" elapsed="0.000214"/>
+</kw>
+<if>
+<branch type="IF" condition="${i} % 2 == 0">
+<kw name="Log Even Branch" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.250550" level="INFO">Even: 0</msg>
+<arg>Even: ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.250390" elapsed="0.000189"/>
+</kw>
+<arg>${i}</arg>
+<status status="PASS" start="2026-09-02T17:56:22.250246" elapsed="0.000365"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.250136" elapsed="0.000487"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log Odd Branch" owner="nested_resources">
+<arg>${i}</arg>
+<status status="NOT RUN" start="2026-09-02T17:56:22.250699" elapsed="0.000015"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.250634" elapsed="0.000095"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.250125" elapsed="0.000615"/>
+</if>
+<var name="${i}">0</var>
+<status status="PASS" start="2026-09-02T17:56:22.249831" elapsed="0.000943"/>
+</iter>
+<iter>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.251053" level="INFO">Loop iteration 1</msg>
+<arg>Loop iteration ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.250896" elapsed="0.000178"/>
+</kw>
+<if>
+<branch type="IF" condition="${i} % 2 == 0">
+<kw name="Log Even Branch" owner="nested_resources">
+<arg>${i}</arg>
+<status status="NOT RUN" start="2026-09-02T17:56:22.251199" elapsed="0.000012"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.251106" elapsed="0.000121"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log Odd Branch" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.251565" level="WARN">Odd: 1</msg>
+<arg>Odd: ${i}</arg>
+<arg>level=WARN</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.251418" elapsed="0.000192"/>
+</kw>
+<arg>${i}</arg>
+<status status="PASS" start="2026-09-02T17:56:22.251286" elapsed="0.000353"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.251239" elapsed="0.000414"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.251098" elapsed="0.000566"/>
+</if>
+<var name="${i}">1</var>
+<status status="PASS" start="2026-09-02T17:56:22.250853" elapsed="0.000822"/>
+</iter>
+<iter>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.251921" level="INFO">Loop iteration 2</msg>
+<arg>Loop iteration ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.251775" elapsed="0.000167"/>
+</kw>
+<if>
+<branch type="IF" condition="${i} % 2 == 0">
+<kw name="Log Even Branch" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.252342" level="INFO">Even: 2</msg>
+<arg>Even: ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.252189" elapsed="0.000175"/>
+</kw>
+<arg>${i}</arg>
+<status status="PASS" start="2026-09-02T17:56:22.252066" elapsed="0.000324"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.251975" elapsed="0.000427"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log Odd Branch" owner="nested_resources">
+<arg>${i}</arg>
+<status status="NOT RUN" start="2026-09-02T17:56:22.252472" elapsed="0.000013"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.252412" elapsed="0.000089"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.251967" elapsed="0.000544"/>
+</if>
+<var name="${i}">2</var>
+<status status="PASS" start="2026-09-02T17:56:22.251742" elapsed="0.000780"/>
+</iter>
+<iter>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.252773" level="INFO">Loop iteration 3</msg>
+<arg>Loop iteration ${i}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.252626" elapsed="0.000171"/>
+</kw>
+<if>
+<branch type="IF" condition="${i} % 2 == 0">
+<kw name="Log Even Branch" owner="nested_resources">
+<arg>${i}</arg>
+<status status="NOT RUN" start="2026-09-02T17:56:22.252910" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.252832" elapsed="0.000100"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log Odd Branch" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.253515" level="WARN">Odd: 3</msg>
+<arg>Odd: ${i}</arg>
+<arg>level=WARN</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.253171" elapsed="0.000387"/>
+</kw>
+<arg>${i}</arg>
+<status status="PASS" start="2026-09-02T17:56:22.252990" elapsed="0.000599"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.252942" elapsed="0.000663"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.252824" elapsed="0.000792"/>
+</if>
+<var name="${i}">3</var>
+<status status="PASS" start="2026-09-02T17:56:22.252580" elapsed="0.001050"/>
+</iter>
+<var>${i}</var>
+<value>${count}</value>
+<status status="PASS" start="2026-09-02T17:56:22.249688" elapsed="0.003957"/>
+</for>
+<arg>4</arg>
+<doc>Exercises a FOR loop containing an IF/ELSE, each branch calling
+a further nested keyword - keywords inside loops/branches must still be
+extracted at their true keyword-call depth.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.249577" elapsed="0.004099"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.249353" elapsed="0.004374"/>
+</test>
+<test id="s1-t3" name="Argument Type Variety" line="14">
+<kw name="Accept Many Argument Types" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.254583" level="INFO">Received hello</msg>
+<arg>Received ${str_arg}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.254435" elapsed="0.000172"/>
+</kw>
+<arg>hello</arg>
+<arg>${TRUE}</arg>
+<arg>a</arg>
+<arg>b</arg>
+<arg>c</arg>
+<arg>key=value</arg>
+<doc>Exercises string, boolean-variable, list (@{}), and named/dict
+(&amp;{}-style keyword args) argument styles in a single call.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.254250" elapsed="0.000388"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.253814" elapsed="0.000880"/>
+</test>
+<test id="s1-t4" name="Keyword With No Args And No Messages" line="17">
+<kw name="No Op Keyword" owner="nested_resources">
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.255028" elapsed="0.000095"/>
+</kw>
+<doc>A keyword with no arguments and no messages/nested calls.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.254932" elapsed="0.000214"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.254771" elapsed="0.000418"/>
+</test>
+<test id="s1-t5" name="Keyword With Only Messages No Nested Call" line="20">
+<kw name="Only Logs No Nested Keyword" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.255674" level="INFO">Only a log line, no nested keyword call</msg>
+<arg>Only a log line, no nested keyword call</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.255546" elapsed="0.000149"/>
+</kw>
+<doc>A keyword whose only body content is a log message - no
+nested keyword call beneath it.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.255439" elapsed="0.000282"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.255265" elapsed="0.000502"/>
+</test>
+<test id="s1-t6" name="Keyword With Special Characters In Arguments" line="23">
+<kw name="Special Characters Keyword" owner="nested_resources">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.256310" level="INFO">Special: Line with "quotes", a comma, and Ünïcödé ☺ &lt;tag&gt;</msg>
+<arg>Special: ${text}</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.256111" elapsed="0.000223"/>
+</kw>
+<arg>Line with "quotes", a comma, and Ünïcödé ☺ &lt;tag&gt;</arg>
+<status status="PASS" start="2026-09-02T17:56:22.256002" elapsed="0.000360"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.255844" elapsed="0.000563"/>
+</test>
+<test id="s1-t7" name="Fifty Plus Keyword Calls" line="26">
+<kw name="Call Many Keywords" owner="nested_resources">
+<for flavor="IN RANGE">
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.257100" elapsed="0.000095"/>
+</kw>
+<var name="${i}">0</var>
+<status status="PASS" start="2026-09-02T17:56:22.257061" elapsed="0.000153"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.257288" elapsed="0.000097"/>
+</kw>
+<var name="${i}">1</var>
+<status status="PASS" start="2026-09-02T17:56:22.257258" elapsed="0.000143"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.257505" elapsed="0.000094"/>
+</kw>
+<var name="${i}">2</var>
+<status status="PASS" start="2026-09-02T17:56:22.257470" elapsed="0.000143"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.257685" elapsed="0.000087"/>
+</kw>
+<var name="${i}">3</var>
+<status status="PASS" start="2026-09-02T17:56:22.257649" elapsed="0.000136"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.257858" elapsed="0.000088"/>
+</kw>
+<var name="${i}">4</var>
+<status status="PASS" start="2026-09-02T17:56:22.257824" elapsed="0.000136"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258036" elapsed="0.000081"/>
+</kw>
+<var name="${i}">5</var>
+<status status="PASS" start="2026-09-02T17:56:22.258001" elapsed="0.000132"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258207" elapsed="0.000085"/>
+</kw>
+<var name="${i}">6</var>
+<status status="PASS" start="2026-09-02T17:56:22.258174" elapsed="0.000135"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258380" elapsed="0.000086"/>
+</kw>
+<var name="${i}">7</var>
+<status status="PASS" start="2026-09-02T17:56:22.258347" elapsed="0.000135"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258552" elapsed="0.000089"/>
+</kw>
+<var name="${i}">8</var>
+<status status="PASS" start="2026-09-02T17:56:22.258523" elapsed="0.000134"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258724" elapsed="0.000098"/>
+</kw>
+<var name="${i}">9</var>
+<status status="PASS" start="2026-09-02T17:56:22.258694" elapsed="0.000143"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.258900" elapsed="0.000106"/>
+</kw>
+<var name="${i}">10</var>
+<status status="PASS" start="2026-09-02T17:56:22.258871" elapsed="0.000149"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259094" elapsed="0.000090"/>
+</kw>
+<var name="${i}">11</var>
+<status status="PASS" start="2026-09-02T17:56:22.259057" elapsed="0.000141"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259275" elapsed="0.000086"/>
+</kw>
+<var name="${i}">12</var>
+<status status="PASS" start="2026-09-02T17:56:22.259243" elapsed="0.000134"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259452" elapsed="0.000084"/>
+</kw>
+<var name="${i}">13</var>
+<status status="PASS" start="2026-09-02T17:56:22.259418" elapsed="0.000134"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259623" elapsed="0.000088"/>
+</kw>
+<var name="${i}">14</var>
+<status status="PASS" start="2026-09-02T17:56:22.259591" elapsed="0.000136"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259797" elapsed="0.000095"/>
+</kw>
+<var name="${i}">15</var>
+<status status="PASS" start="2026-09-02T17:56:22.259768" elapsed="0.000140"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.259973" elapsed="0.000095"/>
+</kw>
+<var name="${i}">16</var>
+<status status="PASS" start="2026-09-02T17:56:22.259944" elapsed="0.000138"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.260148" elapsed="0.000094"/>
+</kw>
+<var name="${i}">17</var>
+<status status="PASS" start="2026-09-02T17:56:22.260118" elapsed="0.000138"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.260324" elapsed="0.000092"/>
+</kw>
+<var name="${i}">18</var>
+<status status="PASS" start="2026-09-02T17:56:22.260292" elapsed="0.000138"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.260500" elapsed="0.000088"/>
+</kw>
+<var name="${i}">19</var>
+<status status="PASS" start="2026-09-02T17:56:22.260465" elapsed="0.000138"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.260670" elapsed="0.000564"/>
+</kw>
+<var name="${i}">20</var>
+<status status="PASS" start="2026-09-02T17:56:22.260639" elapsed="0.000610"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.261319" elapsed="0.000088"/>
+</kw>
+<var name="${i}">21</var>
+<status status="PASS" start="2026-09-02T17:56:22.261289" elapsed="0.000134"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.261488" elapsed="0.000092"/>
+</kw>
+<var name="${i}">22</var>
+<status status="PASS" start="2026-09-02T17:56:22.261459" elapsed="0.000134"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.261659" elapsed="0.000088"/>
+</kw>
+<var name="${i}">23</var>
+<status status="PASS" start="2026-09-02T17:56:22.261628" elapsed="0.000133"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.261828" elapsed="0.000086"/>
+</kw>
+<var name="${i}">24</var>
+<status status="PASS" start="2026-09-02T17:56:22.261795" elapsed="0.000133"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.262000" elapsed="0.000084"/>
+</kw>
+<var name="${i}">25</var>
+<status status="PASS" start="2026-09-02T17:56:22.261966" elapsed="0.000132"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.262171" elapsed="0.000095"/>
+</kw>
+<var name="${i}">26</var>
+<status status="PASS" start="2026-09-02T17:56:22.262136" elapsed="0.000158"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.262403" elapsed="0.000132"/>
+</kw>
+<var name="${i}">27</var>
+<status status="PASS" start="2026-09-02T17:56:22.262355" elapsed="0.000198"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.262647" elapsed="0.000112"/>
+</kw>
+<var name="${i}">28</var>
+<status status="PASS" start="2026-09-02T17:56:22.262607" elapsed="0.000169"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.262864" elapsed="0.000114"/>
+</kw>
+<var name="${i}">29</var>
+<status status="PASS" start="2026-09-02T17:56:22.262823" elapsed="0.000175"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.263087" elapsed="0.000111"/>
+</kw>
+<var name="${i}">30</var>
+<status status="PASS" start="2026-09-02T17:56:22.263046" elapsed="0.000172"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.263331" elapsed="0.000099"/>
+</kw>
+<var name="${i}">31</var>
+<status status="PASS" start="2026-09-02T17:56:22.263296" elapsed="0.000152"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.263524" elapsed="0.000094"/>
+</kw>
+<var name="${i}">32</var>
+<status status="PASS" start="2026-09-02T17:56:22.263491" elapsed="0.000145"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.263704" elapsed="0.000103"/>
+</kw>
+<var name="${i}">33</var>
+<status status="PASS" start="2026-09-02T17:56:22.263674" elapsed="0.000149"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.263893" elapsed="0.000100"/>
+</kw>
+<var name="${i}">34</var>
+<status status="PASS" start="2026-09-02T17:56:22.263857" elapsed="0.000149"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.264087" elapsed="0.000089"/>
+</kw>
+<var name="${i}">35</var>
+<status status="PASS" start="2026-09-02T17:56:22.264047" elapsed="0.000148"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.264274" elapsed="0.000095"/>
+</kw>
+<var name="${i}">36</var>
+<status status="PASS" start="2026-09-02T17:56:22.264242" elapsed="0.000145"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.264457" elapsed="0.000101"/>
+</kw>
+<var name="${i}">37</var>
+<status status="PASS" start="2026-09-02T17:56:22.264428" elapsed="0.000147"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.264641" elapsed="0.000100"/>
+</kw>
+<var name="${i}">38</var>
+<status status="PASS" start="2026-09-02T17:56:22.264611" elapsed="0.000144"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.264821" elapsed="0.000100"/>
+</kw>
+<var name="${i}">39</var>
+<status status="PASS" start="2026-09-02T17:56:22.264789" elapsed="0.000146"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265003" elapsed="0.000092"/>
+</kw>
+<var name="${i}">40</var>
+<status status="PASS" start="2026-09-02T17:56:22.264969" elapsed="0.000139"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265178" elapsed="0.000091"/>
+</kw>
+<var name="${i}">41</var>
+<status status="PASS" start="2026-09-02T17:56:22.265144" elapsed="0.000139"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265357" elapsed="0.000089"/>
+</kw>
+<var name="${i}">42</var>
+<status status="PASS" start="2026-09-02T17:56:22.265322" elapsed="0.000139"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265536" elapsed="0.000092"/>
+</kw>
+<var name="${i}">43</var>
+<status status="PASS" start="2026-09-02T17:56:22.265501" elapsed="0.000141"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265726" elapsed="0.000090"/>
+</kw>
+<var name="${i}">44</var>
+<status status="PASS" start="2026-09-02T17:56:22.265688" elapsed="0.000147"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.265906" elapsed="0.000148"/>
+</kw>
+<var name="${i}">45</var>
+<status status="PASS" start="2026-09-02T17:56:22.265876" elapsed="0.000193"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.266137" elapsed="0.000091"/>
+</kw>
+<var name="${i}">46</var>
+<status status="PASS" start="2026-09-02T17:56:22.266104" elapsed="0.000137"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.266311" elapsed="0.000092"/>
+</kw>
+<var name="${i}">47</var>
+<status status="PASS" start="2026-09-02T17:56:22.266276" elapsed="0.000146"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.266513" elapsed="0.000104"/>
+</kw>
+<var name="${i}">48</var>
+<status status="PASS" start="2026-09-02T17:56:22.266469" elapsed="0.000172"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.266725" elapsed="0.000106"/>
+</kw>
+<var name="${i}">49</var>
+<status status="PASS" start="2026-09-02T17:56:22.266689" elapsed="0.000159"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.266927" elapsed="0.000104"/>
+</kw>
+<var name="${i}">50</var>
+<status status="PASS" start="2026-09-02T17:56:22.266891" elapsed="0.000157"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.267117" elapsed="0.000084"/>
+</kw>
+<var name="${i}">51</var>
+<status status="PASS" start="2026-09-02T17:56:22.267086" elapsed="0.000129"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.267279" elapsed="0.000087"/>
+</kw>
+<var name="${i}">52</var>
+<status status="PASS" start="2026-09-02T17:56:22.267249" elapsed="0.000131"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.267443" elapsed="0.000094"/>
+</kw>
+<var name="${i}">53</var>
+<status status="PASS" start="2026-09-02T17:56:22.267414" elapsed="0.000136"/>
+</iter>
+<iter>
+<kw name="No Operation" owner="BuiltIn">
+<doc>Does absolutely nothing.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.267618" elapsed="0.000090"/>
+</kw>
+<var name="${i}">54</var>
+<status status="PASS" start="2026-09-02T17:56:22.267585" elapsed="0.000138"/>
+</iter>
+<var>${i}</var>
+<value>${count}</value>
+<status status="PASS" start="2026-09-02T17:56:22.256988" elapsed="0.010748"/>
+</for>
+<arg>55</arg>
+<doc>Calls ``No Operation`` ``${count}`` times via a FOR loop, for
+performance testing with 50+ keyword calls in a single test.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.256889" elapsed="0.010875"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.256484" elapsed="0.011339"/>
+</test>
+<test id="s1-t8" name="Test With Setup And Teardown Around Nesting" line="29">
+<kw name="Recurse To Depth" owner="nested_resources" type="SETUP">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.268656" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.268567" elapsed="0.000124"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.268790" elapsed="0.000183"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.269479" elapsed="0.000010"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.269405" elapsed="0.000132"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.269595" elapsed="0.000178"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.270351" level="INFO">Reached the bottom</msg>
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.270221" elapsed="0.000152"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.270155" elapsed="0.000235"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.270440" elapsed="0.000009"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<arg>${depth - 1}</arg>
+<doc>Recurses ``0`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.270558" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.270400" elapsed="0.000184"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.270146" elapsed="0.000447"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``1`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.269893" elapsed="0.000721"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.269550" elapsed="0.001078"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.269395" elapsed="0.001242"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``2`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.269120" elapsed="0.001539"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.268704" elapsed="0.001970"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.268557" elapsed="0.002127"/>
+</if>
+<arg>${2}</arg>
+<doc>Recurses ``${depth}`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.268370" elapsed="0.002335"/>
+</kw>
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.270877" level="INFO">Body executes</msg>
+<arg>Body executes</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.270752" elapsed="0.000149"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources" type="TEARDOWN">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.271553" elapsed="0.000009"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.271489" elapsed="0.000092"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.271634" elapsed="0.000232"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.272314" elapsed="0.000010"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.272248" elapsed="0.000096"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.272400" elapsed="0.000161"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<if>
+<branch type="IF" condition="${depth} &lt;= 0">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-09-02T17:56:22.273135" level="INFO">Reached the bottom</msg>
+<arg>Reached the bottom</arg>
+<arg>level=INFO</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.273004" elapsed="0.000154"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.272939" elapsed="0.000235"/>
+</branch>
+<branch type="ELSE">
+<kw name="Log" owner="BuiltIn">
+<arg>At depth ${depth}</arg>
+<arg>level=DEBUG</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.273223" elapsed="0.000008"/>
+</kw>
+<kw name="Recurse To Depth" owner="nested_resources">
+<arg>${depth - 1}</arg>
+<doc>Recurses ``0`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="NOT RUN" start="2026-09-02T17:56:22.273342" elapsed="0.000011"/>
+</kw>
+<status status="NOT RUN" start="2026-09-02T17:56:22.273184" elapsed="0.000184"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.272929" elapsed="0.000448"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``1`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.272665" elapsed="0.000733"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.272355" elapsed="0.001057"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.272240" elapsed="0.001180"/>
+</if>
+<arg>${depth - 1}</arg>
+<doc>Recurses ``2`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.271976" elapsed="0.001465"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.271593" elapsed="0.001863"/>
+</branch>
+<status status="PASS" start="2026-09-02T17:56:22.271481" elapsed="0.001984"/>
+</if>
+<arg>${2}</arg>
+<doc>Recurses ``${depth}`` times, logging at each level, to exercise
+deep keyword nesting (10+ levels) through a transparent IF/ELSE branch.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.271277" elapsed="0.002209"/>
+</kw>
+<status status="PASS" start="2026-09-02T17:56:22.267906" elapsed="0.005601"/>
+</test>
+<doc>Fixtures for the recursive _extract_steps() nested-keyword extraction
+tests: deep nesting, FOR/IF transparency, argument-type variety, empty/logs-only
+keywords, special characters, high keyword counts, and setup/teardown nesting.</doc>
+<status status="PASS" start="2026-09-02T17:56:22.220919" elapsed="0.052799"/>
+</suite>
+<statistics>
+<total>
+<stat pass="8" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Nested Keywords" id="s1" pass="8" fail="0" skip="0">Nested Keywords</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2026-09-02T17:56:22.251565" level="WARN">Odd: 1</msg>
+<msg time="2026-09-02T17:56:22.253515" level="WARN">Odd: 3</msg>
+</errors>
+</robot>

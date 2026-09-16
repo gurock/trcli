@@ -2,6 +2,8 @@ from serde.json import to_dict
 from beartype.typing import List, Union, Any, Callable
 from humanfriendly import parse_timespan
 
+_MISSING = object()
+
 
 class ApiResponseVerify:
     """Class for verifying if new resources added to Test Rail are created correctly.
@@ -26,22 +28,25 @@ class ApiResponseVerify:
         added_data_json = to_dict(added_data)
         returned_data_json = to_dict(returned_data)
         for key, value in added_data_json.items():
-            if not self.field_compare(key)(returned_data_json[key], value):
+            returned_value = returned_data_json.get(key, _MISSING)
+            if returned_value is _MISSING:
+                # Field is missing from the response entirely (e.g. a custom field that was
+                # renamed/relocated server-side, such as the automation_id field variants).
+                # Treat this as a verification failure rather than raising a KeyError.
+                return False
+            if not self.field_compare(key)(returned_value, value):
                 return False
 
         return True
 
-    def verify_returned_data_for_list(
-        self, added_data: List[dict], returned_data: List[dict]
-    ):
+    def verify_returned_data_for_list(self, added_data: List[dict], returned_data: List[dict]):
         if not self.verify:
             return True  # skip verification
         if len(added_data) != len(returned_data):
             return False
         else:
             comparison_result = [
-                self.verify_returned_data(item, returned_data[index])
-                for index, item in enumerate(added_data)
+                self.verify_returned_data(item, returned_data[index]) for index, item in enumerate(added_data)
             ]
             return all(comparison_result)
 
@@ -51,11 +56,7 @@ class ApiResponseVerify:
             "description": self.__compare_strings,
             "comment": self.__compare_strings,
         }
-        return (
-            function_list[added_data_key]
-            if added_data_key in function_list
-            else self.__simple_comparison
-        )
+        return function_list[added_data_key] if added_data_key in function_list else self.__simple_comparison
 
     @staticmethod
     def __simple_comparison(returned_value: Any, added_value: Any) -> bool:

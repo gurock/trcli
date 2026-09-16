@@ -44,11 +44,13 @@
                         "custom_step_results": [
                             {
                                 "content": "Go to homepage",
-                                "status_id": 1
+                                "status_id": 1,
+                                "actual": null
                             },
                             {
                                 "content": "Verify content",
-                                "status_id": 5
+                                "status_id": 5,
+                                "actual": null
                             }
                         ],
                         "custom_testrail_bdd_scenario_results": []
