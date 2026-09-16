@@ -488,7 +488,7 @@ class ResultsUploader(ProjectBasedClient):
 
         if has_unattributed_steps:
             self.environment.log(
-                "WARNING: Step-by-step results were extracted from the report, but no "
+                "Warning: Step-by-step results were extracted from the report, but no "
                 "Steps-capable template_id was specified via --case-fields. Test cases "
                 "created with the project's default template may not display these "
                 "steps in the TestRail UI, even though the step data is uploaded "

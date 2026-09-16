@@ -48,6 +48,22 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             exit(1)
 
         case_update_results = None
+        has_step_results = any(
+            test_case.result and test_case.result.custom_step_results
+            for suite in parsed_suites
+            for section in suite.testsections
+            for test_case in section.testcases
+        )
+        if has_step_results:
+            environment.log(
+                "Note: step content is now formatted as 'KeywordName(arg1, arg2, ...)' "
+                "(previously just 'KeywordName'), and nested keyword calls are captured "
+                "with indentation. If existing TestRail cases have steps uploaded by an "
+                "earlier trcli version, they will not match this new content and may be "
+                "duplicated or updated depending on your upload mode. See CHANGELOG.MD for "
+                "details."
+            )
+
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()

@@ -152,7 +152,7 @@
               {
                 "content": "      Fail(Deeply nested failure at level 4)",
                 "status_id": 5,
-                "actual": null
+                "actual": "FAIL: Deeply nested failure at level 4"
               }
             ],
             "custom_testrail_bdd_scenario_results": []
@@ -328,7 +328,7 @@
               {
                 "content": "Skip(Skipping this test intentionally for coverage of SKIP status mapping)",
                 "status_id": 4,
-                "actual": null
+                "actual": "SKIP: Skipping this test intentionally for coverage of SKIP status mapping"
               }
             ],
             "custom_testrail_bdd_scenario_results": []
@@ -459,7 +459,7 @@
               {
                 "content": "  Fail(Intentional setup failure for test data coverage)",
                 "status_id": 5,
-                "actual": null
+                "actual": "FAIL: Intentional setup failure for test data coverage"
               }
             ],
             "custom_testrail_bdd_scenario_results": []
@@ -501,7 +501,7 @@
               {
                 "content": "  Fail(Intentional teardown failure for test data coverage)",
                 "status_id": 5,
-                "actual": null
+                "actual": "FAIL: Intentional teardown failure for test data coverage"
               }
             ],
             "custom_testrail_bdd_scenario_results": []
@@ -575,7 +575,7 @@
               {
                 "content": "Fail(User does not exist, cannot delete)",
                 "status_id": 5,
-                "actual": null
+                "actual": "FAIL: User does not exist, cannot delete"
               }
             ],
             "custom_testrail_bdd_scenario_results": []
