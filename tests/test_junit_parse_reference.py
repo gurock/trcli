@@ -7,7 +7,8 @@ import pytest
 from unittest.mock import Mock, patch
 import json
 
-from trcli.commands.cmd_parse_junit import _validate_test_run_ref, _handle_case_update_reporting
+from trcli.commands.cmd_parse_junit import _validate_test_run_ref
+from trcli.commands.results_parser_helpers import handle_case_update_reporting as _handle_case_update_reporting
 
 
 class TestCmdParseJunitValidation:
