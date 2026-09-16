@@ -107,27 +107,17 @@ class ResultsUploader(ProjectBasedClient):
             return
 
         # remove empty, unused sections created earlier, based on the sections actually used by the new test cases
-        #  - iterate on added_sections and remove those that are not used by the new test cases
-        empty_sections = None
-        if added_sections:
-            if not added_test_cases:
-                empty_sections = added_sections
+        empty_sections = self._sections_safe_to_delete(added_sections, added_test_cases, suite_data)
+        if empty_sections:
+            self.environment.log(
+                "Removing unnecessary empty sections that may have been created earlier. ", new_line=False
+            )
+            _, error = self.api_request_handler.delete_sections(empty_sections)
+            if error:
+                self.environment.elog("\n" + error)
+                exit(1)
             else:
-                empty_sections = [
-                    section
-                    for section in added_sections
-                    if section["section_id"] not in [case["section_id"] for case in added_test_cases]
-                ]
-            if len(empty_sections) > 0:
-                self.environment.log(
-                    "Removing unnecessary empty sections that may have been created earlier. ", new_line=False
-                )
-                _, error = self.api_request_handler.delete_sections(empty_sections)
-                if error:
-                    self.environment.elog("\n" + error)
-                    exit(1)
-                else:
-                    self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
+                self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
         # Update existing cases with JUnit references if enabled
         case_update_results = None
@@ -192,6 +182,44 @@ class ResultsUploader(ProjectBasedClient):
             pass
 
         # Note: Error exit for case update failures is handled in cmd_parse_junit.py after reporting
+
+    @staticmethod
+    def _sections_safe_to_delete(
+        added_sections: List[Dict], added_test_cases: List[Dict], suite_data: TestRailSuite
+    ) -> List[Dict]:
+        """Determine which of the sections just auto-created are truly unused and safe
+        to delete, based on the sections actually used by the newly-added test cases.
+
+        A section is only safe to delete if BOTH:
+          - none of the newly-added test cases live in it, AND
+          - it is not the parent of any other section in the suite.
+
+        The second condition matters for a nested Section Hierarchy (e.g. built by the
+        Robot Framework parser): intermediate/root suites legitimately hold zero test
+        cases of their own (only their leaf sub-suites do), but they are structural
+        nodes, not "unused" ones - deleting them would either be rejected by TestRail
+        (a section with live children can't be removed) or would corrupt the hierarchy.
+        Only sections that are both case-less AND childless are genuinely unused.
+
+        :param added_sections: sections created earlier in this run, each a dict with
+            at least a "section_id" key (see `SectionHandler.add_sections`).
+        :param added_test_cases: test cases created earlier in this run, each a dict
+            with at least a "section_id" key.
+        :param suite_data: the suite's live, in-memory section tree, used to determine
+            parent/child relationships via `TestRailSection.parent_id`.
+        :returns: the subset of `added_sections` that are safe to delete.
+        """
+        if not added_sections:
+            return []
+        if not added_test_cases:
+            empty_sections = list(added_sections)
+        else:
+            used_section_ids = {case["section_id"] for case in added_test_cases}
+            empty_sections = [section for section in added_sections if section["section_id"] not in used_section_ids]
+        if not empty_sections:
+            return []
+        parent_section_ids = {section.parent_id for section in suite_data.testsections if section.parent_id is not None}
+        return [section for section in empty_sections if section["section_id"] not in parent_section_ids]
 
     def _validate_and_store_user_ids(self):
         """
