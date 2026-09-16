@@ -98,7 +98,7 @@
               {
                 "content": "Verify Response(360)",
                 "status_id": 5,
-                "actual": null
+                "actual": "FAIL: Expected 360 but got 340"
               }
             ],
             "custom_testrail_bdd_scenario_results": []

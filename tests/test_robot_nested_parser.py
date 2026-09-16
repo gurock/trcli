@@ -93,12 +93,12 @@ class TestExtractStepsWhitebox:
         steps = parser._extract_steps([_kw(status=status)])
         assert steps[0].status_id == expected_status_id
 
-    @pytest.mark.parametrize("level", ["INFO", "WARN", "ERROR"])
+    @pytest.mark.parametrize("level", ["INFO", "WARN", "ERROR", "FAIL", "SKIP"])
     def test_logged_message_levels_included_in_actual(self, parser, level):
         steps = parser._extract_steps([_kw(messages=[_msg("hello", level=level)])])
         assert steps[0].actual == f"{level}: hello"
 
-    @pytest.mark.parametrize("level", ["FAIL", "SKIP", "DEBUG", "TRACE"])
+    @pytest.mark.parametrize("level", ["DEBUG", "TRACE"])
     def test_non_logged_message_levels_excluded_from_actual(self, parser, level):
         steps = parser._extract_steps([_kw(messages=[_msg("hello", level=level)])])
         assert steps[0].actual is None
@@ -113,14 +113,14 @@ class TestExtractStepsWhitebox:
                 _kw(
                     messages=[
                         _msg("keep1", level="INFO"),
-                        _msg("drop-fail", level="FAIL"),
+                        _msg("keep-fail", level="FAIL"),
                         _msg("keep2", level="ERROR"),
                         _msg("drop-debug", level="DEBUG"),
                     ]
                 )
             ]
         )
-        assert steps[0].actual == "INFO: keep1\nERROR: keep2"
+        assert steps[0].actual == "INFO: keep1\nFAIL: keep-fail\nERROR: keep2"
 
     def test_no_messages_leaves_actual_none(self, parser):
         steps = parser._extract_steps([_kw(messages=[])])
