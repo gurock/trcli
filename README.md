@@ -213,6 +213,51 @@ Options:
 For further detail, please refer to the
 [JUnit to TestRail mapping](https://support.gurock.com/hc/en-us/articles/12989737200276) documentation.
 
+### Robot Framework - Priority Tag Mapping
+
+When using `parse_robot`, TRCLI automatically maps Robot Framework `priority:<level>` tags to a
+TestRail `priority_id` on the resulting test case - no extra configuration required.
+
+```robotframework
+*** Test Cases ***
+Login With Valid Credentials
+    [Tags]    priority:critical
+    Log    Logging in...
+```
+
+**Matching rules:**
+- The tag must be in the form `priority:<level>` (case-insensitive on both the `priority:`
+  prefix and the level value, e.g. `priority:critical`, `Priority:High`, `PRIORITY:LOW` all work).
+- By default, levels map to priority IDs as follows: `critical` → 4, `high` → 3, `medium` → 2,
+  `low` → 1. These are just sensible defaults - your TestRail instance's actual priority IDs may
+  differ (run `trcli priorities list` to check), so override them with `--priority-tag-mapping`
+  as needed (see below).
+- If a test has no `priority:` tag, or its level isn't recognized, no `priority_id` is set for
+  that test - existing behavior is unaffected.
+- If a test has multiple `priority:` tags, only the first one is used.
+- An explicit `- testrail_case_field: priority_id:X` directive in the test's documentation (see
+  the `--case-fields` option above) always takes precedence over a tag-derived value.
+
+**Customizing the mapping with `--priority-tag-mapping`:**
+
+Only the level(s) you specify are overridden - any level you don't mention keeps its default
+value, so you can override just what you need:
+
+```bash
+# Override only 'critical' and 'low'; 'high' and 'medium' keep their defaults.
+trcli parse_robot \
+  -f output.xml \
+  --title "Nightly Run" \
+  --priority-tag-mapping critical:5 \
+  --priority-tag-mapping low:1
+
+# Map a custom tag level not among the built-in defaults.
+trcli parse_robot \
+  -f output.xml \
+  --title "Nightly Run" \
+  --priority-tag-mapping blocker:6
+```
+
 ### Using Glob Patterns for Multiple Files
 
 TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML**, **Robot Framework**, and **Cucumber JSON** parsers.
