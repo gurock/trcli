@@ -14,6 +14,16 @@ from trcli.readers.robot_xml import RobotParser
 
 @click.command(context_settings=CONTEXT_SETTINGS)
 @results_parser_options
+@click.option(
+    "--priority-tag-mapping",
+    multiple=True,
+    metavar="",
+    default=[],
+    help="Map Robot Framework 'priority:<level>' tags (case-insensitive) to TestRail priority IDs. "
+    "Usage: --priority-tag-mapping critical:5 --priority-tag-mapping low:1. "
+    "Only the level(s) you specify are overridden; unspecified levels keep the default mapping "
+    "(critical:4, high:3, medium:2, low:1).",
+)
 @click.pass_context
 @pass_environment
 def cli(environment: Environment, context: click.Context, *args, **kwargs):
