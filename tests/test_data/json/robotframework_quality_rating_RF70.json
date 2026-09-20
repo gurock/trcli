@@ -4,7 +4,17 @@
   "description": null,
   "testsections": [
     {
-      "name": "AI-Evaluation-Tests.Chatbot-Tests",
+      "name": "AI-Evaluation-Tests",
+      "suite_id": null,
+      "parent_id": null,
+      "description": null,
+      "section_id": null,
+      "testcases": [],
+      "properties": [],
+      "parent_section": null
+    },
+    {
+      "name": "Chatbot-Tests",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -150,10 +160,11 @@
           "custom_automation_id": "AI-Evaluation-Tests.Chatbot-Tests.Test Contextual Understanding"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "AI-Evaluation-Tests"
     },
     {
-      "name": "AI-Evaluation-Tests.Security-Tests",
+      "name": "Security-Tests",
       "suite_id": null,
       "parent_id": null,
       "description": null,
@@ -201,7 +212,8 @@
           "custom_automation_id": "AI-Evaluation-Tests.Security-Tests.Test Prompt Injection Resistance"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": "AI-Evaluation-Tests"
     }
   ],
   "source": "robotframework_quality_rating_RF70.xml"

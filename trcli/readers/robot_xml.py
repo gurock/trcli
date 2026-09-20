@@ -1,4 +1,4 @@
-from beartype.typing import List, Union
+from beartype.typing import List, Optional, Union
 from pathlib import Path
 from xml.etree import ElementTree
 import glob
@@ -128,19 +128,44 @@ class RobotParser(FileParser):
 
         return testrail_suites
 
-    def _find_suites(self, suite, sections_list: List, namespace=""):
+    def _find_suites(
+        self,
+        suite,
+        sections_list: List,
+        namespace: str = "",
+        parent_section: Optional[TestRailSection] = None,
+    ):
+        """Recursively walk Robot Framework's suite tree, creating one nested TestRailSection
+        per suite level (mirroring the real suite hierarchy 1:1, including purely
+        organizational suites with no tests of their own), linked to its parent via
+        `parent_section`.
+
+        Section names are the suite's own bare name only (no dotted concatenation) - the
+        historic dotted `namespace` string is still tracked and used for `custom_automation_id`
+        (so existing automation-ID-based case matching remains stable/unique), but is no longer
+        used for the section's display `name` nor for section identity/deduplication, which is
+        now based on `(name, parent_section)` instead.
+        """
         name = suite.name
-        namespace += f".{name}" if namespace else name
+        namespace = f"{namespace}.{name}" if namespace else name
+
+        # Check if a section with this (name, parent) already exists (for merged files with
+        # duplicate/repeated suites - e.g. the same root suite name appearing once per
+        # glob-matched file). Sections are matched by identity of `parent_section`, not name
+        # alone, so same-named sections under different parents are never confused.
+        section = next(
+            (s for s in sections_list if s.name == name and s.parent_section is parent_section),
+            None,
+        )
+        if section is None:
+            # Create new section if it doesn't exist
+            section = TestRailSection(name)
+            section.parent_section = parent_section
+            sections_list.append(section)
+        # else: reuse existing section and add tests to it
+
         tests = suite.tests
         if tests:
-            # Check if section with this namespace already exists (for merged files with duplicate suites)
-            section = next((s for s in sections_list if s.name == namespace), None)
-            if section is None:
-                # Create new section if it doesn't exist
-                section = TestRailSection(namespace)
-                sections_list.append(section)
-            # else: reuse existing section and add tests to it
-
             for test in tests:
                 case_id = None
                 case_name = test.name
@@ -239,7 +264,7 @@ class RobotParser(FileParser):
                 section.testcases.append(tr_test)
 
         for sub_suite in suite.suites:
-            self._find_suites(sub_suite, sections_list, namespace=namespace)
+            self._find_suites(sub_suite, sections_list, namespace=namespace, parent_section=section)
 
     def _extract_steps(self, body_items, level: int = 0) -> List[TestRailSeparatedStep]:
         """Recursively extract every keyword call in ``body_items`` as a flat,
