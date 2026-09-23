@@ -106,6 +106,15 @@ COMMAND_FAULT_MAPPING = dict(
     projects=dict(**FAULT_MAPPING),
     templates=dict(**FAULT_MAPPING),
     tests=dict(**FAULT_MAPPING),
+    variables=dict(**FAULT_MAPPING),
+    datasets=dict(**FAULT_MAPPING),
+    variables_update=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    variables_delete=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_show=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_update=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    datasets_delete=dict(**{k: v for k, v in FAULT_MAPPING.items() if k != "missing_project"}),
+    fields=dict(**FAULT_MAPPING),
+    groups=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -130,6 +139,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - parse_robot: Robot Framework XML Files
     - parse_openapi: OpenAPI YML Files
     - add_run: Create a new test run
+    - fields: Manage fields (list dynamic filter fields)
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)
     - cases: Query test cases (get and list)
@@ -148,7 +158,10 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - projects: Query projects (get and list)
     - templates: Query templates (list)
     - tests: Query tests (get and list)
-    - results: Query and update test results (list, update)"""
+    - results: Query and update test results (list, update)
+    - variables: Manage test data variables (list, add, update, delete)
+    - datasets: Manage test data datasets (list, show, add, update, delete)
+    - groups: Manage groups (list, show)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""

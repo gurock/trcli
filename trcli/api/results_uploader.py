@@ -14,9 +14,12 @@ class ResultsUploader(ProjectBasedClient):
     Initialized with environment object and result file parser object (any parser derived from FileParser).
     """
 
-    def __init__(self, environment: Environment, suite: TestRailSuite, skip_run: bool = False):
+    def __init__(
+        self, environment: Environment, suite: TestRailSuite, skip_run: bool = False, defer_close_run: bool = False
+    ):
         super().__init__(environment, suite)
         self.skip_run = skip_run
+        self.defer_close_run = defer_close_run
         self.last_run_id = None
         if hasattr(self.environment, "special_parser") and self.environment.special_parser == "saucectl":
             self.run_name += f" ({suite.name})"
@@ -169,12 +172,13 @@ class ResultsUploader(ProjectBasedClient):
             self.environment.log("\n".join(revert_logs))
             exit(1)
 
-        if self.environment.close_run:
+        # Close run only if not deferred (defer_close_run allows caller to close later)
+        if self.environment.close_run and not self.defer_close_run:
             self.environment.log("Closing test run. ", new_line=False)
             response, error_message = self.api_request_handler.close_run(run_id)
-        if error_message:
-            self.environment.elog("\n" + error_message)
-            exit(1)
+            if error_message:
+                self.environment.elog("\n" + error_message)
+                exit(1)
 
         # Terminate upload
         stop = time.time()

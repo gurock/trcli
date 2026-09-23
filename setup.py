@@ -5,6 +5,9 @@ setup(
     name="trcli",
     long_description="The TR CLI (trcli) is a command line tool for interacting with TestRail and uploading test automation results.",
     version=__version__,
+    setup_requires=[
+        "setuptools>=83.0.0",  # Updated to address PYSEC-2026-3447 (Unicode normalization bypass on macOS)
+    ],
     packages=[
         "trcli",
         "trcli.commands",
@@ -16,7 +19,7 @@ setup(
     ],
     include_package_data=True,
     install_requires=[
-        "click>=8.1.0,<8.2.2",  # Note: click version 8.2.2 is yanked as of Aug 2, 2025!
+        "click>=8.3.3,<9.0.0",
         "pyyaml>=6.0.0,<7.0.0",
         "junitparser>=3.1.0,<4.0.0",
         "pyserde==0.12.*",

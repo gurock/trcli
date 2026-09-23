@@ -6,6 +6,17 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.15.3]
+
+_released 08-19-2026
+
+### Added
+ - **New `variables` command**: Manage reusable parameters that can be referenced in test cases.
+ - **New `datasets` command**: Manage collections of variable values representing different test scenarios.
+ - **New `groups` command**: Manage and view individual groups with their member lists and listing all available groups in TestRail.
+ - **New `fields` command**: Query Dynamic Filter Fields from TestRail.
+ - Added support for Dynamic Filters for test runs (via add_run) and test plans (via plans add) commands.
+
 ## [1.15.2]
 
 _released 07-23-2026

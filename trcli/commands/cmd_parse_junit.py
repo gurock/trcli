@@ -94,6 +94,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             exit(1)
 
         run_id = None
+        run_ids = []  # Track all run IDs - hoisted to top-level scope to avoid NameError
         case_update_results = {}
 
         # Multisuite mode: use MultisuiteUploader for cross-suite plans
@@ -103,23 +104,59 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             multisuite_uploader = MultisuiteUploader(environment=environment, suite=parsed_suites[0])
             multisuite_uploader.upload_results()
 
-            # Use plan_id for reference handling
-            run_id = multisuite_uploader.last_plan_id
+            # Use the actual per-suite run IDs (not the plan ID) for reference handling
+            # and closing - both append_run_references and close_run operate on individual
+            # runs, not plans. multisuite_uploader.last_run_ids maps {suite_id: run_id}.
+            plan_id = multisuite_uploader.last_plan_id
+            run_ids = list(multisuite_uploader.last_run_ids.values())
+            run_id = run_ids[0] if run_ids else None
+
+            if environment.test_run_ref and not run_ids:
+                environment.elog(
+                    f"Warning: No run IDs found for plan {plan_id}; skipping reference/close-run handling."
+                )
         else:
             # Normal mode: process each suite separately
+            # Defer close_run if test_run_ref is provided to attach references first
+            defer_close = environment.test_run_ref is not None
+
             for suite in parsed_suites:
-                result_uploader = ResultsUploader(environment=environment, suite=suite)
+                result_uploader = ResultsUploader(environment=environment, suite=suite, defer_close_run=defer_close)
                 result_uploader.upload_results()
 
-                if run_id is None and hasattr(result_uploader, "last_run_id"):
-                    run_id = result_uploader.last_run_id
+                # Collect all run IDs (not just the first one)
+                if hasattr(result_uploader, "last_run_id") and result_uploader.last_run_id:
+                    run_ids.append(result_uploader.last_run_id)
+                    # Store first run_id (may be used elsewhere in future)
+                    if run_id is None:
+                        run_id = result_uploader.last_run_id
 
                 # Collect case update results
                 if hasattr(result_uploader, "case_update_results"):
                     case_update_results = result_uploader.case_update_results
 
-        if environment.test_run_ref and run_id:
-            _handle_test_run_references(environment, run_id)
+        # Handle test run references and closing for all runs
+        if environment.test_run_ref and run_ids:
+            # Attach references to all runs
+            if environment.json_output:
+                # JSON output: accumulate results and print as array (or single object for 1 run)
+                import json
+
+                all_results = [
+                    _handle_test_run_references(environment, current_run_id, return_result=True)
+                    for current_run_id in run_ids
+                ]
+                # Single run emits object (backward compatible), multiple runs emit array
+                print(json.dumps(all_results[0] if len(all_results) == 1 else all_results, indent=2))
+            else:
+                # Console output: process normally
+                for current_run_id in run_ids:
+                    _handle_test_run_references(environment, current_run_id)
+
+        # Close all runs after references are attached (if deferred and close_run flag is set)
+        if environment.close_run and environment.test_run_ref and run_ids:
+            for current_run_id in run_ids:
+                _close_test_run(environment, current_run_id)
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:
@@ -163,9 +200,37 @@ def _validate_test_run_ref(test_run_ref: str) -> str:
     return None
 
 
-def _handle_test_run_references(environment: Environment, run_id: int):
+def _close_test_run(environment: Environment, run_id: int):
+    """
+    Close the test run.
+    """
+    from trcli.api.project_based_client import ProjectBasedClient
+    from trcli.data_classes.dataclass_testrail import TestRailSuite
+
+    project_client = ProjectBasedClient(environment=environment, suite=TestRailSuite(name="temp", suite_id=1))
+    project_client.resolve_project()
+
+    if not environment.json_output:
+        environment.log("Closing test run. ", new_line=False)
+
+    response, error_message = project_client.api_request_handler.close_run(run_id)
+
+    if error_message:
+        environment.elog("\n" + error_message)
+        exit(1)
+
+
+def _handle_test_run_references(environment: Environment, run_id: int, return_result: bool = False):
     """
     Handle appending references to the test run.
+
+    Args:
+        environment: Environment object
+        run_id: TestRail run ID or plan ID
+        return_result: If True, return result dict instead of printing (for JSON accumulation)
+
+    Returns:
+        dict: Result dictionary if return_result=True, otherwise None
     """
     from trcli.api.project_based_client import ProjectBasedClient
     from trcli.data_classes.dataclass_testrail import TestRailSuite
@@ -176,7 +241,9 @@ def _handle_test_run_references(environment: Environment, run_id: int):
     project_client = ProjectBasedClient(environment=environment, suite=TestRailSuite(name="temp", suite_id=1))
     project_client.resolve_project()
 
-    environment.log(f"Appending references to test run {run_id}...")
+    if not return_result:
+        environment.log(f"Appending references to test run {run_id}...")
+
     run_data, added_refs, skipped_refs, error_message = project_client.api_request_handler.append_run_references(
         run_id, refs
     )
@@ -187,9 +254,14 @@ def _handle_test_run_references(environment: Environment, run_id: int):
 
     final_refs = run_data.get("refs", "") if run_data else ""
 
+    result = {"run_id": run_id, "added": added_refs, "skipped": skipped_refs, "total_references": final_refs}
+
+    # Return result for accumulation (JSON mode with multiple runs)
+    if return_result:
+        return result
+
+    # Print/log result immediately (single run or console mode)
     if environment.json_output:
-        # JSON output
-        result = {"run_id": run_id, "added": added_refs, "skipped": skipped_refs, "total_references": final_refs}
         print(json.dumps(result, indent=2))
     else:
         environment.log(f"References appended successfully:")
