@@ -64,13 +64,21 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
                 "details."
             )
 
+        # Accumulate case-update results across all suites (rather than overwriting),
+        # so that e.g. a failure in an earlier suite isn't silently discarded by a
+        # later suite's results.
+        accumulated_case_update_results = {"updated_cases": [], "skipped_cases": [], "failed_cases": []}
         for suite in parsed_suites:
             result_uploader = ResultsUploader(environment=environment, suite=suite)
             result_uploader.upload_results()
 
             # Collect case update results (from --update-existing-cases)
-            if hasattr(result_uploader, "case_update_results"):
-                case_update_results = result_uploader.case_update_results
+            if hasattr(result_uploader, "case_update_results") and result_uploader.case_update_results:
+                for key in accumulated_case_update_results:
+                    accumulated_case_update_results[key].extend(result_uploader.case_update_results.get(key, []))
+
+        if any(accumulated_case_update_results.values()):
+            case_update_results = accumulated_case_update_results
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:
