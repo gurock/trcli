@@ -17,7 +17,7 @@ from trcli.readers.robot_xml import RobotParser
 @click.option(
     "--priority-tag-mapping",
     multiple=True,
-    metavar="",
+    metavar="LEVEL:ID",
     default=[],
     help="Map Robot Framework 'priority:<level>' tags (case-insensitive) to TestRail priority IDs. "
     "Usage: --priority-tag-mapping critical:5 --priority-tag-mapping low:1. "

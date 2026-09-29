@@ -337,9 +337,12 @@ class RobotParser(FileParser):
 
         Returns ``None`` if no ``priority:`` tag is present, or if its level isn't a
         recognized key in the mapping - callers must treat that as "no opinion" rather
-        than clearing any priority already set another way. Never raises: unrecognized
-        levels and duplicate priority tags are only reported via `vlog` (verbose-only),
-        so a stray/unexpected tag never fails an otherwise-valid test's parsing.
+        than clearing any priority already set another way. Never raises: an unrecognized
+        level is always surfaced via `elog` (visible without -v, since silently falling
+        back to whatever default priority TestRail assigns is a real data-quality risk in
+        automation pipelines), while duplicate priority tags on the same test are reported
+        via `vlog` (verbose-only) - either way, a stray/unexpected tag never fails an
+        otherwise-valid test's parsing.
 
         :param tags: the test's Robot Framework tags (``test.tags``, an iterable of str).
         :param case_name: the test's name, used only for the verbose log messages.
@@ -362,9 +365,11 @@ class RobotParser(FileParser):
 
         priority_id = self.priority_tag_mapping.get(resolved_level)
         if priority_id is None:
-            self.env.vlog(
-                f"Test '{case_name}' has unrecognized priority tag value '{resolved_level}'; expected one of: "
-                f"{', '.join(sorted(self.priority_tag_mapping))}. Skipping."
+            self.env.elog(
+                f"Warning: Test '{case_name}' has tag 'priority:{resolved_level}', which is not a recognized "
+                f"priority level (expected one of: {', '.join(sorted(self.priority_tag_mapping))}). "
+                f"No priority_id will be set from this tag - use --priority-tag-mapping {resolved_level}:<id> "
+                f"to map it (run 'trcli priorities list' to find valid priority IDs)."
             )
         return priority_id
 

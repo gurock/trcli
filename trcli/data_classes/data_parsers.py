@@ -217,11 +217,13 @@ class PriorityTagMappingParser:
         for level, priority_id in pairs:
             level_key = str(level).strip().lower()
             if not level_key:
-                return resolved, "Invalid --priority-tag-mapping entry: level name cannot be empty"
+                return dict(PriorityTagMappingParser.DEFAULT_MAPPING), (
+                    "Invalid --priority-tag-mapping entry: level name cannot be empty"
+                )
             try:
                 resolved[level_key] = int(str(priority_id).strip())
             except (ValueError, TypeError):
-                return resolved, (
+                return dict(PriorityTagMappingParser.DEFAULT_MAPPING), (
                     f"Invalid --priority-tag-mapping entry '{level}:{priority_id}': priority ID must be an integer"
                 )
         return resolved, None
