@@ -176,6 +176,59 @@ class FieldsParser:
             return fields_dictionary, f"Error parsing fields: {ex}"
 
 
+class PriorityTagMappingParser:
+    """Parses ``--priority-tag-mapping`` CLI values (e.g. ``"critical:4"``) into a
+    ``{level: priority_id}`` dict used to resolve Robot Framework ``priority:<level>``
+    tags to a TestRail ``priority_id`` (see `RobotParser._priority_id_from_tags`).
+
+    Levels are normalized to lowercase so later lookups can match tag values
+    case-insensitively. Every resolved mapping is merged on top of `DEFAULT_MAPPING`,
+    so users only need to specify the level(s) they want to override/add - unspecified
+    levels keep their sensible default, and the feature works out of the box with no
+    CLI option at all.
+    """
+
+    # Matches a typical fresh TestRail instance's default priority order/IDs.
+    DEFAULT_MAPPING: Dict[str, int] = {"critical": 4, "high": 3, "medium": 2, "low": 1}
+
+    @staticmethod
+    def resolve_mapping(mapping: Union[List[str], Tuple[str, ...], Dict, None]) -> Tuple[Dict[str, int], Optional[str]]:
+        resolved: Dict[str, int] = dict(PriorityTagMappingParser.DEFAULT_MAPPING)
+        if not mapping:
+            return resolved, None
+
+        if isinstance(mapping, dict):
+            pairs = list(mapping.items())
+        elif isinstance(mapping, (list, tuple)):
+            pairs = []
+            for entry in mapping:
+                if not isinstance(entry, str) or ":" not in entry:
+                    return resolved, (
+                        f"Invalid --priority-tag-mapping entry {entry!r}, expected format "
+                        "'level:priority_id' (e.g. 'critical:4')"
+                    )
+                level, _, priority_id = entry.partition(":")
+                pairs.append((level, priority_id))
+        else:
+            return resolved, (
+                f"Invalid priority tag mapping type ({type(mapping)}), supported types are list/tuple/dict"
+            )
+
+        for level, priority_id in pairs:
+            level_key = str(level).strip().lower()
+            if not level_key:
+                return dict(PriorityTagMappingParser.DEFAULT_MAPPING), (
+                    "Invalid --priority-tag-mapping entry: level name cannot be empty"
+                )
+            try:
+                resolved[level_key] = int(str(priority_id).strip())
+            except (ValueError, TypeError):
+                return dict(PriorityTagMappingParser.DEFAULT_MAPPING), (
+                    f"Invalid --priority-tag-mapping entry '{level}:{priority_id}': priority ID must be an integer"
+                )
+        return resolved, None
+
+
 class TestRailCaseFieldsOptimizer:
 
     MAX_TESTCASE_TITLE_LENGTH = 250

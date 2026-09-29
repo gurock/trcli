@@ -10,6 +10,7 @@ from trcli.cli import Environment
 from trcli.data_classes.data_parsers import (
     MatchersParser,
     FieldsParser,
+    PriorityTagMappingParser,
     TestRailCaseFieldsOptimizer,
     QualityRatingParser,
 )
@@ -39,6 +40,14 @@ class RobotParser(FileParser):
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+        # Falls back to the built-in defaults when unset (e.g. a hand-built Environment()
+        # in a script/test that never went through the --priority-tag-mapping CLI option),
+        # so the Priority Tag Mapping feature always works out of the box.
+        self.priority_tag_mapping = (
+            environment.priority_tag_mapping
+            if environment.priority_tag_mapping is not None
+            else dict(PriorityTagMappingParser.DEFAULT_MAPPING)
+        )
         self._case_result_statuses = {"pass": 1, "not run": 3, "skip": 4, "fail": 5}
         self._update_with_custom_statuses()
         self.invalid_quality_ratings_found = False  # Track if any quality ratings were invalid
@@ -232,6 +241,12 @@ class RobotParser(FileParser):
                 if error:
                     self.env.elog(error)
                     raise Exception(error)
+                # Priority Tag Mapping: a "priority:<level>" tag resolves a priority_id, but
+                # never overrides an explicit `- testrail_case_field: priority_id:X` doc
+                # directive already captured above (explicit always wins over tag-derived).
+                tag_priority_id = self._priority_id_from_tags(test.tags, case_name)
+                if tag_priority_id is not None:
+                    case_fields_dict.setdefault("priority_id", tag_priority_id)
                 result = TestRailResult(
                     case_id,
                     elapsed=f"{elapsed_time_seconds}",
@@ -313,6 +328,50 @@ class RobotParser(FileParser):
         if messages:
             step.actual = "\n".join(messages)
         return step
+
+    def _priority_id_from_tags(self, tags, case_name: str) -> Optional[int]:
+        """Resolve a TestRail ``priority_id`` from a Robot Framework ``priority:<level>``
+        tag, matched case-insensitively on both the ``priority:`` prefix and the level
+        value against ``self.priority_tag_mapping`` (defaults: critical=4, high=3,
+        medium=2, low=1; overridable/extendable via ``--priority-tag-mapping``).
+
+        Returns ``None`` if no ``priority:`` tag is present, or if its level isn't a
+        recognized key in the mapping - callers must treat that as "no opinion" rather
+        than clearing any priority already set another way. Never raises: an unrecognized
+        level is always surfaced via `elog` (visible without -v, since silently falling
+        back to whatever default priority TestRail assigns is a real data-quality risk in
+        automation pipelines), while duplicate priority tags on the same test are reported
+        via `vlog` (verbose-only) - either way, a stray/unexpected tag never fails an
+        otherwise-valid test's parsing.
+
+        :param tags: the test's Robot Framework tags (``test.tags``, an iterable of str).
+        :param case_name: the test's name, used only for the verbose log messages.
+        """
+        resolved_level = None
+        for tag in tags:
+            if not tag or ":" not in tag:
+                continue
+            prefix, _, level = tag.partition(":")
+            if prefix.strip().lower() != "priority":
+                continue
+            level = level.strip().lower()
+            if resolved_level is None:
+                resolved_level = level
+            else:
+                self.env.vlog(f"Test '{case_name}' has multiple priority tags; ignoring extra tag 'priority:{level}'.")
+
+        if resolved_level is None:
+            return None
+
+        priority_id = self.priority_tag_mapping.get(resolved_level)
+        if priority_id is None:
+            self.env.elog(
+                f"Warning: Test '{case_name}' has tag 'priority:{resolved_level}', which is not a recognized "
+                f"priority level (expected one of: {', '.join(sorted(self.priority_tag_mapping))}). "
+                f"No priority_id will be set from this tag - use --priority-tag-mapping {resolved_level}:<id> "
+                f"to map it (run 'trcli priorities list' to find valid priority IDs)."
+            )
+        return priority_id
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:

@@ -2,6 +2,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Union
+from unittest.mock import patch
 
 import pytest
 from deepdiff import DeepDiff
@@ -291,3 +292,109 @@ class TestRobotParser:
             env = Environment()
             env.file = Path(__file__).parent / "not_found.xml"
             RobotParser(env)
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_priority_tag_mapping_defaults(self):
+        """Priority Tag Mapping: with no --priority-tag-mapping override, 'priority:<level>'
+        tags resolve to the built-in default priority_id mapping (critical=4, high=3,
+        medium=2, low=1), matched case-insensitively on both the 'priority:' prefix and the
+        level value. Unrecognized tag values and tests without a priority tag at all must not
+        get a priority_id. When both an explicit `- testrail_case_field: priority_id:X` doc
+        directive and a priority tag are present, the explicit directive always wins. When a
+        test has multiple priority tags, only the first one is used.
+        """
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_priority_tags_RF50.xml"
+        file_reader = RobotParser(env)
+        suite = file_reader.parse_file()[0]
+
+        case_fields_by_title = {
+            case.title: case.case_fields for section in suite.testsections for case in section.testcases
+        }
+
+        assert case_fields_by_title["Priority Critical Tag"] == {"priority_id": 4}
+        assert case_fields_by_title["Priority High Tag Mixed Case"] == {"priority_id": 3}
+        assert case_fields_by_title["Priority Medium Tag"] == {"priority_id": 2}
+        assert case_fields_by_title["Priority Low Tag"] == {"priority_id": 1}
+        # Unrecognized level value ("urgent") is not in the mapping -> no priority_id set.
+        assert case_fields_by_title["Priority Unrecognized Tag"] == {}
+        # No priority tag at all -> no priority_id set.
+        assert case_fields_by_title["No Priority Tag"] == {}
+        # Explicit doc directive wins over the tag-derived value (and keeps the historic
+        # string-typed case_fields value, unaffected by this feature).
+        assert case_fields_by_title["Explicit Case Field Overrides Priority Tag"] == {"priority_id": "1"}
+        # Multiple priority tags on the same test -> only the first is honored.
+        assert case_fields_by_title["Multiple Priority Tags First One Wins"] == {"priority_id": 4}
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_priority_tag_mapping_unrecognized_tag_warns(self):
+        """An unrecognized 'priority:<level>' tag value must always surface an actionable
+        warning (visible without -v, via elog) pointing the user at --priority-tag-mapping
+        and 'trcli priorities list' - not just a verbose-only vlog note - since silently
+        falling back to TestRail's default priority is a real data-quality risk in
+        automation pipelines. The test's parsing must still succeed (no priority_id set,
+        no exception raised)."""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_priority_tags_RF50.xml"
+
+        with patch.object(env, "elog") as mock_elog:
+            file_reader = RobotParser(env)
+            suite = file_reader.parse_file()[0]
+
+        case_fields_by_title = {
+            case.title: case.case_fields for section in suite.testsections for case in section.testcases
+        }
+        # Parsing still succeeds and sets no priority_id for the unrecognized tag.
+        assert case_fields_by_title["Priority Unrecognized Tag"] == {}
+
+        warning_messages = " ".join(str(call) for call in mock_elog.call_args_list)
+        assert "priority:urgent" in warning_messages
+        assert "--priority-tag-mapping urgent:<id>" in warning_messages
+        assert "trcli priorities list" in warning_messages
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_priority_tag_mapping_custom_override(self):
+        """A custom --priority-tag-mapping value only overrides the level(s) specified,
+        and can also add brand-new levels (e.g. 'urgent') that aren't in the built-in
+        defaults - while an explicit doc directive still always wins over any tag."""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_priority_tags_RF50.xml"
+        env.priority_tag_mapping = ["critical:99", "urgent:50"]
+        file_reader = RobotParser(env)
+        suite = file_reader.parse_file()[0]
+
+        case_fields_by_title = {
+            case.title: case.case_fields for section in suite.testsections for case in section.testcases
+        }
+
+        assert case_fields_by_title["Priority Critical Tag"] == {"priority_id": 99}
+        # Unspecified levels keep their default mapping.
+        assert case_fields_by_title["Priority High Tag Mixed Case"] == {"priority_id": 3}
+        assert case_fields_by_title["Priority Medium Tag"] == {"priority_id": 2}
+        assert case_fields_by_title["Priority Low Tag"] == {"priority_id": 1}
+        # Newly-added custom level is now recognized.
+        assert case_fields_by_title["Priority Unrecognized Tag"] == {"priority_id": 50}
+        assert case_fields_by_title["No Priority Tag"] == {}
+        # Explicit doc directive still wins over the (now-overridden) tag-derived value.
+        assert case_fields_by_title["Explicit Case Field Overrides Priority Tag"] == {"priority_id": "1"}
+        assert case_fields_by_title["Multiple Priority Tags First One Wins"] == {"priority_id": 99}
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_priority_tag_mapping_defaults_without_cli_option(self):
+        """A hand-built Environment() that never went through the --priority-tag-mapping
+        CLI option (env.priority_tag_mapping left as None) must still resolve priority tags
+        using the built-in defaults - the feature works out of the box."""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_priority_tags_RF50.xml"
+        assert env.priority_tag_mapping is None
+        file_reader = RobotParser(env)
+        suite = file_reader.parse_file()[0]
+
+        case_fields_by_title = {
+            case.title: case.case_fields for section in suite.testsections for case in section.testcases
+        }
+        assert case_fields_by_title["Priority Critical Tag"] == {"priority_id": 4}
