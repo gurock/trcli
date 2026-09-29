@@ -1557,6 +1557,8 @@ Case ID: 123
   Template ID: 1
   Type ID: 1
   Priority ID: 2
+  AI Generated: No
+  AI Automated: No
   References: JIRA-123, JIRA-456
   Created By: 1
   Created On: 1646317844
@@ -1576,6 +1578,8 @@ Case ID: 123
   "template_id": 1,
   "type_id": 1,
   "priority_id": 2,
+  "is_ai_generated": false,
+  "is_ai_automated": false,
   "refs": "JIRA-123, JIRA-456",
   "created_by": 1,
   "created_on": 1646317844,
@@ -1640,6 +1644,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 2
     Type ID: 1
+    AI Generated: No
+    AI Automated: No
     Labels: automated, regression
     Custom Fields: 3 field(s)
 
@@ -1649,6 +1655,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 3
     Type ID: 1
+    AI Generated: Yes
+    AI Automated: No
     Labels: automated
     Custom Fields: 2 field(s)
 
@@ -1658,6 +1666,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 2
     Type ID: 1
+    AI Generated: No
+    AI Automated: No
     References: JIRA-789
     Custom Fields: 3 field(s)
 ```

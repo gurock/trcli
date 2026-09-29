@@ -429,3 +429,130 @@ class TestCmdCases:
             mock_client.api_request_handler.case_handler.get_cases.assert_called_once_with(
                 project_id=99, suite_id=None, priority_id=None, filter_text=None, limit=250, offset=0
             )
+
+    @mock.patch("trcli.commands.cmd_cases.ProjectBasedClient")
+    def test_get_case_displays_ai_fields(self, mock_project_client):
+        """Test that get() compact output displays is_ai_generated/is_ai_automated as Yes/No"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.case_handler.get_case.return_value = (
+            {
+                "id": 123,
+                "title": "Test Case Title",
+                "section_id": 1,
+                "suite_id": 2,
+                "template_id": 1,
+                "type_id": 1,
+                "priority_id": 2,
+                "is_ai_generated": True,
+                "is_ai_automated": False,
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(cmd_cases.get, ["--case-id", "123"], obj=self.environment)
+
+            assert result.exit_code == 0
+            log_calls_str = " ".join([str(call) for call in mock_log.call_args_list])
+            assert "AI Generated: Yes" in log_calls_str
+            assert "AI Automated: No" in log_calls_str
+
+    @mock.patch("trcli.commands.cmd_cases.ProjectBasedClient")
+    def test_get_case_displays_ai_fields_when_missing(self, mock_project_client):
+        """Test that get() compact output defaults AI fields to No when absent from API response"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.case_handler.get_case.return_value = (
+            {"id": 123, "title": "Test Case Title", "section_id": 1},
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(cmd_cases.get, ["--case-id", "123"], obj=self.environment)
+
+            assert result.exit_code == 0
+            log_calls_str = " ".join([str(call) for call in mock_log.call_args_list])
+            assert "AI Generated: No" in log_calls_str
+            assert "AI Automated: No" in log_calls_str
+
+    @mock.patch("trcli.commands.cmd_cases.ProjectBasedClient")
+    def test_list_cases_displays_ai_fields(self, mock_project_client):
+        """Test that list() compact output displays is_ai_generated/is_ai_automated per case as Yes/No"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.case_handler.get_cases.return_value = (
+            {
+                "offset": 0,
+                "limit": 250,
+                "size": 2,
+                "cases": [
+                    {
+                        "id": 1,
+                        "title": "Case 1",
+                        "section_id": 1,
+                        "priority_id": 2,
+                        "type_id": 1,
+                        "is_ai_generated": True,
+                        "is_ai_automated": True,
+                    },
+                    {
+                        "id": 2,
+                        "title": "Case 2",
+                        "section_id": 1,
+                        "priority_id": 3,
+                        "type_id": 1,
+                        "is_ai_generated": False,
+                        "is_ai_automated": False,
+                    },
+                ],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(cmd_cases.list, [], obj=self.environment)
+
+            assert result.exit_code == 0
+            log_calls_str = " ".join([str(call) for call in mock_log.call_args_list])
+            assert "AI Generated: Yes" in log_calls_str
+            assert "AI Automated: Yes" in log_calls_str
+            assert "AI Generated: No" in log_calls_str
+            assert "AI Automated: No" in log_calls_str
+
+    @mock.patch("trcli.commands.cmd_cases.ProjectBasedClient")
+    def test_list_cases_show_all_fields_bool_formatting(self, mock_project_client):
+        """Test that show-all-fields mode renders boolean fields (e.g. is_ai_generated) as Yes/No, not True/False"""
+        mock_client = self._setup_project_client_mock(mock_project_client)
+        mock_client.api_request_handler.case_handler.get_cases.return_value = (
+            {
+                "offset": 0,
+                "limit": 250,
+                "size": 1,
+                "cases": [
+                    {
+                        "id": 1,
+                        "title": "Test Case",
+                        "is_ai_generated": True,
+                        "is_ai_automated": False,
+                    }
+                ],
+            },
+            "",
+        )
+
+        with patch.object(self.environment, "log") as mock_log, patch.object(
+            self.environment, "set_parameters"
+        ), patch.object(self.environment, "check_for_required_parameters"):
+            result = self.runner.invoke(cmd_cases.list, ["--show-all-fields"], obj=self.environment)
+
+            assert result.exit_code == 0
+            log_calls_str = " ".join([str(call) for call in mock_log.call_args_list])
+            assert "Is Ai Generated: Yes" in log_calls_str
+            assert "Is Ai Automated: No" in log_calls_str
+            # Ensure raw Python bool str never leaks into the formatted output
+            assert "True" not in log_calls_str
+            assert "False" not in log_calls_str
