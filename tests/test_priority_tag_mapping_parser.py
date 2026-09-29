@@ -110,3 +110,22 @@ class TestPriorityTagMappingParser:
         mapping, error = PriorityTagMappingParser.resolve_mapping(["critical:5", "bad_entry"])
         assert error is not None
         assert "bad_entry" in error
+
+    def test_valid_entry_followed_by_invalid_entry_returns_clean_defaults(self):
+        """Regression test: an earlier valid pair (e.g. 'critical:5') must not leak into
+        the returned mapping when a later pair fails validation (e.g. non-integer priority
+        ID). The caller should get back pristine defaults on error, never a partially
+        applied/mutated mapping."""
+        mapping, error = PriorityTagMappingParser.resolve_mapping(["critical:5", "high:not_a_number"])
+        assert error is not None
+        assert "priority ID must be an integer" in error
+        assert mapping == PriorityTagMappingParser.DEFAULT_MAPPING
+        assert mapping is not PriorityTagMappingParser.DEFAULT_MAPPING
+
+    def test_valid_entry_followed_by_empty_level_returns_clean_defaults(self):
+        """Same regression as above, but for the 'empty level name' error path."""
+        mapping, error = PriorityTagMappingParser.resolve_mapping(["critical:5", ":9"])
+        assert error is not None
+        assert "level name cannot be empty" in error
+        assert mapping == PriorityTagMappingParser.DEFAULT_MAPPING
+        assert mapping is not PriorityTagMappingParser.DEFAULT_MAPPING

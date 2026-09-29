@@ -2,6 +2,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 from typing import Union
+from unittest.mock import patch
 
 import pytest
 from deepdiff import DeepDiff
@@ -325,6 +326,33 @@ class TestRobotParser:
         assert case_fields_by_title["Explicit Case Field Overrides Priority Tag"] == {"priority_id": "1"}
         # Multiple priority tags on the same test -> only the first is honored.
         assert case_fields_by_title["Multiple Priority Tags First One Wins"] == {"priority_id": 4}
+
+    @pytest.mark.parse_robot
+    def test_robot_xml_parser_priority_tag_mapping_unrecognized_tag_warns(self):
+        """An unrecognized 'priority:<level>' tag value must always surface an actionable
+        warning (visible without -v, via elog) pointing the user at --priority-tag-mapping
+        and 'trcli priorities list' - not just a verbose-only vlog note - since silently
+        falling back to TestRail's default priority is a real data-quality risk in
+        automation pipelines. The test's parsing must still succeed (no priority_id set,
+        no exception raised)."""
+        env = Environment()
+        env.case_matcher = MatchersParser.AUTO
+        env.file = Path(__file__).parent / "test_data/XML/robotframework_priority_tags_RF50.xml"
+
+        with patch.object(env, "elog") as mock_elog:
+            file_reader = RobotParser(env)
+            suite = file_reader.parse_file()[0]
+
+        case_fields_by_title = {
+            case.title: case.case_fields for section in suite.testsections for case in section.testcases
+        }
+        # Parsing still succeeds and sets no priority_id for the unrecognized tag.
+        assert case_fields_by_title["Priority Unrecognized Tag"] == {}
+
+        warning_messages = " ".join(str(call) for call in mock_elog.call_args_list)
+        assert "priority:urgent" in warning_messages
+        assert "--priority-tag-mapping urgent:<id>" in warning_messages
+        assert "trcli priorities list" in warning_messages
 
     @pytest.mark.parse_robot
     def test_robot_xml_parser_priority_tag_mapping_custom_override(self):
