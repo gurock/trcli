@@ -152,6 +152,50 @@ class ApiRequestHandler:
         else:
             return response.error_message
 
+    def automation_id_field_exists(self, project_id: int) -> bool:
+        """
+        Checks whether the automation_id field exists at all (under either known system
+        name), regardless of whether it's active/in-scope for ``project_id``.
+
+        Used to decide whether to offer field auto-creation (field genuinely absent) vs.
+        showing the static "fix its configuration" message (field exists but is inactive
+        or not scoped to this project - creating a duplicate wouldn't help and TestRail
+        does not allow two custom fields with the same system name anyway).
+
+        :param project_id: the id of the project (unused directly here, kept for a
+            consistent signature alongside check_automation_id_field)
+        :return: True if a field with the automation_id system name exists, else False
+        """
+        response = self.client.send_get("get_case_fields")
+        if response.error_message:
+            return False
+        fields: List = response.response_text
+        return any(
+            field["system_name"] in [OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID]
+            for field in fields
+        )
+
+    def add_automation_id_field(self, project_id: int) -> Tuple[dict, str, int]:
+        """
+        Create the missing automation_id custom case field, scoped to ``project_id``
+        (project-scoped, not global - the safer default: it only affects this one
+        project rather than silently mutating every project in the TestRail instance).
+
+        Callers must only invoke this after explicit user confirmation.
+
+        :param project_id: the id of the project to scope the new field to
+        :return: Tuple with (created_field_dict, error_message, status_code)
+        """
+        # TestRail auto-prefixes "custom_" to the name we pass, so a literal
+        # "automation_id" here produces system_name "custom_automation_id"
+        return self.case_field_handler.add_case_field(
+            field_type="String",
+            name="automation_id",
+            label="Automation ID",
+            project_ids=[project_id],
+            is_global=False,
+        )
+
     def get_project_data(self, project_name: str, project_id: int = None) -> ProjectData:
         """
         Send get_projects with project name
