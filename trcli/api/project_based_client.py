@@ -77,9 +77,9 @@ class ProjectBasedClient:
         self.environment.log("Checking project. ", new_line=False)
         self.project = self.api_request_handler.get_project_data(self.environment.project, self.environment.project_id)
         self._validate_project_id()
-        if self.environment.auto_creation_response:
-            if self.environment.case_matcher == MatchersParser.AUTO:
-                self._check_or_create_automation_id_field()
+        if self.environment.case_matcher == MatchersParser.AUTO:
+            # NOTE: must NOT be gated behind `self.environment.auto_creation_response` here.
+            self._check_or_create_automation_id_field()
         self.environment.log("Done.")
 
     def _check_or_create_automation_id_field(self):
