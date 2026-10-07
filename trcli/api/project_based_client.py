@@ -77,12 +77,49 @@ class ProjectBasedClient:
         self.environment.log("Checking project. ", new_line=False)
         self.project = self.api_request_handler.get_project_data(self.environment.project, self.environment.project_id)
         self._validate_project_id()
-        if self.environment.auto_creation_response:
-            if self.environment.case_matcher == MatchersParser.AUTO:
-                automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
-                if automation_id_error:
-                    self.environment.elog(automation_id_error)
-                    exit(1)
+        if self.environment.case_matcher == MatchersParser.AUTO:
+            # NOTE: must NOT be gated behind `self.environment.auto_creation_response` here.
+            self._check_or_create_automation_id_field()
+        self.environment.log("Done.")
+
+    def _check_or_create_automation_id_field(self):
+        """
+        Checks the automation_id field is properly configured for this project.
+
+        Exits the process (code 1) if the field is unavailable and either the user
+        declines creation, lacks permission to create it, or creation fails for any
+        other reason.
+        """
+        automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
+        if not automation_id_error:
+            return
+
+        if self.api_request_handler.automation_id_field_exists(self.project.project_id):
+            self.environment.elog(automation_id_error)
+            exit(1)
+
+        prompt_message = PROMPT_MESSAGES["create_automation_id_field"].format(
+            project_name=self.environment.project or self.project.project_id,
+        )
+        if not self.environment.get_prompt_response_for_auto_creation(prompt_message):
+            self.environment.elog(FAULT_MAPPING["no_user_agreement"].format(type="automation_id field"))
+            exit(1)
+
+        self.environment.log("Creating automation_id field. ", new_line=False)
+        _, create_error, status_code = self.api_request_handler.add_automation_id_field(self.project.project_id)
+        if create_error:
+            if status_code == 403:
+                self.environment.elog(FAULT_MAPPING["automation_id_creation_permission_denied"])
+            else:
+                self.environment.elog(FAULT_MAPPING["automation_id_creation_failed"].format(error_message=create_error))
+            exit(1)
+
+        # Re-check so _active_automation_id_field gets set on both self.api_request_handler
+        # and its case_handler before any case matching/creation happens.
+        automation_id_error = self.api_request_handler.check_automation_id_field(self.project.project_id)
+        if automation_id_error:
+            self.environment.elog(automation_id_error)
+            exit(1)
         self.environment.log("Done.")
 
     def _validate_project_id(self):

@@ -72,7 +72,8 @@ class ResultsUploader(ProjectBasedClient):
 
         added_sections = None
         added_test_cases = None
-        if self.environment.auto_creation_response and not all_cases_have_ids:
+        if not all_cases_have_ids:
+            # NOTE: must NOT be gated behind `self.environment.auto_creation_response` here.
             added_sections, result_code = self.add_missing_sections(self.project.project_id)
             if result_code == -1:
                 revert_logs = self.rollback_changes(

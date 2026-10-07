@@ -56,6 +56,13 @@ FAULT_MAPPING = dict(
     f"  - System Name: automation_id\n"
     f"  - Type: Text (or String)\n"
     f"  - Is Active: True",
+    automation_id_creation_permission_denied="Unable to create the automation_id field: TestRail reported a "
+    "permission error. Creating custom case fields requires TestRail Administrator rights. Please ask a "
+    "TestRail admin to create it for you, or configure it manually in the TestRail Administration under "
+    "Customizations > Case Fields (System Name: automation_id, Type: Text/String, Is Active: True).",
+    automation_id_creation_failed="Unable to create the automation_id field automatically: {error_message}\n"
+    "Please configure it manually in the TestRail Administration under Customizations > Case Fields "
+    "(System Name: automation_id, Type: Text/String, Is Active: True).",
     proxy_connection_error="Failed to connect to the proxy server. Please check the proxy settings and ensure the server is available.",
     proxy_authentication_failed="Proxy authentication failed for proxy. Please verify the username and password.",
     proxy_timeout="The connection to the proxy server timed out. Please try again later or check the proxy server's availability.",
@@ -118,6 +125,9 @@ PROMPT_MESSAGES = dict(
     create_missing_test_cases="Some of the test cases in provided file are missing "
     "in TestRail or the IDs are not specified.\n"
     "Would you like to create missing test cases under project: '{project_name}'?",
+    create_automation_id_field="The automation_id field was not found in TestRail.\n"
+    "Would you like to create it now, scoped to project '{project_name}'? "
+    "(This requires TestRail Administrator rights.)",
 )
 
 TOOL_VERSION = f"""TestRail CLI v{trcli.__version__}
