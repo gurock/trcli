@@ -10,7 +10,12 @@ from trcli.cli import Environment
 from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.constants import ProjectErrors, FAULT_MAPPING, UPDATED_SYSTEM_NAME_AUTOMATION_ID
+from trcli.constants import (
+    ProjectErrors,
+    FAULT_MAPPING,
+    OLD_SYSTEM_NAME_AUTOMATION_ID,
+    UPDATED_SYSTEM_NAME_AUTOMATION_ID,
+)
 from trcli.data_classes.data_parsers import MatchersParser
 
 
@@ -817,6 +822,96 @@ class TestApiRequestHandler:
         del api_request_handler_verify.suites_data_from_provider.testsections[1].testcases[0]
         resources_added, error = api_request_handler_verify.add_cases()
         assert error == "", "There should be no error in verification when the automation id field is renamed."
+
+    @pytest.mark.api_handler
+    def test_automation_id_field_exists_true(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """automation_id_field_exists() should return True when a field with either known
+        automation_id system name is present, regardless of its active/scope state."""
+        mocked_response = [
+            {"system_name": "custom_steps", "is_active": True, "configs": []},
+            {"system_name": OLD_SYSTEM_NAME_AUTOMATION_ID, "is_active": False, "configs": []},
+        ]
+        requests_mock.get(create_url("get_case_fields"), json=mocked_response)
+
+        assert api_request_handler.automation_id_field_exists(project_id=1) is True
+
+    @pytest.mark.api_handler
+    def test_automation_id_field_exists_false(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """automation_id_field_exists() should return False when no field with either known
+        automation_id system name is present."""
+        mocked_response = [
+            {"system_name": "custom_steps", "is_active": True, "configs": []},
+        ]
+        requests_mock.get(create_url("get_case_fields"), json=mocked_response)
+
+        assert api_request_handler.automation_id_field_exists(project_id=1) is False
+
+    @pytest.mark.api_handler
+    def test_automation_id_field_exists_false_on_error(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """automation_id_field_exists() should return False (not raise) if get_case_fields itself fails."""
+        requests_mock.get(create_url("get_case_fields"), status_code=500, json={"error": "Server error"})
+
+        assert api_request_handler.automation_id_field_exists(project_id=1) is False
+
+    @pytest.mark.api_handler
+    def test_add_automation_id_field_success(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """add_automation_id_field() should POST add_case_field with the expected payload shape
+        (project-scoped, not global) and return the created field with no error on success."""
+        project_id = 7
+        mocked_response = {
+            "id": 99,
+            "system_name": OLD_SYSTEM_NAME_AUTOMATION_ID,
+            "name": "automation_id",
+            "label": "Automation ID",
+            "type_id": 3,
+        }
+        requests_mock.post(create_url("add_case_field"), json=mocked_response)
+
+        created_field, error, status_code = api_request_handler.add_automation_id_field(project_id)
+
+        assert error == "", "There should be no error when field creation succeeds."
+        assert status_code == 200
+        assert created_field == mocked_response
+
+        sent_payload = requests_mock.last_request.json()
+        assert sent_payload["type"] == "String"
+        assert sent_payload["name"] == "automation_id"
+        assert sent_payload["label"] == "Automation ID"
+        assert sent_payload["include_all"] is True
+        assert sent_payload["configs"][0]["context"]["is_global"] is False
+        assert sent_payload["configs"][0]["context"]["project_ids"] == [project_id]
+
+    @pytest.mark.api_handler
+    def test_add_automation_id_field_permission_denied(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """add_automation_id_field() should propagate a 403 status code so callers can show a
+        specific permission-denied message instead of a generic failure message."""
+        requests_mock.post(
+            create_url("add_case_field"),
+            status_code=403,
+            json={"error": "No permissions to add case fields."},
+        )
+
+        created_field, error, status_code = api_request_handler.add_automation_id_field(project_id=7)
+
+        assert created_field == {}
+        assert error == "No permissions to add case fields."
+        assert status_code == 403
+
+    @pytest.mark.api_handler
+    def test_add_automation_id_field_generic_failure(self, api_request_handler: ApiRequestHandler, requests_mock):
+        """add_automation_id_field() should propagate a non-403 error/status for other failures
+        (e.g. a 400 due to an unexpected field-type validation issue)."""
+        requests_mock.post(
+            create_url("add_case_field"),
+            status_code=400,
+            json={"error": "Invalid field type."},
+        )
+
+        created_field, error, status_code = api_request_handler.add_automation_id_field(project_id=7)
+
+        assert created_field == {}
+        assert error == "Invalid field type."
+        assert status_code == 400
 
     @pytest.mark.api_handler
     def test_delete_section(self, api_request_handler_verify: ApiRequestHandler, requests_mock):
