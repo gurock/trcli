@@ -384,6 +384,157 @@ class TestProjectBasedClient:
         assert run_id == 1, f"Expected run_id to be 1 but got {run_id} instead."
         assert error_message == "", f"Expected error message to be None but got {error_message} instead."
 
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_field_misconfigured_no_duplicate_creation(
+        self, project_based_client_data_provider, mocker
+    ):
+        """When the automation_id field already exists (just inactive/out-of-scope), resolve_project()
+        must show the static error and exit WITHOUT ever offering to create a duplicate field."""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = True
+        api_request_handler.check_automation_id_field.return_value = FAULT_MAPPING["automation_id_unavailable"]
+        api_request_handler.automation_id_field_exists.return_value = True
+
+        with pytest.raises(SystemExit) as exception:
+            project_based_client.resolve_project()
+
+        assert exception.value.code == 1
+        environment.elog.assert_any_call(FAULT_MAPPING["automation_id_unavailable"])
+        environment.get_prompt_response_for_auto_creation.assert_not_called()
+        api_request_handler.add_automation_id_field.assert_not_called()
+
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_field_missing_user_declines(
+        self, project_based_client_data_provider, mocker
+    ):
+        """When the automation_id field is genuinely missing and the user declines creation,
+        resolve_project() must show the no_user_agreement message and exit(1) without creating anything."""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = True
+        api_request_handler.check_automation_id_field.return_value = FAULT_MAPPING["automation_id_unavailable"]
+        api_request_handler.automation_id_field_exists.return_value = False
+        environment.get_prompt_response_for_auto_creation.return_value = False
+
+        with pytest.raises(SystemExit) as exception:
+            project_based_client.resolve_project()
+
+        assert exception.value.code == 1
+        environment.get_prompt_response_for_auto_creation.assert_called_with(
+            PROMPT_MESSAGES["create_automation_id_field"].format(project_name=environment.project)
+        )
+        environment.elog.assert_any_call(FAULT_MAPPING["no_user_agreement"].format(type="automation_id field"))
+        api_request_handler.add_automation_id_field.assert_not_called()
+
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_field_created_successfully(self, project_based_client_data_provider, mocker):
+        """When the automation_id field is missing and the user agrees, resolve_project() should call
+        add_automation_id_field, re-check, and complete normally (no SystemExit) on success."""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = True
+        api_request_handler.automation_id_field_exists.return_value = False
+        environment.get_prompt_response_for_auto_creation.return_value = True
+        api_request_handler.add_automation_id_field.return_value = ({"id": 99}, "", 200)
+        # First call (initial check) fails, second call (re-check after creation) succeeds
+        api_request_handler.check_automation_id_field.side_effect = [
+            FAULT_MAPPING["automation_id_unavailable"],
+            None,
+        ]
+
+        project_based_client.resolve_project()
+
+        api_request_handler.add_automation_id_field.assert_called_once_with(environment.project_id)
+        assert api_request_handler.check_automation_id_field.call_count == 2
+
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_field_creation_permission_denied(
+        self, project_based_client_data_provider, mocker
+    ):
+        """When field creation fails with a 403, resolve_project() should show the specific
+        permission-denied message (not the generic failure message) and exit(1)."""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = True
+        api_request_handler.check_automation_id_field.return_value = FAULT_MAPPING["automation_id_unavailable"]
+        api_request_handler.automation_id_field_exists.return_value = False
+        environment.get_prompt_response_for_auto_creation.return_value = True
+        api_request_handler.add_automation_id_field.return_value = ({}, "No permissions.", 403)
+
+        with pytest.raises(SystemExit) as exception:
+            project_based_client.resolve_project()
+
+        assert exception.value.code == 1
+        environment.elog.assert_any_call(FAULT_MAPPING["automation_id_creation_permission_denied"])
+
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_field_creation_generic_failure(
+        self, project_based_client_data_provider, mocker
+    ):
+        """When field creation fails with a non-403 error, resolve_project() should show the generic
+        creation-failed message (with the underlying error interpolated) and exit(1)."""
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = True
+        api_request_handler.check_automation_id_field.return_value = FAULT_MAPPING["automation_id_unavailable"]
+        api_request_handler.automation_id_field_exists.return_value = False
+        environment.get_prompt_response_for_auto_creation.return_value = True
+        api_request_handler.add_automation_id_field.return_value = ({}, "Invalid field type.", 400)
+
+        with pytest.raises(SystemExit) as exception:
+            project_based_client.resolve_project()
+
+        assert exception.value.code == 1
+        environment.elog.assert_any_call(
+            FAULT_MAPPING["automation_id_creation_failed"].format(error_message="Invalid field type.")
+        )
+
+    @pytest.mark.project_based_client
+    def test_resolve_project_automation_id_check_runs_without_explicit_yes_or_no_flag(
+        self, project_based_client_data_provider, mocker
+    ):
+        """Regression test: the automation_id check must run even when the user passed
+        neither -y nor -n (environment.auto_creation_response is None, its real default -
+        see Environment.auto_creation_response in cli.py - not the Mock-default truthy
+        value the other tests in this class set explicitly via `= True`).
+        """
+        (
+            environment,
+            api_request_handler,
+            project_based_client,
+        ) = project_based_client_data_provider
+        environment.auto_creation_response = None  # real default when -y/-n not passed
+        api_request_handler.check_automation_id_field.return_value = FAULT_MAPPING["automation_id_unavailable"]
+        api_request_handler.automation_id_field_exists.return_value = False
+        # Simulate the interactive confirm() prompt (reached via
+        # get_prompt_response_for_auto_creation when auto_creation_response is None)
+        # being answered "no".
+        environment.get_prompt_response_for_auto_creation.return_value = False
+
+        with pytest.raises(SystemExit) as exception:
+            project_based_client.resolve_project()
+
+        assert exception.value.code == 1
+        # The key assertion: the check must have been *attempted* at all.
+        api_request_handler.check_automation_id_field.assert_called_once_with(environment.project_id)
+        environment.get_prompt_response_for_auto_creation.assert_called_once()
+
     def test_get_project_id(self, project_based_client_data_provider):
         """The purpose of this test is to check that the _get_project_id() will fall back to the environment.project_id
         when environment.project does not contain the project_id."""
