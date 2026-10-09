@@ -407,10 +407,19 @@ while the second one is suited for a specification-first approach, where you wri
 >   otherwise the CLI tool will attempt to find the suite on TestRail or create it.
 
 #### 1. Using Automation ID (code-first approach)
-To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
+To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/)
 of type `Text` with system name `automation_id`.
 
-The TestRail CLI will use the unique combination of your automation test case’s `classname` and `name` 
+> **Auto-creating the automation_id field:** If the `automation_id` field doesn't exist yet in your
+> TestRail instance, the CLI can create it for you (scoped to your current project, not globally)
+> the next time it runs with `--case-matcher auto` and either `-y` or an interactive `yes` response.
+> This requires TestRail Administrator rights for the account/API key being used; if the account
+> lacks permission, the CLI will show a specific error explaining that admin rights are required.
+> If the field already exists but is inactive or not scoped to your project, the CLI will **not**
+> attempt to create a duplicate - you'll need to fix its configuration manually in the TestRail
+> Administration under Customizations > Case Fields, as described below.
+
+The TestRail CLI will use the unique combination of your automation test case’s `classname` and `name`
 (expressed as `classname.name`) to compare against values of the `automation_id` field in your TestRail test case repository.
 If a match is found, this test case will be included in the auto-generated test run for this upload. 
 
