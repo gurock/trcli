@@ -107,6 +107,7 @@ COMMAND_FAULT_MAPPING = dict(
     templates=dict(**FAULT_MAPPING),
     tests=dict(**FAULT_MAPPING),
     reports=dict(**FAULT_MAPPING),
+    sharedsteps=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -150,7 +151,8 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - projects: Query projects (get and list)
     - templates: Query templates (list)
     - tests: Query tests (get and list)
-    - results: Query and update test results (list, update)"""
+    - results: Query and update test results (list, update)
+    - sharedsteps: Manage shared steps (list, show, create, update, delete)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
