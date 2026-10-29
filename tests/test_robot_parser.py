@@ -284,8 +284,8 @@ class TestRobotParser:
             assert section.section_id == created_ids_by_name[section.name]
             if section.parent_section is not None:
                 assert section.parent_id == created_ids_by_name[section.parent_section.name]
-                
-    @pytest.mark.parse_robot            
+
+    @pytest.mark.parse_robot
     @pytest.mark.parametrize(
         "input_xml_path, expected_path",
         [
@@ -320,6 +320,7 @@ class TestRobotParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__simplify_parent_section(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert (

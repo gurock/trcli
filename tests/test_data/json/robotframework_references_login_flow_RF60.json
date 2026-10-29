@@ -163,7 +163,8 @@
           "custom_automation_id": "Login Dashboard.Sample Login And Dashboard Verification"
         }
       ],
-      "properties": []
+      "properties": [],
+      "parent_section": null
     }
   ],
   "source": "robotframework_references_login_flow_RF60.xml"
