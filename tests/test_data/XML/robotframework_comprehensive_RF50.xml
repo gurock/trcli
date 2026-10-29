@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot generator="Robot 5.0.1 (Python 3.13.0 on darwin)" generated="20260828 16:49:58.255" rpa="false" schemaversion="3">
-<suite id="s1" name="Comprehensive Suite" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite">
-<suite id="s1-s1" name="Api Tests" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests">
-<suite id="s1-s1-s1" name="Authentication" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/authentication">
-<suite id="s1-s1-s1-s1" name="Login" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/authentication/login.robot">
+<suite id="s1" name="Comprehensive Suite" source="/robot_source/comprehensive_suite">
+<suite id="s1-s1" name="Api Tests" source="/robot_source/comprehensive_suite/api_tests">
+<suite id="s1-s1-s1" name="Authentication" source="/robot_source/comprehensive_suite/api_tests/authentication">
+<suite id="s1-s1-s1-s1" name="Login" source="/robot_source/comprehensive_suite/api_tests/authentication/login.robot">
 <test id="s1-s1-s1-s1-t1" name="Successful Login With Nested Keywords" line="6">
 <kw name="Perform Login" library="common_keywords">
 <arg>john_doe</arg>
@@ -199,7 +199,7 @@
 </test>
 <status status="FAIL" starttime="20260828 16:49:58.272" endtime="20260828 16:49:58.277"/>
 </suite>
-<suite id="s1-s1-s1-s2" name="Logout" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/authentication/logout.robot">
+<suite id="s1-s1-s1-s2" name="Logout" source="/robot_source/comprehensive_suite/api_tests/authentication/logout.robot">
 <test id="s1-s1-s1-s2-t1" name="Successful Logout" line="6">
 <kw name="Log" library="BuiltIn">
 <arg>Logging out user</arg>
@@ -263,8 +263,8 @@
 </suite>
 <status status="FAIL" starttime="20260828 16:49:58.271" endtime="20260828 16:49:58.279"/>
 </suite>
-<suite id="s1-s1-s2" name="User Management" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/user_management">
-<suite id="s1-s1-s2-s1" name="Create User" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/user_management/create_user.robot">
+<suite id="s1-s1-s2" name="User Management" source="/robot_source/comprehensive_suite/api_tests/user_management">
+<suite id="s1-s1-s2-s1" name="Create User" source="/robot_source/comprehensive_suite/api_tests/user_management/create_user.robot">
 <test id="s1-s1-s2-s1-t1" name="Create User Successfully" line="6">
 <kw name="Create User With Args" library="common_keywords">
 <arg>alice</arg>
@@ -327,7 +327,7 @@ Intentional teardown failure for test data coverage</status>
 </test>
 <status status="FAIL" starttime="20260828 16:49:58.280" endtime="20260828 16:49:58.282"/>
 </suite>
-<suite id="s1-s1-s2-s2" name="Delete User" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/api_tests/user_management/delete_user.robot">
+<suite id="s1-s1-s2-s2" name="Delete User" source="/robot_source/comprehensive_suite/api_tests/user_management/delete_user.robot">
 <test id="s1-s1-s2-s2-t1" name="Delete User Successfully" line="6">
 <kw name="Log" library="BuiltIn">
 <arg>Deleting user account</arg>
@@ -359,8 +359,8 @@ Intentional teardown failure for test data coverage</status>
 </suite>
 <status status="FAIL" starttime="20260828 16:49:58.271" endtime="20260828 16:49:58.283"/>
 </suite>
-<suite id="s1-s2" name="Reporting" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/reporting">
-<suite id="s1-s2-s1" name="Generate Report" source="/Users/nel/Desktop/Galt/TRCLI/trcli/tests/test_data/robot_source/comprehensive_suite/reporting/generate_report.robot">
+<suite id="s1-s2" name="Reporting" source="/robot_source/comprehensive_suite/reporting">
+<suite id="s1-s2-s1" name="Generate Report" source="/robot_source/comprehensive_suite/reporting/generate_report.robot">
 <kw name="Failing Suite Setup" library="common_keywords" type="SETUP">
 <kw name="Fail" library="BuiltIn">
 <arg>Intentional suite setup failure for test data coverage</arg>

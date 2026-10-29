@@ -106,6 +106,8 @@ COMMAND_FAULT_MAPPING = dict(
     projects=dict(**FAULT_MAPPING),
     templates=dict(**FAULT_MAPPING),
     tests=dict(**FAULT_MAPPING),
+    reports=dict(**FAULT_MAPPING),
+    sharedsteps=dict(**FAULT_MAPPING),
 )
 
 PROMPT_MESSAGES = dict(
@@ -132,6 +134,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - add_run: Create a new test run
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)
+    - reports: Manage reports (list and generate)
     - cases: Query test cases (get and list)
     - suites: Query test suites (get and list)
     - sections: Query test sections (get and list)
@@ -148,7 +151,8 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - projects: Query projects (get and list)
     - templates: Query templates (list)
     - tests: Query tests (get and list)
-    - results: Query and update test results (list, update)"""
+    - results: Query and update test results (list, update)
+    - sharedsteps: Manage shared steps (list, show, create, update, delete)"""
 
 MISSING_COMMAND_SLOGAN = """Usage: trcli [OPTIONS] COMMAND [ARGS]...\nTry 'trcli --help' for help.
 \nError: Missing command."""
