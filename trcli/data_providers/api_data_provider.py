@@ -4,7 +4,8 @@ from serde.json import to_dict
 from datetime import datetime, timezone
 
 from trcli.constants import OLD_SYSTEM_NAME_AUTOMATION_ID, UPDATED_SYSTEM_NAME_AUTOMATION_ID
-from trcli.data_classes.dataclass_testrail import TestRailSuite
+from trcli.data_classes.dataclass_testrail import TestRailSuite, TestRailSection
+from trcli.data_classes.validation_exception import ValidationException
 
 
 class ApiDataProvider:
@@ -32,14 +33,105 @@ class ApiDataProvider:
         return [to_dict(self.suites_input)]
 
     def add_sections_data(self, return_all_items=False) -> list:
-        """Return list of bodies for adding sections.
-        The ID of the test suite (ignored if the project is operating in single suite mode, required otherwise)
+        """Return list of bodies for adding sections, in parent-before-child (topological)
+        order. The ID of the test suite (ignored if the project is operating in single suite
+        mode, required otherwise).
+
+        For sections linked via `parent_section` (nested hierarchies, e.g. from the Robot
+        Framework parser), `parent_id` is resolved from the parent's live `section_id` at
+        the moment each body is built - so this only produces a fully-correct `parent_id`
+        for children whose parent already has a resolved `section_id` (either pre-existing/
+        matched, or already created earlier in the same, already-topologically-sorted list).
+        Sections with no `parent_section` link (flat/legacy usage) are entirely unaffected.
         """
+        ordered_sections = self._topologically_sorted_sections(self.suites_input.testsections)
         return [
-            to_dict(section)
-            for section in self.suites_input.testsections
+            self.build_section_body(section)
+            for section in ordered_sections
             if section.section_id is None or return_all_items
         ]
+
+    def sections_in_creation_order(self, only_pending: bool = True) -> List[TestRailSection]:
+        """Return this suite's sections in parent-before-child (topological) order.
+
+        :param only_pending: if True (default), only sections still missing a `section_id`
+            (i.e. not yet created/matched) are returned.
+        """
+        ordered_sections = self._topologically_sorted_sections(self.suites_input.testsections)
+        if only_pending:
+            return [section for section in ordered_sections if section.section_id is None]
+        return ordered_sections
+
+    def build_section_body(self, section: TestRailSection) -> dict:
+        """Build the add_section request body for a single section.
+
+        If the section is linked to a parent via `parent_section` (nested hierarchy), its
+        `parent_id` is resolved from the parent's current `section_id` right before
+        serializing. Sections without a `parent_section` link keep whatever flat `parent_id`
+        was already set (e.g. via --section-id), unchanged.
+        """
+        if section.parent_section is not None:
+            section.parent_id = section.parent_section.section_id
+        return to_dict(section)
+
+    def apply_created_section(self, section: TestRailSection, section_id: int, suite_id: int = None) -> None:
+        """Write a newly-created (or matched) section's real TestRail ID directly onto the
+        given section object (and cascade to its test cases), so that any pending children
+        already linked to it via `parent_section` can immediately resolve their own
+        `parent_id` on their next `build_section_body()` call.
+        """
+        section.section_id = section_id
+        if suite_id is not None:
+            section.suite_id = suite_id
+        for case in section.testcases:
+            case.section_id = section_id
+
+    @staticmethod
+    def _topologically_sorted_sections(sections: List[TestRailSection]) -> List[TestRailSection]:
+        """Order `sections` so that every section's `parent_section` (when it points to
+        another section within this same list) always comes before it.
+
+        Uses Kahn's algorithm (BFS-based topological sort). Sections whose `parent_section`
+        is None, or points to a section outside this list (e.g. already resolved/external),
+        are treated as roots with no in-list dependency. Raises ValidationException if a
+        circular parent_section chain is detected (defensive: the tree built by the Robot
+        Framework parser's own recursion cannot cycle, but any other producer of
+        TestRailSection data - manual construction, future readers, etc. - is not guaranteed
+        to be acyclic).
+
+        Sibling order (original relative order within `sections`) is preserved.
+        """
+        section_ids_in_list = {id(section) for section in sections}
+        in_degree: Dict[int, int] = {id(section): 0 for section in sections}
+        children_by_parent: Dict[int, List[TestRailSection]] = {id(section): [] for section in sections}
+
+        for section in sections:
+            parent = section.parent_section
+            if parent is not None and id(parent) in section_ids_in_list:
+                in_degree[id(section)] += 1
+                children_by_parent[id(parent)].append(section)
+
+        queue = [section for section in sections if in_degree[id(section)] == 0]
+        ordered: List[TestRailSection] = []
+        while queue:
+            current = queue.pop(0)
+            ordered.append(current)
+            for child in children_by_parent[id(current)]:
+                in_degree[id(child)] -= 1
+                if in_degree[id(child)] == 0:
+                    queue.append(child)
+
+        if len(ordered) != len(sections):
+            unresolved = [section.name for section in sections if section not in ordered]
+            raise ValidationException(
+                field_name="parent_section",
+                class_name="TestRailSection",
+                reason=(
+                    "Circular parent_section dependency detected among sections: "
+                    f"{unresolved}. A section cannot be its own ancestor."
+                ),
+            )
+        return ordered
 
     def add_cases(self, return_all_items=False) -> list:
         """Return list of bodies for adding test cases.
@@ -227,14 +319,25 @@ class ApiDataProvider:
 
     def check_section_names_duplicates(self):
         """
-        Check if section names in result xml file are duplicated.
-        """
-        sections_names = [sections.name for sections in self.suites_input.testsections]
+        Check if section names are duplicated among siblings (sections sharing the same
+        `parent_section`).
 
-        if len(sections_names) == len(set(sections_names)):
-            return False
-        else:
-            return True
+        This is intentionally scoped per-parent rather than global: with nested section
+        hierarchies (e.g. built by the Robot Framework parser), it is common and valid for
+        sections at different levels/branches of the tree to share the same bare name (e.g.
+        two different suites each contributing a "Setup" sub-section). Only a name collision
+        between two sections with the *same* parent (including two top-level/root sections,
+        which share the implicit `None` parent) is an actual ambiguous duplicate.
+        """
+        names_by_parent: Dict[int, List[str]] = {}
+        for section in self.suites_input.testsections:
+            parent_key = id(section.parent_section) if section.parent_section is not None else None
+            names_by_parent.setdefault(parent_key, []).append(section.name)
+
+        for sibling_names in names_by_parent.values():
+            if len(sibling_names) != len(set(sibling_names)):
+                return True
+        return False
 
     def __update_section_data(self, section_data: List[Dict]):
         """section_data comes from add_section API response

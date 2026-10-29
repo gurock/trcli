@@ -228,6 +228,17 @@ class TestRailSection:
     section_id: int = field(default=None, metadata={"serde_skip": True})
     testcases: List[TestRailCase] = field(default_factory=list, metadata={"serde_skip": True})
     properties: List[TestRailProperty] = field(default_factory=list, metadata={"serde_skip": True})
+    # In-memory-only link to this section's parent TestRailSection object, used to build
+    # real nested section hierarchies (e.g. from Robot Framework's suite tree) before the
+    # parent's real TestRail section_id is known. Never serialized/sent to the API directly;
+    # `parent_id` (above) is what actually gets resolved and sent, once the parent has been
+    # created/matched. Readers/callers that don't need hierarchy (e.g. JUnit, flat
+    # --section-id usage) simply never set this, leaving existing behavior unchanged.
+    # Typed as `object` rather than a self-referential "TestRailSection" forward ref: serde's
+    # @serialize/@deserialize decorators call typing.get_type_hints() at class-decoration time,
+    # before this class is fully defined/globally visible, so a real self-reference cannot be
+    # resolved. `object` needs no resolution and the field is serde_skip anyway.
+    parent_section: Optional[object] = field(default=None, metadata={"serde_skip": True})
 
     def __getitem__(self, item):
         return getattr(self, item)

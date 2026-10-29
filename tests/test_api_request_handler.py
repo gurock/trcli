@@ -214,9 +214,8 @@ class TestApiRequestHandler:
         ), "Added suite id in DataProvider doesn't match mocked response id."
 
     @pytest.mark.api_handler
-    def test_check_missing_sections_true(self, api_request_handler: ApiRequestHandler, requests_mock, mocker):
+    def test_check_missing_sections_true(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
-        update_data_mock = mocker.patch("trcli.api.api_request_handler.ApiDataProvider.update_data")
         mocked_response = {
             "_links": {"next": None, "prev": None},
             "sections": [
@@ -231,13 +230,17 @@ class TestApiRequestHandler:
         requests_mock.get(create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response)
 
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
-        update_data_mock.assert_called_with(section_data=[{"section_id": 0, "suite_id": 4, "name": "Skipped test"}])
+        # "Skipped test" matched remotely (by name+parent_id) and should be applied immediately
+        # onto the live section object; "Passed test" has no remote match, hence `missing=True`.
+        testsections = api_request_handler.suites_data_from_provider.testsections
+        assert testsections[0].section_id == 0
+        assert testsections[0].suite_id == 4
+        assert testsections[1].section_id is None
         assert missing, "There should be missing section"
 
     @pytest.mark.api_handler
-    def test_check_missing_sections_false(self, api_request_handler: ApiRequestHandler, requests_mock, mocker):
+    def test_check_missing_sections_false(self, api_request_handler: ApiRequestHandler, requests_mock):
         project_id = 3
-        update_data_mock = mocker.patch("trcli.api.api_request_handler.ApiDataProvider.update_data")
         mocked_response = {
             "_links": {"next": None, "prev": None},
             "sections": [
@@ -257,12 +260,13 @@ class TestApiRequestHandler:
         requests_mock.get(create_url(f"get_sections/{project_id}&suite_id=4"), json=mocked_response)
 
         missing, _ = api_request_handler.check_missing_section_ids(project_id)
-        update_data_mock.assert_called_with(
-            section_data=[
-                {"name": "Skipped test", "section_id": 1, "suite_id": 4},
-                {"name": "Passed test", "section_id": 2, "suite_id": 4},
-            ]
-        )
+        # Both local sections matched remotely (by name+parent_id) and should be applied
+        # immediately onto their respective live section objects.
+        testsections = api_request_handler.suites_data_from_provider.testsections
+        assert testsections[0].section_id == 1
+        assert testsections[0].suite_id == 4
+        assert testsections[1].section_id == 2
+        assert testsections[1].suite_id == 4
         assert not missing, "There should be no missing section"
 
     @pytest.mark.api_handler

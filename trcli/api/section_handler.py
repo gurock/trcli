@@ -43,6 +43,23 @@ class SectionHandler:
         """
         Check what section id's are missing in DataProvider.
 
+        Sections are matched against the sections already present on TestRail using both
+        `name` and `parent_id` (rather than bare name alone), so that sections at different
+        positions in a nested hierarchy which happen to share a name (e.g. two different
+        suites each contributing a "Setup" sub-section) are not confused with one another.
+
+        Local sections are walked in parent-before-child (topological) order, and every match
+        is applied to the live section object immediately (via `apply_created_section`) rather
+        than only through an aggregated `update_data()` call at the end - both so that any
+        pending child already linked to it via `parent_section` can resolve its own expected
+        `parent_id` from its parent's now-known, real `section_id` later in this same pass, and
+        so that same-named sibling sections under different parents (e.g. two different suites
+        each contributing a "Setup" sub-section) are never conflated with one another. The
+        legacy `update_data(section_data=...)` call this method used to end with matched purely
+        by bare `name` (via `ApiDataProvider.__update_section_data`) and would silently
+        misassign such duplicate-named sections if used here; it has intentionally been dropped
+        in favor of this immediate, hierarchy-aware application.
+
         :param project_id: project_id
         :param suite_id: suite_id
         :param suites_data: Test suite data from provider
@@ -52,57 +69,71 @@ class SectionHandler:
         if not error_message:
             missing_test_sections = False
             sections_by_id = {section["id"]: section for section in returned_sections}
-            sections_by_name = {section["name"]: section for section in returned_sections}
-            section_data = []
-            for section in suites_data.testsections:
+            sections_by_parent_and_name = {
+                (section.get("parent_id"), section["name"]): section for section in returned_sections
+            }
+            ordered_sections = self.data_provider.sections_in_creation_order(only_pending=False)
+            for section in ordered_sections:
                 if self.environment.section_id:
                     if section.section_id in sections_by_id.keys():
                         section_json = sections_by_id[section.section_id]
-                        section_data.append(
-                            {
-                                "section_id": section_json["id"],
-                                "suite_id": section_json["suite_id"],
-                                "name": section_json["name"],
-                            }
+                        self.data_provider.apply_created_section(
+                            section, section_json["id"], suite_id=section_json["suite_id"]
                         )
                     else:
                         missing_test_sections = True
-                if section.name in sections_by_name.keys():
-                    section_json = sections_by_name[section.name]
-                    section_data.append(
-                        {
-                            "section_id": section_json["id"],
-                            "suite_id": section_json["suite_id"],
-                            "name": section_json["name"],
-                        }
+
+                expected_parent_id = (
+                    section.parent_section.section_id
+                    if section.parent_section is not None
+                    else self.environment.section_id
+                )
+                section_json = sections_by_parent_and_name.get((expected_parent_id, section.name))
+                if section_json is not None:
+                    # Apply immediately (see docstring) so that any pending children linked via
+                    # `parent_section` can resolve their own `expected_parent_id` above, later
+                    # in this very same loop.
+                    self.data_provider.apply_created_section(
+                        section, section_json["id"], suite_id=section_json["suite_id"]
                     )
                 else:
                     missing_test_sections = True
-            self.data_provider.update_data(section_data=section_data)
             return missing_test_sections, error_message
         else:
             return False, error_message
 
     def add_sections(self, project_id: int, verify_callback) -> Tuple[List[Dict], str]:
         """
-        Add sections that doesn't have ID in DataProvider.
-        Runs update_data in data_provider for successfully created resources.
+        Add sections that don't yet have an ID in DataProvider, one at a time, in
+        parent-before-child (topological) order.
+
+        TestRail has no bulk `add_section` endpoint, so sections are always created one at a
+        time - but for nested hierarchies this ordering is also a correctness requirement, not
+        just an API limitation: each section's real, newly-assigned `section_id` is written back
+        onto the live section object immediately after its own request succeeds (via
+        `apply_created_section`), *before* the next section's request body is built. This
+        guarantees a pending child already linked via `parent_section` can resolve its own
+        correct `parent_id` on its own turn, even though its parent may have only just been
+        created earlier in this very call.
 
         :param project_id: project_id
         :param verify_callback: callback to verify returned data matches request
         :returns: Tuple with list of dict created resources and error string.
         """
-        add_sections_data = self.data_provider.add_sections_data()
+        pending_sections = self.data_provider.sections_in_creation_order()
         responses = []
         error_message = ""
-        for body in add_sections_data:
+        for section in pending_sections:
+            body = self.data_provider.build_section_body(section)
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
-                responses.append(response)
                 if not verify_callback(body, response.response_text):
-                    responses.append(response)
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
+                responses.append(response)
+                self.data_provider.apply_created_section(
+                    section, response.response_text["id"], suite_id=response.response_text["suite_id"]
+                )
             else:
                 error_message = response.error_message
                 break
@@ -114,11 +145,6 @@ class SectionHandler:
             }
             for response in responses
         ]
-        (
-            self.data_provider.update_data(section_data=returned_resources)
-            if len(returned_resources) > 0
-            else "Update skipped"
-        )
         return returned_resources, error_message
 
     def delete_sections(self, added_sections: List[Dict]) -> Tuple[List, str]:
