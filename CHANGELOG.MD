@@ -7,6 +7,7 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
 ## [1.16.0]
+
 _released 10-29-2026
 
 ### Added
@@ -20,8 +21,6 @@ _released 10-29-2026
  - **New `reports` command**: List available report templates and generate reports in TestRail using `list` and `generate` subcommands.
  - **New `sharedsteps` command**: Manage shared steps in TestRail, supports listing, showing, creating, updating and deleting shared steps.
 
-
-
 ### Fixed
  - Fixed an issue where the confirmation prompt for creating missing entities did not appear when neither `-y` nor `-n` was specified.
  - Fixed an issue where `--verify` failed with an error when a returned case field was missing, such as with the `automation_id` field.
@@ -29,6 +28,7 @@ _released 10-29-2026
 ## [1.15.2]
 
 _released 07-23-2026
+
 ### Added
  - **New `priorities` command**: Query all available test case priorities from TestRail using list subcommand.
  - **New `casetypes` command**: Allows retrieving all available test case types/classifications in your TestRail instance.
