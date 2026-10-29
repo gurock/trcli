@@ -18,7 +18,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1234",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -95,7 +95,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1235",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -167,7 +167,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1236",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -279,7 +279,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1237",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -311,7 +311,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1238",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -343,7 +343,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-1239",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -400,7 +400,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-2001",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -437,7 +437,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-2002",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -474,7 +474,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-2003",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -526,7 +526,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-2004",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -558,7 +558,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-2005",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -600,7 +600,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-3001",
           "case_fields": {},
           "result": {
             "case_id": null,
@@ -626,7 +626,7 @@
           "template_id": null,
           "type_id": null,
           "milestone_id": null,
-          "refs": null,
+          "refs": "JIRA-3002",
           "case_fields": {},
           "result": {
             "case_id": null,
