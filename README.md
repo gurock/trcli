@@ -13,6 +13,7 @@ The TestRail CLI currently supports:
 - **Creating new test runs for results to be uploaded to**
 - **Managing project labels for better organization and categorization**
 - **Retrieving and listing test cases with advanced filtering**
+- **Generating and listing reports for aggregated insights and analytics**
 
 To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
@@ -116,6 +117,7 @@ Commands:
   priorities     List test case priorities in TestRail
   casetypes      List test case types in TestRail
   users          Query users in TestRail
+  reports        Manage reports in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -2905,6 +2907,137 @@ $ trcli -c config.yml tests list --run-id 1 --status-id 4,5 --limit 30 --offset 
 - Pagination parameters `--limit` and `--offset` allow you to retrieve tests in manageable batches (default limit: 250)
 - The `--show-all-fields` option displays additional information including custom fields, labels, estimates, and assignments
 - Tests are different from test cases: tests are instances of test cases within a specific run
+
+### Reports Command
+
+The `reports` command provides functionality to list available report templates and generate reports in TestRail. Reports provide aggregated insights and prevent the need to download thousands of raw records. This is particularly useful for nightly pipeline report generation, sprint quality summaries, executive dashboards, trend analysis, coverage summaries, and release readiness assessments.
+
+The `reports` command supports two subcommands:
+- **list**: List available report templates (single-project or cross-project)
+- **generate**: Generate a report and get URLs to access it in HTML or PDF format
+
+#### Listing Available Reports
+
+The `list` subcommand retrieves available report templates. You can list single-project reports or cross-project reports (Enterprise only).
+
+```shell
+# List reports for a specific project
+$ trcli -c config.yml reports list --project-id 1
+
+# List cross-project reports (Enterprise only)
+$ trcli -c config.yml reports list --cross-project
+
+# Show all fields including notification settings
+$ trcli -c config.yml reports list --project-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml reports list --project-id 1 --json-output
+```
+
+**Example Output:**
+```shell
+$ trcli -c config.yml reports list --project-id 1
+
+Reports List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+
+Retrieving reports for project 1...
+Found 3 report(s).
+
+Report ID: 1
+  Name: Activity Summary (Cases)
+  Description: Shows activity summary for test cases
+
+Report ID: 2
+  Name: Coverage Report
+  Description: Shows test coverage metrics
+
+Report ID: 3
+  Name: Test Execution Summary
+  Description: Summary of test execution results
+
+Report listing completed successfully.
+```
+
+#### Generating Reports
+
+The `generate` subcommand executes a report and returns URLs to access it in all available formats (View, HTML, and PDF). You can specify the report either by ID or by name. When using `--report` with a partial name match, **all matching reports will be generated**.
+
+```shell
+# Generate a report by ID
+$ trcli -c config.yml reports generate --project-id 1 --report-id 5
+
+# Generate a report by name (generates all matching reports)
+$ trcli -c config.yml reports generate --project-id 1 --report "Coverage"
+
+# Generate all reports matching "Cases" (e.g., "Summary for Cases", "Comparison for Cases")
+$ trcli -c config.yml reports generate --project-id 1 --report "Cases"
+
+# Generate a cross-project report (Enterprise only)
+$ trcli -c config.yml reports generate --cross-project --report-id 3
+
+# Generate with JSON output
+$ trcli -c config.yml reports generate --project-id 1 --report "Coverage" --json-output
+```
+
+#### Command Reference
+
+**Main Reports Command:**
+```shell
+$ trcli reports --help
+
+Usage: trcli reports [OPTIONS] COMMAND [ARGS]...
+  Manage reports in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  generate  Generate a report in TestRail
+  list      List available report templates from TestRail
+```
+
+**List Command:**
+```shell
+$ trcli reports list --help
+
+Options:
+  --project-id <id>      List reports for a specific project ID (uses project from config if not specified).
+  --json-output          Output reports as raw JSON from API.
+  --show-all-fields      Show all fields including notification settings.
+  --cross-project        List cross-project reports (Enterprise only, ignores --project-id).
+  --help                 Show this message and exit.
+```
+
+**Generate Command:**
+```shell
+$ trcli reports generate --help
+
+Options:
+  --project-id <id>      Generate report for a specific project ID (uses project from config if not specified).
+  --report-id <id>       Report template ID to generate.
+  --report <name>        Report template name (or partial name) to generate. Generates all matching reports.
+  --json-output          Output report URLs as raw JSON from API.
+  --cross-project        Generate cross-project report (Enterprise only, ignores --project-id).
+  --help                 Show this message and exit.
+```
+
+#### Important Notes
+
+- **API Access Configuration**: Before accessing reports via the API (or TRCLI), you must configure your report for API access in TestRail:
+  1. Create a new report in TestRail
+  2. Check the **"Create this report: On-demand via the API"** checkbox
+  3. Save the report
+
+  **Important:** You cannot modify the "Create this report" settings after the report has been saved. Existing scheduled reports cannot be changed to be accessible via the API - you must create a new report.
+
+  Once configured, the report will appear in the **API Templates** section tab alongside other reports and will be accessible via TRCLI.
+
+- **Report Availability**: Reports may not be available immediately after generation. The processing time varies, especially for TestRail Server customers.
+- **Cross-Project Reports**: The `--cross-project` flag is only available on TestRail Enterprise license plans.
+- **Report Name Matching**: When using `--report` with a name, the command performs case-insensitive partial matching. **All matching reports will be generated**, not just the first match.
+- **Report Formats**: All generated reports include URLs for all available formats (View, HTML, and PDF). You don't need to specify a format - all URLs are provided in the output.
+- **Character Limit**: Report names and descriptions may vary in length. Use `--json-output` to see the full, untruncated data.
 
 ### Case Fields Command
 
