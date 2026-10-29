@@ -106,6 +106,7 @@ COMMAND_FAULT_MAPPING = dict(
     projects=dict(**FAULT_MAPPING),
     templates=dict(**FAULT_MAPPING),
     tests=dict(**FAULT_MAPPING),
+    reports=dict(**FAULT_MAPPING),
     sharedsteps=dict(**FAULT_MAPPING),
 )
 
@@ -133,6 +134,7 @@ TOOL_USAGE = f"""Supported and loaded modules:
     - add_run: Create a new test run
     - labels: Manage labels (projects, cases, and tests)
     - references: Manage references (cases and runs)
+    - reports: Manage reports (list and generate)
     - cases: Query test cases (get and list)
     - suites: Query test suites (get and list)
     - sections: Query test sections (get and list)
