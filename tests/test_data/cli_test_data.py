@@ -71,6 +71,7 @@ trcli_description = (
     "    - parse_robot: Robot Framework XML Files\n"
     "    - parse_openapi: OpenAPI YML Files\n"
     "    - add_run: Create a new test run\n"
+    "    - fields: Manage fields (list dynamic filter fields)\n"
     "    - labels: Manage labels (projects, cases, and tests)\n"
     "    - references: Manage references (cases and runs)\n"
     "    - reports: Manage reports (list and generate)\n"
@@ -92,6 +93,9 @@ trcli_description = (
     "    - tests: Query tests (get and list)\n"
     "    - results: Query and update test results (list, update)\n"
     "    - sharedsteps: Manage shared steps (list, show, create, update, delete)\n"
+    "    - variables: Manage test data variables (list, add, update, delete)\n"
+    "    - datasets: Manage test data datasets (list, show, add, update, delete)\n"
+    "    - groups: Manage groups (list, show)\n"
 )
 
 trcli_help_description = "TestRail CLI"

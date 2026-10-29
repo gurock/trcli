@@ -25,6 +25,17 @@ _released 10-29-2026
  - Fixed an issue where the confirmation prompt for creating missing entities did not appear when neither `-y` nor `-n` was specified.
  - Fixed an issue where `--verify` failed with an error when a returned case field was missing, such as with the `automation_id` field.
 
+## [1.15.3]
+
+_released 09-23-2026
+
+### Added
+ - **New `variables` command**: Manage reusable parameters that can be referenced in test cases.
+ - **New `datasets` command**: Manage collections of variable values representing different test scenarios.
+ - **New `groups` command**: Manage and view individual groups with their member lists and listing all available groups in TestRail.
+ - **New `fields` command**: Query Dynamic Filter Fields from TestRail.
+ - Added support for Dynamic Filters for test runs (via add_run) and test plans (via plans add) commands.
+
 ## [1.15.2]
 
 _released 07-23-2026

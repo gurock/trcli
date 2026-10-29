@@ -228,7 +228,7 @@ def list(
 @click.option(
     "--custom-fields",
     metavar="",
-    help='Custom field values in JSON format (e.g., \'{"custom_field1": "value1"}\').',
+    help='Custom field values in JSON format (e.g., {"custom_field1": "value1"}).',
 )
 @click.pass_context
 @pass_environment
