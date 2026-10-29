@@ -10,7 +10,7 @@ from trcli.cli import Environment
 from trcli.api.api_request_handler import ApiRequestHandler, ProjectData
 from trcli.api.api_client import APIClient
 from trcli.data_classes.dataclass_testrail import TestRailSuite
-from trcli.constants import ProjectErrors, FAULT_MAPPING
+from trcli.constants import ProjectErrors, FAULT_MAPPING, UPDATED_SYSTEM_NAME_AUTOMATION_ID
 from trcli.data_classes.data_parsers import MatchersParser
 
 
@@ -784,6 +784,35 @@ class TestApiRequestHandler:
         api_request_handler_verify.suites_data_from_provider.testsections[0].testcases[1].case_id = None
         resources_added, error = api_request_handler_verify.add_cases()
         assert error == FAULT_MAPPING["data_verification_error"], "There should be error in verification."
+
+    @pytest.mark.api_handler
+    def test_add_case_with_verify_and_updated_automation_id_field_name(
+        self, api_request_handler_verify: ApiRequestHandler, requests_mock
+    ):
+        """
+        Regression test: when a TestRail project has its automation ID custom field configured
+        under the newer system name (UPDATED_SYSTEM_NAME_AUTOMATION_ID / "custom_case_automation_id")
+        instead of the legacy one, --verify must compare against the renamed field (as actually sent
+        to/returned by the API) instead of raising a KeyError or falsely reporting a verification
+        failure. See CaseHandler.normalize_automation_id_field.
+        """
+        mocked_response_for_case = {
+            "id": 3,
+            "suite_id": 4,
+            "section_id": 1234,
+            "title": "testCase2",
+            "estimate": "30s",
+            UPDATED_SYSTEM_NAME_AUTOMATION_ID: "Skipped test.testCase2",
+        }
+
+        requests_mock.post(
+            create_url(f"add_case/{mocked_response_for_case['section_id']}"),
+            json=mocked_response_for_case,
+        )
+        api_request_handler_verify.case_handler._active_automation_id_field = UPDATED_SYSTEM_NAME_AUTOMATION_ID
+        del api_request_handler_verify.suites_data_from_provider.testsections[1].testcases[0]
+        resources_added, error = api_request_handler_verify.add_cases()
+        assert error == "", "There should be no error in verification when the automation id field is renamed."
 
     @pytest.mark.api_handler
     def test_delete_section(self, api_request_handler_verify: ApiRequestHandler, requests_mock):
