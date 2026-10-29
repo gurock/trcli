@@ -229,7 +229,7 @@ class TestExtractStepsIntegrationNestedKeywordsFixture:
 
     @pytest.fixture(scope="class")
     def expected(self):
-        with open(_JSON_DIR / "robotframework_nested_keywords_steps.json") as f:
+        with open(_JSON_DIR / "robotframework_nested_keywords_steps.json", encoding="utf-8") as f:
             return json.load(f)
 
     @pytest.mark.parse_robot
