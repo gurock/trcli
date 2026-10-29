@@ -17,7 +17,7 @@ from trcli.constants import (
     TOOL_VERSION,
     COMMAND_FAULT_MAPPING,
 )
-from trcli.data_classes.data_parsers import FieldsParser, QualityRatingParser
+from trcli.data_classes.data_parsers import FieldsParser, PriorityTagMappingParser, QualityRatingParser
 from trcli.settings import DEFAULT_API_CALL_TIMEOUT, DEFAULT_BATCH_SIZE
 
 # Import structured logging infrastructure
@@ -71,6 +71,7 @@ class Environment:
         self.special_parser = None
         self._case_fields = None
         self._result_fields = None
+        self._priority_tag_mapping = None
         self.allow_ms = False
         self.run_assigned_to_id = None
         self.run_case_ids = None
@@ -141,6 +142,18 @@ class Environment:
                 exit(1)
 
         self._result_fields = fields_dict
+
+    @property
+    def priority_tag_mapping(self):
+        return self._priority_tag_mapping
+
+    @priority_tag_mapping.setter
+    def priority_tag_mapping(self, priority_tag_mapping: Union[List[str], dict]):
+        mapping_dict, error = PriorityTagMappingParser.resolve_mapping(priority_tag_mapping)
+        if error:
+            self.elog(error)
+            exit(1)
+        self._priority_tag_mapping = mapping_dict
 
     def log(self, msg: str, new_line=True, *args):
         """Logs a message to stdout only if silent mode is disabled.

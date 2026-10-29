@@ -37,12 +37,8 @@ class TestCli:
         _, cli_runner = cli_resources
         mocker.patch("sys.argv", ["trcli"])
         result = cli_runner.invoke(cli)
-        assert (
-            result.exit_code == 0
-        ), f"Exit code 0 expected. Got: {result.exit_code} instead."
-        assert (
-            result.output == trcli_description
-        ), f"Output should show trcli description (version, tool information)."
+        assert result.exit_code == 0, f"Exit code 0 expected. Got: {result.exit_code} instead."
+        assert result.output == trcli_description, f"Output should show trcli description (version, tool information)."
 
     @pytest.mark.cli
     def test_run_with_help_parameter(self, cli_resources):
@@ -50,9 +46,7 @@ class TestCli:
         will result in printing short tool description and usage"""
         _, cli_runner = cli_resources
         result = cli_runner.invoke(cli, ["--help"])
-        assert (
-            result.exit_code == 0
-        ), f"Exit code 0 expected. Got: {result.exit_code} instead."
+        assert result.exit_code == 0, f"Exit code 0 expected. Got: {result.exit_code} instead."
         assert (
             trcli_help_description in result.output
         ), "Trcli tool description is not present in output when calling trcli with --help parameter."
@@ -68,18 +62,13 @@ class TestCli:
         """The purpose of this test is to check that calling trcli without command will result is
         printing message about missing command"""
         cli_args_helper, cli_runner = cli_resources
-        args = cli_args_helper.get_all_required_parameters_without_specified(
-            ["parse_junit", "file", "title"]
-        )
+        args = cli_args_helper.get_all_required_parameters_without_specified(["parse_junit", "file", "title"])
         mocker.patch("sys.argv", ["trcli", *args])
         result = cli_runner.invoke(cli, args)
-        assert (
-            result.exit_code == 2
-        ), f"Exit code 2 expected. Got: {result.exit_code} instead."
+        assert result.exit_code == 2, f"Exit code 2 expected. Got: {result.exit_code} instead."
         assert (
             "Missing command." in result.output
         ), "'Missing command.' is not present in output when calling trcli without command parameter."
-
 
     @pytest.mark.cli
     @pytest.mark.parametrize(
@@ -94,9 +83,7 @@ class TestCli:
         printed when parameter is not passed to the script and there is no
         configuration file and environment variables set"""
         cli_agrs_helper, cli_runner = cli_resources
-        args = cli_agrs_helper.get_all_required_parameters_without_specified(
-            missing_args
-        )
+        args = cli_agrs_helper.get_all_required_parameters_without_specified(missing_args)
 
         mocker.patch("sys.argv", ["trcli", *args])
         result = cli_runner.invoke(cli, args)
@@ -135,15 +122,11 @@ class TestCli:
         [("batch_size", 1000), ("timeout", 160)],
         ids=["batch_size", "timeout"],
     )
-    def test_check_custom_config_overrides_defaults(
-        self, argument_name, argument_value, mocker, cli_resources
-    ):
+    def test_check_custom_config_overrides_defaults(self, argument_name, argument_value, mocker, cli_resources):
         """The purpose of this test is to check that custom config overrides default values of parameters."""
         cli_agrs_helper, cli_runner = cli_resources
 
-        args = cli_agrs_helper.get_all_required_parameters_plus_optional(
-            ["--config", "fake_config_file.yaml"]
-        )
+        args = cli_agrs_helper.get_all_required_parameters_plus_optional(["--config", "fake_config_file.yaml"])
         mocker.patch("sys.argv", ["trcli", *args])
 
         with cli_runner.isolated_filesystem():
@@ -159,9 +142,7 @@ class TestCli:
         """the purpose of this test is to check that custom config overrides parameter values taken from
         environment"""
         cli_agrs_helper, cli_runner = cli_resources
-        custom_config_file = (
-            Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
-        )
+        custom_config_file = Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
         args = ["--config", custom_config_file, "parse_junit"]
 
         mocker.patch("sys.argv", ["trcli", *args])
@@ -181,12 +162,8 @@ class TestCli:
         """The purpose of this test is to check that custom config will not override parameters (when specified in
         command line)"""
         cli_agrs_helper, cli_runner = cli_resources
-        custom_config_file = (
-            Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
-        )
-        args = cli_agrs_helper.get_all_required_parameters_plus_optional(
-            ["--config", custom_config_file]
-        )
+        custom_config_file = Path(__file__).parent / "test_data/yaml/custom_config_file.yaml"
+        args = cli_agrs_helper.get_all_required_parameters_plus_optional(["--config", custom_config_file])
         mocker.patch("sys.argv", ["trcli", *args])
         setattr_mock = mocker.patch("trcli.cli.setattr")
         _ = cli_runner.invoke(cli, args)
@@ -225,9 +202,7 @@ class TestCli:
         from environment variables"""
         cli_agrs_helper, cli_runner = cli_resources
         args = ["parse_junit"]
-        default_config_file = (
-            Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
-        )
+        default_config_file = Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
 
         mocker.patch("sys.argv", ["trcli", *args])
         setattr_mock = mocker.patch("trcli.cli.setattr")
@@ -241,9 +216,7 @@ class TestCli:
             )
 
         for arg_name, arg_value in ENVIRONMENT_VARIABLES.items():
-            setattr_mock.assert_any_call(
-                mocker.ANY, removeprefix(arg_name, "TR_CLI_").lower(), arg_value
-            )
+            setattr_mock.assert_any_call(mocker.ANY, removeprefix(arg_name, "TR_CLI_").lower(), arg_value)
 
     @pytest.mark.cli
     def test_default_config_does_not_override_parameters(self, mocker, cli_resources):
@@ -252,9 +225,7 @@ class TestCli:
         cli_agrs_helper, cli_runner = cli_resources
         tool_args = cli_agrs_helper.get_all_required_parameters()
         mocker.patch("sys.argv", ["trcli", *tool_args])
-        default_config_file = (
-            Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
-        )
+        default_config_file = Path(__file__).parent / "test_data/yaml/default_config_file.yaml"
         setattr_mock = mocker.patch("trcli.cli.setattr")
         with cli_runner.isolated_filesystem():
             copyfile(default_config_file, "config.yaml")
@@ -263,3 +234,53 @@ class TestCli:
         expected = cli_agrs_helper.get_required_parameters_without_command_no_dashes()
         for arg_name, arg_value in expected:
             setattr_mock.assert_any_call(mocker.ANY, arg_name, arg_value)
+
+
+class TestEnvironmentPriorityTagMapping:
+    """Test cases for the Environment.priority_tag_mapping property/setter, which wires
+    the --priority-tag-mapping CLI option through to PriorityTagMappingParser.resolve_mapping."""
+
+    @pytest.mark.cli
+    def test_defaults_to_none_before_being_set(self):
+        """A freshly-constructed Environment() has not resolved any mapping yet - this is
+        what lets RobotParser distinguish 'never went through the CLI option' (fall back to
+        PriorityTagMappingParser.DEFAULT_MAPPING itself) from 'explicitly set'."""
+        env = trcli.cli.Environment()
+        assert env.priority_tag_mapping is None
+
+    @pytest.mark.cli
+    def test_setting_empty_value_resolves_to_default_mapping(self):
+        env = trcli.cli.Environment()
+        env.priority_tag_mapping = []
+        assert env.priority_tag_mapping == {"critical": 4, "high": 3, "medium": 2, "low": 1}
+
+    @pytest.mark.cli
+    def test_setting_valid_value_merges_over_defaults(self):
+        env = trcli.cli.Environment()
+        env.priority_tag_mapping = ["critical:10", "low:1"]
+        assert env.priority_tag_mapping == {"critical": 10, "high": 3, "medium": 2, "low": 1}
+
+    @pytest.mark.cli
+    def test_setting_dict_value_is_accepted(self):
+        env = trcli.cli.Environment()
+        env.priority_tag_mapping = {"high": 9}
+        assert env.priority_tag_mapping == {"critical": 4, "high": 9, "medium": 2, "low": 1}
+
+    @pytest.mark.cli
+    def test_setting_invalid_value_logs_error_and_exits(self, capsys):
+        env = trcli.cli.Environment()
+        with pytest.raises(SystemExit) as exception:
+            env.priority_tag_mapping = ["not_valid_no_colon"]
+        assert exception.type == SystemExit, f"Expected SystemExit exception, but got {exception.type} instead."
+        captured = capsys.readouterr()
+        assert "expected format" in captured.err
+        # The invalid assignment must not have partially applied.
+        assert env._priority_tag_mapping is None
+
+    @pytest.mark.cli
+    def test_setting_non_integer_priority_id_logs_error_and_exits(self, capsys):
+        env = trcli.cli.Environment()
+        with pytest.raises(SystemExit):
+            env.priority_tag_mapping = ["critical:not_a_number"]
+        captured = capsys.readouterr()
+        assert "priority ID must be an integer" in captured.err
