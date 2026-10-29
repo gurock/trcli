@@ -6,7 +6,7 @@ from junitparser import JUnitXmlError
 from trcli import settings
 from trcli.api.results_uploader import ResultsUploader
 from trcli.cli import pass_environment, Environment, CONTEXT_SETTINGS
-from trcli.commands.results_parser_helpers import results_parser_options, print_config
+from trcli.commands.results_parser_helpers import results_parser_options, print_config, handle_case_update_reporting
 from trcli.constants import FAULT_MAPPING
 from trcli.data_classes.validation_exception import ValidationException
 from trcli.readers.junit_xml import JunitParser
@@ -123,7 +123,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
 
         # Handle case update reporting if enabled
         if environment.update_existing_cases == "yes" and case_update_results is not None:
-            _handle_case_update_reporting(environment, case_update_results)
+            handle_case_update_reporting(environment, case_update_results)
 
             # Exit with error if there were case update failures (after reporting)
             if case_update_results.get("failed_cases"):
@@ -201,75 +201,3 @@ def _handle_test_run_references(environment: Environment, run_id: int):
         )
         if final_refs:
             environment.log(f"  All references: {final_refs}")
-
-
-def _handle_case_update_reporting(environment: Environment, case_update_results: dict):
-    """
-    Handle reporting of case update results.
-    """
-    import json
-
-    # Handle None input gracefully
-    if case_update_results is None:
-        return
-
-    if environment.json_output:
-        # JSON output for case updates
-        result = {
-            "summary": {
-                "updated_cases": len(case_update_results.get("updated_cases", [])),
-                "skipped_cases": len(case_update_results.get("skipped_cases", [])),
-                "failed_cases": len(case_update_results.get("failed_cases", [])),
-            },
-            "details": {
-                "updated_cases": case_update_results.get("updated_cases", []),
-                "skipped_cases": case_update_results.get("skipped_cases", []),
-                "failed_cases": case_update_results.get("failed_cases", []),
-            },
-        }
-        print(json.dumps(result, indent=2))
-    else:
-        # Console output for case updates
-        updated_cases = case_update_results.get("updated_cases", [])
-        skipped_cases = case_update_results.get("skipped_cases", [])
-        failed_cases = case_update_results.get("failed_cases", [])
-
-        if updated_cases or skipped_cases or failed_cases:
-            environment.log("Case Updates Summary:")
-            environment.log(f"  Updated cases: {len(updated_cases)}")
-            environment.log(f"  Skipped cases: {len(skipped_cases)}")
-            environment.log(f"  Failed cases: {len(failed_cases)}")
-
-            if updated_cases:
-                environment.log("  Updated case details:")
-                for case_info in updated_cases:
-                    case_id = case_info["case_id"]
-                    added = case_info.get("added_refs", [])
-                    skipped = case_info.get("skipped_refs", [])
-                    updated_fields = case_info.get("updated_fields", [])
-
-                    # Build details message
-                    details = []
-                    if added or skipped:
-                        details.append(f"added {len(added)} refs, skipped {len(skipped)} duplicates")
-                    if updated_fields:
-                        details.append(f"updated {len(updated_fields)} field(s): {', '.join(updated_fields)}")
-
-                    if details:
-                        environment.log(f"    C{case_id}: {'; '.join(details)}")
-                    else:
-                        environment.log(f"    C{case_id}: no changes")
-
-            if skipped_cases:
-                environment.log("  Skipped case details:")
-                for case_info in skipped_cases:
-                    case_id = case_info["case_id"]
-                    reason = case_info.get("reason", "Unknown reason")
-                    environment.log(f"    C{case_id}: {reason}")
-
-            if failed_cases:
-                environment.log("  Failed case details:")
-                for case_info in failed_cases:
-                    case_id = case_info["case_id"]
-                    error = case_info.get("error", "Unknown error")
-                    environment.log(f"    C{case_id}: {error}")
