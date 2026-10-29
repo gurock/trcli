@@ -7,10 +7,24 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
 ## [1.16.0]
+_released 10-29-2026
 
-### Changed
- - **Robot Framework step `content` now includes keyword arguments**: When parsing Robot Framework XML reports (`parse_robot`), each extracted step's `content` is now formatted as `KeywordName(arg1, arg2, ...)` instead of just `KeywordName`, and nested keyword calls are now fully captured (including calls inside `FOR`/`IF`/`WHILE`/`TRY` blocks) with indentation reflecting nesting depth. **This is a backward-incompatible change for existing TestRail cases**: if you previously uploaded step results with `trcli`, the step `content` for those cases was recorded without arguments (e.g. `"Log"`). Re-running `parse_robot` against the same suite will now produce different step content (e.g. `"Log(OK)"`), which TestRail will treat as new/changed steps rather than matching the previously uploaded ones - resulting in duplicated or updated steps depending on your upload mode. Review existing Steps-template cases after upgrading if step-level history/matching matters to you.
- - Robot Framework step `actual` (runtime output) now also surfaces `FAIL`/`SKIP`-level messages, not just `INFO`/`WARN`/`ERROR`. Previously, a failed or skipped step's `actual` field could be empty even though Robot Framework had recorded the failure/skip reason - it is now included.
+### Added
+ - **Automatic creation of the `automation_id` field**: When the field is missing in TestRail, trcli now offers to create it for easier startup.
+ - **Robot Framework parser improvements** (`parse_robot`): Now supports Robot Framework 6.x and 7.x reports, mirrors the suite tree as nested TestRail sections, and extracts all keyword calls (including nested ones) as steps with their log output.
+ - **Robot Framework tag support**: `jira:`, `refs:` and Jira-key-style tags are now added as case references, and `priority:<level>` tags set the case priority (customizable via new `--priority-tag-mapping` option).
+ - **Robot Framework step content now includes keyword arguments**: Note: Re-uploading to existing cases may duplicate or update their steps.
+ - **Robot Framework sections are now nested** using the suite name instead of a single dotted name: Note: Re-uploading to existing projects will create new sections.
+ - **`--update-existing-cases` and `--update-strategy` for `parse_robot`**: Update references of existing TestRail cases from Robot Framework reports.
+ - **AI fields in `cases` command**: `cases get` and `cases list` now show whether a case is AI generated and AI automated.
+ - **New `reports` command**: List available report templates and generate reports in TestRail using `list` and `generate` subcommands.
+ - **New `sharedsteps` command**: Manage shared steps in TestRail, supports listing, showing, creating, updating and deleting shared steps.
+
+
+
+### Fixed
+ - Fixed an issue where the confirmation prompt for creating missing entities did not appear when neither `-y` nor `-n` was specified.
+ - Fixed an issue where `--verify` failed with an error when a returned case field was missing, such as with the `automation_id` field.
 
 ## [1.15.2]
 
