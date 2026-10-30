@@ -49,6 +49,7 @@ class ResultsUploader(ProjectBasedClient):
         # Check if all test cases already have case_id set (BDD mode or pre-existing cases)
         # Note: In BDD mode, case_id can be -1 (marker for auto-creation) or a real ID
         suite_data = self.api_request_handler.suites_data_from_provider
+        self._warn_if_steps_may_not_display(suite_data)
         all_cases_have_ids = all(
             test_case.case_id is not None and test_case.case_id != 0
             for section in suite_data.testsections
@@ -74,7 +75,8 @@ class ResultsUploader(ProjectBasedClient):
 
         added_sections = None
         added_test_cases = None
-        if self.environment.auto_creation_response and not all_cases_have_ids:
+        if not all_cases_have_ids:
+            # NOTE: must NOT be gated behind `self.environment.auto_creation_response` here.
             added_sections, result_code = self.add_missing_sections(self.project.project_id)
             if result_code == -1:
                 revert_logs = self.rollback_changes(
@@ -109,27 +111,17 @@ class ResultsUploader(ProjectBasedClient):
             return
 
         # remove empty, unused sections created earlier, based on the sections actually used by the new test cases
-        #  - iterate on added_sections and remove those that are not used by the new test cases
-        empty_sections = None
-        if added_sections:
-            if not added_test_cases:
-                empty_sections = added_sections
+        empty_sections = self._sections_safe_to_delete(added_sections, added_test_cases, suite_data)
+        if empty_sections:
+            self.environment.log(
+                "Removing unnecessary empty sections that may have been created earlier. ", new_line=False
+            )
+            _, error = self.api_request_handler.delete_sections(empty_sections)
+            if error:
+                self.environment.elog("\n" + error)
+                exit(1)
             else:
-                empty_sections = [
-                    section
-                    for section in added_sections
-                    if section["section_id"] not in [case["section_id"] for case in added_test_cases]
-                ]
-            if len(empty_sections) > 0:
-                self.environment.log(
-                    "Removing unnecessary empty sections that may have been created earlier. ", new_line=False
-                )
-                _, error = self.api_request_handler.delete_sections(empty_sections)
-                if error:
-                    self.environment.elog("\n" + error)
-                    exit(1)
-                else:
-                    self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
+                self.environment.log(f"Removed {len(empty_sections)} unused/empty section(s).")
 
         # Update existing cases with JUnit references if enabled
         case_update_results = None
@@ -195,6 +187,44 @@ class ResultsUploader(ProjectBasedClient):
             pass
 
         # Note: Error exit for case update failures is handled in cmd_parse_junit.py after reporting
+
+    @staticmethod
+    def _sections_safe_to_delete(
+        added_sections: List[Dict], added_test_cases: List[Dict], suite_data: TestRailSuite
+    ) -> List[Dict]:
+        """Determine which of the sections just auto-created are truly unused and safe
+        to delete, based on the sections actually used by the newly-added test cases.
+
+        A section is only safe to delete if BOTH:
+          - none of the newly-added test cases live in it, AND
+          - it is not the parent of any other section in the suite.
+
+        The second condition matters for a nested Section Hierarchy (e.g. built by the
+        Robot Framework parser): intermediate/root suites legitimately hold zero test
+        cases of their own (only their leaf sub-suites do), but they are structural
+        nodes, not "unused" ones - deleting them would either be rejected by TestRail
+        (a section with live children can't be removed) or would corrupt the hierarchy.
+        Only sections that are both case-less AND childless are genuinely unused.
+
+        :param added_sections: sections created earlier in this run, each a dict with
+            at least a "section_id" key (see `SectionHandler.add_sections`).
+        :param added_test_cases: test cases created earlier in this run, each a dict
+            with at least a "section_id" key.
+        :param suite_data: the suite's live, in-memory section tree, used to determine
+            parent/child relationships via `TestRailSection.parent_id`.
+        :returns: the subset of `added_sections` that are safe to delete.
+        """
+        if not added_sections:
+            return []
+        if not added_test_cases:
+            empty_sections = list(added_sections)
+        else:
+            used_section_ids = {case["section_id"] for case in added_test_cases}
+            empty_sections = [section for section in added_sections if section["section_id"] not in used_section_ids]
+        if not empty_sections:
+            return []
+        parent_section_ids = {section.parent_id for section in suite_data.testsections if section.parent_id is not None}
+        return [section for section in empty_sections if section["section_id"] not in parent_section_ids]
 
     def _validate_and_store_user_ids(self):
         """
@@ -459,6 +489,46 @@ class ResultsUploader(ProjectBasedClient):
             else:
                 returned_log.append(RevertMessages.suite_deleted)
         return returned_log
+
+    def _warn_if_steps_may_not_display(self, suite_data) -> None:
+        """
+        Warn the user when step-by-step results (custom_step_results, e.g. from parsed
+        Robot Framework/JUnit keyword data) were extracted but no Steps-capable
+        template_id override was supplied.
+
+        Without an explicit template_id (via --case-fields template_id:<id>), newly
+        auto-created test cases fall back to the project's default template (commonly
+        "Test Case (Text)"). custom_step_results is still uploaded correctly to the
+        result, but it will not be rendered as separate Steps in the TestRail UI unless
+        the case uses a template that surfaces that field.
+
+        This is purely an informational warning - it does not block the upload, since
+        template_id values are project/instance specific and trcli cannot safely guess
+        the correct one.
+        """
+        global_case_fields = getattr(self.environment, "case_fields", None) or {}
+        if "template_id" in global_case_fields:
+            return  # user already forced a template for all cases
+
+        has_unattributed_steps = any(
+            test_case.result
+            and test_case.result.custom_step_results
+            and test_case.template_id is None
+            and "template_id" not in (test_case.case_fields or {})
+            for section in suite_data.testsections
+            for test_case in section.testcases
+        )
+
+        if has_unattributed_steps:
+            self.environment.log(
+                "Warning: Step-by-step results were extracted from the report, but no "
+                "Steps-capable template_id was specified via --case-fields. Test cases "
+                "created with the project's default template may not display these "
+                "steps in the TestRail UI, even though the step data is uploaded "
+                "correctly. Run 'trcli templates list --project-id <id>' to find the "
+                "correct Steps template ID for this project, then re-run with "
+                "'--case-fields template_id:<id>'."
+            )
 
     def _should_use_ai_evaluation_template(self) -> bool:
         """

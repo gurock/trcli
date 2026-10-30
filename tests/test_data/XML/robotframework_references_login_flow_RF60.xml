@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 6.0.2 (Python 3.10.4 on darwin)" generated="20260909 17:57:11.186" rpa="false" schemaversion="3">
+<suite id="s1" name="Login Dashboard" source="/robot_source/realworld_suite/login_dashboard.robot">
+<kw name="Initialize Test Suite" type="SETUP">
+<doc>Runs once before any test in the suite.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Initializing test suite...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.196" level="INFO">Initializing test suite...</msg>
+<status status="PASS" starttime="20260909 17:57:11.196" endtime="20260909 17:57:11.196"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.196" endtime="20260909 17:57:11.196"/>
+</kw>
+<test id="s1-t1" name="Sample Login And Dashboard Verification" line="17">
+<kw name="Start Application" type="SETUP">
+<doc>High-level setup step.</doc>
+<kw name="Open Application Under Test">
+<doc>Simulates launching the application/browser.</doc>
+<kw name="Launch Browser Session">
+<doc>Simulates starting a browser instance.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Starting browser session...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.197" level="INFO">Starting browser session...</msg>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.197"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.197"/>
+</kw>
+<kw name="Navigate To Base URL">
+<doc>Simulates navigating to the application's base URL.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Navigating to base URL...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.197" level="INFO">Navigating to base URL...</msg>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.197"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.197"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.196" endtime="20260909 17:57:11.197"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.196" endtime="20260909 17:57:11.197"/>
+</kw>
+<kw name="Log In As User">
+<arg>${SAMPLE_USERNAME}</arg>
+<arg>${SAMPLE_PASSWORD}</arg>
+<doc>High-level login step.</doc>
+<kw name="Login With Credentials">
+<arg>${username}</arg>
+<arg>${password}</arg>
+<doc>Simulates logging in with a given username and password.</doc>
+<kw name="Enter Username">
+<arg>${username}</arg>
+<doc>Simulates entering a username into a login field.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Entering username: ${username}</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.198" level="INFO">Entering username: sample_user@example.com</msg>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.198"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.198"/>
+</kw>
+<kw name="Enter Password">
+<arg>${password}</arg>
+<doc>Simulates entering a password into a login field.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Entering password (masked): ${password.replace('.', '*')}</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.198" level="INFO">Entering password (masked): SamplePassword123</msg>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.198"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.198"/>
+</kw>
+<kw name="Submit Login Form">
+<doc>Simulates clicking the login/submit button.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Submitting login form...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.198" level="INFO">Submitting login form...</msg>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.198"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.198"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.198"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.197" endtime="20260909 17:57:11.198"/>
+</kw>
+<kw name="Verify Dashboard Displayed">
+<arg>${EXPECTED_TITLE}</arg>
+<doc>High-level verification step.</doc>
+<kw name="Verify Page Title Equals">
+<arg>${expected_title}</arg>
+<doc>Simulates verifying that the current page title matches the expected value.</doc>
+<kw name="Get Current Page Title">
+<var>${actual_title}</var>
+<doc>Simulates retrieving the current page title.</doc>
+<return>
+<value>Sample Dashboard</value>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.199"/>
+</return>
+<msg timestamp="20260909 17:57:11.199" level="INFO">${actual_title} = Sample Dashboard</msg>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.199"/>
+</kw>
+<kw name="Should Be Equal As Strings" library="BuiltIn">
+<arg>${actual_title}</arg>
+<arg>${expected_title}</arg>
+<doc>Fails if objects are unequal after converting them to strings.</doc>
+<status status="PASS" starttime="20260909 17:57:11.199" endtime="20260909 17:57:11.199"/>
+</kw>
+<kw name="Log" library="BuiltIn">
+<arg>Page title verified: ${actual_title}</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.199" level="INFO">Page title verified: Sample Dashboard</msg>
+<status status="PASS" starttime="20260909 17:57:11.199" endtime="20260909 17:57:11.199"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.199"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.198" endtime="20260909 17:57:11.199"/>
+</kw>
+<kw name="Stop Application" type="TEARDOWN">
+<doc>High-level teardown step.</doc>
+<kw name="Close Application Under Test">
+<doc>Simulates closing the application/browser.</doc>
+<kw name="Log Out Of Application">
+<doc>Simulates logging out of the application.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Logging out...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.200" level="INFO">Logging out...</msg>
+<status status="PASS" starttime="20260909 17:57:11.200" endtime="20260909 17:57:11.200"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.199" endtime="20260909 17:57:11.200"/>
+</kw>
+<kw name="Quit Browser Session">
+<doc>Simulates closing the browser instance.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Closing browser session...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.200" level="INFO">Closing browser session...</msg>
+<status status="PASS" starttime="20260909 17:57:11.200" endtime="20260909 17:57:11.200"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.200" endtime="20260909 17:57:11.200"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.199" endtime="20260909 17:57:11.200"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.199" endtime="20260909 17:57:11.200"/>
+</kw>
+<doc>Verifies a user can log in and reach the dashboard.</doc>
+<tag>refs:TSTRAIL-5</tag>
+<status status="PASS" starttime="20260909 17:57:11.196" endtime="20260909 17:57:11.200"/>
+</test>
+<kw name="Finalize Test Suite" type="TEARDOWN">
+<doc>Runs once after all tests in the suite.</doc>
+<kw name="Log" library="BuiltIn">
+<arg>Finalizing test suite...</arg>
+<doc>Logs the given message with the given level.</doc>
+<msg timestamp="20260909 17:57:11.201" level="INFO">Finalizing test suite...</msg>
+<status status="PASS" starttime="20260909 17:57:11.201" endtime="20260909 17:57:11.201"/>
+</kw>
+<status status="PASS" starttime="20260909 17:57:11.200" endtime="20260909 17:57:11.201"/>
+</kw>
+<doc>Real-world-style page-object suite: a single test that logs in and verifies
+a dashboard, built from several layers of small, single-purpose user keywords
+(the way many real customer suites are structured), rather than one flat test
+body. Modeled after a genuine anonymized customer output.xml sample.</doc>
+<status status="PASS" starttime="20260909 17:57:11.187" endtime="20260909 17:57:11.201"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+<stat pass="1" fail="0" skip="0">refs:TSTRAIL-5</stat>
+</tag>
+<suite>
+<stat pass="1" fail="0" skip="0" id="s1" name="Login Dashboard">Login Dashboard</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>

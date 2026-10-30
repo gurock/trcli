@@ -6,9 +6,28 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 - **MINOR**: New features that are backward-compatible.
 - **PATCH**: Bug fixes or minor changes that do not affect backward compatibility.
 
+## [1.16.0]
+
+_released 10-29-2026
+
+### Added
+ - **Automatic creation of the `automation_id` field**: When the field is missing in TestRail, trcli now offers to create it for easier startup. Note: Using `-n` no longer skips the `automation_id` check and Missing sections are also no longer gated by `-y`/`-n`.
+ - **Robot Framework parser improvements** (`parse_robot`): Now supports Robot Framework 6.x and 7.x reports, mirrors the suite tree as nested TestRail sections, and extracts all keyword calls (including nested ones) as steps with their log output.
+ - **Robot Framework tag support**: `jira:`, `refs:` and Jira-key-style tags are now added as case references, and `priority:<level>` tags set the case priority (customizable via new `--priority-tag-mapping` option).
+ - **Robot Framework step content now includes keyword arguments**: Note: Re-uploading to existing cases may duplicate or update their steps. Keyword arguments and log output are uploaded by default; use the new `--no-step-args` and `--no-step-logs` options to exclude sensitive data.
+ - **Robot Framework sections are now nested** using the suite name instead of a single dotted name: Note: Re-uploading to existing projects will create new sections.
+ - **`--update-existing-cases` and `--update-strategy` for `parse_robot`**: Update references of existing TestRail cases from Robot Framework reports.
+ - **AI fields in `cases` command**: `cases get` and `cases list` now show whether a case is AI generated and AI automated.
+ - **New `reports` command**: List available report templates and generate reports in TestRail using `list` and `generate` subcommands.
+ - **New `sharedsteps` command**: Manage shared steps in TestRail, supports listing, showing, creating, updating and deleting shared steps.
+
+### Fixed
+ - Fixed an issue where the confirmation prompt for creating missing entities did not appear when neither `-y` nor `-n` was specified.
+ - Fixed an issue where `--verify` failed with an error when a returned case field was missing, such as with the `automation_id` field.
+
 ## [1.15.3]
 
-_released 08-19-2026
+_released 09-23-2026
 
 ### Added
  - **New `variables` command**: Manage reusable parameters that can be referenced in test cases.
@@ -20,6 +39,7 @@ _released 08-19-2026
 ## [1.15.2]
 
 _released 07-23-2026
+
 ### Added
  - **New `priorities` command**: Query all available test case priorities from TestRail using list subcommand.
  - **New `casetypes` command**: Allows retrieving all available test case types/classifications in your TestRail instance.

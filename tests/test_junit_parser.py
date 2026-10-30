@@ -60,6 +60,7 @@ class TestJunitParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__strip_parent_section(parsing_result_json)
         print(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
@@ -79,6 +80,7 @@ class TestJunitParser:
         settings.ALLOW_ELAPSED_MS = False
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__strip_parent_section(parsing_result_json)
         file_json = open(Path(__file__).parent / "test_data/json/milliseconds.json")
         expected_json = json.load(file_json)
         assert (
@@ -91,6 +93,7 @@ class TestJunitParser:
             read_junit = self.__clear_unparsable_junit_elements(junit_output)
             parsing_result_json = asdict(read_junit)
             parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+            parsing_result_json = self.__strip_parent_section(parsing_result_json)
             file_json = open(expected_path)
             expected_json = json.load(file_json)
             assert (
@@ -142,6 +145,7 @@ class TestJunitParser:
         read_junit = self.__clear_unparsable_junit_elements(file_reader.parse_file()[0])
         parsing_result_json = asdict(read_junit)
         parsing_result_json = self.__remove_none_quality_ratings(parsing_result_json)
+        parsing_result_json = self.__strip_parent_section(parsing_result_json)
         file_json = open(expected_path)
         expected_json = json.load(file_json)
         assert (
@@ -170,6 +174,21 @@ class TestJunitParser:
             for testcase in section.get("testcases", []):
                 if testcase.get("result", {}).get("quality_rating") is None:
                     testcase["result"].pop("quality_rating", None)
+        return result_json
+
+    def __strip_parent_section(self, result_json: dict) -> dict:
+        """Drop the `parent_section` key from every section's dict.
+
+        `dataclasses.asdict()` (unlike serde's `to_dict()`) does not honor the `serde_skip`
+        metadata on `TestRailSection.parent_section` (an in-memory-only field used to build
+        nested section hierarchies - see Robot Framework's parser), so it always shows up in
+        `asdict()` output. The JUnit parser never sets it (JUnit has no nested-suite section
+        hierarchy support), so it's always `None` here; drop it entirely so pre-existing JSON
+        fixtures (which predate this field) don't need to be regenerated just to add it back
+        as `null`.
+        """
+        for section in result_json.get("testsections", []):
+            section.pop("parent_section", None)
         return result_json
 
     @pytest.mark.parse_junit

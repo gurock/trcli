@@ -83,6 +83,8 @@ def get(
         environment.log(f"  Template ID: {case_data.get('template_id', 'N/A')}")
         environment.log(f"  Type ID: {case_data.get('type_id', 'N/A')}")
         environment.log(f"  Priority ID: {case_data.get('priority_id', 'N/A')}")
+        environment.log(f"  AI Generated: {'Yes' if case_data.get('is_ai_generated') else 'No'}")
+        environment.log(f"  AI Automated: {'Yes' if case_data.get('is_ai_automated') else 'No'}")
 
         if case_data.get("milestone_id"):
             environment.log(f"  Milestone ID: {case_data.get('milestone_id')}")
@@ -123,6 +125,8 @@ def get(
                     display_name = key.replace("_", " ").title()
                     if value is None:
                         display_value = "N/A"
+                    elif isinstance(value, bool):
+                        display_value = "Yes" if value else "No"
                     elif isinstance(value, builtins.list):
                         if value:
                             display_value = f"{len(value)} item(s): {value}"
@@ -239,6 +243,8 @@ def list(
                         # Handle None values
                         if value is None:
                             display_value = "N/A"
+                        elif isinstance(value, bool):
+                            display_value = "Yes" if value else "No"
                         elif isinstance(value, builtins.list):
                             # Handle list fields (like labels)
                             if key == "labels" and value:
@@ -265,6 +271,8 @@ def list(
 
                     environment.log(f"    Priority ID: {case.get('priority_id', 'N/A')}")
                     environment.log(f"    Type ID: {case.get('type_id', 'N/A')}")
+                    environment.log(f"    AI Generated: {'Yes' if case.get('is_ai_generated') else 'No'}")
+                    environment.log(f"    AI Automated: {'Yes' if case.get('is_ai_automated') else 'No'}")
 
                     if case.get("refs"):
                         refs = case.get("refs", "")
