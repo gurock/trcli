@@ -83,6 +83,12 @@ class SectionHandler:
                     else:
                         missing_test_sections = True
 
+                if section.parent_section is not None and section.parent_section.section_id is None:
+                    # Parent doesn't exist on TestRail yet, so this section can't either. Looking up
+                    # (None, name) would wrongly match an unrelated root-level section of the same name.
+                    missing_test_sections = True
+                    continue
+
                 expected_parent_id = (
                     section.parent_section.section_id
                     if section.parent_section is not None
@@ -127,10 +133,12 @@ class SectionHandler:
             body = self.data_provider.build_section_body(section)
             response = self.client.send_post(f"add_section/{project_id}", body)
             if not response.error_message:
+                # Record the response before verifying: the section now exists in TestRail, so
+                # it must be returned for rollback to delete it even if verification fails.
+                responses.append(response)
                 if not verify_callback(body, response.response_text):
                     error_message = FAULT_MAPPING["data_verification_error"]
                     break
-                responses.append(response)
                 self.data_provider.apply_created_section(
                     section, response.response_text["id"], suite_id=response.response_text["suite_id"]
                 )

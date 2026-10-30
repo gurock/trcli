@@ -134,10 +134,10 @@ class TestSectionHandlerHierarchy:
         assert child.section_id is None
 
     @pytest.mark.section_handler
-    def test_add_sections_stops_on_verify_failure_without_double_appending(self):
+    def test_add_sections_returns_unverified_section_so_rollback_can_delete_it(self):
         """If `verify_callback` rejects a response, `add_sections` must stop immediately and
-        report the data-verification error - and, critically, must not append that response
-        twice (a pre-existing bug in the old implementation)."""
+        report the data-verification error. The section already exists in TestRail, so it must
+        still be returned (exactly once) for `rollback_changes` to delete it."""
         from trcli.constants import FAULT_MAPPING
 
         root = TestRailSection("Root")
@@ -149,7 +149,29 @@ class TestSectionHandlerHierarchy:
         resources, error_message = handler.add_sections(project_id=1, verify_callback=verify_callback)
 
         assert error_message == FAULT_MAPPING["data_verification_error"]
-        assert resources == []
+        assert resources == [{"section_id": 401, "suite_id": 1, "name": "Root"}]
+
+    @pytest.mark.section_handler
+    def test_check_missing_section_ids_unresolved_parent_does_not_match_root_section(self):
+        """A child whose parent has no section_id yet (parent missing remotely) must be reported
+        missing, not matched against an unrelated root-level section of the same name."""
+        parent = TestRailSection("Regression")
+        child = TestRailSection("Login")
+        child.parent_section = parent
+
+        remote_sections = [
+            {"id": 901, "suite_id": 1, "name": "Login", "parent_id": None},
+        ]
+        handler, client, provider = _make_handler([parent, child], get_all_sections_return=(remote_sections, ""))
+
+        missing, error_message = handler.check_missing_section_ids(
+            project_id=1, suite_id=1, suites_data=provider.suites_input
+        )
+
+        assert error_message == ""
+        assert missing is True
+        assert parent.section_id is None
+        assert child.section_id is None
 
     @pytest.mark.section_handler
     def test_check_missing_section_ids_matches_by_parent_and_name(self):
