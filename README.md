@@ -263,6 +263,24 @@ trcli parse_robot \
   --priority-tag-mapping blocker:6
 ```
 
+**Keeping sensitive data out of steps (`--no-step-args` / `--no-step-logs`):**
+
+By default, `parse_robot` uploads each keyword's call (including its arguments, e.g. `Login(admin, s3cret)`)
+as the step content, and the keyword's `INFO`/`WARN`/`ERROR`/`FAIL`/`SKIP` log messages as the step's
+actual result. If your keyword arguments or logs may contain credentials, tokens or other sensitive data,
+opt out:
+
+```bash
+# Upload only keyword names (e.g. "Login"), without arguments.
+trcli parse_robot -f output.xml --title "Nightly Run" --no-step-args
+
+# Do not upload keyword log messages.
+trcli parse_robot -f output.xml --title "Nightly Run" --no-step-logs
+```
+
+Note that `--no-step-args` changes the step content format, so re-uploading to existing cases may
+duplicate or update their steps.
+
 ### Using Glob Patterns for Multiple Files
 
 TRCLI supports glob patterns to process multiple report files in a single command. This feature is available for **JUnit XML**, **Robot Framework**, and **Cucumber JSON** parsers.

@@ -11,10 +11,10 @@ This project adheres to [Semantic Versioning](https://semver.org/). Version numb
 _released 10-29-2026
 
 ### Added
- - **Automatic creation of the `automation_id` field**: When the field is missing in TestRail, trcli now offers to create it for easier startup.
+ - **Automatic creation of the `automation_id` field**: When the field is missing in TestRail, trcli now offers to create it for easier startup. Note: Using `-n` no longer skips the `automation_id` check and Missing sections are also no longer gated by `-y`/`-n`.
  - **Robot Framework parser improvements** (`parse_robot`): Now supports Robot Framework 6.x and 7.x reports, mirrors the suite tree as nested TestRail sections, and extracts all keyword calls (including nested ones) as steps with their log output.
  - **Robot Framework tag support**: `jira:`, `refs:` and Jira-key-style tags are now added as case references, and `priority:<level>` tags set the case priority (customizable via new `--priority-tag-mapping` option).
- - **Robot Framework step content now includes keyword arguments**: Note: Re-uploading to existing cases may duplicate or update their steps.
+ - **Robot Framework step content now includes keyword arguments**: Note: Re-uploading to existing cases may duplicate or update their steps. Keyword arguments and log output are uploaded by default; use the new `--no-step-args` and `--no-step-logs` options to exclude sensitive data.
  - **Robot Framework sections are now nested** using the suite name instead of a single dotted name: Note: Re-uploading to existing projects will create new sections.
  - **`--update-existing-cases` and `--update-strategy` for `parse_robot`**: Update references of existing TestRail cases from Robot Framework reports.
  - **AI fields in `cases` command**: `cases get` and `cases list` now show whether a case is AI generated and AI automated.
