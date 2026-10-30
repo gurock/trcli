@@ -29,6 +29,18 @@ from trcli.readers.robot_xml import RobotParser
     "Only the level(s) you specify are overridden; unspecified levels keep the default mapping "
     "(critical:4, high:3, medium:2, low:1).",
 )
+@click.option(
+    "--no-step-args",
+    is_flag=True,
+    help="Do not upload keyword arguments in step content (e.g. 'Log' instead of 'Log(secret)'). "
+    "Use when keyword arguments may contain sensitive data.",
+)
+@click.option(
+    "--no-step-logs",
+    is_flag=True,
+    help="Do not upload keyword log messages (INFO/WARN/ERROR/FAIL/SKIP) as the step's actual result. "
+    "Use when log output may contain sensitive data.",
+)
 @update_existing_cases_options
 @click.pass_context
 @pass_environment
@@ -64,7 +76,7 @@ def cli(environment: Environment, context: click.Context, *args, **kwargs):
             for section in suite.testsections
             for test_case in section.testcases
         )
-        if has_step_results:
+        if has_step_results and not environment.no_step_args:
             environment.log(
                 "Note: step content is now formatted as 'KeywordName(arg1, arg2, ...)' "
                 "(previously just 'KeywordName'), and nested keyword calls are captured "

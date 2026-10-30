@@ -199,6 +199,22 @@ class TestExtractStepsWhitebox:
         step = parser._build_step(_kw(kwname="Anything"), level=0)
         assert isinstance(step, TestRailSeparatedStep)
 
+    def test_no_step_args_omits_arguments_from_content(self, parser):
+        parser.no_step_args = True
+        steps = parser._extract_steps([_kw(kwname="Login", args=["admin", "s3cret"], body=[_kw(kwname="Inner")])])
+        assert [s.content for s in steps] == ["Login", "  Inner"]
+
+    def test_no_step_logs_omits_actual(self, parser):
+        parser.no_step_logs = True
+        steps = parser._extract_steps([_kw(kwname="Log", args=["x"], messages=[_msg("token=abc")])])
+        assert steps[0].content == "Log(x)"
+        assert steps[0].actual is None
+
+    def test_step_args_and_logs_included_by_default(self, parser):
+        steps = parser._extract_steps([_kw(kwname="Log", args=["x"], messages=[_msg("hi")])])
+        assert steps[0].content == "Log(x)"
+        assert steps[0].actual == "INFO: hi"
+
 
 class TestExtractStepsIntegrationNestedKeywordsFixture:
     """Blackbox/integration tests: parse the real

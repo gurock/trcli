@@ -53,6 +53,8 @@ class RobotParser(FileParser):
             if environment.priority_tag_mapping is not None
             else dict(PriorityTagMappingParser.DEFAULT_MAPPING)
         )
+        self.no_step_args = bool(getattr(environment, "no_step_args", False))
+        self.no_step_logs = bool(getattr(environment, "no_step_logs", False))
         self._case_result_statuses = {"pass": 1, "not run": 3, "skip": 4, "fail": 5}
         self._update_with_custom_statuses()
         self.invalid_quality_ratings_found = False  # Track if any quality ratings were invalid
@@ -340,12 +342,18 @@ class RobotParser(FileParser):
         # under RF 7.x it already returns the unqualified name. kwname returns
         # the unqualified name consistently across both, matching the historic
         # xml.etree-based behavior (which read the plain <kw name="..."> attribute).
-        args_str = ", ".join(kw.args)
-        step = TestRailSeparatedStep(f"{indent}{kw.kwname}({args_str})")
+        # Opt-outs (--no-step-args / --no-step-logs) let users keep potentially sensitive
+        # keyword arguments and log output (e.g. credentials, tokens) out of TestRail.
+        if self.no_step_args:
+            step = TestRailSeparatedStep(f"{indent}{kw.kwname}")
+        else:
+            args_str = ", ".join(kw.args)
+            step = TestRailSeparatedStep(f"{indent}{kw.kwname}({args_str})")
         step.status_id = self._case_result_statuses[kw.status.lower()]
-        messages = [f"{msg.level}: {msg.message}" for msg in kw.messages if msg.level in _LOGGED_MESSAGE_LEVELS]
-        if messages:
-            step.actual = "\n".join(messages)
+        if not self.no_step_logs:
+            messages = [f"{msg.level}: {msg.message}" for msg in kw.messages if msg.level in _LOGGED_MESSAGE_LEVELS]
+            if messages:
+                step.actual = "\n".join(messages)
         return step
 
     def _priority_id_from_tags(self, tags, case_name: str) -> Optional[int]:

@@ -72,6 +72,8 @@ class Environment:
         self._case_fields = None
         self._result_fields = None
         self._priority_tag_mapping = None
+        self.no_step_args = None
+        self.no_step_logs = None
         self.allow_ms = False
         self.run_assigned_to_id = None
         self.run_case_ids = None
