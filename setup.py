@@ -22,6 +22,7 @@ setup(
         "click>=8.3.3,<9.0.0",
         "pyyaml>=6.0.0,<7.0.0",
         "junitparser>=3.1.0,<4.0.0",
+        "robotframework>=6.0,<8.0",
         "pyserde==0.12.*",
         "requests>=2.31.0,<3.0.0",
         "urllib3>=1.26.0,<3.0.0",

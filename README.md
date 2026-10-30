@@ -13,6 +13,7 @@ The TestRail CLI currently supports:
 - **Creating new test runs for results to be uploaded to**
 - **Managing project labels for better organization and categorization**
 - **Retrieving and listing test cases with advanced filtering**
+- **Generating and listing reports for aggregated insights and analytics**
 
 To see further documentation about the TestRail CLI, please refer to the 
 [TestRail CLI documentation pages](https://support.gurock.com/hc/en-us/articles/7146548750868-TestRail-CLI)
@@ -34,7 +35,7 @@ trcli
 ```
 You should get something like this:
 ```
-TestRail CLI v1.15.3
+TestRail CLI v1.16.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Supported and loaded modules:
     - parse_junit: JUnit XML Files (& Similar)
@@ -58,7 +59,7 @@ CLI general reference
 --------
 ```shell
 $ trcli --help
-TestRail CLI v1.15.3
+TestRail CLI v1.16.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli [OPTIONS] COMMAND [ARGS]...
 
@@ -108,6 +109,7 @@ Commands:
   references     Manage references in TestRail
   results        Manage test results in TestRail
   sections       Manage test sections in TestRail
+  sharedsteps   Manage sharedsteps in TestRail
   suites         Manage test suites in TestRail
   runs           Manage test runs in TestRail
   milestones     Manage milestones in TestRail
@@ -118,6 +120,7 @@ Commands:
   priorities     List test case priorities in TestRail
   casetypes      List test case types in TestRail
   users          Query users in TestRail
+  reports        Manage reports in TestRail
   update         Update TRCLI to the latest version from PyPI.
 ```
 
@@ -214,6 +217,69 @@ Options:
 
 For further detail, please refer to the
 [JUnit to TestRail mapping](https://support.gurock.com/hc/en-us/articles/12989737200276) documentation.
+
+### Robot Framework - Priority Tag Mapping
+
+When using `parse_robot`, TRCLI automatically maps Robot Framework `priority:<level>` tags to a
+TestRail `priority_id` on the resulting test case - no extra configuration required.
+
+```robotframework
+*** Test Cases ***
+Login With Valid Credentials
+    [Tags]    priority:critical
+    Log    Logging in...
+```
+
+**Matching rules:**
+- The tag must be in the form `priority:<level>` (case-insensitive on both the `priority:`
+  prefix and the level value, e.g. `priority:critical`, `Priority:High`, `PRIORITY:LOW` all work).
+- By default, levels map to priority IDs as follows: `critical` → 4, `high` → 3, `medium` → 2,
+  `low` → 1. These are just sensible defaults - your TestRail instance's actual priority IDs may
+  differ (run `trcli priorities list` to check), so override them with `--priority-tag-mapping`
+  as needed (see below).
+- If a test has no `priority:` tag, or its level isn't recognized, no `priority_id` is set for
+  that test - existing behavior is unaffected.
+- If a test has multiple `priority:` tags, only the first one is used.
+- An explicit `- testrail_case_field: priority_id:X` directive in the test's documentation (see
+  the `--case-fields` option above) always takes precedence over a tag-derived value.
+
+**Customizing the mapping with `--priority-tag-mapping`:**
+
+Only the level(s) you specify are overridden - any level you don't mention keeps its default
+value, so you can override just what you need:
+
+```bash
+# Override only 'critical' and 'low'; 'high' and 'medium' keep their defaults.
+trcli parse_robot \
+  -f output.xml \
+  --title "Nightly Run" \
+  --priority-tag-mapping critical:5 \
+  --priority-tag-mapping low:1
+
+# Map a custom tag level not among the built-in defaults.
+trcli parse_robot \
+  -f output.xml \
+  --title "Nightly Run" \
+  --priority-tag-mapping blocker:6
+```
+
+**Keeping sensitive data out of steps (`--no-step-args` / `--no-step-logs`):**
+
+By default, `parse_robot` uploads each keyword's call (including its arguments, e.g. `Login(admin, s3cret)`)
+as the step content, and the keyword's `INFO`/`WARN`/`ERROR`/`FAIL`/`SKIP` log messages as the step's
+actual result. If your keyword arguments or logs may contain credentials, tokens or other sensitive data,
+opt out:
+
+```bash
+# Upload only keyword names (e.g. "Login"), without arguments.
+trcli parse_robot -f output.xml --title "Nightly Run" --no-step-args
+
+# Do not upload keyword log messages.
+trcli parse_robot -f output.xml --title "Nightly Run" --no-step-logs
+```
+
+Note that `--no-step-args` changes the step content format, so re-uploading to existing cases may
+duplicate or update their steps.
 
 ### Using Glob Patterns for Multiple Files
 
@@ -364,10 +430,19 @@ while the second one is suited for a specification-first approach, where you wri
 >   otherwise the CLI tool will attempt to find the suite on TestRail or create it.
 
 #### 1. Using Automation ID (code-first approach)
-To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/) 
+To use this mechanism, you must first add a new [custom field](https://www.gurock.com/testrail/docs/user-guide/howto/fields/)
 of type `Text` with system name `automation_id`.
 
-The TestRail CLI will use the unique combination of your automation test case’s `classname` and `name` 
+> **Auto-creating the automation_id field:** If the `automation_id` field doesn't exist yet in your
+> TestRail instance, the CLI can create it for you (scoped to your current project, not globally)
+> the next time it runs with `--case-matcher auto` and either `-y` or an interactive `yes` response.
+> This requires TestRail Administrator rights for the account/API key being used; if the account
+> lacks permission, the CLI will show a specific error explaining that admin rights are required.
+> If the field already exists but is inactive or not scoped to your project, the CLI will **not**
+> attempt to create a duplicate - you'll need to fix its configuration manually in the TestRail
+> Administration under Customizations > Case Fields, as described below.
+
+The TestRail CLI will use the unique combination of your automation test case’s `classname` and `name`
 (expressed as `classname.name`) to compare against values of the `automation_id` field in your TestRail test case repository.
 If a match is found, this test case will be included in the auto-generated test run for this upload. 
 
@@ -1514,6 +1589,8 @@ Case ID: 123
   Template ID: 1
   Type ID: 1
   Priority ID: 2
+  AI Generated: No
+  AI Automated: No
   References: JIRA-123, JIRA-456
   Created By: 1
   Created On: 1646317844
@@ -1533,6 +1610,8 @@ Case ID: 123
   "template_id": 1,
   "type_id": 1,
   "priority_id": 2,
+  "is_ai_generated": false,
+  "is_ai_automated": false,
   "refs": "JIRA-123, JIRA-456",
   "created_by": 1,
   "created_on": 1646317844,
@@ -1597,6 +1676,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 2
     Type ID: 1
+    AI Generated: No
+    AI Automated: No
     Labels: automated, regression
     Custom Fields: 3 field(s)
 
@@ -1606,6 +1687,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 3
     Type ID: 1
+    AI Generated: Yes
+    AI Automated: No
     Labels: automated
     Custom Fields: 2 field(s)
 
@@ -1615,6 +1698,8 @@ Found 3 case(s) (showing 1-3):
     Suite ID: 2
     Priority ID: 2
     Type ID: 1
+    AI Generated: No
+    AI Automated: No
     References: JIRA-789
     Custom Fields: 3 field(s)
 ```
@@ -3045,6 +3130,137 @@ $ trcli -c config.yml tests list --run-id 1 --status-id 4,5 --limit 30 --offset 
 - The `--show-all-fields` option displays additional information including custom fields, labels, estimates, and assignments
 - Tests are different from test cases: tests are instances of test cases within a specific run
 
+### Reports Command
+
+The `reports` command provides functionality to list available report templates and generate reports in TestRail. Reports provide aggregated insights and prevent the need to download thousands of raw records. This is particularly useful for nightly pipeline report generation, sprint quality summaries, executive dashboards, trend analysis, coverage summaries, and release readiness assessments.
+
+The `reports` command supports two subcommands:
+- **list**: List available report templates (single-project or cross-project)
+- **generate**: Generate a report and get URLs to access it in HTML or PDF format
+
+#### Listing Available Reports
+
+The `list` subcommand retrieves available report templates. You can list single-project reports or cross-project reports (Enterprise only).
+
+```shell
+# List reports for a specific project
+$ trcli -c config.yml reports list --project-id 1
+
+# List cross-project reports (Enterprise only)
+$ trcli -c config.yml reports list --cross-project
+
+# Show all fields including notification settings
+$ trcli -c config.yml reports list --project-id 1 --show-all-fields
+
+# JSON output
+$ trcli -c config.yml reports list --project-id 1 --json-output
+```
+
+**Example Output:**
+```shell
+$ trcli -c config.yml reports list --project-id 1
+
+Reports List Execution Parameters
+> TestRail instance: https://yourinstance.testrail.io (user: your@email.com)
+
+Retrieving reports for project 1...
+Found 3 report(s).
+
+Report ID: 1
+  Name: Activity Summary (Cases)
+  Description: Shows activity summary for test cases
+
+Report ID: 2
+  Name: Coverage Report
+  Description: Shows test coverage metrics
+
+Report ID: 3
+  Name: Test Execution Summary
+  Description: Summary of test execution results
+
+Report listing completed successfully.
+```
+
+#### Generating Reports
+
+The `generate` subcommand executes a report and returns URLs to access it in all available formats (View, HTML, and PDF). You can specify the report either by ID or by name. When using `--report` with a partial name match, **all matching reports will be generated**.
+
+```shell
+# Generate a report by ID
+$ trcli -c config.yml reports generate --project-id 1 --report-id 5
+
+# Generate a report by name (generates all matching reports)
+$ trcli -c config.yml reports generate --project-id 1 --report "Coverage"
+
+# Generate all reports matching "Cases" (e.g., "Summary for Cases", "Comparison for Cases")
+$ trcli -c config.yml reports generate --project-id 1 --report "Cases"
+
+# Generate a cross-project report (Enterprise only)
+$ trcli -c config.yml reports generate --cross-project --report-id 3
+
+# Generate with JSON output
+$ trcli -c config.yml reports generate --project-id 1 --report "Coverage" --json-output
+```
+
+#### Command Reference
+
+**Main Reports Command:**
+```shell
+$ trcli reports --help
+
+Usage: trcli reports [OPTIONS] COMMAND [ARGS]...
+  Manage reports in TestRail
+
+Options:
+  --help  Show this message and exit.
+
+Commands:
+  generate  Generate a report in TestRail
+  list      List available report templates from TestRail
+```
+
+**List Command:**
+```shell
+$ trcli reports list --help
+
+Options:
+  --project-id <id>      List reports for a specific project ID (uses project from config if not specified).
+  --json-output          Output reports as raw JSON from API.
+  --show-all-fields      Show all fields including notification settings.
+  --cross-project        List cross-project reports (Enterprise only, ignores --project-id).
+  --help                 Show this message and exit.
+```
+
+**Generate Command:**
+```shell
+$ trcli reports generate --help
+
+Options:
+  --project-id <id>      Generate report for a specific project ID (uses project from config if not specified).
+  --report-id <id>       Report template ID to generate.
+  --report <name>        Report template name (or partial name) to generate. Generates all matching reports.
+  --json-output          Output report URLs as raw JSON from API.
+  --cross-project        Generate cross-project report (Enterprise only, ignores --project-id).
+  --help                 Show this message and exit.
+```
+
+#### Important Notes
+
+- **API Access Configuration**: Before accessing reports via the API (or TRCLI), you must configure your report for API access in TestRail:
+  1. Create a new report in TestRail
+  2. Check the **"Create this report: On-demand via the API"** checkbox
+  3. Save the report
+
+  **Important:** You cannot modify the "Create this report" settings after the report has been saved. Existing scheduled reports cannot be changed to be accessible via the API - you must create a new report.
+
+  Once configured, the report will appear in the **API Templates** section tab alongside other reports and will be accessible via TRCLI.
+
+- **Report Availability**: Reports may not be available immediately after generation. The processing time varies, especially for TestRail Server customers.
+- **Cross-Project Reports**: The `--cross-project` flag is only available on TestRail Enterprise license plans.
+- **Report Name Matching**: When using `--report` with a name, the command performs case-insensitive partial matching. **All matching reports will be generated**, not just the first match.
+- **Report Formats**: All generated reports include URLs for all available formats (View, HTML, and PDF). You don't need to specify a format - all URLs are provided in the output.
+- **Character Limit**: Report names and descriptions may vary in length. Use `--json-output` to see the full, untruncated data.
+
 ### Case Fields Command
 
 The TestRail CLI provides the `casefields` command for retrieving all available test case custom fields from TestRail. This command helps you understand what custom fields are available for test cases, their types, configurations, and which projects they apply to.
@@ -3153,6 +3369,153 @@ Field ID: 11
 
 Result field listing completed successfully.
 ```
+
+### Shared Steps Management
+
+**Requires TestRail 7.0 or later**
+
+The `sharedsteps` command allows you to manage reusable test step sets in TestRail. Shared steps are reusable sets of test instructions that can be referenced across multiple test cases, ensuring consistency and reducing duplication.
+
+### Why Use Shared Steps?
+
+- **Eliminate Duplication**: Define common procedures once and reuse across test cases
+- **MCP Agent Integration**: Shared steps become reusable knowledge objects for AI agents
+- **CI/CD Propagation**: Update a shared step once to automatically propagate changes to all linked test cases
+- **Consistency**: Ensure uniform test procedures across your test suite
+
+### Available Subcommands
+
+#### `sharedsteps list`
+
+List all shared steps in a project.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps list --project-id <id>
+
+# With all parameters
+trcli sharedsteps list --project-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--project-id <id>` - Project ID (or use `--project` with project name from config)
+- `--json-output` - Output raw JSON from API
+- `--created-by <user_ids>` - Filter by comma-separated creator user IDs
+- `--refs <reference>` - Filter by reference ID (e.g., TR-123)
+- `--limit <n>` - Limit number of results (max 250)
+- `--offset <n>` - Skip N records for pagination
+
+#### `sharedsteps show`
+
+Show detailed information for a specific shared step.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps show --sharedstep-id <id>
+
+# With all parameters
+trcli sharedsteps show --sharedstep-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to display (required)
+- `--json-output` - Output raw JSON from API
+
+#### `sharedsteps create`
+
+Create a new shared step from a JSON file.
+
+**Usage:**
+```shell
+# Using config file (recommended)
+trcli -c config.yml sharedsteps create --name "Login Flow" --steps-file login-steps.json --project-id <id>
+
+# With all parameters
+trcli sharedsteps create --name "Login Flow" --steps-file login-steps.json \
+  --project-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--name <title>` - Title for the shared step (required)
+- `--steps-file <file>` - Path to JSON file containing step definitions (required)
+- `--project-id <id>` - Project ID (or use `--project` with project name from config)
+- `--json-output` - Output created shared step as raw JSON
+
+**JSON File Format:**
+
+The steps file must be a JSON object with a `custom_steps_separated` array:
+
+```json
+{
+  "custom_steps_separated": [
+    {
+      "content": "Open browser and navigate to login page",
+      "expected": "Login page displays"
+    },
+    {
+      "content": "Enter username and password",
+      "expected": "Credentials accepted"
+    },
+    {
+      "content": "Click Login button",
+      "expected": "User logged in successfully"
+    }
+  ]
+}
+```
+
+**Field Descriptions:**
+- `content` (required) - The step description/instruction
+- `expected` (optional) - The expected result
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to update (required)
+- `--name <title>` - New title for the shared step (optional)
+- `--steps-file <file>` - Path to JSON file with new step definitions (optional)
+  - **Warning**: When provided, ALL existing steps will be replaced
+- `--json-output` - Output updated shared step as raw JSON
+
+**Important Notes:**
+- At least one of `--name` or `--steps-file` must be provided
+- When updating steps with `--steps-file`, the new steps completely replace all existing steps
+- Partial updates are not supported - you must provide the complete set of steps
+
+#### `sharedsteps delete`
+
+Delete an existing shared step. **WARNING: This action cannot be undone!**
+
+**Usage:**
+```shell
+# Using config file (recommended)
+# Delete shared step but keep steps in test cases (default)
+trcli -c config.yml sharedsteps delete --sharedstep-id <id>
+
+# Delete shared step AND remove steps from all test cases
+trcli -c config.yml sharedsteps delete --sharedstep-id <id> --no-keep-in-cases
+
+# With all parameters
+trcli sharedsteps delete --sharedstep-id <id> \
+  --host https://yourinstance.testrail.io \
+  --username <your_username> --password <your_password>
+```
+
+**Options:**
+- `--sharedstep-id <id>` - The ID of the shared step to delete (required)
+- `--no-keep-in-cases` - Delete steps from test cases as well as the shared step repository
+
+**Important Notes:**
+- **Deletion cannot be undone** - use with caution
+- By default (without any flags), deleting a shared step removes it from the repository but preserves the steps in all test cases that used it
+- Use `--no-keep-in-cases` to also remove the steps from all test cases (complete deletion)
+- Requires permission to delete test cases within the project
 
 #### Labels Management
 
@@ -3906,7 +4269,7 @@ Options:
 ### Reference
 ```shell
 $ trcli add_run --help
-TestRail CLI v1.15.3
+TestRail CLI v1.16.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli add_run [OPTIONS]
 
@@ -4751,7 +5114,7 @@ providing you with a solid base of test cases, which you can further expand on T
 ### Reference
 ```shell
 $ trcli parse_openapi --help
-TestRail CLI v1.15.3
+TestRail CLI v1.16.0
 Copyright 2025 Gurock Software GmbH - www.gurock.com
 Usage: trcli parse_openapi [OPTIONS]
 

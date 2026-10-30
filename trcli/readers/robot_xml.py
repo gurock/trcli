@@ -1,14 +1,17 @@
-from datetime import datetime, timedelta
-from beartype.typing import List, Union
+from beartype.typing import List, Optional, Union
 from pathlib import Path
 from xml.etree import ElementTree
 import glob
 
+from robot.api import ExecutionResult
+
+from trcli.api.api_utils import extract_jira_references, join_references
 from trcli.backports import removeprefix
 from trcli.cli import Environment
 from trcli.data_classes.data_parsers import (
     MatchersParser,
     FieldsParser,
+    PriorityTagMappingParser,
     TestRailCaseFieldsOptimizer,
     QualityRatingParser,
 )
@@ -21,12 +24,37 @@ from trcli.data_classes.dataclass_testrail import (
 )
 from trcli.readers.file_parser import FileParser
 
+# robot.result item ``type`` values that represent an actual keyword call (as opposed
+# to a Message, or a control-flow container like For/If/While/Try/Group/Var/Return/
+# Break/Continue). ``test.setup``/``test.teardown`` are Keyword instances too, just
+# distinguished by their ``type`` being SETUP/TEARDOWN instead of KEYWORD.
+_KEYWORD_LIKE_TYPES = {"KEYWORD", "SETUP", "TEARDOWN"}
+
+# Message levels that get surfaced in a step's "actual" (runtime output) field.
+# TRACE/DEBUG are excluded as low-signal/verbose. FAIL and SKIP are included:
+# unlike status_id (a bare pass/fail/skip flag with no text), Robot Framework
+# attaches the actual failure/skip reason (e.g. an assertion's message, or a
+# Skip keyword's message) as a FAIL/SKIP-level entry in the failing/skipped
+# keyword's own kw.messages - without surfacing it here, a failed/skipped step
+# would show its status but no indication of *why*.
+_LOGGED_MESSAGE_LEVELS = {"INFO", "WARN", "ERROR", "FAIL", "SKIP"}
+
 
 class RobotParser(FileParser):
 
     def __init__(self, environment: Environment):
         super().__init__(environment)
         self.case_matcher = environment.case_matcher
+        # Falls back to the built-in defaults when unset (e.g. a hand-built Environment()
+        # in a script/test that never went through the --priority-tag-mapping CLI option),
+        # so the Priority Tag Mapping feature always works out of the box.
+        self.priority_tag_mapping = (
+            environment.priority_tag_mapping
+            if environment.priority_tag_mapping is not None
+            else dict(PriorityTagMappingParser.DEFAULT_MAPPING)
+        )
+        self.no_step_args = bool(getattr(environment, "no_step_args", False))
+        self.no_step_logs = bool(getattr(environment, "no_step_logs", False))
         self._case_result_statuses = {"pass": 1, "not run": 3, "skip": 4, "fail": 5}
         self._update_with_custom_statuses()
         self.invalid_quality_ratings_found = False  # Track if any quality ratings were invalid
@@ -81,12 +109,25 @@ class RobotParser(FileParser):
 
     def parse_file(self) -> List[TestRailSuite]:
         self.env.log(f"Parsing Robot Framework report.")
-        tree = ElementTree.parse(self.filepath)
-        root = tree.getroot()
         sections_list = []
+        # Enumerate top-level <suite> elements the same way as before (this correctly
+        # handles both a single genuine RF output.xml - which always has exactly one
+        # top-level <suite> - and the synthetic "<robot><suite/><suite/>...</robot>"
+        # produced by check_file() when merging multiple glob-matched files).
+        root = ElementTree.parse(self.filepath).getroot()
         suite_elements = root.findall("suite")
-        for suite_element in suite_elements:
-            self._find_suites(suite_element, sections_list)
+        if len(suite_elements) == 1:
+            # Common case (a genuine, non-merged RF output.xml)
+            result_suite = ExecutionResult(self.filepath).suite
+            self._find_suites(result_suite, sections_list)
+        else:
+            # Merged-glob case (multiple sibling top-level <suite> elements)
+            for suite_element in suite_elements:
+                wrapper = ElementTree.Element("robot", generator="trcli-isolated-suite")
+                wrapper.append(suite_element)
+                suite_xml = ElementTree.tostring(wrapper, encoding="utf-8")
+                result_suite = ExecutionResult(suite_xml).suite
+                self._find_suites(result_suite, sections_list)
         cases_count = sum(len(section.testcases) for section in sections_list)
         self.env.log(f"Processed {cases_count} test cases in {len(sections_list)} sections.")
         testrail_suites = [
@@ -99,32 +140,57 @@ class RobotParser(FileParser):
 
         return testrail_suites
 
-    def _find_suites(self, suite_element, sections_list: List, namespace=""):
-        name = suite_element.get("name")
-        namespace += f".{name}" if namespace else name
-        tests = suite_element.findall("test")
-        if tests:
-            # Check if section with this namespace already exists (for merged files with duplicate suites)
-            section = next((s for s in sections_list if s.name == namespace), None)
-            if section is None:
-                # Create new section if it doesn't exist
-                section = TestRailSection(namespace)
-                sections_list.append(section)
-            # else: reuse existing section and add tests to it
+    def _find_suites(
+        self,
+        suite,
+        sections_list: List,
+        namespace: str = "",
+        parent_section: Optional[TestRailSection] = None,
+    ):
+        """Recursively walk Robot Framework's suite tree, creating one nested TestRailSection
+        per suite level (mirroring the real suite hierarchy 1:1, including purely
+        organizational suites with no tests of their own), linked to its parent via
+        `parent_section`.
 
+        Section names are the suite's own bare name only (no dotted concatenation) - the
+        historic dotted `namespace` string is still tracked and used for `custom_automation_id`
+        (so existing automation-ID-based case matching remains stable/unique), but is no longer
+        used for the section's display `name` nor for section identity/deduplication, which is
+        now based on `(name, parent_section)` instead.
+        """
+        name = suite.name
+        namespace = f"{namespace}.{name}" if namespace else name
+
+        # Check if a section with this (name, parent) already exists (for merged files with
+        # duplicate/repeated suites - e.g. the same root suite name appearing once per
+        # glob-matched file). Sections are matched by identity of `parent_section`, not name
+        # alone, so same-named sections under different parents are never confused.
+        section = next(
+            (s for s in sections_list if s.name == name and s.parent_section is parent_section),
+            None,
+        )
+        if section is None:
+            # Create new section if it doesn't exist
+            section = TestRailSection(name)
+            section.parent_section = parent_section
+            sections_list.append(section)
+        # else: reuse existing section and add tests to it
+
+        tests = suite.tests
+        if tests:
             for test in tests:
                 case_id = None
-                case_name = test.get("name")
+                case_name = test.name
                 attachments = []
                 result_fields = []
                 case_fields = []
                 comments = []
                 quality_rating = None
-                documentation = test.find("doc")
+                documentation = test.doc
                 if self.case_matcher == MatchersParser.NAME:
                     case_id, case_name = MatchersParser.parse_name_with_id(case_name)
-                if documentation is not None:
-                    lines = [line.strip() for line in documentation.text.splitlines()]
+                if documentation:
+                    lines = [line.strip() for line in documentation.splitlines()]
                     for line in lines:
                         if (
                             line.lower().startswith("- testrail_case_id:")
@@ -148,26 +214,31 @@ class RobotParser(FileParser):
                             comments.append(self._remove_tr_prefix(line, "- testrail_result_comment:"))
                         if line.lower().startswith("- testrail_case_field"):
                             case_fields.append(self._remove_tr_prefix(line, "- testrail_case_field:"))
-                status = test.find("status")
-                status_id = self._case_result_statuses[status.get("status").lower()]
 
-                elapsed_time = None
-                # if status contains "elapsed" then obtain it, otherwise calculate it from starttime and endtime
-                if "elapsed" in status.attrib:
-                    elapsed_time = self._parse_rf70_elapsed_time(status.get("elapsed"))
+                status_id = self._case_result_statuses[test.status.lower()]
+                # Prefer elapsed_time (timedelta, microsecond precision) when available;
+                # it was only added to the result model in RF 7.x. Fall back to elapsedtime
+                # (int milliseconds - available across the full supported range, RF 6.0+)
+                # for older versions.
+                if hasattr(test, "elapsed_time"):
+                    elapsed_time_seconds = test.elapsed_time.total_seconds()
                 else:
-                    elapsed_time = self._parse_rf50_time(status.get("endtime")) - self._parse_rf50_time(
-                        status.get("starttime")
-                    )
-
-                error_msg = status.text
-                keywords = test.findall("kw")
-                step_keywords = []
-                for kw in keywords:
-                    kw_result = kw.find("status").get("status")
-                    step = TestRailSeparatedStep(kw.get("name"))
-                    step.status_id = self._case_result_statuses[kw_result.lower()]
-                    step_keywords.append(step)
+                    elapsed_time_seconds = test.elapsedtime / 1000.0
+                # test.message is "" (not None) when a test has no message/failure text;
+                # normalize back to None so it is skipped from the result payload exactly
+                # like the historic (possibly-absent) <status> element text used to be.
+                error_msg = test.message if test.message else None
+                # Build the ordered top-level item list exactly as Robot Framework
+                # executed it: [Setup] (if any), each top-level test-body item, then
+                # [Teardown] (if any). _extract_steps() recurses fully from here,
+                # including into FOR/IF/WHILE/TRY/GROUP blocks nested anywhere below.
+                top_level_items = []
+                if test.has_setup:
+                    top_level_items.append(test.setup)
+                top_level_items.extend(test.body)
+                if test.has_teardown:
+                    top_level_items.append(test.teardown)
+                step_keywords = self._extract_steps(top_level_items)
 
                 result_fields_dict, error = FieldsParser.resolve_fields(result_fields)
                 if error:
@@ -177,9 +248,22 @@ class RobotParser(FileParser):
                 if error:
                     self.env.elog(error)
                     raise Exception(error)
+                # Priority Tag Mapping: a "priority:<level>" tag resolves a priority_id, but
+                # never overrides an explicit `- testrail_case_field: priority_id:X` doc
+                # directive already captured above (explicit always wins over tag-derived).
+                tag_priority_id = self._priority_id_from_tags(test.tags, case_name)
+                if tag_priority_id is not None:
+                    case_fields_dict.setdefault("priority_id", tag_priority_id)
+                # Extract TestRail/Jira references from the test's Robot Framework tags
+                # (e.g. "jira:PROJ-123", bare "JIRA-1234", or "refs:TSTRAIL-5"). This is
+                # intentionally kept independent from the doc-based
+                # "- testrail_case_field: refs:VALUE" mechanism above (which only ever
+                # lands in case_fields_dict, not here) so existing fixtures relying on
+                # that convention are unaffected.
+                case_refs = join_references(extract_jira_references(list(test.tags)))
                 result = TestRailResult(
                     case_id,
-                    elapsed=f"{elapsed_time.total_seconds()}",
+                    elapsed=f"{elapsed_time_seconds}",
                     status_id=status_id,
                     comment=error_msg,
                     attachments=attachments,
@@ -201,26 +285,120 @@ class RobotParser(FileParser):
                         else test.custom_case_automation_id
                     ),
                     case_fields=case_fields_dict,
+                    refs=case_refs if case_refs else None,
                 )
+                if case_refs:
+                    # Temporary, non-serialized attribute consumed by
+                    # results_uploader.update_existing_cases_with_junit_refs() (which
+                    # checks for it generically via hasattr(), despite the name) to
+                    # optionally merge these refs into an already-existing TestRail case.
+                    tr_test._junit_case_refs = case_refs
                 section.testcases.append(tr_test)
 
-        for sub_suite_element in suite_element.findall("suite"):
-            self._find_suites(sub_suite_element, sections_list, namespace=namespace)
+        for sub_suite in suite.suites:
+            self._find_suites(sub_suite, sections_list, namespace=namespace, parent_section=section)
 
-    @staticmethod
-    def _parse_rf50_time(time_str: str) -> datetime:
-        # "20230712 22:32:12.951"
-        return datetime.strptime(time_str, "%Y%m%d %H:%M:%S.%f")
+    def _extract_steps(self, body_items, level: int = 0) -> List[TestRailSeparatedStep]:
+        """Recursively extract every keyword call in ``body_items`` as a flat,
+        depth-first list of TestRail steps, in exact Robot Framework execution order.
 
-    @staticmethod
-    def _parse_rf70_time(time_str: str) -> datetime:
-        # "2023-07-12T22:32:12.951000"
-        return datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%f")
+        Each real keyword call (``KEYWORD``/``SETUP``/``TEARDOWN`` type items) becomes
+        its own step, formatted as ``"<2-space-indent><name>(<args>)"`` where the
+        indent depth reflects how many keyword calls it is nested beneath (recursing
+        into ``kw.body`` at ``level + 1``). Control-flow containers - FOR, IF/ELSE,
+        WHILE, TRY/EXCEPT, GROUP, and their iteration/branch sub-items - are NOT
+        themselves rendered as a step (they are not keyword calls), but are walked
+        transparently at the *same* level so that keywords called from inside a loop
+        or conditional branch are still captured, at their true keyword-call depth.
+        Message items have no ``body`` to recurse into and are skipped here; their
+        content is instead surfaced via each keyword's own ``actual`` field below.
 
-    @staticmethod
-    def _parse_rf70_elapsed_time(timedelta_str: str) -> timedelta:
-        # "0.001000"
-        return timedelta(seconds=float(timedelta_str))
+        This is a finite, single-pass traversal of Robot's own (already-finite,
+        acyclic) execution-result tree - one recursive call per body item, each
+        strictly narrowing to that item's direct children - so it cannot loop
+        infinitely, and recursion depth is bounded by the real keyword-call nesting
+        depth of the test (Python's default recursion limit comfortably covers any
+        realistic Robot Framework suite).
+        """
+        steps = []
+        for item in body_items:
+            item_type = getattr(item, "type", None)
+            nested_body = getattr(item, "body", None)
+            if item_type in _KEYWORD_LIKE_TYPES:
+                steps.append(self._build_step(item, level))
+                if nested_body:
+                    steps.extend(self._extract_steps(nested_body, level + 1))
+            elif nested_body:
+                # Transparent control-flow container (FOR/IF/WHILE/TRY/GROUP and their
+                # ITERATION/branch sub-items): no step of its own, same nesting level.
+                steps.extend(self._extract_steps(nested_body, level))
+        return steps
+
+    def _build_step(self, kw, level: int) -> TestRailSeparatedStep:
+        """Build a single TestRailSeparatedStep for one keyword call."""
+        indent = "  " * level
+        # Use kwname (the unqualified keyword name), not name: under RF 6.0.x,
+        # Keyword.name is fully qualified as "LibraryName.Keyword Name", while
+        # under RF 7.x it already returns the unqualified name. kwname returns
+        # the unqualified name consistently across both, matching the historic
+        # xml.etree-based behavior (which read the plain <kw name="..."> attribute).
+        # Opt-outs (--no-step-args / --no-step-logs) let users keep potentially sensitive
+        # keyword arguments and log output (e.g. credentials, tokens) out of TestRail.
+        if self.no_step_args:
+            step = TestRailSeparatedStep(f"{indent}{kw.kwname}")
+        else:
+            args_str = ", ".join(kw.args)
+            step = TestRailSeparatedStep(f"{indent}{kw.kwname}({args_str})")
+        step.status_id = self._case_result_statuses[kw.status.lower()]
+        if not self.no_step_logs:
+            messages = [f"{msg.level}: {msg.message}" for msg in kw.messages if msg.level in _LOGGED_MESSAGE_LEVELS]
+            if messages:
+                step.actual = "\n".join(messages)
+        return step
+
+    def _priority_id_from_tags(self, tags, case_name: str) -> Optional[int]:
+        """Resolve a TestRail ``priority_id`` from a Robot Framework ``priority:<level>``
+        tag, matched case-insensitively on both the ``priority:`` prefix and the level
+        value against ``self.priority_tag_mapping`` (defaults: critical=4, high=3,
+        medium=2, low=1; overridable/extendable via ``--priority-tag-mapping``).
+
+        Returns ``None`` if no ``priority:`` tag is present, or if its level isn't a
+        recognized key in the mapping - callers must treat that as "no opinion" rather
+        than clearing any priority already set another way. Never raises: an unrecognized
+        level is always surfaced via `elog` (visible without -v, since silently falling
+        back to whatever default priority TestRail assigns is a real data-quality risk in
+        automation pipelines), while duplicate priority tags on the same test are reported
+        via `vlog` (verbose-only) - either way, a stray/unexpected tag never fails an
+        otherwise-valid test's parsing.
+
+        :param tags: the test's Robot Framework tags (``test.tags``, an iterable of str).
+        :param case_name: the test's name, used only for the verbose log messages.
+        """
+        resolved_level = None
+        for tag in tags:
+            if not tag or ":" not in tag:
+                continue
+            prefix, _, level = tag.partition(":")
+            if prefix.strip().lower() != "priority":
+                continue
+            level = level.strip().lower()
+            if resolved_level is None:
+                resolved_level = level
+            else:
+                self.env.vlog(f"Test '{case_name}' has multiple priority tags; ignoring extra tag 'priority:{level}'.")
+
+        if resolved_level is None:
+            return None
+
+        priority_id = self.priority_tag_mapping.get(resolved_level)
+        if priority_id is None:
+            self.env.elog(
+                f"Warning: Test '{case_name}' has tag 'priority:{resolved_level}', which is not a recognized "
+                f"priority level (expected one of: {', '.join(sorted(self.priority_tag_mapping))}). "
+                f"No priority_id will be set from this tag - use --priority-tag-mapping {resolved_level}:<id> "
+                f"to map it (run 'trcli priorities list' to find valid priority IDs)."
+            )
+        return priority_id
 
     @staticmethod
     def _remove_tr_prefix(text: str, tr_prefix: str) -> str:

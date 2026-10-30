@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 5.0 (Python 3.10.5 on win32)" generated="20230712 22:32:12.928" rpa="false" schemaversion="3">
+    <suite id="s1" name="Priority Tags"
+           source="rf\tests-basic\priority-tags">
+        <test id="s1-t1" name="Priority Critical Tag" line="5">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.952" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.951" endtime="20230712 22:32:12.952"/>
+            </kw>
+            <tag>priority:critical</tag>
+            <status status="PASS" starttime="20230712 22:32:12.951" endtime="20230712 22:32:12.952"/>
+        </test>
+        <test id="s1-t2" name="Priority High Tag Mixed Case" line="10">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.953" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.952" endtime="20230712 22:32:12.953"/>
+            </kw>
+            <tag>Priority:High</tag>
+            <status status="PASS" starttime="20230712 22:32:12.952" endtime="20230712 22:32:12.953"/>
+        </test>
+        <test id="s1-t3" name="Priority Medium Tag" line="15">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.954" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.953" endtime="20230712 22:32:12.954"/>
+            </kw>
+            <tag>PRIORITY:MEDIUM</tag>
+            <status status="PASS" starttime="20230712 22:32:12.953" endtime="20230712 22:32:12.954"/>
+        </test>
+        <test id="s1-t4" name="Priority Low Tag" line="20">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.955" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.954" endtime="20230712 22:32:12.955"/>
+            </kw>
+            <tag>priority:low</tag>
+            <status status="PASS" starttime="20230712 22:32:12.954" endtime="20230712 22:32:12.955"/>
+        </test>
+        <test id="s1-t5" name="Priority Unrecognized Tag" line="25">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.956" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.955" endtime="20230712 22:32:12.956"/>
+            </kw>
+            <tag>priority:urgent</tag>
+            <status status="PASS" starttime="20230712 22:32:12.955" endtime="20230712 22:32:12.956"/>
+        </test>
+        <test id="s1-t6" name="No Priority Tag" line="30">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.957" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.956" endtime="20230712 22:32:12.957"/>
+            </kw>
+            <tag>smoke</tag>
+            <status status="PASS" starttime="20230712 22:32:12.956" endtime="20230712 22:32:12.957"/>
+        </test>
+        <test id="s1-t7" name="Explicit Case Field Overrides Priority Tag" line="35">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.958" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.957" endtime="20230712 22:32:12.958"/>
+            </kw>
+            <doc>
+                - testrail_case_field: priority_id:1
+            </doc>
+            <tag>priority:critical</tag>
+            <status status="PASS" starttime="20230712 22:32:12.957" endtime="20230712 22:32:12.958"/>
+        </test>
+        <test id="s1-t8" name="Multiple Priority Tags First One Wins" line="40">
+            <kw name="Log" library="BuiltIn">
+                <arg>OK</arg>
+                <doc>Logs the given message with the given level.</doc>
+                <msg timestamp="20230712 22:32:12.959" level="INFO">OK</msg>
+                <status status="PASS" starttime="20230712 22:32:12.958" endtime="20230712 22:32:12.959"/>
+            </kw>
+            <tag>priority:critical</tag>
+            <tag>priority:low</tag>
+            <status status="PASS" starttime="20230712 22:32:12.958" endtime="20230712 22:32:12.959"/>
+        </test>
+        <status status="PASS" starttime="20230712 22:32:12.928" endtime="20230712 22:32:18.968"/>
+    </suite>
+    <statistics>
+        <total>
+            <stat pass="8" fail="0" skip="0">All Tests</stat>
+        </total>
+        <tag>
+        </tag>
+        <suite>
+            <stat pass="8" fail="0" skip="0" id="s1" name="Priority Tags">Priority Tags</stat>
+        </suite>
+    </statistics>
+    <errors>
+    </errors>
+</robot>
