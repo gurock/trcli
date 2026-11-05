@@ -81,6 +81,55 @@ class TestResponseVerify:
         ), "Added data and returned data should match"
 
     @pytest.mark.verifier
+    @pytest.mark.parametrize(
+        "added_value, returned_value",
+        [
+            (
+                "IntegrationSuiteNew.schema-controller  :: Should fail (400)",
+                "<p>IntegrationSuiteNew.schema-controller&nbsp;&nbsp;:: Should fail (400)</p>\n",
+            ),
+            # Simple wrap with no whitespace entities.
+            ("plain value", "<p>plain value</p>"),
+            # No trailing newline after the closing tag.
+            ("plain value", "<p>plain value</p>"),
+            # Single leading/trailing nbsp only (no <p> wrapping).
+            ("value", "&nbsp;value&nbsp;"),
+            # No transformation at all - still must match.
+            ("identical", "identical"),
+        ],
+    )
+    def test_verify_simple_comparison_tolerates_legacy_html_wrapping(
+        self, api_response_verify: ApiResponseVerify, added_value, returned_value
+    ):
+        added_data = {"custom_automation_id": added_value}
+        returned_data = {"custom_automation_id": returned_value}
+
+        assert api_response_verify.verify_returned_data(
+            added_data, returned_data
+        ), "TestRail's is_legacy HTML wrapping should not cause a false verification failure"
+
+    @pytest.mark.verifier
+    @pytest.mark.parametrize(
+        "added_value, returned_value",
+        [
+            # Genuinely different content must still fail, even if HTML-wrapped.
+            ("expected value", "<p>completely different value</p>"),
+            # Non-string types must never go through the HTML-tolerant fallback.
+            (True, False),
+            (1, 2),
+        ],
+    )
+    def test_verify_simple_comparison_still_fails_on_real_mismatch(
+        self, api_response_verify: ApiResponseVerify, added_value, returned_value
+    ):
+        added_data = {"custom_automation_id": added_value}
+        returned_data = {"custom_automation_id": returned_value}
+
+        assert not api_response_verify.verify_returned_data(
+            added_data, returned_data
+        ), "Genuine content mismatches must still fail verification"
+
+    @pytest.mark.verifier
     def test_verify_returned_data_missing_key_fails_gracefully(self, api_response_verify: ApiResponseVerify):
         """
         A key present in added_data but entirely absent from returned_data (e.g. because
